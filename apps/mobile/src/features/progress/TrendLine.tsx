@@ -64,6 +64,8 @@ export type TrendLineProps = {
   fromZero?: boolean
   /** The least headroom above and below, in the chart's units: half a kilogram for weight. */
   minPad?: number
+  /** Rule the scale in whole steps of at least one, for a count. */
+  wholeTicks?: boolean
   /**
    * Whether a tap or a drag reads a point. Off on a review card, where a tap
    * shares the card and the scale and goal labels are all the reading needed.
@@ -119,10 +121,14 @@ const RULE_GAP = 20
  * Round values between `low` and `high`, about three of them: steps of 1, 2,
  * 2.5 or 5 times a power of ten, the way a hand-drawn axis is labelled.
  */
-function roundTicks(low: number, high: number): number[] {
+function roundTicks(low: number, high: number, whole = false): number[] {
   const rough = (high - low) / 3
   const power = 10 ** Math.floor(Math.log10(rough))
-  const step = ([1, 2, 2.5, 5, 10].find((nice) => nice * power >= rough) ?? 10) * power
+  // A count is ruled in whole steps: "2.5 workouts" is not a number anybody
+  // counts in, and rounded for its label it would read as a wrong 3.
+  const nice = whole && power < 10 ? [1, 2, 5, 10] : [1, 2, 2.5, 5, 10]
+  const found = (nice.find((each) => each * power >= rough) ?? 10) * power
+  const step = whole ? Math.max(1, found) : found
   const ticks: number[] = []
   for (let tick = Math.ceil(low / step) * step; tick <= high + 1e-9; tick += step) {
     ticks.push(Math.round(tick * 1000) / 1000)
@@ -131,7 +137,9 @@ function roundTicks(low: number, high: number): number[] {
 }
 
 /**
- * Weight over time, as a line rather than the bars every other chart uses.
+ * A series over time as a line with a dot a column: every chart on Trends,
+ * in a review and on the workout progress page. It began as the weight line,
+ * and the reasons below are weight's, which the props generalise.
  * Weight moves by about one percent a week, so bars from zero are seven
  * identical rectangles, and the eye reads bars as amounts and a line as a
  * direction, which is the entire question.
@@ -156,6 +164,7 @@ export function TrendLine({
   fromZero = false,
   minPad = 0.5,
   interactive = true,
+  wholeTicks = false,
   carryFrom,
   height = 128,
   formatValue,
@@ -277,7 +286,11 @@ export function TrendLine({
     const goalY = goal !== null && values.length ? top + (1 - (goal - floor) / span) * usable : null
     const rules: { value: number; y: number; path: SkPath }[] = []
     if (formatValue && width > 0 && values.length > 1) {
-      for (const scaled of roundTicks(floor * unitFactor, (floor + span) * unitFactor)) {
+      for (const scaled of roundTicks(
+        floor * unitFactor,
+        (floor + span) * unitFactor,
+        wholeTicks,
+      )) {
         const value = scaled / unitFactor
         const y = top + (1 - (value - floor) / span) * usable
         const previous = rules[rules.length - 1]
@@ -326,6 +339,7 @@ export function TrendLine({
     goal,
     fromZero,
     minPad,
+    wholeTicks,
   ])
 
   // The reading being read: always a real one, never a held stretch.
