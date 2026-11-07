@@ -1,6 +1,7 @@
 import type { PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-js'
 import type { QueryClient, QueryKey } from '@tanstack/react-query'
-import { eachDayOfInterval, parseISO } from 'date-fns'
+import { eachDayOfInterval } from 'date-fns/eachDayOfInterval'
+import { parseISO } from 'date-fns/parseISO'
 
 /**
  * Supabase returns errors in the payload rather than throwing, and react-query

@@ -4,7 +4,8 @@ import {
   useInfiniteQuery,
   useQueryClient,
 } from '@tanstack/react-query'
-import { parseISO, subDays } from 'date-fns'
+import { parseISO } from 'date-fns/parseISO'
+import { subDays } from 'date-fns/subDays'
 import { useEffect, useMemo } from 'react'
 
 import type { Database } from '@/lib/database.types'

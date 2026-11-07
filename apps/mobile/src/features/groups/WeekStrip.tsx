@@ -1,4 +1,6 @@
-import { format, parseISO, startOfWeek } from 'date-fns'
+import { format } from 'date-fns/format'
+import { parseISO } from 'date-fns/parseISO'
+import { startOfWeek } from 'date-fns/startOfWeek'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View } from 'react-native'

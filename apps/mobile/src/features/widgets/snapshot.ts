@@ -1,5 +1,6 @@
 import type { WidgetSnapshot } from '@modules/ricecal-widgets'
-import { differenceInCalendarDays, parseISO } from 'date-fns'
+import { differenceInCalendarDays } from 'date-fns/differenceInCalendarDays'
+import { parseISO } from 'date-fns/parseISO'
 import type { Macros, Targets, WeighIn } from '@/data'
 // The module, not the barrel. `features/progress`'s index reaches the charts,
 // which reach the whole data layer and expo-router with it — and this file is

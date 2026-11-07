@@ -1,4 +1,4 @@
-import { formatDistanceToNowStrict } from 'date-fns'
+import { formatDistanceToNowStrict } from 'date-fns/formatDistanceToNowStrict'
 import * as Haptics from 'expo-haptics'
 import { Image, type ImageSource } from 'expo-image'
 import { useFocusEffect, useRouter } from 'expo-router'

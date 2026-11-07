@@ -170,6 +170,10 @@ def write_assets(art: Image.Image, framing: Framing) -> None:
     splash_framing = Framing("Splash", 0.86, framing.x, framing.y, framing.angle)
     framed_art(art, 474, splash_framing).save(ASSETS / "splash-icon.png", optimize=True)
     opaque_icon(art, 48, framing, LIGHT).save(ASSETS / "favicon.png", optimize=True)
+    # The icon the app draws itself: 104 points on the welcome screen, 14 to 17
+    # in the corner of a share card. 416 px covers the largest at 4x, the densest
+    # Android screens; the 1024 px icon these used to load is 870 KB of the bundle.
+    opaque_icon(art, 416, framing, LIGHT).save(ASSETS / "app-mark.png", optimize=True)
 
 
 def main() -> None:

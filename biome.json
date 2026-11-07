@@ -52,6 +52,30 @@
   },
   "overrides": [
     {
+      "includes": ["apps/mobile/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noRestrictedImports": {
+              "level": "error",
+              "options": {
+                "paths": {
+                  "date-fns": {
+                    "message": "Import each function from its own path ('date-fns/format'). Metro does not tree-shake, so the index bundles all of date-fns.",
+                    "allowImportNames": ["Locale"]
+                  },
+                  "date-fns/locale": "Import each locale from its own path ('date-fns/locale/ja'). The index bundles every locale date-fns ships, about 1 MB.",
+                  "@expo-google-fonts/nunito": "Import each face from its own path ('@expo-google-fonts/nunito/700Bold'). The index bundles every weight as an asset.",
+                  "@expo-google-fonts/baloo-2": "Import each face from its own path ('@expo-google-fonts/baloo-2/700Bold'). The index bundles every weight as an asset.",
+                  "zod": "zod is about 390 KB of the bundle. Write the check by hand, as src/lib/env.ts does."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
       "includes": ["**/*.css"],
       "linter": {
         "rules": {

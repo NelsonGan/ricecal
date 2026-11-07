@@ -1,4 +1,7 @@
-import { format, isToday, isYesterday, parseISO } from 'date-fns'
+import { format } from 'date-fns/format'
+import { isToday } from 'date-fns/isToday'
+import { isYesterday } from 'date-fns/isYesterday'
+import { parseISO } from 'date-fns/parseISO'
 import * as Haptics from 'expo-haptics'
 import { useFocusEffect, useIsFocused, useNavigation, useRouter } from 'expo-router'
 import {
