@@ -7,7 +7,7 @@
  * twice. The cost of that order is that a push Expo refuses is not retried;
  * the app's own notice on Today says the same thing on the next launch.
  */
-import { sendPushes } from '../expo.ts'
+import { addRefused, refusedDetail, sendPushes } from '../expo.ts'
 import type { Job } from '../job.ts'
 import { type WarningTarget, warningPush } from './photo-warnings-copy.ts'
 
@@ -32,6 +32,7 @@ export const photoWarnings: Job = {
     let accounts = 0
     let sent = 0
     let failed = 0
+    const refused: Record<string, number> = {}
     let batches = 0
     let drained = false
 
@@ -57,10 +58,11 @@ export const photoWarnings: Job = {
       )
       sent += pushed.sent
       failed += pushed.failed
+      addRefused(refused, pushed.refused)
       if (pushed.gone.length > 0) await rpc('forget_push_tokens', { p_tokens: pushed.gone })
     }
 
     if (!drained) log('stopped with accounts still to warn; tomorrow continues', { batches })
-    return { accounts, sent, failed, batches, drained }
+    return { accounts, sent, failed, batches, drained, ...refusedDetail(refused) }
   },
 }

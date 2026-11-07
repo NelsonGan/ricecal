@@ -11,8 +11,8 @@
  *
  * Recorded by the hour (`record: 'hourly'`), not a row a minute.
  */
-import { sendPushes } from '../expo.ts'
-import type { Job } from '../job.ts'
+import { addRefused, describeRefused, refusedDetail, sendPushes } from '../expo.ts'
+import { type Job, JobFailure } from '../job.ts'
 import { type UpdateTarget, updatePush } from './group-updates-copy.ts'
 
 /** People per call. A person has at most ten devices, so a page stays under 1,000 rows. */
@@ -31,6 +31,7 @@ export const groupUpdates: Job = {
     let devices = 0
     let sent = 0
     let failed = 0
+    const refused: Record<string, number> = {}
     for (let page = 0; page < MAX_PAGES; page++) {
       const targets = await rpc<UpdateTarget[]>('group_update_digests', { p_limit: PAGE })
       const due = new Set(targets.map((target) => target.user_id)).size
@@ -41,15 +42,21 @@ export const groupUpdates: Job = {
         devices += targets.length
         sent += pushed.sent
         failed += pushed.failed
+        addRefused(refused, pushed.refused)
       }
       if (due < PAGE) break
     }
     // Every push refused is Expo down or the token missing: a failure, so it
     // shows in Cron Events and as a failed hour in `job_runs`, not as a quiet
-    // count in a successful one.
+    // count in a successful one. The reasons go with it either way, since a
+    // refusal of one platform's pushes alone never fails a mixed run.
+    const detail = { people, devices, sent, failed, ...refusedDetail(refused) }
     if (failed > 0 && sent === 0) {
-      throw new Error(`expo refused all ${failed} update pushes`)
+      throw new JobFailure(
+        `expo refused all ${failed} update pushes (${describeRefused(refused)})`,
+        detail,
+      )
     }
-    return { people, devices, sent, failed }
+    return detail
   },
 }

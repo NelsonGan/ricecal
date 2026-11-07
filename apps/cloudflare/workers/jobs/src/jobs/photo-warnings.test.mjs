@@ -86,7 +86,14 @@ test('pushes each batch, forgets dead devices and stops when drained', async () 
     assert.deepEqual(calls[1], ['forget_push_tokens', { p_tokens: ['ExponentPushToken[dead]'] }])
     // The second call starts after the last account the first one returned.
     assert.equal(calls[2][1].p_after, '11111111-1111-4111-8111-111111111111')
-    assert.deepEqual(detail, { accounts: 1, sent: 1, failed: 1, batches: 2, drained: true })
+    assert.deepEqual(detail, {
+      accounts: 1,
+      sent: 1,
+      failed: 1,
+      batches: 2,
+      drained: true,
+      refused_DeviceNotRegistered: 1,
+    })
   } finally {
     globalThis.fetch = realFetch
   }

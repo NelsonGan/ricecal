@@ -147,12 +147,41 @@ async function post(
   if (!response.ok) throw new Error(`expo push ${response.status}`)
   const tickets = ((await response.json())?.data ?? []) as {
     status: string
+    message?: string
     details?: { error?: string }
   }[]
-  // A phone that uninstalled the app answers DeviceNotRegistered for ever.
-  const gone = targets
-    .filter((_, index) => tickets[index]?.details?.error === 'DeviceNotRegistered')
-    .map((target) => target.token)
+  // Expo's reason, which a count of what went out cannot give: every Android
+  // push was refused for a week as InvalidCredentials, with no FCM key set.
+  // Classified as the jobs Worker's `expo.ts` does, with tokens taken out of
+  // Expo's words, since its DeviceNotRegistered message quotes the token.
+  const refused = new Map<string, { count: number; message: string }>()
+  const gone: string[] = []
+  targets.forEach((target, index) => {
+    const ticket = tickets[index]
+    if (ticket?.status === 'ok') return
+    const code = ticket?.details?.error
+    const why = !ticket
+      ? 'NoTicket'
+      : typeof code === 'string' && /^[A-Za-z]{1,40}$/.test(code)
+        ? code
+        : 'Other'
+    const entry = refused.get(why) ?? {
+      count: 0,
+      message: String(ticket?.message ?? '')
+        .replace(/ExponentPushToken\[[^\]]*\]/g, 'ExponentPushToken[redacted]')
+        .slice(0, 200),
+    }
+    entry.count += 1
+    refused.set(why, entry)
+    // A phone that uninstalled the app answers DeviceNotRegistered for ever.
+    if (why === 'DeviceNotRegistered') gone.push(target.token)
+  })
+  if (refused.size > 0) {
+    console.warn(
+      '[groups] pushes refused',
+      JSON.stringify({ kind, size: targets.length, refused: Object.fromEntries(refused) }),
+    )
+  }
   if (gone.length > 0) await service.rpc('forget_push_tokens', { p_tokens: gone })
   return tickets.filter((ticket) => ticket.status === 'ok').length
 }
