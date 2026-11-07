@@ -90,6 +90,14 @@ jobs:
         working-directory: apps/cloudflare/workers/${{ matrix.worker }}
         run: pnpm typecheck
 
+      # Bundles the Worker and validates wrangler.jsonc (bindings, compatibility
+      # flags) without touching Cloudflare, so a config or import that tsc
+      # accepts but esbuild or wrangler rejects fails here rather than in the
+      # production deploy after merge.
+      - name: Bundle
+        working-directory: apps/cloudflare/workers/${{ matrix.worker }}
+        run: pnpm exec wrangler deploy --dry-run --outdir "$RUNNER_TEMP/worker-dist"
+
   # Schema before code, always. A Worker deployed ahead of the column it selects
   # answers every request with a D1 error; a column added ahead of the Worker
   # that reads it is simply unread. Same ordering, and the same reason, as
