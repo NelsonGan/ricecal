@@ -943,6 +943,7 @@ export const th = {
       span30d: '30 วันล่าสุด',
       span1y: '12 เดือนล่าสุด',
       week: 'สัปดาห์ {{index}}',
+      between: '{{from}} ถึง {{to}}',
     },
     calories: {
       unit: 'kcal/วัน',

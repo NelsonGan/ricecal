@@ -952,6 +952,7 @@ export const vi = {
       span30d: '30 ngày qua',
       span1y: '12 tháng qua',
       week: 'T {{index}}',
+      between: '{{from}} đến {{to}}',
     },
     calories: {
       unit: 'kcal mỗi ngày',

@@ -1,11 +1,10 @@
-import { format, parseISO } from 'date-fns'
 import { router } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 
 import type { TrendBucket, TrendRange, TrendSummary } from '@/data'
 import { DEFAULT_WATER_ML, volume } from '@/lib/water'
 import { Text } from '@/ui'
-import { bucketLabels } from './axis'
+import { pointNames } from './axis'
 import { TrendCard, TrendChip } from './TrendCard'
 import { TrendLine } from './TrendLine'
 
@@ -39,8 +38,8 @@ export function WaterCard({ range, buckets, summary, loading, problem, onRetry }
   const goal = summary?.waterGoal || DEFAULT_WATER_ML
   const empty = !summary || summary.waterTotal === 0
   const average = empty ? null : volume(summary.water)
-  const labels = buckets
-    ? bucketLabels(buckets, range, (index) => t('progress:range.week', { index }))
+  const names = buckets
+    ? pointNames(buckets, range, (from, to) => t('progress:range.between', { from, to }))
     : []
 
   return (
@@ -84,8 +83,7 @@ export function WaterCard({ range, buckets, summary, loading, problem, onRetry }
           minPad={100}
           points={buckets.map((bucket, index) => ({
             key: bucket.start,
-            label: labels[index],
-            title: range === '1y' ? format(parseISO(bucket.start), 'LLLL') : undefined,
+            ...names[index],
             value: bucket.water,
           }))}
           formatValue={amount}

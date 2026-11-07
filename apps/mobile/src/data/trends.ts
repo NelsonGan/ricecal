@@ -5,12 +5,13 @@ import { supabase } from '@/lib/supabase'
 import { unwrap } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
-import type {
-  TrendBucket,
-  TrendRange,
-  TrendSummary,
-  WorkoutTrendBucket,
-  WorkoutTrendSummary,
+import {
+  TREND_GRAIN,
+  type TrendBucket,
+  type TrendRange,
+  type TrendSummary,
+  type WorkoutTrendBucket,
+  type WorkoutTrendSummary,
 } from './types'
 
 type SeriesRow = Database['public']['Functions']['trend_series']['Returns'][number]
@@ -96,8 +97,8 @@ function toSummary(row: SummaryRow): TrendSummary {
 /**
  * The columns of whichever chart is on screen.
  *
- * One row per column — a day on `7d`, a seven-day block on `30d`, a calendar
- * month on `1y` — and each row carries the calorie, water AND weight numbers.
+ * One row per point, at the range's grain (`TREND_GRAIN`: a day on `7d` and
+ * `30d`, a seven-day block on `1y`), and each row carries the calorie, water AND weight numbers.
  * That is deliberate: the three cards are three readings of one range and
  * must never disagree about it, so they come back in one request. Only the
  * range switch goes back to the server.
@@ -106,9 +107,13 @@ export function useTrendSeries(range: TrendRange) {
   const userId = useUserId()
 
   return useQuery({
-    queryKey: keys.trendSeries(userId, range),
+    queryKey: keys.trendSeries(userId, range, TREND_GRAIN[range]),
     queryFn: async (): Promise<TrendBucket[]> =>
-      (unwrap(await supabase.rpc('trend_series', { p_range: range })) as SeriesRow[]).map(toBucket),
+      (
+        unwrap(
+          await supabase.rpc('trend_series', { p_range: range, p_grain: TREND_GRAIN[range] }),
+        ) as SeriesRow[]
+      ).map(toBucket),
   })
 }
 
@@ -143,16 +148,18 @@ export function useTrendWorkouts(range: TrendRange) {
   const userId = useUserId()
 
   return useQuery({
-    queryKey: keys.trendWorkouts(userId, range),
+    queryKey: keys.trendWorkouts(userId, range, TREND_GRAIN[range]),
     queryFn: async (): Promise<WorkoutTrendBucket[]> =>
-      (unwrap(await supabase.rpc('trend_workouts', { p_range: range })) as WorkoutRow[]).map(
-        (row) => ({
-          start: row.bucket_start,
-          end: row.bucket_end,
-          days: row.days,
-          durationS: row.duration_s,
-        }),
-      ),
+      (
+        unwrap(
+          await supabase.rpc('trend_workouts', { p_range: range, p_grain: TREND_GRAIN[range] }),
+        ) as WorkoutRow[]
+      ).map((row) => ({
+        start: row.bucket_start,
+        end: row.bucket_end,
+        days: row.days,
+        durationS: row.duration_s,
+      })),
   })
 }
 

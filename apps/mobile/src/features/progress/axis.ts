@@ -1,6 +1,7 @@
 import { format, parseISO } from 'date-fns'
 
-import type { TrendBucket, TrendRange } from '@/data'
+import { TREND_GRAIN, type TrendBucket, type TrendRange } from '@/data/types'
+import { datePattern } from '@/lib/dates'
 
 /**
  * The heading over every chart, one key per range.
@@ -16,34 +17,48 @@ export const SPAN_KEY = {
   '1y': 'progress:range.span1y',
 } as const satisfies Record<TrendRange, string>
 
-/**
- * The labels under a chart's columns. Each range names its columns differently: a
- * day gets its weekday, a month gets its number, and a seven-day block counted
- * back from today has no name, so it gets an index, which is the one that needs
- * translating and is therefore passed in rather than formatted here.
- *
- * Three letters fit a seventh of the width and not a twelfth, so the year labels
- * every other month rather than shortening the name: "8" for August makes you
- * convert before it tells you where you are.
- *
- * The interval counts back from the newest bucket, so the month on the right is
- * always labelled. That is the one people orient by, and anchoring at the left
- * would drop it half the time.
- */
-export function bucketLabels(
-  buckets: readonly Pick<TrendBucket, 'start' | 'end'>[],
-  range: TrendRange,
-  weekLabel: (index: number) => string,
-): string[] {
-  return buckets.map((bucket, index) => {
-    if (range === '7d') return format(parseISO(bucket.end), 'EEE')
-    if (range === '1y') {
-      const fromEnd = buckets.length - 1 - index
-      return fromEnd % MONTH_LABEL_EVERY === 0 ? format(parseISO(bucket.start), 'LLL') : ''
-    }
-    return weekLabel(index + 1)
-  })
+/** What the axis and the readout call one point. */
+export type PointName = {
+  /** Under the point. Blank where the axis has no room for it. */
+  label: string
+  /** Over the point when it is read, which names it in full. */
+  title: string
 }
 
-/** Label every other month. Twelve names do not fit; six do, with room to spare. */
-const MONTH_LABEL_EVERY = 2
+/**
+ * The names of a chart's points, by the range's grain (`TREND_GRAIN`).
+ *
+ * A week of days is labelled by weekday, which all seven fit. Thirty days are
+ * dated ("6 Nov"), and `AxisLabels` keeps as many as fit, counting back from
+ * today so the newest is always named. A year of weeks names the month under
+ * the first week of it, since nobody orients by "the week of 13 April".
+ *
+ * `between` words a week's span ("2 Nov to 8 Nov"), which is a sentence and
+ * so comes from the translations rather than from here.
+ */
+export function pointNames(
+  buckets: readonly Pick<TrendBucket, 'start' | 'end'>[],
+  range: TrendRange,
+  between: (from: string, to: string) => string,
+): PointName[] {
+  const grain = TREND_GRAIN[range]
+  const day = (date: string, pattern: Parameters<typeof datePattern>[0]) =>
+    format(parseISO(date), datePattern(pattern))
+  return buckets.map((bucket) => {
+    if (grain === 'day') {
+      return {
+        label: range === '7d' ? format(parseISO(bucket.end), 'EEE') : day(bucket.end, 'dayMonth'),
+        title: day(bucket.end, 'weekdayDayMonth'),
+      }
+    }
+    // Named for the month whose first day falls in it. Blocks are counted
+    // back from today rather than starting on a weekday, so the first is
+    // wherever in the block it lands, and no block of seven holds two.
+    const end = parseISO(bucket.end)
+    const first = new Date(end.getFullYear(), end.getMonth(), 1)
+    return {
+      label: first >= parseISO(bucket.start) ? format(first, datePattern('month')) : '',
+      title: between(day(bucket.start, 'dayMonth'), day(bucket.end, 'dayMonth')),
+    }
+  })
+}
