@@ -6,8 +6,8 @@ name: Cloudflare
 #
 # Deploys on a merge to main, and nowhere else. A pull request gets this
 # workflow's checks and nothing more: no Worker version is uploaded for it, here
-# or in `deploy.yml`, so nothing a PR changes under `apps/cloudflare` runs on
-# Cloudflare until it is merged.
+# or in `deploy.yml`. To try a Worker change before merge, upload a version by
+# hand (README, "By hand").
 #
 # The matrix is discovered from the filesystem rather than listed here, so a
 # second Worker is a directory under `apps/cloudflare/workers/` and no edit to
