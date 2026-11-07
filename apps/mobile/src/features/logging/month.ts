@@ -1,12 +1,10 @@
-import {
-  addDays,
-  addMonths,
-  endOfMonth,
-  parseISO,
-  startOfMonth,
-  startOfWeek,
-  subMonths,
-} from 'date-fns'
+import { addDays } from 'date-fns/addDays'
+import { addMonths } from 'date-fns/addMonths'
+import { endOfMonth } from 'date-fns/endOfMonth'
+import { parseISO } from 'date-fns/parseISO'
+import { startOfMonth } from 'date-fns/startOfMonth'
+import { startOfWeek } from 'date-fns/startOfWeek'
+import { subMonths } from 'date-fns/subMonths'
 
 import { dateKey } from '@/data/client'
 import { WEEK_STARTS_ON } from './week'

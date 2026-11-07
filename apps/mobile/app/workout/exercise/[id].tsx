@@ -1,4 +1,6 @@
-import { format, isThisYear, parseISO } from 'date-fns'
+import { format } from 'date-fns/format'
+import { isThisYear } from 'date-fns/isThisYear'
+import { parseISO } from 'date-fns/parseISO'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import type { TFunction } from 'i18next'
 import { useMemo, useState } from 'react'

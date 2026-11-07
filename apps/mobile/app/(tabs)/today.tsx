@@ -1,5 +1,7 @@
 import { onlineManager } from '@tanstack/react-query'
-import { format, parseISO, subDays } from 'date-fns'
+import { format } from 'date-fns/format'
+import { parseISO } from 'date-fns/parseISO'
+import { subDays } from 'date-fns/subDays'
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'

@@ -1,4 +1,6 @@
-import { addDays, format, isSameDay } from 'date-fns'
+import { addDays } from 'date-fns/addDays'
+import { format } from 'date-fns/format'
+import { isSameDay } from 'date-fns/isSameDay'
 import type { TFunction } from 'i18next'
 import { createMMKV } from 'react-native-mmkv'
 import type { PhotoRemoval } from '@/data/photoRemovals'

@@ -1,4 +1,6 @@
-import { format, parseISO, subDays } from 'date-fns'
+import { format } from 'date-fns/format'
+import { parseISO } from 'date-fns/parseISO'
+import { subDays } from 'date-fns/subDays'
 import { useRouter } from 'expo-router'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'

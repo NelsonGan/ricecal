@@ -1,5 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns/format'
+import { parseISO } from 'date-fns/parseISO'
 import * as Clipboard from 'expo-clipboard'
 import * as ImagePicker from 'expo-image-picker'
 import { useEffect, useRef, useState } from 'react'

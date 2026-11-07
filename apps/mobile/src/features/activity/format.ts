@@ -1,4 +1,5 @@
-import { differenceInMinutes, parseISO } from 'date-fns'
+import { differenceInMinutes } from 'date-fns/differenceInMinutes'
+import { parseISO } from 'date-fns/parseISO'
 
 /**
  * The number formats the workout rows and pages use, in one place.

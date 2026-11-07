@@ -63,7 +63,7 @@ const SMALL_STRONG = 'font-body-bold text-[11px] leading-[15px]'
 const PLACEHOLDER_ICON = { set: 'food', name: 'empty-plate' } as const
 
 /** The app icon, at the size a signature on a card wants it. */
-const MARK = require('../../../assets/icon.png')
+const MARK = require('../../../assets/app-mark.png')
 
 export type MealShareCardProps = {
   /** The dish, as the entry itself names it. */

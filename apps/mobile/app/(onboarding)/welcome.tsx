@@ -17,7 +17,7 @@ import { Button, Icon, type IconProps, Screen, Text } from '@/ui'
  * It carries its own background, so it is clipped to the same corner radius the
  * platform gives it.
  */
-const LOGO = require('../../assets/icon.png')
+const LOGO = require('../../assets/app-mark.png')
 
 /**
  * 01 WELCOME
