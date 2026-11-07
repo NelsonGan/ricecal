@@ -28,11 +28,12 @@
   //
   // `preview_urls` stays, and stays EXPLICIT. It defaults to whatever
   // `workers_dev` is, so turning one off silently takes the other with it — and
-  // preview URLs are what `versions upload --preview-alias pr-N` hands to a
-  // PR's `eas update`. Wrangler mentions that default only in a warning printed
-  // after the upload has already landed, which is how it was learnt: the first
-  // deploy of this route turned `workers.dev` off and took the catalogue away
-  // from every installed build, and the second turned preview URLs off.
+  // preview URLs are where `versions upload --preview-alias` serves a version
+  // uploaded by hand (the README's `--preview-alias me`). Wrangler mentions that
+  // default only in a warning printed after the upload has already landed,
+  // which is how it was learnt: the first deploy of this route turned
+  // `workers.dev` off and took the catalogue away from every installed build,
+  // and the second turned preview URLs off.
   "routes": [{ "pattern": "catalogue.ricecal.app/*", "zone_name": "ricecal.app" }],
   "workers_dev": false,
   "preview_urls": true,
@@ -78,10 +79,10 @@
       "database_id": "2b49b52a-f908-41c0-8433-c6933fb19c65"
     }
   ]
-  // No named environments, deliberately. A PR gets a VERSION of this same
-  // Worker under an alias (`wrangler versions upload --preview-alias pr-42`),
-  // which takes 0% of production traffic and inherits every binding above — so
-  // a preview reads the real 3.2 million packets, and there is no second script
-  // to keep in step, no second set of bindings to forget, and nothing to delete
-  // when the PR closes.
+  // No named environments, deliberately. To try a change before merge, upload
+  // a VERSION of this same Worker under an alias (`wrangler versions upload
+  // --preview-alias me`), which takes 0% of production traffic and inherits
+  // every binding above — so it reads the real 3.2 million packets, and there
+  // is no second script to keep in step, no second set of bindings to forget,
+  // and nothing to delete afterwards.
 }

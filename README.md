@@ -746,8 +746,9 @@ document count, and the arm adds trigrams rarest first until
 `TRIGRAM_DOC_BUDGET` is spent. A typo's trigrams hold no rows and cost nothing,
 and the stopwords the full-text arm drops are dropped here too. Lowering the
 budget is a ranking change: run `pnpm foods:gate` first. A database without the
-table (a PR preview before merge has applied `schema.sql`) gets the old OR of
-every trigram rather than a failed search, and the Worker logs that it did.
+table (a Worker version uploaded by hand before merge has applied `schema.sql`)
+gets the old OR of every trigram rather than a failed search, and the Worker
+logs that it did.
 
 The two exact arms match a stored normalized column, `food.name_norm` and
 `food_alias.alias_norm`, each indexed. Written as `lower(name) = ?` they were
@@ -6716,11 +6717,10 @@ still reach both profiles.
 No product analytics is sent to PostHog or GA4 in development or from an
 internal `preview` build. The preview profile keeps the release identifiers so
 store prices work, then sets `EXPO_PUBLIC_ANALYTICS_ENABLED=false` and
-`EXPO_PUBLIC_GA4_ENABLED=false`. A preview build, and a per-PR EAS update,
-still reports its crashes to PostHog error tracking, as it did to Sentry,
-tagged `app_variant: preview` (any release build with analytics switched off)
-so the test-account filter keeps them out of production reports; it sends no
-events and records no replays.
+`EXPO_PUBLIC_GA4_ENABLED=false`. A preview build still reports its crashes to
+PostHog error tracking, as it did to Sentry, tagged `app_variant: preview` (any
+release build with analytics switched off) so the test-account filter keeps
+them out of production reports; it sends no events and records no replays.
 A development build sends to PostHog only with `EXPO_PUBLIC_POSTHOG_DEV=1`, for
 verifying a change end to end; those events carry `app_variant: development`,
 which the project's test-account filter hides. Firebase remembers runtime
@@ -6728,9 +6728,9 @@ collection settings across launches, so JavaScript writes both the disabled and
 enabled states at startup. Collection is disabled before clearing the user ID
 and native revenue marker, then enabled for production. If cleanup fails,
 collection stays disabled and the failure is reported to error tracking.
-Production omits the flag and enables collection. The pull-request workflow
-also writes false into the environment file used by EAS Update because
-build-profile variables are not available to an update export.
+Production omits the flag and enables collection. A hand-run `eas update` gets
+none of the build-profile variables, so it has to set both flags itself (see
+[By hand](#by-hand)).
 
 The Firebase project is the existing `ricecal` Google Cloud project. It is linked
 to GA4 property **RiceCal** (`553863111`) in Analytics account
@@ -7364,7 +7364,7 @@ Verified 2026-10-12; credentials remain in the dashboards and local ignored file
 | iOS native revenue rules | `in_app_purchase` and prefix `app_store_`, each AND `revenuecat_revenue_enabled = 1`; preserve original name in `legacy_event_name`, rename to `ricecal_store_revenue_observed` |
 | Android native revenue rule | `in_app_purchase` AND `revenuecat_revenue_enabled = 1`; same preserve/rename action; separate Google Play import removed |
 | EAS environment | `production`: `POSTHOG_CLI_API_KEY` (sensitive) and `POSTHOG_CLI_PROJECT_ID`. `EXPO_PUBLIC_MIXPANEL_TOKEN`, `EXPO_PUBLIC_SENTRY_DSN` and `SENTRY_AUTH_TOKEN` are deleted from every environment once this migration is on `main` (code before it requires them) |
-| Dev / preview / PR updates | Product analytics disabled by `EXPO_PUBLIC_ANALYTICS_ENABLED=false`; GA4 additionally disabled by its existing flag. Preview builds keep PostHog error tracking, tagged `app_variant: preview` |
+| Dev / preview builds | Product analytics disabled by `EXPO_PUBLIC_ANALYTICS_ENABLED=false`; GA4 additionally disabled by its existing flag. Preview builds keep PostHog error tracking, tagged `app_variant: preview` |
 | Backend entitlement webhook | Existing Supabase `revenuecat` function preserved; sandbox entitlements follow `REVENUECAT_SANDBOX_SUBSCRIBERS` policy independently of analytics sandbox exclusion |
 
 The native rename rules affect incoming client events, not RevenueCat's Measurement
@@ -7818,35 +7818,26 @@ nothing but changes under `apps/cloudflare`, and only on a merge to `main`:
 schema first, then `wrangler deploy`. Every statement in a `schema.sql` is
 `if not exists`, so re-applying it is a no-op.
 
-**A pull request's Worker** is in `deploy.yml`, beside the app's own preview,
-because a preview is only a preview if the JS and the catalogue behind it come
-from one commit:
+**A pull request deploys nothing to Cloudflare.** It gets `cloudflare.yml`'s
+typecheck and dry-run bundle and `deploy.yml`'s Test job, and no Worker version is
+uploaded for it. To try a Worker change against the real catalogue before
+merge, upload a version by hand (see [By hand](#by-hand)).
 
-```
-wrangler versions upload --preview-alias pr-42
-```
-
-A **version**, not a deployment and not a second Worker. It takes 0% of
-production traffic, inherits every binding from `wrangler.jsonc`, and is
-addressable at a stable `https://pr-42-ricecal-catalogue.<subdomain>.workers.dev`
-for as long as the PR is open. No second script to keep in step, no duplicated
-bindings, nothing to tear down when the PR closes.
-
-`deploy.yml`'s push trigger ignores `apps/cloudflare` in return, so a Worker
-change cannot archive and submit a new binary for a change the app never sees.
+`deploy.yml`'s push trigger ignores `apps/cloudflare`, so a Worker change
+cannot archive and submit a new binary for a change the app never sees.
 The trade is that the two filters have to stay opposites.
 
-**Everything shares one D1 database**, including PR versions. There is one copy
-of the catalogue, it is 257 MB, and callers cannot submit arbitrary writes over
-HTTP. `/public/search` performs one internal increment of the aggregate search
-counter, while the existing service routes remain the only caller-directed
-write path. A preview pointed at a stub would prove nothing about a change to
-how 3.2 million packets are queried. What makes that safe is the route policy
-rather than the database.
+**Everything shares one D1 database**, including any version uploaded by hand.
+There is one copy of the catalogue, it is 257 MB, and callers cannot submit
+arbitrary writes over HTTP. `/public/search` performs one internal increment of
+the aggregate search counter, while the existing service routes remain the only
+caller-directed write path. A version pointed at a stub would prove nothing
+about a change to how 3.2 million packets are queried. What makes that safe is
+the route policy rather than the database.
 
-The one thing this costs: **the schema is applied on merge only.** A PR's version
-reads the database production is serving, so a migration in that PR is not in
-effect while it is being previewed.
+The one thing this costs: **the schema is applied on merge only.** A version
+uploaded from a branch reads the database production is serving, so a
+migration on that branch is not in effect until it merges.
 
 ### The catalogue hostname
 
@@ -7863,9 +7854,10 @@ Worker's JSON, that record being unproxied is the first thing to check.
 
 **`preview_urls` has to stay, and has to stay explicit**, because it defaults to
 whatever `workers_dev` is. Turning one off silently takes the other with it, and
-preview URLs are what `versions upload --preview-alias pr-N` hands to a PR's
-`eas update`. Wrangler mentions that default only in a warning printed *after*
-the upload has landed, which is how both halves were learnt.
+preview URLs are where `versions upload --preview-alias` serves a version (the
+`me-ricecal-catalogue.<subdomain>.workers.dev` address under
+[By hand](#by-hand)). Wrangler mentions that default only in a warning printed
+*after* the upload has landed, which is how both halves were learnt.
 
 **The token needs Workers Routes edit on the zone, and the failure names
 neither.** A route is applied at deploy time like any other trigger, so an
@@ -7876,38 +7868,12 @@ Zone → Workers Routes → Edit on `ricecal.app`. Zone *read* is not enough and
 what makes this confusing: wrangler resolves the zone name to an id, so it gets
 far enough to look as though the permission is there.
 
-### Pointing a bundle at a PR's Worker
-
-`EXPO_PUBLIC_CATALOGUE_URL` is inlined into the JS bundle by Babel at export
-time, so a PR preview reaches its own Worker only if that value is right at the
-moment `eas update` exports.
-
-**The obvious way does not work, and fails quietly.** Setting the variable in the
-workflow step's `env:` while the update command carries
-`--environment development` gets you the production URL: EAS downloads that
-environment and **assigns** it over the process, overwriting the export. Nothing
-errors; the preview simply talks to production.
-
-So the workflow pulls the environment to a file and rewrites one line of it:
-
-```bash
-eas env:pull development                                   # writes .env.local
-sed -i "s|^EXPO_PUBLIC_CATALOGUE_URL=.*|...=$WORKER_URL|" .env.local
-eas update --branch pr-42                                  # no --environment
-```
-
-One source for the export to read, and no precedence left to get wrong.
-
 ### Adding a second Worker or database
 
 A **Worker** is a directory under `workers/` with a `package.json` (needs a
 `typecheck` script) and a `wrangler.jsonc`. The CI matrix for typecheck and the
 production deploy is discovered from the filesystem, so there is no workflow to
 edit.
-
-It gets no PR preview of its own, deliberately. The preview exists to point an
-app bundle somewhere, and `catalogue` is the one Worker the app talks to. A
-second Worker wanting one would need a second `EXPO_PUBLIC_*` to point at it.
 
 A **database** is a directory under `d1/` holding `schema.sql` and a `d1.json`
 naming it. The schema job iterates the directory, so that is the whole change.
@@ -7919,10 +7885,30 @@ folder can read as English while what is sent to Cloudflare stays literal.
 ```bash
 cd apps/cloudflare/workers/catalogue
 pnpm exec wrangler deploy                              # production, 100% traffic
-pnpm exec wrangler versions upload --preview-alias me  # 0%, at me-<worker>.workers.dev
+pnpm exec wrangler versions upload --preview-alias me  # 0%, at me-ricecal-catalogue.<subdomain>.workers.dev
 pnpm exec wrangler d1 execute ricecal-d1-food-catalogue --remote \
   --file ../../d1/food-catalogue/schema.sql
 ```
+
+To point the app at an uploaded version, its URL has to be in place when the
+bundle is exported: Babel inlines `EXPO_PUBLIC_CATALOGUE_URL` into the bundle at
+that moment, so the device and the native build have no say. For a hand-run
+`eas update`, **do not export the URL and pass `--environment`**: EAS downloads
+that environment and assigns it over the process, so the bundle quietly talks
+to production and nothing errors. Pull the environment to a file, edit it, and
+publish without `--environment`:
+
+```bash
+cd apps/mobile
+eas env:pull development                        # writes .env.local
+# in .env.local: EXPO_PUBLIC_CATALOGUE_URL=<the version's URL>,
+# EXPO_PUBLIC_ANALYTICS_ENABLED=false, EXPO_PUBLIC_GA4_ENABLED=false
+eas update --branch me --message "catalogue test"
+```
+
+An update export gets none of the build-profile variables in `eas.json`, so the
+two analytics flags have to be set in that file by hand, or the update sends
+test traffic to PostHog and GA4 as production.
 
 ---
 
@@ -8868,9 +8854,9 @@ so turning it on needs keep rules and a tested release build on a device, not a
 config flip in an SDK upgrade.
 
 **`platforms` in app.json keeps web out.** SDK 58's router needs `react-dom`,
-and Expo reads an installed `react-dom` as "this app has a web build". The PR
-preview's `eas update` exports every platform, so it then failed on a missing
-`react-native-web`. `"platforms": ["ios", "android"]` says what the app is.
+and Expo reads an installed `react-dom` as "this app has a web build". An
+`eas update` exports every platform the app declares, so it then failed on a
+missing `react-native-web`. `"platforms": ["ios", "android"]` says what the app is.
 
 **A purchase cannot be tested with the real store, and the flow that could not be
 run is the one that was broken.** Apple's sandbox wants a sandbox Apple ID on a

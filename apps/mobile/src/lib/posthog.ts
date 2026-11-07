@@ -29,9 +29,9 @@ import {
 
 /**
  * `development`, `preview`, `simulator` or `production`. Any release build with
- * product analytics switched off is internal (the `preview` profile, and every
- * per-PR EAS update, which is exported without `APP_VARIANT`), so it reports as
- * `preview` and the test-account filter keeps its crashes out of production.
+ * product analytics switched off is internal (the `preview` profile), so it
+ * reports as `preview` and the test-account filter keeps its crashes out of
+ * production.
  */
 export function appVariant(): string {
   if (__DEV__) return 'development'
