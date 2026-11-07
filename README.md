@@ -3736,7 +3736,13 @@ between 22:00 and 07:00 in the member's own `profiles.timezone` (the defaults of
 more than an hour old. The push is built by the groups function's own
 `messagePush`, so it is a chat message's push from that group and every app
 version opens the chat on a tap. A run where Expo refused every push is a
-failure, so an outage or a missing `EXPO_ACCESS_TOKEN` shows. The groups
+failure, so an outage or a missing `EXPO_ACCESS_TOKEN` shows. Every refusal is
+also logged with Expo's reason, by the jobs and by the groups function, and
+counted by reason in the hour's `job_runs.detail` (`refused_InvalidCredentials`,
+`refused_DeviceNotRegistered`, ...), because a refusal of one platform alone
+never fails a mixed run. Android pushes need the project's FCM V1 service
+account key in EAS credentials; without it Expo answers every Android push
+`InvalidCredentials` while iOS goes through. The groups
 function still answers kind `updates`, which the 1.1.5 build sends after
 logging, and does nothing with it.
 

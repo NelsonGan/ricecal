@@ -147,8 +147,22 @@ async function post(
   if (!response.ok) throw new Error(`expo push ${response.status}`)
   const tickets = ((await response.json())?.data ?? []) as {
     status: string
+    message?: string
     details?: { error?: string }
   }[]
+  // Expo's reason, which a count of what went out cannot give: every Android
+  // push was refused for a week as InvalidCredentials, with no FCM key set.
+  const refused: Record<string, { count: number; message: string }> = {}
+  targets.forEach((_, index) => {
+    const ticket = tickets[index]
+    if (ticket?.status === 'ok') return
+    const why = String(ticket?.details?.error ?? 'Other').slice(0, 40)
+    refused[why] ??= { count: 0, message: String(ticket?.message ?? '').slice(0, 200) }
+    refused[why].count += 1
+  })
+  if (Object.keys(refused).length > 0) {
+    console.warn('[groups] pushes refused', JSON.stringify({ kind, size: targets.length, refused }))
+  }
   // A phone that uninstalled the app answers DeviceNotRegistered for ever.
   const gone = targets
     .filter((_, index) => tickets[index]?.details?.error === 'DeviceNotRegistered')

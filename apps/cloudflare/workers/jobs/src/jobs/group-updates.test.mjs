@@ -21,7 +21,8 @@ const env = { SUPABASE_URL: 'https://example.test', SUPABASE_SERVICE_ROLE_KEY: '
 
 /**
  * PostgREST and Expo in one stub. `digests` answers each call in turn; Expo
- * answers DeviceNotRegistered for a token ending `[dead]`, or `expoStatus`.
+ * answers DeviceNotRegistered for a token ending `[dead]`, InvalidCredentials
+ * for one ending `[android]` (no FCM key on the project), or `expoStatus`.
  */
 function stub({ digests = [], expoStatus = 200 } = {}) {
   const rpcs = []
@@ -45,7 +46,13 @@ function stub({ digests = [], expoStatus = 200 } = {}) {
         data: body.map((m) =>
           m.to.endsWith('[dead]')
             ? { status: 'error', details: { error: 'DeviceNotRegistered' } }
-            : { status: 'ok' },
+            : m.to.endsWith('[android]')
+              ? {
+                  status: 'error',
+                  message: 'Unable to retrieve the FCM server key',
+                  details: { error: 'InvalidCredentials' },
+                }
+              : { status: 'ok' },
         ),
       }),
     )
@@ -105,7 +112,13 @@ test('posts each page and forgets dead devices, stopping at a short page', async
     assert.deepEqual(s.rpcs[0][1], { p_limit: 90 })
     assert.deepEqual(s.rpcs[2][1], { p_tokens: ['ExponentPushToken[dead]'] })
     assert.equal(s.posted.length, 2)
-    assert.deepEqual(detail, { people: 91, devices: 91, sent: 90, failed: 1 })
+    assert.deepEqual(detail, {
+      people: 91,
+      devices: 91,
+      sent: 90,
+      failed: 1,
+      refused_DeviceNotRegistered: 1,
+    })
   } finally {
     s.restore()
   }
@@ -124,6 +137,57 @@ test('every push refused is a failure, with Expo’s reason in the log', async (
     assert.deepEqual(recorded.p_detail, { runs: 1 })
   } finally {
     console.error = realError
+    s.restore()
+  }
+})
+
+test('says why Expo refused, in the error and in the hour it records', async () => {
+  const s = stub({ digests: [[target({ token: 'ExponentPushToken[android]' })]] })
+  const realWarn = console.warn
+  console.warn = () => {}
+  try {
+    await assert.rejects(
+      runJob(groupUpdates, new Date(), env),
+      /refused all 1 update pushes \(InvalidCredentials 1\)/,
+    )
+  } finally {
+    console.warn = realWarn
+    s.restore()
+  }
+})
+
+test('counts each refusal by reason when some pushes go through', async () => {
+  const s = stub({
+    digests: [
+      [
+        target(),
+        target({
+          user_id: '33333333-3333-4333-8333-333333333333',
+          token: 'ExponentPushToken[android]',
+        }),
+        target({
+          user_id: '44444444-4444-4444-8444-444444444444',
+          token: 'ExponentPushToken[dead]',
+        }),
+      ],
+    ],
+  })
+  const warnings = []
+  const realWarn = console.warn
+  console.warn = (...args) => warnings.push(args)
+  try {
+    await runJob(groupUpdates, new Date(), env)
+    const recorded = s.rpcs.find(([name]) => name === 'record_job_run')[1]
+    assert.equal(recorded.p_ok, true)
+    assert.equal(recorded.p_detail.sent, 1)
+    assert.equal(recorded.p_detail.failed, 2)
+    assert.equal(recorded.p_detail.refused_InvalidCredentials, 1)
+    assert.equal(recorded.p_detail.refused_DeviceNotRegistered, 1)
+    // record_job_run sums every value as a number, so the detail stays flat.
+    for (const value of Object.values(recorded.p_detail)) assert.equal(typeof value, 'number')
+    assert.match(JSON.stringify(warnings), /InvalidCredentials/)
+  } finally {
+    console.warn = realWarn
     s.restore()
   }
 })
