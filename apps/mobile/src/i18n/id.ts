@@ -964,6 +964,7 @@ export const id = {
       span30d: '30 hari terakhir',
       span1y: '12 bulan terakhir',
       week: 'Mg {{index}}',
+      between: '{{from}} sampai {{to}}',
     },
     calories: {
       unit: 'kcal per hari',

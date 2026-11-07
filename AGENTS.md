@@ -351,26 +351,27 @@ first.
 
 ## Driving the iOS app
 
-**Show the device in Expo Device Hub while testing.** `expo-device-hub` is a
-dev dependency, so every `npx expo start` serves a live, interactive view of the
-running simulators and emulators at
-<http://127.0.0.1:8082/_expo/plugins/expo-device-hub> (the address Metro prints
-is the LAN one). Open it in the browser pane, select the device you are testing,
-and leave it on the tested screen so the user can follow along and inspect the
-result. The Hub only starts listing devices once a page is open, and a page
-opened right after Metro starts can stay on "Connecting to the Expo dev
-server": reload it. Use these devices and no others, one at a time (see "One
-simulator at a time"):
+**Drive the device with the T3 Code device tools, and show it in T3 Code's
+Device panel while testing.** `device_list` gives a device's `hostId` and `id`;
+`device_open` boots it, shows it in the panel and returns an `agent-device`
+command pinned to it. Use that command for every app launch, deep link, tap,
+text entry, alert, screenshot and recording (`agent-device help` lists the
+commands, `agent-device help foldable` covers the iPhone Duo),
+`device_screenshot` to look at the screen, and `device_close` when you are done.
+Leave the device on the tested screen so the user can follow along and inspect
+the result. Do not drive a device with `xcrun simctl`, `adb` or scripts that
+wrap them; those stay fine for builds, installs, `simctl addmedia`, port
+forwards (`adb reverse`), logs and what `agent-device` cannot do. Use these
+devices and no others, one at a time (see "One simulator at a time"):
 
-| Platform | Device                                                                     | Boot with Argent             |
-| -------- | -------------------------------------------------------------------------- | ---------------------------- |
-| iOS      | RiceCal iPhone 18 Pro simulator, `EF3C5D3C-1A3A-4AE0-886A-A033551C78ED`    | `boot-device` with `udid`    |
-| Android  | `RiceCal_Pixel_10` emulator (Pixel 10, Android 16)                         | `boot-device` with `avdName` |
+| Platform | Device                                                                  | `device_open` id                       |
+| -------- | ----------------------------------------------------------------------- | -------------------------------------- |
+| iOS      | RiceCal iPhone 18 Pro simulator, `EF3C5D3C-1A3A-4AE0-886A-A033551C78ED` | `EF3C5D3C-1A3A-4AE0-886A-A033551C78ED` |
+| Android  | `RiceCal_Pixel_10` emulator (Pixel 10, Android 16)                      | `RiceCal_Pixel_10`                     |
 
-The Hub and `expo run:android` need the Android SDK and a JDK: start Metro with
-`ANDROID_HOME` and `JAVA_HOME` (JDK 17) set, or the Hub shows only iOS
-simulators. It streams over WebSocket; pnpm skips `node-datachannel`'s build
-script, which only adds an optional WebRTC mode.
+The emulator, T3 Code's Android device list and `expo run:android` need the
+Android SDK and a JDK: run them with `ANDROID_HOME` and `JAVA_HOME` (JDK 17)
+set, or only iOS simulators are listed.
 
 **An edit under `widgets/ios/` needs a prebuild, or a copy.** `withWidgets.js`
 copies those files into `ios/RiceCalWidgets/` at prebuild time, so
@@ -408,11 +409,11 @@ Metro reload picks up an edit without reinstalling.
   `ricecal:///settings/subscription`, `ricecal:///log?panel=camera`. Much faster
   than tapping, and it reaches screens the UI only offers after a refusal. A
   deep link is restored as the route after a Metro reload, and some screens
-  crash when they mount before the session has loaded; `restart-app` clears it.
+  crash when they mount before the session has loaded; relaunching the app clears it.
 - **After a reinstall, the first `ricecal://` link raises an "Open in
   RiceCal?" alert that screenshots do not show.** The screen just dims, ignores
   every tap and even the Home button, and looks like a hung app. Each
-  `simctl openurl` queues another. Tap where Open sits, about (256, 476) in
+  link you open queues another. Tap where Open sits, about (256, 476) in
   points on an iPhone 18 Pro, once per queued link.
 - **A Metro answering on 8081 is not necessarily this project's.** Another
   project on the machine takes it first and answers `packager-status:running`
@@ -431,10 +432,10 @@ Metro reload picks up an edit without reinstalling.
 - **The dev-menu bubble eats taps in the top right** — roughly x 0.84-0.95,
   y 0.10-0.22, a region much larger than the visible circle, over every `AppBar`
   action and the plate sheet's first "+". Hiding the tools button leaves the
-  region live. Drag the bubble away instead: a `touch_path` that holds on it for
+  region live. Drag the bubble away instead: a gesture that holds on it for
   300 ms, then moves to the bottom left, parks it there and frees the top right.
-- Typing on the simulator drops characters: pass `delayMs: 160` to the keyboard
-  tool.
+- Typing on the simulator drops characters: pass `--delay-ms 160` to
+  `agent-device type`.
 - Photos for the library: `xcrun simctl addmedia <udid> <file>`. There is no
   camera, but the library button in `InlineCamera` is there.
 
