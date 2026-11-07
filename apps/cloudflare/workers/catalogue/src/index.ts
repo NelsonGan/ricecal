@@ -273,9 +273,10 @@ async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
     ].filter((s): s is D1PreparedStatement => s !== null)
 
   // A batch fails as a whole, so a database without `food_trgm_vocab` would
-  // fail every search. That database exists: a PR's preview Worker reads the
-  // production catalogue before merge has applied schema.sql, and so would a
-  // hotfix deployed ahead of it. Searching the old, dearer way beats a 500.
+  // fail every search. That database exists: a version uploaded by hand from a
+  // branch reads the production catalogue before merge has applied schema.sql,
+  // and so would a hotfix deployed ahead of it. Searching the old, dearer way
+  // beats a 500.
   let results: D1Result[]
   try {
     results = await env.DB.batch(statements(true))
