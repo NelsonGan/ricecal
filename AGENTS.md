@@ -376,7 +376,7 @@ scripts that wrap them; those stay fine for builds, installs, port forwards
 | Android  | `simlock:android:Pixel 10`  | Android testing (Android 16)              |
 
 **A leased device already has the RiceCal dev client**, built from
-`origin/main` (the normal `com.nelsongan.ricecal` app, never RiceCal Dev),
+`origin/main` (the normal `com.nelsongan.ricecal` app),
 signed out and with no data (T3 Code's own note that a pool device starts with
 no apps is generic; `agent-device apps` lists them). It is ready to test: the
 Expo dev menu's intro and floating Tools button are off, camera and photo
@@ -428,12 +428,7 @@ The leased device already has a dev client, so verifying a UI change does not
 need `pnpm ios` (a prebuild plus a full compile). It runs whatever is in the
 working tree, and a Metro reload picks up an edit without reinstalling.
 
-- **The scheme is `ricecal://`, not `ricecal-dev://`.** `app.config.ts` says
-  `ricecal-dev` for the dev variant and the installed Debug build registers
-  `ricecal`; trusting the config gets you
-  `LSApplicationWorkspaceErrorDomain error 115`. Read the binary:
-  `PlistBuddy -c "Print CFBundleURLTypes" <app>/Info.plist`.
-- Then any screen is one call: `ricecal:///paywall`, `ricecal:///reviews`,
+- **The scheme is `ricecal://`.** Any screen is one call: `ricecal:///paywall`, `ricecal:///reviews`,
   `ricecal:///settings/subscription`, `ricecal:///log?panel=camera`. Much faster
   than tapping, and it reaches screens the UI only offers after a refusal. A
   deep link is restored as the route after a Metro reload, and some screens

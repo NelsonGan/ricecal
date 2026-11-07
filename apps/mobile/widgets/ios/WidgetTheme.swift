@@ -201,10 +201,8 @@ struct WidgetIcon: View {
  */
 enum WidgetLink {
   static func open(_ kind: RiceCalWidgetKind, target: String) -> URL {
-    // `ricecal://` is the store build's scheme; a dev client registers
-    // `ricecal-dev://`. The plugin writes whichever one this build resolved
-    // into the extension's Info.plist, because two apps claiming one scheme is
-    // undefined behaviour and a widget tap would open the other build.
+    // The plugin writes the scheme this build resolved (`ricecal://`) into the
+    // extension's Info.plist, so it lives in one place, the app config.
     let scheme =
       (Bundle.main.object(forInfoDictionaryKey: "RiceCalScheme") as? String) ?? "ricecal"
     var components = URLComponents()

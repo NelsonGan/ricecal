@@ -53,15 +53,13 @@ beforeEach(() => {
 })
 
 /**
- * The redirect has to name the build that asked for it. Both apps can be
- * installed at once, so a link back to `ricecal://` from the development build
- * opens the store build — signed in as nobody, on the wrong data.
+ * The redirect names the scheme this build registered, read off its config.
  */
 it('sends the login link back to the scheme this build registered', () => {
   expect(loginLinkRedirect()).toBe('ricecal://auth/callback')
 
-  expoConfig.scheme = 'ricecal-dev'
-  expect(loginLinkRedirect()).toBe('ricecal-dev://auth/callback')
+  expoConfig.scheme = 'ricecal-test'
+  expect(loginLinkRedirect()).toBe('ricecal-test://auth/callback')
 })
 
 it('falls back to the release scheme when there is no manifest to read', () => {
@@ -191,6 +189,6 @@ it('knows a password reset from a sign-in, by its path', async () => {
 it('sends a reset back to a path of its own', () => {
   expect(passwordResetRedirect()).toBe('ricecal://auth/reset')
 
-  expoConfig.scheme = 'ricecal-dev'
-  expect(passwordResetRedirect()).toBe('ricecal-dev://auth/reset')
+  expoConfig.scheme = 'ricecal-test'
+  expect(passwordResetRedirect()).toBe('ricecal-test://auth/reset')
 })

@@ -30,17 +30,16 @@ import { projectRef } from './lib/sql.mjs'
 const SITE_URL = 'ricecal://auth/callback'
 
 /**
- * Every scheme a build of this app can register, and why there are three.
+ * Every scheme a build of this app can register, and why there are two.
  *
- * `ricecal` is the store build. `ricecal-dev` is the EAS development build,
- * which is a SEPARATE APP with its own identifiers so it can sit beside the
- * TestFlight one. `exp+ricecal` is what Expo Go and the dev launcher use.
+ * `ricecal` is the store build. `exp+ricecal` is what Expo Go and the dev
+ * launcher use.
  *
  * Missing entries do not fail loudly. Supabase drops an unlisted
  * `emailRedirectTo` and substitutes `site_url`, so the mail still arrives, the
  * link still works, and it opens the WRONG APP, or none.
  */
-const REDIRECT_URLS = ['ricecal://**', 'ricecal-dev://**', 'exp+ricecal://**']
+const REDIRECT_URLS = ['ricecal://**', 'exp+ricecal://**']
 
 const SETTINGS = {
   site_url: SITE_URL,
