@@ -109,18 +109,22 @@ Useful commands:
 T3 Code's Device panel streams the simulator or emulator being tested, and its
 device tools (`device_list`, `device_open`, `device_screenshot`, `device_close`,
 plus the `agent-device` CLI that `device_open` returns) boot and drive it.
-Nothing in the repo needs installing for it. Test on the "RiceCal iPhone 18 Pro"
-simulator and the `RiceCal_Pixel_10` emulator (Pixel 10, Android 16). The
-emulator and `pnpm android` need `ANDROID_HOME` (the Android SDK, e.g.
-`~/Library/Android/sdk`) and `JAVA_HOME` (JDK 17) set, in the shell and in the
-environment T3 Code runs in; without them only iOS simulators are listed.
+Nothing in the repo needs installing for it. The devices come from the
+[Simlock](https://incubator.callstack.com/simlock/) pool on the development Mac,
+which T3 Code leases from: each worktree gets its own fresh iPhone 18 Pro
+(iOS 27.0), iPhone Duo (iOS 27.1) or Pixel 10 (Android 16), with the RiceCal dev
+client from `origin/main` already installed, and the pool deletes it when the
+lease ends. A native change is built and installed on a leased device with
+`simlock-build` (a script on the development Mac), not `pnpm ios`, which looks
+for simulators outside the pool. `pnpm android` and Gradle need `ANDROID_HOME`
+(the Android SDK, e.g. `~/Library/Android/sdk`) and `JAVA_HOME` (JDK 17) set.
 
-Run one simulator at a time. This machine does not have room for the iOS
-simulator and the Android emulator together, and the result is not just
-slowness: a Gradle build running beside a test run pushed 18 tests past their
-timeout with nothing actually broken. Shut one down before booting the other,
-and stop the build daemons afterwards (`./gradlew --stop`, then
-`pkill -f GradleDaemon`, `pkill -f kotlin-daemon`).
+The pool runs two devices at once and at most one Android emulator. Memory is
+the limit, and running out shows as wrong answers rather than slowness: a Gradle
+build running beside a test run pushed 18 tests past their timeout with nothing
+actually broken. Close devices you are done with, and stop the build daemons
+afterwards (`./gradlew --stop`, then `pkill -f GradleDaemon`,
+`pkill -f kotlin-daemon`).
 
 ---
 
