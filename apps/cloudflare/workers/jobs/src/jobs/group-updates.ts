@@ -12,7 +12,7 @@
  * Recorded by the hour (`record: 'hourly'`), not a row a minute.
  */
 import { addRefused, describeRefused, refusedDetail, sendPushes } from '../expo.ts'
-import type { Job } from '../job.ts'
+import { type Job, JobFailure } from '../job.ts'
 import { type UpdateTarget, updatePush } from './group-updates-copy.ts'
 
 /** People per call. A person has at most ten devices, so a page stays under 1,000 rows. */
@@ -50,9 +50,13 @@ export const groupUpdates: Job = {
     // shows in Cron Events and as a failed hour in `job_runs`, not as a quiet
     // count in a successful one. The reasons go with it either way, since a
     // refusal of one platform's pushes alone never fails a mixed run.
+    const detail = { people, devices, sent, failed, ...refusedDetail(refused) }
     if (failed > 0 && sent === 0) {
-      throw new Error(`expo refused all ${failed} update pushes (${describeRefused(refused)})`)
+      throw new JobFailure(
+        `expo refused all ${failed} update pushes (${describeRefused(refused)})`,
+        detail,
+      )
     }
-    return { people, devices, sent, failed, ...refusedDetail(refused) }
+    return detail
   },
 }

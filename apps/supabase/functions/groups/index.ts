@@ -152,21 +152,36 @@ async function post(
   }[]
   // Expo's reason, which a count of what went out cannot give: every Android
   // push was refused for a week as InvalidCredentials, with no FCM key set.
-  const refused: Record<string, { count: number; message: string }> = {}
-  targets.forEach((_, index) => {
+  // Classified as the jobs Worker's `expo.ts` does, with tokens taken out of
+  // Expo's words, since its DeviceNotRegistered message quotes the token.
+  const refused = new Map<string, { count: number; message: string }>()
+  const gone: string[] = []
+  targets.forEach((target, index) => {
     const ticket = tickets[index]
     if (ticket?.status === 'ok') return
-    const why = String(ticket?.details?.error ?? 'Other').slice(0, 40)
-    refused[why] ??= { count: 0, message: String(ticket?.message ?? '').slice(0, 200) }
-    refused[why].count += 1
+    const code = ticket?.details?.error
+    const why = !ticket
+      ? 'NoTicket'
+      : typeof code === 'string' && /^[A-Za-z]{1,40}$/.test(code)
+        ? code
+        : 'Other'
+    const entry = refused.get(why) ?? {
+      count: 0,
+      message: String(ticket?.message ?? '')
+        .replace(/ExponentPushToken\[[^\]]*\]/g, 'ExponentPushToken[redacted]')
+        .slice(0, 200),
+    }
+    entry.count += 1
+    refused.set(why, entry)
+    // A phone that uninstalled the app answers DeviceNotRegistered for ever.
+    if (why === 'DeviceNotRegistered') gone.push(target.token)
   })
-  if (Object.keys(refused).length > 0) {
-    console.warn('[groups] pushes refused', JSON.stringify({ kind, size: targets.length, refused }))
+  if (refused.size > 0) {
+    console.warn(
+      '[groups] pushes refused',
+      JSON.stringify({ kind, size: targets.length, refused: Object.fromEntries(refused) }),
+    )
   }
-  // A phone that uninstalled the app answers DeviceNotRegistered for ever.
-  const gone = targets
-    .filter((_, index) => tickets[index]?.details?.error === 'DeviceNotRegistered')
-    .map((target) => target.token)
   if (gone.length > 0) await service.rpc('forget_push_tokens', { p_tokens: gone })
   return tickets.filter((ticket) => ticket.status === 'ok').length
 }

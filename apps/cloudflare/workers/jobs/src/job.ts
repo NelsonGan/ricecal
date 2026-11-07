@@ -88,6 +88,19 @@ export type Job = {
   run(ctx: JobContext): Promise<JobDetail>
 }
 
+/**
+ * A failure that still has something to say. An hourly job's failed run is
+ * recorded with this detail beside its `runs`, so what it counted before it
+ * gave up (the reasons Expo refused every push, say) is not lost with it.
+ */
+export class JobFailure extends Error {
+  readonly detail: Record<string, number>
+  constructor(message: string, detail: Record<string, number>) {
+    super(message)
+    this.detail = detail
+  }
+}
+
 /** Cloudflare's wall-clock ceiling for a cron-triggered Worker. */
 const DEFAULT_LEASE_SECONDS = 900
 
@@ -156,7 +169,7 @@ async function runHourly(
     await rpc('record_job_run', {
       p_job: job.name,
       p_ok: false,
-      p_detail: { runs: 1 },
+      p_detail: { runs: 1, ...(error instanceof JobFailure ? error.detail : {}) },
       p_error: message,
     }).catch((recordError: unknown) =>
       console.error(`[${job.name}] could not record the failure:`, recordError),

@@ -45,7 +45,11 @@ function stub({ digests = [], expoStatus = 200 } = {}) {
       JSON.stringify({
         data: body.map((m) =>
           m.to.endsWith('[dead]')
-            ? { status: 'error', details: { error: 'DeviceNotRegistered' } }
+            ? {
+                status: 'error',
+                message: `"${m.to}" is not a registered push notification recipient`,
+                details: { error: 'DeviceNotRegistered' },
+              }
             : m.to.endsWith('[android]')
               ? {
                   status: 'error',
@@ -134,7 +138,8 @@ test('every push refused is a failure, with Expo’s reason in the log', async (
     assert.match(JSON.stringify(errors[0]), /401.*UNAUTHORIZED/)
     const recorded = s.rpcs.find(([name]) => name === 'record_job_run')[1]
     assert.equal(recorded.p_ok, false)
-    assert.deepEqual(recorded.p_detail, { runs: 1 })
+    assert.equal(recorded.p_detail.runs, 1)
+    assert.equal(recorded.p_detail.refused_Unanswered, 1)
   } finally {
     console.error = realError
     s.restore()
@@ -150,6 +155,10 @@ test('says why Expo refused, in the error and in the hour it records', async () 
       runJob(groupUpdates, new Date(), env),
       /refused all 1 update pushes \(InvalidCredentials 1\)/,
     )
+    const recorded = s.rpcs.find(([name]) => name === 'record_job_run')[1]
+    assert.equal(recorded.p_ok, false)
+    assert.equal(recorded.p_detail.runs, 1)
+    assert.equal(recorded.p_detail.refused_InvalidCredentials, 1)
   } finally {
     console.warn = realWarn
     s.restore()
@@ -186,6 +195,9 @@ test('counts each refusal by reason when some pushes go through', async () => {
     // record_job_run sums every value as a number, so the detail stays flat.
     for (const value of Object.values(recorded.p_detail)) assert.equal(typeof value, 'number')
     assert.match(JSON.stringify(warnings), /InvalidCredentials/)
+    // Expo quotes the dead token, and a token is enough to push to a phone.
+    assert.doesNotMatch(JSON.stringify(warnings), /ExponentPushToken\[dead\]/)
+    assert.match(JSON.stringify(warnings), /ExponentPushToken\[redacted\]/)
   } finally {
     console.warn = realWarn
     s.restore()
@@ -222,3 +234,33 @@ function rpcOf() {
     return body ? JSON.parse(body) : null
   }
 }
+
+test('keeps Expo’s request-level errors when it answers with no tickets', async () => {
+  const real = globalThis.fetch
+  const rpcs = []
+  let digests = [[target()]]
+  globalThis.fetch = async (url, init) => {
+    const href = String(url)
+    if (href.includes('/rest/v1/rpc/')) {
+      const name = href.split('/rpc/')[1]
+      rpcs.push([name, JSON.parse(init.body)])
+      if (name === 'group_update_digests')
+        return new Response(JSON.stringify(digests.shift() ?? []))
+      return new Response('')
+    }
+    return new Response(
+      JSON.stringify({ errors: [{ code: 'PUSH_TOO_MANY_EXPERIENCE_IDS', message: 'mixed' }] }),
+    )
+  }
+  const warnings = []
+  const realWarn = console.warn
+  console.warn = (...args) => warnings.push(args)
+  try {
+    await assert.rejects(runJob(groupUpdates, new Date(), env), /\(NoTicket 1\)/)
+    assert.match(JSON.stringify(warnings), /PUSH_TOO_MANY_EXPERIENCE_IDS/)
+  } finally {
+    console.warn = realWarn
+    globalThis.fetch = real
+    digests = []
+  }
+})

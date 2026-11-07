@@ -35,7 +35,9 @@ export type PushResult = {
   gone: string[]
   /**
    * Failed pushes by Expo's reason (`InvalidCredentials`, `DeviceNotRegistered`,
-   * ...), `Unposted` for a chunk Expo never took. Without it a refusal is only
+   * ...), `NoTicket` for one Expo's answer left out, and `Unanswered` for a
+   * chunk with no usable answer at all (refused, timed out or unreadable, so
+   * some may still have been delivered). Without it a refusal is only
    * a count: every Android push was refused for a week as "failed" while the
    * project had no FCM key.
    */
@@ -44,8 +46,19 @@ export type PushResult = {
 
 /** Expo's ticket error codes are short words; anything else is filed as one. */
 function reason(ticket: Ticket | undefined): string {
-  const code = ticket?.details?.error
+  if (!ticket) return 'NoTicket'
+  const code = ticket.details?.error
   return typeof code === 'string' && /^[A-Za-z]{1,40}$/.test(code) ? code : 'Other'
+}
+
+/**
+ * Expo's words with any push token taken out: its DeviceNotRegistered message
+ * quotes the token, and a token is all it takes to push to that phone.
+ */
+export function redact(text: unknown): string {
+  return String(text ?? '')
+    .replace(/ExponentPushToken\[[^\]]*\]/g, 'ExponentPushToken[redacted]')
+    .slice(0, 200)
 }
 
 /** Adds one call's refusals into a run's running total. */
@@ -90,8 +103,12 @@ export async function sendPushes(env: Env, messages: PushMessage[]): Promise<Pus
       if (!response.ok) {
         throw new Error(`expo push ${response.status}: ${(await response.text()).slice(0, 300)}`)
       }
-      const tickets = ((await response.json()) as { data?: Ticket[] })?.data ?? []
-      const messages: Record<string, string> = {}
+      const answer = (await response.json()) as { data?: Ticket[]; errors?: unknown }
+      const tickets = Array.isArray(answer?.data) ? answer.data : []
+      // Expo's words, once per reason: they name the missing credential.
+      const said: Record<string, string> = {}
+      // A request-level refusal comes as `errors` with no tickets at all.
+      if (answer?.errors) said.NoTicket = redact(JSON.stringify(answer.errors))
       chunk.forEach((message, index) => {
         const ticket = tickets[index]
         if (ticket?.status === 'ok') {
@@ -100,19 +117,18 @@ export async function sendPushes(env: Env, messages: PushMessage[]): Promise<Pus
         }
         const why = reason(ticket)
         refuse(why)
-        // Expo's own words, once per reason: they name the missing credential.
-        if (!(why in messages)) messages[why] = String(ticket?.message ?? '').slice(0, 200)
+        if (!(why in said)) said[why] = redact(ticket?.message)
         // A phone that uninstalled the app answers this for ever.
         if (why === 'DeviceNotRegistered') result.gone.push(message.to)
       })
-      if (Object.keys(messages).length > 0) {
-        console.warn('[expo] pushes refused', JSON.stringify({ size: chunk.length, messages }))
+      if (Object.keys(said).length > 0) {
+        console.warn('[expo] pushes refused', JSON.stringify({ size: chunk.length, said }))
       }
     } catch (error) {
-      refuse('Unposted', chunk.length)
+      refuse('Unanswered', chunk.length)
       console.error('[expo] could not post a chunk of pushes', {
         size: chunk.length,
-        error: error instanceof Error ? error.message : String(error),
+        error: redact(error instanceof Error ? error.message : error),
       })
     }
   }
