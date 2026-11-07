@@ -6728,7 +6728,9 @@ collection settings across launches, so JavaScript writes both the disabled and
 enabled states at startup. Collection is disabled before clearing the user ID
 and native revenue marker, then enabled for production. If cleanup fails,
 collection stays disabled and the failure is reported to error tracking.
-Production omits the flag and enables collection.
+Production omits the flag and enables collection. A hand-run `eas update` gets
+none of the build-profile variables, so it has to set both flags itself (see
+[By hand](#by-hand)).
 
 The Firebase project is the existing `ricecal` Google Cloud project. It is linked
 to GA4 property **RiceCal** (`553863111`) in Analytics account
@@ -7817,7 +7819,7 @@ schema first, then `wrangler deploy`. Every statement in a `schema.sql` is
 `if not exists`, so re-applying it is a no-op.
 
 **A pull request deploys nothing to Cloudflare.** It gets `cloudflare.yml`'s
-typecheck and `deploy.yml`'s Test job (`pnpm check`), and no Worker version is
+typecheck and dry-run bundle and `deploy.yml`'s Test job, and no Worker version is
 uploaded for it. To try a Worker change against the real catalogue before
 merge, upload a version by hand (see [By hand](#by-hand)).
 
@@ -7853,9 +7855,9 @@ Worker's JSON, that record being unproxied is the first thing to check.
 **`preview_urls` has to stay, and has to stay explicit**, because it defaults to
 whatever `workers_dev` is. Turning one off silently takes the other with it, and
 preview URLs are where `versions upload --preview-alias` serves a version (the
-`me-<worker>.workers.dev` address under [By hand](#by-hand)). Wrangler mentions
-that default only in a warning printed *after* the upload has landed, which is
-how both halves were learnt.
+`me-ricecal-catalogue.<subdomain>.workers.dev` address under
+[By hand](#by-hand)). Wrangler mentions that default only in a warning printed
+*after* the upload has landed, which is how both halves were learnt.
 
 **The token needs Workers Routes edit on the zone, and the failure names
 neither.** A route is applied at deploy time like any other trigger, so an
@@ -7883,10 +7885,30 @@ folder can read as English while what is sent to Cloudflare stays literal.
 ```bash
 cd apps/cloudflare/workers/catalogue
 pnpm exec wrangler deploy                              # production, 100% traffic
-pnpm exec wrangler versions upload --preview-alias me  # 0%, at me-<worker>.workers.dev
+pnpm exec wrangler versions upload --preview-alias me  # 0%, at me-ricecal-catalogue.<subdomain>.workers.dev
 pnpm exec wrangler d1 execute ricecal-d1-food-catalogue --remote \
   --file ../../d1/food-catalogue/schema.sql
 ```
+
+To point the app at an uploaded version, its URL has to be in place when the
+bundle is exported: Babel inlines `EXPO_PUBLIC_CATALOGUE_URL` into the bundle at
+that moment, so the device and the native build have no say. For a hand-run
+`eas update`, **do not export the URL and pass `--environment`**: EAS downloads
+that environment and assigns it over the process, so the bundle quietly talks
+to production and nothing errors. Pull the environment to a file, edit it, and
+publish without `--environment`:
+
+```bash
+cd apps/mobile
+eas env:pull development                        # writes .env.local
+# in .env.local: EXPO_PUBLIC_CATALOGUE_URL=<the version's URL>,
+# EXPO_PUBLIC_ANALYTICS_ENABLED=false, EXPO_PUBLIC_GA4_ENABLED=false
+eas update --branch me --message "catalogue test"
+```
+
+An update export gets none of the build-profile variables in `eas.json`, so the
+two analytics flags have to be set in that file by hand, or the update sends
+test traffic to PostHog and GA4 as production.
 
 ---
 
