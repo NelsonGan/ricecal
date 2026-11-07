@@ -88,8 +88,10 @@ conventional-commits prefix.
 
 These are the ones an agent hits first. The README has the rest.
 
-**One simulator at a time.** This machine cannot run the iOS simulator and the
-Android emulator together, and the failure mode is wrong answers rather than
+**Devices come from a small pool.** Every simulator and emulator is leased
+from the Simlock pool on this machine (see "Driving the iOS app"), which runs two
+devices at once and at most one Android emulator, so close yours when you are
+done. Memory is the limit, and the failure mode is wrong answers rather than
 slowness: a Gradle build beside a jest run pushed 18 tests past their timeout
 with nothing broken. Stop the daemons afterwards (`./gradlew --stop`, then
 `pkill -f GradleDaemon`, `pkill -f kotlin-daemon`).
@@ -352,26 +354,48 @@ first.
 ## Driving the iOS app
 
 **Drive the device with the T3 Code device tools, and show it in T3 Code's
-Device panel while testing.** `device_list` gives a device's `hostId` and `id`;
-`device_open` boots it, shows it in the panel and returns an `agent-device`
-command pinned to it. Use that command for every app launch, deep link, tap,
-text entry, alert, screenshot and recording (`agent-device help` lists the
-commands, `agent-device help foldable` covers the iPhone Duo),
-`device_screenshot` to look at the screen, and `device_close` when you are done.
-Leave the device on the tested screen so the user can follow along and inspect
-the result. Do not drive a device with `xcrun simctl`, `adb` or scripts that
-wrap them; those stay fine for builds, installs, `simctl addmedia`, port
-forwards (`adb reverse`), logs and what `agent-device` cannot do. Use these
-devices and no others, one at a time (see "One simulator at a time"):
+Device panel while testing.** Devices come from the Simlock pool on this
+machine, which T3 Code leases from: each worktree gets its own fresh device, and
+the pool deletes it when you close it. Never create, clone, erase or boot a
+simulator or emulator yourself. `device_list` lists the pool's models (host
+`simlock-mac-mini`); `device_open` leases one (it waits while the pool is full),
+shows it in the panel and returns an `agent-device` command pinned to it. Use
+that command for every app launch, deep link, tap, text entry, alert,
+screenshot and recording (`agent-device help` lists the commands,
+`agent-device help foldable` covers the iPhone Duo), `device_screenshot` to look
+at the screen, and `device_close` with `shutdown: true` when you are done, which
+gives the device back. Leave the device on the tested screen while the user
+should still look at it. Do not drive a device with `xcrun simctl`, `adb` or
+scripts that wrap them; those stay fine for builds, installs, port forwards
+(`adb reverse`), logs and what `agent-device` cannot do. Use these models:
 
-| Platform | Device                                                                  | `device_open` id                       |
-| -------- | ----------------------------------------------------------------------- | -------------------------------------- |
-| iOS      | RiceCal iPhone 18 Pro simulator, `EF3C5D3C-1A3A-4AE0-886A-A033551C78ED` | `EF3C5D3C-1A3A-4AE0-886A-A033551C78ED` |
-| Android  | `RiceCal_Pixel_10` emulator (Pixel 10, Android 16)                      | `RiceCal_Pixel_10`                     |
+| Platform | `device_open` id            | Use                                       |
+| -------- | --------------------------- | ----------------------------------------- |
+| iOS      | `simlock:ios:iPhone 18 Pro` | everyday testing (iOS 27.0)               |
+| iOS      | `simlock:ios:iPhone Duo`    | iPhone Duo (foldable) work only, iOS 27.1 |
+| Android  | `simlock:android:Pixel 10`  | Android testing (Android 16)              |
 
-The emulator, T3 Code's Android device list and `expo run:android` need the
-Android SDK and a JDK: run them with `ANDROID_HOME` and `JAVA_HOME` (JDK 17)
-set, or only iOS simulators are listed.
+**A leased device already has the RiceCal dev client**, built from
+`origin/main` (the normal `com.nelsongan.ricecal` app, never RiceCal Dev),
+signed out and with no data (T3 Code's own note that a pool device starts with
+no apps is generic; `agent-device apps` lists them). It runs whatever is in your
+working tree through Metro, so a JS change needs no build. A dev client refuses
+a bundle with another app version (an empty red box), so a branch that bumps
+the version or changes native code needs its own build: from the worktree, run
+`simlock-build ios <device id>` (or `android`), which builds this checkout's dev
+client and installs it on the device `device_open` leased. Do not use
+`pnpm ios`, `pnpm android` or `expo run:*` for that: they look for devices
+outside the pool. The shared builds are in `~/MobileBuilds/ricecal/`, with the
+commit they came from beside them.
+
+**Every `adb` command for a leased emulator needs
+`ANDROID_ADB_SERVER_PORT=5038`**: Simlock runs its emulators on its own adb
+server, and the default one on 5037 cannot see them. Forward Metro and the
+local Supabase stack so the emulator reaches them at `127.0.0.1` as iOS does:
+`ANDROID_ADB_SERVER_PORT=5038 adb reverse tcp:<metro port> tcp:<metro port>`,
+and the same for `54421`. The pool runs one emulator, so no `-s` is needed.
+`simlock-udid <device id>` prints the simulator UDID or emulator serial behind a
+lease, for what `agent-device` cannot do.
 
 **An edit under `widgets/ios/` needs a prebuild, or a copy.** `withWidgets.js`
 copies those files into `ios/RiceCalWidgets/` at prebuild time, so
@@ -389,16 +413,9 @@ UTF-8 locale CocoaPods dies while *reporting* whatever went wrong
 like it failed for an encoding reason. With the locale set the same install
 passes. `expo prebuild` runs it, so set it there too.
 
-A simulator build is already on disk, so verifying a UI change does not need
-`pnpm ios` (a prebuild plus a full compile):
-
-```
-~/Library/Developer/Xcode/DerivedData/RiceCal-*/Build/Products/Debug-iphonesimulator/RiceCal.app
-```
-
-`xcrun simctl install <udid> <that path>` puts it on a booted simulator in a
-second. It is a dev client, so it runs whatever is in the working tree and a
-Metro reload picks up an edit without reinstalling.
+The leased device already has a dev client, so verifying a UI change does not
+need `pnpm ios` (a prebuild plus a full compile). It runs whatever is in the
+working tree, and a Metro reload picks up an edit without reinstalling.
 
 - **The scheme is `ricecal://`, not `ricecal-dev://`.** `app.config.ts` says
   `ricecal-dev` for the dev variant and the installed Debug build registers
@@ -413,8 +430,8 @@ Metro reload picks up an edit without reinstalling.
 - **After a reinstall, the first `ricecal://` link raises an "Open in
   RiceCal?" alert that screenshots do not show.** The screen just dims, ignores
   every tap and even the Home button, and looks like a hung app. Each
-  link you open queues another. Tap where Open sits, about (256, 476) in
-  points on an iPhone 18 Pro, once per queued link.
+  link you open queues another. Every freshly leased device starts this way.
+  `agent-device alert accept` answers it, once per queued link.
 - **A Metro answering on 8081 is not necessarily this project's.** Another
   project on the machine takes it first and answers `packager-status:running`
   identically. `curl -s localhost:8081/json/list` names the app. Start this one
@@ -436,13 +453,17 @@ Metro reload picks up an edit without reinstalling.
   300 ms, then moves to the bottom left, parks it there and frees the top right.
 - Typing on the simulator drops characters: pass `--delay-ms 160` to
   `agent-device type`.
-- Photos for the library: `xcrun simctl addmedia <udid> <file>`. There is no
-  camera, but the library button in `InlineCamera` is there.
+- Photos for the library:
+  `xcrun simctl --set ~/.simlock/devices/ios addmedia "$(simlock-udid <id>)" <file>`.
+  There is no camera, but the library button in `InlineCamera` is there.
 
 ## Driving the Apple Watch app
 
-**A watch simulator needs its runtime first** (`xcodebuild -downloadPlatform
-watchOS`, 3.8 GB), then a watch paired with the iPhone the app is on:
+**Watch work is the one exception to the device pool.** Simlock cannot pair a
+watch with a phone, so ask the user before making a pair by hand, and delete
+both when you are done. A watch simulator needs its runtime first
+(`xcodebuild -downloadPlatform watchOS`, 3.8 GB), then a watch paired with the
+iPhone the app is on:
 `xcrun simctl create "<name>" com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-12-46mm
 com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch> <phone>`.
 `xcrun simctl list pairs` should say `(active, connected)` once both are booted.
@@ -495,23 +516,23 @@ com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch
 
 ## Driving the Android app
 
-- `expo run:android --device emulator-5554` fails with "Could not find device
-  with name": that flag wants a device *name*, not an adb serial. Omit it and it
-  picks the running emulator.
-- A first build is ~15 minutes and outlives a harness background-task timeout.
-  Run it detached and watch for the package with `adb shell pm list packages`,
-  or it gets killed mid-compile. Kill the daemons afterwards — left running they
+- Build with `simlock-build android <device id>`, not `expo run:android`,
+  which only sees emulators on the default adb server. A first build is
+  ~15 minutes and outlives a harness background-task timeout: run it detached
+  and watch its output. Kill the Gradle daemons afterwards — left running they
   starve the emulator until `system_server` ANRs and taps stop landing.
-- The dev client cannot find Metro on its own: `adb reverse tcp:8081 tcp:8081`
-  (and `adb reverse tcp:54421 tcp:54421` when `.env.local` points at the local
-  stack, or every auth and diary call fails to connect), then
-  `adb shell am start -a android.intent.action.VIEW -d "ricecal://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"`.
+- The dev client cannot find Metro on its own:
+  `ANDROID_ADB_SERVER_PORT=5038 adb reverse tcp:<port> tcp:<port>` (and the same
+  for `54421` when `.env.local` points at the local stack, or every auth and
+  diary call fails to connect), then open
+  `ricecal://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A<port>` with
+  the `agent-device` command's `open com.nelsongan.ricecal <url>`.
 - **No soft keyboard appears when you tap a field.** Gboard ships with "Write in
-  text fields" (stylus handwriting) on, which replaces the keyboard with a
-  floating strip that counts as an open keyboard while reporting almost no
-  height — so keyboard-avoidance code misbehaves in ways that are not real. Turn
-  it off in Gboard settings. `pm clear` on the IME does not fix it and leaves the
-  keyboard dead until a reboot.
+  text fields" (stylus handwriting) on, on every fresh device, which replaces
+  the keyboard with a floating strip that counts as an open keyboard while
+  reporting almost no height — so keyboard-avoidance code misbehaves in ways
+  that are not real. Turn it off in Gboard settings. `pm clear` on the IME does
+  not fix it and leaves the keyboard dead until a reboot.
 - **Reaching a native module without a session.** The app is bridgeless, so
   there is no `globalThis.__turboModuleProxy`; use
   `globalThis.nativeModuleProxy.<Name>`. Its methods return promises and the
