@@ -106,14 +106,14 @@ Useful commands:
 | `pnpm eval:scan` | drive the deployed scan pipeline end to end |
 | `pnpm eval:refine --repeat=3` | test real AI ingredient corrections against local Supabase |
 
-Expo Device Hub (`expo-device-hub`, a dev dependency that adds nothing to the
-app) gives every `npx expo start` a live device dashboard: stream, tap and type
-into simulators and emulators, and boot, shut down or create them, at
-`http://127.0.0.1:8082/_expo/plugins/expo-device-hub`. Test on the "RiceCal
-iPhone 18 Pro" simulator and the `RiceCal_Pixel_10` emulator (Pixel 10, Android
-16). The Hub and `pnpm android` need `ANDROID_HOME` (the Android SDK, e.g.
-`~/Library/Android/sdk`) and `JAVA_HOME` (JDK 17) in the shell that starts
-Metro; without them the Hub lists only iOS simulators.
+T3 Code's Device panel streams the simulator or emulator being tested, and its
+device tools (`device_list`, `device_open`, `device_screenshot`, `device_close`,
+plus the `agent-device` CLI that `device_open` returns) boot and drive it.
+Nothing in the repo needs installing for it. Test on the "RiceCal iPhone 18 Pro"
+simulator and the `RiceCal_Pixel_10` emulator (Pixel 10, Android 16). The
+emulator and `pnpm android` need `ANDROID_HOME` (the Android SDK, e.g.
+`~/Library/Android/sdk`) and `JAVA_HOME` (JDK 17) set, in the shell and in the
+environment T3 Code runs in; without them only iOS simulators are listed.
 
 Run one simulator at a time. This machine does not have room for the iOS
 simulator and the Android emulator together, and the result is not just
@@ -7607,7 +7607,7 @@ component splits that component in two. Fields work in either pane; the number
 pad scrolls whichever one holds the field. React Native gets no hinge or fold
 signal, so nothing here moves when the device is half-folded: the pane split is
 what keeps controls off the crease. The Duo simulator is iOS 27.1 only, and
-Argent's `fold` tool moves its hinge.
+`agent-device fold` moves its hinge.
 
 **None of this reaches users unless the store build is linked against the iOS
 27.1 SDK.** iOS decides what an app supports from the SDK it was built with, and
