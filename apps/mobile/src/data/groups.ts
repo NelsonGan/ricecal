@@ -634,6 +634,14 @@ function broadcastIds(payload: Record<string, unknown>): string[] {
 /** The group's private Realtime topic, shared by its open chat and its board's chat bar. */
 const chatTopic = (groupId: string) => `group-chat:${groupId}`
 
+/**
+ * The catch-up of each chat on screen. The viewer's own like runs them when it
+ * lands, so its line does not wait on Realtime echoing it back: on the hosted
+ * project that echo was not acted on, and the line waited for the thread's
+ * three-minute poll.
+ */
+const openChats = new Set<() => void>()
+
 /** Counts distinct people in the focused chat, including the viewer, only while connected. */
 export function useGroupChatPresence(groupId: string, focused: boolean): number | null {
   const userId = useUserId()
@@ -657,10 +665,10 @@ export function useGroupChatPresence(groupId: string, focused: boolean): number 
  * A broadcast names message ids and nothing more, so a new one is drawn by
  * refetching the thread's newest page, where blocks and reports are applied.
  * Nothing is asked for an id already in the thread, nor while the viewer's own
- * send to it is on its way, since that send refetches the thread when it
- * lands. A removed one is taken out in place. Each time the channel joins,
- * first or after a drop, the thread is read once more, since anything sent
- * while it was not listening was never going to be heard.
+ * send to it (or own like, for an event) is on its way, since that send or like
+ * reads the thread when it lands. A removed one is taken out in place. Each
+ * time the channel joins, first or after a drop, the thread is read once more,
+ * since anything sent while it was not listening was never going to be heard.
  */
 export function useGroupChatLive(groupId: string): boolean {
   const userId = useUserId()
@@ -730,6 +738,15 @@ export function useGroupChatLive(groupId: string): boolean {
           return input?.action === action && 'groupId' in input && input.groupId === groupId
         })
     const sending = () => pendingOf('message')
+    // A vote names no group: its line may land in any chat.
+    const voting = () =>
+      client
+        .getMutationCache()
+        .findAll({ status: 'pending' })
+        .some(
+          (mutation) => (mutation.state.variables as GroupAction | undefined)?.action === 'react',
+        )
+    openChats.add(catchUp)
     const stop = listen(chatTopic(groupId), {
       onLive: (next) => {
         setLive(next)
@@ -749,7 +766,7 @@ export function useGroupChatLive(groupId: string): boolean {
           // name keeps an app from before events from reading for it.
           const held = client.getQueryData<GroupThread>(key)?.messages
           if (held && ids.every((id) => held.some((message) => message.id === id))) return
-          if (sending()) return
+          if (sending() || (event === 'event' && voting())) return
           catchUp()
         } else if (event === 'reacted') {
           // Only messages held have counts to redraw, and the viewer's own
@@ -772,6 +789,7 @@ export function useGroupChatLive(groupId: string): boolean {
       },
     })
     return () => {
+      openChats.delete(catchUp)
       stop()
       setLive(false)
     }
@@ -1555,6 +1573,34 @@ export function useGroupAction() {
     onSettled: (data, error, input) => {
       switch (input.action) {
         case 'react':
+          // A like writes a line in each chat the two share, and anything else
+          // takes it away. Taken away here at once; written, it is read by the
+          // chat on screen now, and by any other when it next opens.
+          if (!error && input.value !== 1) {
+            client.setQueriesData<GroupThread>(
+              { queryKey: root, predicate: named('group_messages') },
+              (thread) => {
+                const kept = thread?.messages.filter(
+                  (message) =>
+                    !(
+                      message.mine &&
+                      message.event?.kind === 'liked' &&
+                      message.event.food?.entry_id === input.entryId
+                    ),
+                )
+                return thread && kept && kept.length < thread.messages.length
+                  ? { ...thread, messages: kept }
+                  : thread
+              },
+            )
+          }
+          void client.invalidateQueries({
+            queryKey: root,
+            predicate: named('group_messages'),
+            refetchType: 'none',
+          })
+          for (const catchUp of openChats) catchUp()
+          return
         case 'move':
           return
         case 'reactMessage':

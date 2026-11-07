@@ -3584,6 +3584,14 @@ board does not leave and rejoin. Everything else still polls.
   a catch-up reads, and the whole newest page is read instead. Re-reading the
   50-message page for every message heard was about a quarter of the project's
   egress (measured 2026-10-28: ~1,700 reads a day at ~30 KB each).
+- **The viewer's own like** does not wait for its echo. When the vote lands,
+  the chat on screen runs the same catch-up, and a like taken back or turned
+  into a dislike drops the viewer's line at once; a chat not on screen reads it
+  when it opens. On the hosted project the echo of a like was not acted on
+  (2026-11-06: likes made with the chat open, then nothing read until the next
+  send), so the line waited for the three-minute poll. While the viewer's own
+  vote or send is on its way, the chat ignores the matching broadcast, since the
+  write reads the thread when it lands.
 - **The board's chat bar** rereads `group_chat_summary` on every broadcast: one
   small read instead of the board with every member's day of food, one in
   flight at a time with a burst ending in one more. Measured on a simulator
