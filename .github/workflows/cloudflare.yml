@@ -4,10 +4,10 @@ name: Cloudflare
 # something under there changes — an app-only commit never fires it, and a
 # Cloudflare-only commit never waits on a 40-minute native build.
 #
-# Deploys on a merge to main, and nowhere else. A PULL REQUEST's Worker is not
-# here: `deploy.yml` uploads a version of the same script under a per-PR alias
-# and points that PR's app bundle at it, because the two halves of a preview
-# have to come from one commit and be reported in one comment.
+# Deploys on a merge to main, and nowhere else. A pull request gets this
+# workflow's checks and nothing more: no Worker version is uploaded for it, here
+# or in `deploy.yml`. To try a Worker change before merge, upload a version by
+# hand (README, "By hand").
 #
 # The matrix is discovered from the filesystem rather than listed here, so a
 # second Worker is a directory under `apps/cloudflare/workers/` and no edit to
@@ -90,14 +90,22 @@ jobs:
         working-directory: apps/cloudflare/workers/${{ matrix.worker }}
         run: pnpm typecheck
 
+      # Bundles the Worker and validates wrangler.jsonc (bindings, compatibility
+      # flags) without touching Cloudflare, so a config or import that tsc
+      # accepts but esbuild or wrangler rejects fails here rather than in the
+      # production deploy after merge.
+      - name: Bundle
+        working-directory: apps/cloudflare/workers/${{ matrix.worker }}
+        run: pnpm exec wrangler deploy --dry-run --outdir "$RUNNER_TEMP/worker-dist"
+
   # Schema before code, always. A Worker deployed ahead of the column it selects
   # answers every request with a D1 error; a column added ahead of the Worker
   # that reads it is simply unread. Same ordering, and the same reason, as
   # deploying the Worker before the edge functions that call it.
   #
-  # Merged work only. A PR's Worker version shares this database — versions
-  # inherit their bindings — so applying a schema from an unmerged branch would
-  # reach the rows production is serving before anybody had approved it.
+  # Merged work only. There is one database, the one production serves from,
+  # so applying a schema from an unmerged branch would reach those rows before
+  # anybody had approved it.
   schema:
     name: Cloudflare · D1 schema
     needs: check
