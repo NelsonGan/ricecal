@@ -1,5 +1,11 @@
-import { Baloo2_700Bold, Baloo2_800ExtraBold } from '@expo-google-fonts/baloo-2'
-import { Nunito_400Regular, Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito'
+// One subpath per face, never the package index: the index `require`s every
+// weight it ships, and Metro bundles each one as an asset whether or not it is
+// loaded. Through the index, these five faces carried 4 MB of fonts.
+import { Baloo2_700Bold } from '@expo-google-fonts/baloo-2/700Bold'
+import { Baloo2_800ExtraBold } from '@expo-google-fonts/baloo-2/800ExtraBold'
+import { Nunito_400Regular } from '@expo-google-fonts/nunito/400Regular'
+import { Nunito_700Bold } from '@expo-google-fonts/nunito/700Bold'
+import { Nunito_800ExtraBold } from '@expo-google-fonts/nunito/800ExtraBold'
 
 /**
  * The five faces the system uses. Baloo 2 carries numbers, headings and button

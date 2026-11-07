@@ -1,4 +1,4 @@
-import { format } from 'date-fns'
+import { format } from 'date-fns/format'
 import type { Href } from 'expo-router'
 import type { TFunction } from 'i18next'
 import { useState } from 'react'

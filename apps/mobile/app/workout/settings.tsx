@@ -1,4 +1,4 @@
-import { format } from 'date-fns'
+import { format } from 'date-fns/format'
 import { Directory, File, Paths } from 'expo-file-system'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'

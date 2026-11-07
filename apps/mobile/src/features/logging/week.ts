@@ -1,4 +1,7 @@
-import { addDays, parseISO, startOfWeek, subWeeks } from 'date-fns'
+import { addDays } from 'date-fns/addDays'
+import { parseISO } from 'date-fns/parseISO'
+import { startOfWeek } from 'date-fns/startOfWeek'
+import { subWeeks } from 'date-fns/subWeeks'
 
 import { dateKey } from '@/data/client'
 import type { DayMark } from '@/data/types'

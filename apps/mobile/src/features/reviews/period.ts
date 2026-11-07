@@ -1,4 +1,6 @@
-import { format, getISOWeek, parseISO } from 'date-fns'
+import { format } from 'date-fns/format'
+import { getISOWeek } from 'date-fns/getISOWeek'
+import { parseISO } from 'date-fns/parseISO'
 // From the type module rather than from `@/data`, which is a barrel over the
 // whole data layer: importing it here drags expo-notifications into a file that
 // does date arithmetic, and the unit test for that arithmetic cannot load a
