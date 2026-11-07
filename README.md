@@ -8685,9 +8685,11 @@ or the same order, for any screen that blocks leaving and then leaves itself.
 
 ### Bundle size
 
-**Metro does not tree-shake.** Importing one name from a package's index
+**Metro does not tree-shake here.** Importing one name from a package's index
 bundles everything that index reaches, and a release bundle has no way to tell.
-Fixing these four in November 2026 took the Hermes bundle from 13.4 MB to
+Expo's tree shaking (`EXPO_UNSTABLE_TREE_SHAKING`) is opt-in and documented as
+very experimental, so it stays off; it would not have caught the fonts or
+RevenueCat either, since both are `require` rather than `import`. Fixing these four in November 2026 took the Hermes bundle from 13.4 MB to
 10.5 MB and the bundled assets from 17.6 MB to 13.9 MB:
 
 - `date-fns` and `date-fns/locale`. The locale index is every locale date-fns
@@ -8704,12 +8706,12 @@ Fixing these four in November 2026 took the Hermes bundle from 13.4 MB to
   "browser mode" it enters only when its native module is missing (Expo Go,
   web). No build of this app is either, so `metro.config.js` swaps it on iOS
   and Android for `stubs/purchases-js-hybrid-mappings.js`, which throws if
-  anything calls it. Every use is inside a function, so nothing does on load.
-  After upgrading `react-native-purchases`, check that is still true:
-  `grep -n purchases_js_hybrid_mappings node_modules/react-native-purchases/dist/browser/*.js`.
+  anything calls it. Every use is inside a function, so nothing does on load,
+  and `lib/__tests__/revenuecat-web-stub.test.ts` loads the installed package
+  against the stub so an upgrade that changes that fails in jest, not at launch.
 
-`noRestrictedImports` in `biome.json` refuses the first three, so they cannot
-come back through an autocomplete. Images the app draws itself should be the
+`noRestrictedImports` in `biome.json` refuses the first three, any font family
+included, so they cannot come back through an autocomplete. Images the app draws itself should be the
 size it draws them at: the welcome screen and the share cards loaded the
 1024 px app icon (870 KB) for at most 104 points, and now load the 416 px
 `assets/app-mark.png`, which `generate-app-icons.py` writes with the others.
