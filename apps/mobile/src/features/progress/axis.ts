@@ -1,4 +1,5 @@
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns/format'
+import { parseISO } from 'date-fns/parseISO'
 
 import { TREND_GRAIN, type TrendBucket, type TrendRange } from '@/data/types'
 import { datePattern } from '@/lib/dates'

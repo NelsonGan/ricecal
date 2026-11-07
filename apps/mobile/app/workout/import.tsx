@@ -1,4 +1,4 @@
-import { format } from 'date-fns'
+import { format } from 'date-fns/format'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { usePreventRemove } from 'expo-router/react-navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'

@@ -187,7 +187,7 @@ export function Shareable({ title, children, className }: ShareableProps) {
 }
 
 /** The app icon, at the size a corner of a shared card wants it. */
-const MARK = require('../../../assets/icon.png')
+const MARK = require('../../../assets/app-mark.png')
 
 /**
  * Where the preview mark's box starts, measured against the card's padding.

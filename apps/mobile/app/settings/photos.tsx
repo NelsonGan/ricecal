@@ -1,5 +1,6 @@
 import { FREE_PHOTO_RETENTION_DAYS } from '@ricecal/shared'
-import { format, parseISO } from 'date-fns'
+import { format } from 'date-fns/format'
+import { parseISO } from 'date-fns/parseISO'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 

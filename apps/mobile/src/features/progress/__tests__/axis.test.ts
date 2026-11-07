@@ -1,4 +1,6 @@
-import { addDays, format, parseISO } from 'date-fns'
+import { addDays } from 'date-fns/addDays'
+import { format } from 'date-fns/format'
+import { parseISO } from 'date-fns/parseISO'
 
 import { pointNames } from '../axis'
 

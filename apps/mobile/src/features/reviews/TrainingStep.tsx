@@ -1,4 +1,8 @@
-import { addDays, differenceInCalendarDays, format, getISODay, parseISO } from 'date-fns'
+import { addDays } from 'date-fns/addDays'
+import { differenceInCalendarDays } from 'date-fns/differenceInCalendarDays'
+import { format } from 'date-fns/format'
+import { getISODay } from 'date-fns/getISODay'
+import { parseISO } from 'date-fns/parseISO'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 

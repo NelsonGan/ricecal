@@ -7665,7 +7665,8 @@ for the few places that need a monochrome treatment.
 **The app icon files at the top of `assets/` are not part of this.**
 `app-icon-source` is the transparent master. `generate-app-icons.py` turns it
 into `icon`, `icon-dark`, `icon-tinted`, `favicon`, the two `android-icon-*`
-layers and `splash-icon`, which feed the native pipelines through `app.json`.
+layers and `splash-icon`, which feed the native pipelines through `app.json`,
+plus `app-mark`, the 416 px copy the app draws on screens and share cards.
 Preview framing with `python3 scripts/generate-app-icons.py --preview <file>`;
 regenerate the chosen balanced framing with
 `python3 scripts/generate-app-icons.py --write balanced`. `sync-icons.mjs`
@@ -8681,6 +8682,42 @@ under the saved workout and came back when that page was deleted. The workout
 editors go through `useLeaveGuard` (`features/workouts/leaveGuard.tsx`), whose
 `leave` stands the guard down first and navigates once that has rendered. Use it,
 or the same order, for any screen that blocks leaving and then leaves itself.
+
+### Bundle size
+
+**Metro does not tree-shake.** Importing one name from a package's index
+bundles everything that index reaches, and a release bundle has no way to tell.
+Fixing these four in November 2026 took the Hermes bundle from 13.4 MB to
+10.5 MB and the bundled assets from 17.6 MB to 13.9 MB:
+
+- `date-fns` and `date-fns/locale`. The locale index is every locale date-fns
+  ships, about 1 MB for the twelve the app uses. Import each function and each
+  locale from its own path (`date-fns/format`, `date-fns/locale/ja`). Every
+  subpath shares one `_lib/defaultOptions`, so `setDefaultOptions` still
+  reaches every `format`.
+- `@expo-google-fonts/*`. A family's index `require`s every weight it has, and
+  each is bundled as an asset whether or not it is loaded: 21 TTFs, about 4 MB,
+  for the five in `theme/fonts.ts`. Import each face from its own path.
+- `zod`, 390 KB for thirteen string checks in `lib/env.ts`, which now checks by
+  hand.
+- RevenueCat's web SDK. `react-native-purchases` requires it at import for a
+  "browser mode" it enters only when its native module is missing (Expo Go,
+  web). No build of this app is either, so `metro.config.js` swaps it on iOS
+  and Android for `stubs/purchases-js-hybrid-mappings.js`, which throws if
+  anything calls it. Every use is inside a function, so nothing does on load.
+  After upgrading `react-native-purchases`, check that is still true:
+  `grep -n purchases_js_hybrid_mappings node_modules/react-native-purchases/dist/browser/*.js`.
+
+`noRestrictedImports` in `biome.json` refuses the first three, so they cannot
+come back through an autocomplete. Images the app draws itself should be the
+size it draws them at: the welcome screen and the share cards loaded the
+1024 px app icon (870 KB) for at most 104 points, and now load the 416 px
+`assets/app-mark.png`, which `generate-app-icons.py` writes with the others.
+
+To see what a bundle is made of, export it as plain JavaScript with its map
+(`npx expo export --platform ios --no-bytecode --source-maps`). The map has one
+section per module, so the distance between one section's offset and the next is
+that module's size.
 
 ### Sheets and the keyboard
 

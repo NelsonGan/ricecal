@@ -1,4 +1,6 @@
-import { addMonths, format, parseISO } from 'date-fns'
+import { addMonths } from 'date-fns/addMonths'
+import { format } from 'date-fns/format'
+import { parseISO } from 'date-fns/parseISO'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
