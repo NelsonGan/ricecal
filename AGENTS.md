@@ -378,8 +378,19 @@ scripts that wrap them; those stay fine for builds, installs, port forwards
 **A leased device already has the RiceCal dev client**, built from
 `origin/main` (the normal `com.nelsongan.ricecal` app, never RiceCal Dev),
 signed out and with no data (T3 Code's own note that a pool device starts with
-no apps is generic; `agent-device apps` lists them). It runs whatever is in your
-working tree through Metro, so a JS change needs no build. A dev client refuses
+no apps is generic; `agent-device apps` lists them). It is ready to test: the
+Expo dev menu's intro and floating Tools button are off, camera and photo
+permissions are granted (notifications still ask once), four synthetic meal
+photos are in the photo library for scan tests, and keyboard autocorrect is
+off. To test a permission prompt, reset it first with
+`agent-device settings permission reset <name> --app com.nelsongan.ricecal`.
+
+**Run your working tree on it with `simlock-metro <device id> <agent-device
+command>`**, from anywhere in the worktree. It reuses or starts this checkout's
+Metro on a free port, copies a missing `.env.local` from the main checkout,
+forwards Metro and `54421` on Android, builds the bundle, opens the app and
+answers the "Open in RiceCal?" prompt. A JS change needs no build after that;
+a Metro reload picks it up. A dev client refuses
 a bundle with another app version (an empty red box), so a branch that bumps
 the version or changes native code needs its own build: from the worktree, run
 `simlock-build ios <device id>` (or `android`), which builds this checkout's dev
@@ -441,19 +452,21 @@ working tree, and a Metro reload picks up an edit without reinstalling.
   not connect to development server" while `curl localhost:<port>` answers 200
   and looks fine. Plain `npx expo start --port 8082` binds both. Point the
   client at it with
-  `ricecal://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8082`, and
-  warm the bundle with a `curl` of the entry bundle first (about 30 s cold) or
-  the client red-boxes rather than waiting.
-- **The dev-menu "Tools button" switch ignores a simulated tap; a short
-  horizontal swipe on it flips it.** Off is what clean screenshots want.
-- **The dev-menu bubble eats taps in the top right** — roughly x 0.84-0.95,
-  y 0.10-0.22, a region much larger than the visible circle, over every `AppBar`
-  action and the plate sheet's first "+". Hiding the tools button leaves the
-  region live. Drag the bubble away instead: a gesture that holds on it for
-  300 ms, then moves to the bottom left, parks it there and frees the top right.
+  `ricecal://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A8082&disableOnboarding=1`,
+  and warm the bundle with a `curl` of the entry bundle first (about 30 s cold)
+  or the client red-boxes rather than waiting. `simlock-metro` does all of this.
+- **Pool devices start with the dev-menu Tools button off.** If one shows it
+  (a device outside the pool, or a dev client reinstalled with its data
+  cleared), it eats taps in the top right — roughly x 0.84-0.95, y 0.10-0.22, a
+  region much larger than the visible circle, over every `AppBar` action and
+  the plate sheet's first "+". Its "Tools button" switch ignores a simulated
+  tap (a short horizontal swipe flips it), and hiding it leaves the region
+  live. Drag the bubble away instead: a gesture that holds on it for 300 ms,
+  then moves to the bottom left, parks it there and frees the top right.
 - Typing on the simulator drops characters: pass `--delay-ms 160` to
   `agent-device type`.
-- Photos for the library:
+- The photo library already has four synthetic meal photos (chicken rice, nasi
+  lemak, ramen, economy rice). Add more with
   `xcrun simctl --set ~/.simlock/devices/ios addmedia "$(simlock-udid <id>)" <file>`.
   There is no camera, but the library button in `InlineCamera` is there.
 
@@ -521,18 +534,18 @@ com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch
   ~15 minutes and outlives a harness background-task timeout: run it detached
   and watch its output. Kill the Gradle daemons afterwards — left running they
   starve the emulator until `system_server` ANRs and taps stop landing.
-- The dev client cannot find Metro on its own:
-  `ANDROID_ADB_SERVER_PORT=5038 adb reverse tcp:<port> tcp:<port>` (and the same
-  for `54421` when `.env.local` points at the local stack, or every auth and
-  diary call fails to connect), then open
+- The dev client cannot find Metro on its own; `simlock-metro` handles it. By
+  hand: `ANDROID_ADB_SERVER_PORT=5038 adb reverse tcp:<port> tcp:<port>` (and
+  the same for `54421` when `.env.local` points at the local stack, or every
+  auth and diary call fails to connect), then open
   `ricecal://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A<port>` with
   the `agent-device` command's `open com.nelsongan.ricecal <url>`.
 - **No soft keyboard appears when you tap a field.** Gboard ships with "Write in
-  text fields" (stylus handwriting) on, on every fresh device, which replaces
-  the keyboard with a floating strip that counts as an open keyboard while
-  reporting almost no height — so keyboard-avoidance code misbehaves in ways
-  that are not real. Turn it off in Gboard settings. `pm clear` on the IME does
-  not fix it and leaves the keyboard dead until a reboot.
+  text fields" (stylus handwriting) on (pool devices start with it off), which
+  replaces the keyboard with a floating strip that counts as an open keyboard
+  while reporting almost no height — so keyboard-avoidance code misbehaves in
+  ways that are not real. Turn it off in Gboard settings. `pm clear` on the IME
+  does not fix it and leaves the keyboard dead until a reboot.
 - **Reaching a native module without a session.** The app is bridgeless, so
   there is no `globalThis.__turboModuleProxy`; use
   `globalThis.nativeModuleProxy.<Name>`. Its methods return promises and the
