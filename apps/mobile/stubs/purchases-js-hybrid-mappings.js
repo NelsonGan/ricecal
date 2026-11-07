@@ -3,6 +3,10 @@
 // when its native module is missing: Expo Go, the web, or the Rork sandbox. No
 // build of this app is any of those. If one ever is, this says so instead of
 // failing on `undefined`.
+//
+// Every export, and everything read off one, is this same stand-in, so loading
+// the module and reading from it never throws. Calling or constructing anything
+// does. Keys a debugger, a logger or a promise check reads are answered plainly.
 function unavailable() {
   throw new Error(
     "RevenueCat's browser mode is not bundled in this app. It runs only where " +
@@ -10,11 +14,17 @@ function unavailable() {
   )
 }
 
-// Every method throws when called. Reading a property does not, so a debugger
-// preview or a promise check on the object is not mistaken for a call.
-module.exports = {
-  PurchasesCommon: new Proxy(
-    {},
-    { get: (_, key) => (typeof key === 'symbol' || key === 'then' ? undefined : unavailable) },
-  ),
-}
+const LABEL = '[RevenueCat browser mode: not bundled]'
+const ABSENT = new Set(['then', 'toJSON', '__esModule', '$$typeof'])
+
+const stub = new Proxy(function stand() {}, {
+  get(_, key) {
+    if (typeof key === 'symbol' || ABSENT.has(key)) return undefined
+    if (key === 'toString' || key === 'valueOf') return () => LABEL
+    return stub
+  },
+  apply: unavailable,
+  construct: unavailable,
+})
+
+module.exports = stub

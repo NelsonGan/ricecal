@@ -19,16 +19,13 @@ const config = getPostHogExpoConfig(__dirname)
 // native module is missing. Every build of this app has the native module, so
 // on iOS and Android that SDK is swapped for a stub that throws if it is ever
 // called. Its every use is inside a function, so nothing touches it on load.
-const STUBS = new Map([
-  [
-    '@revenuecat/purchases-js-hybrid-mappings',
-    path.join(__dirname, 'stubs/purchases-js-hybrid-mappings.js'),
-  ],
-])
+const REVENUECAT_WEB = '@revenuecat/purchases-js-hybrid-mappings'
+const REVENUECAT_WEB_STUB = path.join(__dirname, 'stubs/purchases-js-hybrid-mappings.js')
 const upstreamResolve = config.resolver.resolveRequest
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  const stub = platform !== 'web' && STUBS.get(moduleName)
-  if (stub) return { type: 'sourceFile', filePath: stub }
+  if (platform !== 'web' && moduleName === REVENUECAT_WEB) {
+    return { type: 'sourceFile', filePath: REVENUECAT_WEB_STUB }
+  }
   return (upstreamResolve ?? context.resolveRequest)(context, moduleName, platform)
 }
 
