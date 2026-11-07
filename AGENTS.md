@@ -377,24 +377,25 @@ scripts that wrap them; those stay fine for builds, installs, port forwards
 
 **A leased device already has the RiceCal dev client**, built from
 `origin/main` (the normal `com.nelsongan.ricecal` app, never RiceCal Dev),
-signed out and with no data. It runs whatever is in your working tree through
-Metro, so a JS change needs no build. A dev client refuses a bundle with another
-app version (an empty red box), so a branch that bumps the version or changes
-native code needs its own build. Build it in the worktree and install it on
-your leased device; `simlock-udid <device id>` turns the id `device_open`
-returned into the simulator's UDID:
-`xcrun simctl --set ~/.simlock/devices/ios install "$(simlock-udid <id>)" <path>/RiceCal.app`
-or `ANDROID_ADB_SERVER_PORT=5038 adb install -r <path>/app-debug.apk`, a few
-seconds each (`agent-device install` works too but takes minutes). The shared
-builds are in `~/MobileBuilds/ricecal/`, with the commit they came from beside
-them.
+signed out and with no data (T3 Code's own note that a pool device starts with
+no apps is generic; `agent-device apps` lists them). It runs whatever is in your
+working tree through Metro, so a JS change needs no build. A dev client refuses
+a bundle with another app version (an empty red box), so a branch that bumps
+the version or changes native code needs its own build: from the worktree, run
+`simlock-build ios <device id>` (or `android`), which builds this checkout's dev
+client and installs it on the device `device_open` leased. Do not use
+`pnpm ios`, `pnpm android` or `expo run:*` for that: they look for devices
+outside the pool. The shared builds are in `~/MobileBuilds/ricecal/`, with the
+commit they came from beside them.
 
-**On Android, forward the ports through Simlock's adb server** (port 5038, not
-the default 5037), so the emulator reaches Metro and the local Supabase stack
-at `127.0.0.1` as iOS does:
+**Every `adb` command for a leased emulator needs
+`ANDROID_ADB_SERVER_PORT=5038`**: Simlock runs its emulators on its own adb
+server, and the default one on 5037 cannot see them. Forward Metro and the
+local Supabase stack so the emulator reaches them at `127.0.0.1` as iOS does:
 `ANDROID_ADB_SERVER_PORT=5038 adb reverse tcp:<metro port> tcp:<metro port>`,
 and the same for `54421`. The pool runs one emulator, so no `-s` is needed.
-`expo run:android` and Gradle need `ANDROID_HOME` and `JAVA_HOME` (JDK 17) set.
+`simlock-udid <device id>` prints the simulator UDID or emulator serial behind a
+lease, for what `agent-device` cannot do.
 
 **An edit under `widgets/ios/` needs a prebuild, or a copy.** `withWidgets.js`
 copies those files into `ios/RiceCalWidgets/` at prebuild time, so
@@ -429,8 +430,8 @@ working tree, and a Metro reload picks up an edit without reinstalling.
 - **After a reinstall, the first `ricecal://` link raises an "Open in
   RiceCal?" alert that screenshots do not show.** The screen just dims, ignores
   every tap and even the Home button, and looks like a hung app. Each
-  link you open queues another. Tap where Open sits, about (256, 476) in
-  points on an iPhone 18 Pro, once per queued link.
+  link you open queues another. Every freshly leased device starts this way.
+  `agent-device alert accept` answers it, once per queued link.
 - **A Metro answering on 8081 is not necessarily this project's.** Another
   project on the machine takes it first and answers `packager-status:running`
   identically. `curl -s localhost:8081/json/list` names the app. Start this one
@@ -515,23 +516,23 @@ com.apple.CoreSimulator.SimRuntime.watchOS-27-0`, then `xcrun simctl pair <watch
 
 ## Driving the Android app
 
-- `expo run:android --device emulator-5554` fails with "Could not find device
-  with name": that flag wants a device *name*, not an adb serial. Omit it and it
-  picks the running emulator.
-- A first build is ~15 minutes and outlives a harness background-task timeout.
-  Run it detached and watch for the package with `adb shell pm list packages`,
-  or it gets killed mid-compile. Kill the daemons afterwards — left running they
+- Build with `simlock-build android <device id>`, not `expo run:android`,
+  which only sees emulators on the default adb server. A first build is
+  ~15 minutes and outlives a harness background-task timeout: run it detached
+  and watch its output. Kill the Gradle daemons afterwards — left running they
   starve the emulator until `system_server` ANRs and taps stop landing.
-- The dev client cannot find Metro on its own: `adb reverse tcp:8081 tcp:8081`
-  (and `adb reverse tcp:54421 tcp:54421` when `.env.local` points at the local
-  stack, or every auth and diary call fails to connect), then
-  `adb shell am start -a android.intent.action.VIEW -d "ricecal://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"`.
+- The dev client cannot find Metro on its own:
+  `ANDROID_ADB_SERVER_PORT=5038 adb reverse tcp:<port> tcp:<port>` (and the same
+  for `54421` when `.env.local` points at the local stack, or every auth and
+  diary call fails to connect), then open
+  `ricecal://expo-development-client/?url=http%3A%2F%2F127.0.0.1%3A<port>` with
+  the `agent-device` command's `open com.nelsongan.ricecal <url>`.
 - **No soft keyboard appears when you tap a field.** Gboard ships with "Write in
-  text fields" (stylus handwriting) on, which replaces the keyboard with a
-  floating strip that counts as an open keyboard while reporting almost no
-  height — so keyboard-avoidance code misbehaves in ways that are not real. Turn
-  it off in Gboard settings. `pm clear` on the IME does not fix it and leaves the
-  keyboard dead until a reboot.
+  text fields" (stylus handwriting) on, on every fresh device, which replaces
+  the keyboard with a floating strip that counts as an open keyboard while
+  reporting almost no height — so keyboard-avoidance code misbehaves in ways
+  that are not real. Turn it off in Gboard settings. `pm clear` on the IME does
+  not fix it and leaves the keyboard dead until a reboot.
 - **Reaching a native module without a session.** The app is bridgeless, so
   there is no `globalThis.__turboModuleProxy`; use
   `globalThis.nativeModuleProxy.<Name>`. Its methods return promises and the

@@ -114,8 +114,10 @@ Nothing in the repo needs installing for it. The devices come from the
 which T3 Code leases from: each worktree gets its own fresh iPhone 18 Pro
 (iOS 27.0), iPhone Duo (iOS 27.1) or Pixel 10 (Android 16), with the RiceCal dev
 client from `origin/main` already installed, and the pool deletes it when the
-lease ends. `pnpm android` needs `ANDROID_HOME` (the Android SDK, e.g.
-`~/Library/Android/sdk`) and `JAVA_HOME` (JDK 17) set.
+lease ends. A native change is built and installed on a leased device with
+`simlock-build` (a script on the development Mac), not `pnpm ios`, which looks
+for simulators outside the pool. `pnpm android` and Gradle need `ANDROID_HOME`
+(the Android SDK, e.g. `~/Library/Android/sdk`) and `JAVA_HOME` (JDK 17) set.
 
 The pool runs two devices at once and at most one Android emulator. Memory is
 the limit, and running out shows as wrong answers rather than slowness: a Gradle
