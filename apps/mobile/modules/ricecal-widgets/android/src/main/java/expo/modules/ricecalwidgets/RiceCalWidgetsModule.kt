@@ -40,9 +40,8 @@ class RiceCalWidgetsModule : Module() {
     /**
      * How a widget tap addresses the app.
      *
-     * Told rather than discovered, because the scheme moves with the build
-     * variant — a development client registers `ricecal-dev://` — and nothing
-     * inside a library module can read the app's own intent filters. Until this
+     * Told rather than discovered, because nothing inside a library module can
+     * read the app's own intent filters. Until this
      * has been called once, a tap falls back to simply launching the app.
      *
      * A no-op on iOS: the config plugin writes the same value into the widget

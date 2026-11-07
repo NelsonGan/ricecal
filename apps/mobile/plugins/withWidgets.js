@@ -91,10 +91,8 @@ module.exports = function withWidgets(config) {
   }
 
   const appGroup = appGroupFor(bundleId)
-  // The scheme the widget's deep links use. Read off the resolved config for
-  // the reason `loginLinkRedirect` does the same: a dev build registers
-  // `ricecal-dev://`, and a widget tap that used the store build's scheme would
-  // open whichever of the two the OS felt like.
+  // The scheme the widget's deep links use, read off the resolved config like
+  // `loginLinkRedirect` does, so it lives in one place.
   const scheme = Array.isArray(config.scheme) ? config.scheme[0] : (config.scheme ?? 'ricecal')
 
   let next = withWidgetFiles(config, { appGroup, scheme })
