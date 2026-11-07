@@ -3984,9 +3984,7 @@ app config before it builds, and under CNG the Xcode project does not exist yet
 later. Without the `extra.eas.build.experimental.ios.appExtensions` block that
 `app.config.ts` derives, EAS registers a bundle id and a profile for the app
 alone and the build fails at signing on a target it has never heard of. The
-names come from `plugins/withWidgets.js` so the two cannot disagree, and so a
-development build declares `.dev.widgets` and `group.…dev` without a second
-copy of the arithmetic.
+names come from `plugins/withWidgets.js` so the two cannot disagree.
 
 **The extension's version pair has to match the app's.** Apple rejects an upload
 whose extension disagrees with its container about `CFBundleShortVersionString`

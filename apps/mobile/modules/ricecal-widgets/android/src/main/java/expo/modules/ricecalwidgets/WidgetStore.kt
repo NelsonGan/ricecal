@@ -75,9 +75,8 @@ object WidgetStore {
   /**
    * The deep link a widget tap opens, or null before the app has ever run.
    *
-   * The scheme is not a constant because the development build is a separate
-   * app with its own (`ricecal-dev`), so a widget built with the store build's
-   * scheme would open the other one. The app tells us on startup; until it has,
+   * The scheme comes from the app's config, which a library module cannot
+   * read. The app tells us on startup; until it has,
    * a tap falls back to simply launching the app, which is what `launchIntent`
    * below is for.
    */

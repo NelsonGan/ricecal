@@ -51,8 +51,7 @@ export function setWidgetSnapshot(snapshot: WidgetSnapshot): void {
 /**
  * Tell the widgets how to address the app.
  *
- * `ricecal://` for the store build and `ricecal-dev://` for a development
- * client, which are two different apps. Android needs telling: a widget lives
+ * The scheme comes from the app's config (`ricecal://`). Android needs telling: a widget lives
  * in a library module and cannot read the app's own intent filters, so until
  * this has been called a tap simply launches the app rather than landing on a
  * screen. iOS does not — the config plugin writes the same value into the
