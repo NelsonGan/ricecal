@@ -18,8 +18,7 @@ const baseConfig = appJson.expo
 /**
  * `pnpm ios` sets APP_VARIANT=simulator. The two variants are exclusive: a local
  * simulator build is unsigned and collides with nothing, so it keeps the release
- * identifiers and drops an entitlement, where the EAS `development` profile below
- * does the opposite.
+ * identifiers and drops an entitlement.
  *
  * It exists for one reason, `com.apple.developer.applesignin`. Expo CLI forces
  * development code signing for a simulator build carrying that entitlement, and
@@ -35,45 +34,6 @@ const baseConfig = appJson.expo
  * fixes the SecureStore keychain failures noted in src/lib/supabase.ts.
  */
 const IS_SIMULATOR_VARIANT = process.env.APP_VARIANT === 'simulator'
-
-/**
- * The development EAS profile sets APP_VARIANT=development, and that build is a
- * separate app: its own bundle id, package, name and URL scheme. Without it a dev
- * client and the TestFlight build cannot coexist on one phone.
- *
- * The scheme has to move with them, because two apps registering `ricecal://` is
- * undefined behaviour on both platforms. That is why `loginLinkRedirect` reads
- * the scheme off the resolved config, and why `ricecal-dev://**` has to be in the
- * Supabase project's redirect allow-list or the link falls back to `site_url`.
- *
- * The suffix costs in-app purchases, and that is accepted. A store keys its
- * products to a bundle id and `com.nelsongan.ricecal.dev` is not an app in App
- * Store Connect, so RevenueCat logs "none of the products could be fetched".
- *
- * Two things that look like fixes and are not: a StoreKit configuration file is
- * an Xcode scheme setting and does not reach an EAS build, and a dev client built
- * without APP_VARIANT carries the real bundle id and replaces TestFlight.
- *
- * So a dev build shows a dash where a price goes. Use a `preview` build when the
- * prices themselves need looking at.
- */
-const IS_DEV_VARIANT = process.env.APP_VARIANT === 'development'
-
-const DEV_SUFFIX = '.dev'
-
-function applyDevVariant(cfg: ExpoConfig): ExpoConfig {
-  return {
-    ...cfg,
-    name: 'RiceCal Dev',
-    scheme: 'ricecal-dev',
-    ios: {
-      ...cfg.ios,
-      bundleIdentifier: `${cfg.ios?.bundleIdentifier}${DEV_SUFFIX}`,
-      googleServicesFile: './GoogleService-Info.dev.plist',
-    },
-    android: { ...cfg.android, package: `${cfg.android?.package}${DEV_SUFFIX}` },
-  }
-}
 
 function applySimulatorVariant(cfg: ExpoConfig): ExpoConfig {
   const ios = { ...cfg.ios }
@@ -100,9 +60,6 @@ function applySimulatorVariant(cfg: ExpoConfig): ExpoConfig {
  * The names come from the plugin rather than being written out again, because
  * they are derived from the bundle id and a hand-copied one becomes a credential
  * for a target that no longer exists the first time the app is renamed.
- *
- * Applied after the variants, which is why it is a function of the resolved
- * config: a development build declares `com.nelsongan.ricecal.dev.widgets`.
  */
 function withEasExtension(cfg: ExpoConfig): ExpoConfig {
   const bundleId = cfg.ios?.bundleIdentifier
@@ -183,7 +140,5 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   if (IS_SIMULATOR_VARIANT)
     return withPostHogSymbolUpload(withEasExtension(applySimulatorVariant(merged)))
-  return withPostHogSymbolUpload(
-    withEasExtension(IS_DEV_VARIANT ? applyDevVariant(merged) : merged),
-  )
+  return withPostHogSymbolUpload(withEasExtension(merged))
 }
