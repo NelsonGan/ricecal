@@ -1343,6 +1343,9 @@ const named = (name: string) => (query: { queryKey: readonly unknown[] }) =>
   query.queryKey[2] === name
 const ofGroup = (groupId: string) => (query: { queryKey: readonly unknown[] }) =>
   (query.queryKey[3] as { groupId?: string } | undefined)?.groupId === groupId
+/** The viewer's own "liked" line for one food. */
+const ownLikeLine = (message: GroupMessage, entryId: string) =>
+  message.mine && message.event?.kind === 'liked' && message.event.food?.entry_id === entryId
 
 /** Every cached board, patched in place: a reaction or a move shows in every group at once. */
 function patchEntry(
@@ -1480,18 +1483,14 @@ export function useGroupAction() {
           // the second. A read already on its way saw the entry before this
           // write, and would draw the old answer over it; only the threads
           // holding this food are stopped, so a thread fetching a message
-          // that just arrived keeps it. A like line counts too: its card can be
-          // older than the page held, and a read begun before an unlike would
-          // put the line back after onSettled took it out. A refusal puts each
-          // cache's own vote back, not whole boards.
+          // that just arrived keeps it. A refusal puts each cache's own vote
+          // back, not whole boards.
           const holds = (query: Query) =>
             named('group_board')(query) ||
             (named('group_messages')(query) &&
               Boolean(
                 (query.state.data as GroupThread | undefined)?.messages.some(
-                  (message) =>
-                    message.food?.entry_id === input.entryId ||
-                    message.event?.food?.entry_id === input.entryId,
+                  (message) => message.food?.entry_id === input.entryId,
                 ),
               ))
           await client.cancelQueries({ queryKey: root, predicate: holds })
@@ -1581,22 +1580,36 @@ export function useGroupAction() {
           // takes it away. Taken away here at once; written, it is read by the
           // chat on screen now, and by any other when it next opens.
           if (!error && input.value !== 1) {
-            client.setQueriesData<GroupThread>(
-              { queryKey: root, predicate: named('group_messages') },
-              (thread) => {
-                const kept = thread?.messages.filter(
-                  (message) =>
-                    !(
-                      message.mine &&
-                      message.event?.kind === 'liked' &&
-                      message.event.food?.entry_id === input.entryId
-                    ),
-                )
-                return thread && kept && kept.length < thread.messages.length
-                  ? { ...thread, messages: kept }
-                  : thread
-              },
-            )
+            const takeOut = () =>
+              client.setQueriesData<GroupThread>(
+                { queryKey: root, predicate: named('group_messages') },
+                (thread) => {
+                  const kept = thread?.messages.filter(
+                    (message) => !ownLikeLine(message, input.entryId),
+                  )
+                  return thread && kept && kept.length < thread.messages.length
+                    ? { ...thread, messages: kept }
+                    : thread
+                },
+              )
+            // A thread read still on its way may have been read before the
+            // unlike was written, and would lay the line back when it lands,
+            // whether it began before the tap or while the write was going.
+            // It is stopped and asked again, now after the write; the line
+            // may be in it even when the page held does not have it yet.
+            const reading = client
+              .getQueryCache()
+              .findAll({ queryKey: root, predicate: named('group_messages') })
+              .filter((query) => query.state.fetchStatus === 'fetching')
+            if (reading.length) {
+              const stopped = (query: Query) => reading.includes(query)
+              void client.cancelQueries({ queryKey: root, predicate: stopped }).then(() => {
+                takeOut()
+                void client.refetchQueries({ queryKey: root, predicate: stopped })
+              })
+            } else {
+              takeOut()
+            }
           }
           void client.invalidateQueries({
             queryKey: root,

@@ -811,14 +811,48 @@ describe("the viewer's own like line", () => {
     void client.invalidateQueries({ queryKey: messagesKey })
     await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1))
 
-    mockRpc.mockReturnValue(response(null))
+    // The write, then the thread asked again after it.
+    mockRpc.mockReturnValueOnce(response(null)).mockReturnValue(response([message('m1')]))
     const { result } = await renderHook(() => useGroupAction(), { wrapper })
     await act(async () => {
       await result.current.mutateAsync({ action: 'react', entryId: 'e1', value: 0 })
     })
     // The read began before the unlike was written, so it still has the line.
     await act(async () => read.settle({ data: [message('m1'), liked('l1')], error: null }))
-    expect(ids(client)).toEqual(['m1'])
+    await waitFor(() => expect(ids(client)).toEqual(['m1']))
+    // Asked again after the write, rather than left with the old read.
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(3))
+    unsubscribe()
+  })
+
+  it('keeps the line out when a read starts while the unlike is being written', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1'), liked('l1')))
+    const query = watchMessages(client)
+    const unsubscribe = query.subscribe(() => undefined)
+    const write = pending()
+    const read = pending()
+    mockRpc
+      .mockReturnValueOnce(write.request)
+      .mockReturnValueOnce(read.request)
+      .mockReturnValue(response([message('m1')]))
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    let done!: Promise<unknown>
+    await act(async () => {
+      done = result.current.mutateAsync({ action: 'react', entryId: 'e1', value: 0 })
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    })
+    // A poll or a catch-up's whole page, read before the unlike is written.
+    void client.invalidateQueries({ queryKey: messagesKey })
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2))
+    await act(async () => {
+      write.settle({ data: null, error: null })
+      await done
+    })
+    await act(async () => read.settle({ data: [message('m1'), liked('l1')], error: null }))
+    await waitFor(() => expect(ids(client)).toEqual(['m1']))
+    // Asked again after the write, rather than left with the old read.
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(3))
     unsubscribe()
   })
 })
