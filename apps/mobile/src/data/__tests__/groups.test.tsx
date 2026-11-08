@@ -800,60 +800,147 @@ describe("the viewer's own like line", () => {
     await waitFor(() => expect(ids(client)).toEqual(['m1', 'l2']))
   })
 
-  it('keeps the line out when a read already on its way when the like is taken back lands after', async () => {
+  /**
+   * The thread's own reads, by kind: the write answers at once unless held, and
+   * each read waits for `settle` when one is given.
+   */
+  function server(
+    reads: {
+      page?: ReturnType<typeof pending>
+      recent?: ReturnType<typeof pending>
+      older?: ReturnType<typeof pending>
+    },
+    write?: ReturnType<typeof pending>,
+  ) {
+    mockRpc.mockImplementation((name: string, args: { p_limit?: number; p_before_id?: string }) => {
+      if (name === 'set_group_reaction') return write?.request ?? response(null)
+      if (args?.p_before_id) return reads.older?.request ?? response([])
+      if (args?.p_limit === CATCH_UP) return reads.recent?.request ?? response([])
+      return reads.page?.request ?? response([message('m1')])
+    })
+  }
+  const unlike = (action: ReturnType<typeof useGroupAction>) =>
+    action.mutateAsync({ action: 'react', entryId: 'e1', value: 0 })
+
+  it('keeps the line out when a whole page read before the unlike lands after it', async () => {
     const { client, wrapper } = setup()
     // The food's card is older than the page held: only the like line names it.
     client.setQueryData(messagesKey, thread(message('m1'), liked('l1')))
-    const read = pending()
-    mockRpc.mockReturnValueOnce(read.request)
-    const query = watchMessages(client)
-    const unsubscribe = query.subscribe(() => undefined)
-    void client.invalidateQueries({ queryKey: messagesKey })
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1))
-
-    // The write, then the thread asked again after it.
-    mockRpc.mockReturnValueOnce(response(null)).mockReturnValue(response([message('m1')]))
-    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    const page = pending()
+    server({ page })
+    const { result } = await renderHook(
+      () => ({ action: useGroupAction(), thread: useGroupThread('g1', true) }),
+      { wrapper },
+    )
     await act(async () => {
-      await result.current.mutateAsync({ action: 'react', entryId: 'e1', value: 0 })
+      void client.refetchQueries({ queryKey: messagesKey })
     })
-    // The read began before the unlike was written, so it still has the line.
-    await act(async () => read.settle({ data: [message('m1'), liked('l1')], error: null }))
-    await waitFor(() => expect(ids(client)).toEqual(['m1']))
-    // Asked again after the write, rather than left with the old read.
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(3))
-    unsubscribe()
+    await act(async () => {
+      await unlike(result.current.action)
+    })
+    expect(ids(client)).toEqual(['m1'])
+    // Read before the unlike was written, so it still has the line.
+    await act(async () => page.settle({ data: [message('m1'), liked('l1')], error: null }))
+    expect(ids(client)).toEqual(['m1'])
   })
 
-  it('keeps the line out when a read starts while the unlike is being written', async () => {
+  it('keeps the line out when a whole page is read while the unlike is being written', async () => {
     const { client, wrapper } = setup()
     client.setQueryData(messagesKey, thread(message('m1'), liked('l1')))
-    const query = watchMessages(client)
-    const unsubscribe = query.subscribe(() => undefined)
     const write = pending()
-    const read = pending()
-    mockRpc
-      .mockReturnValueOnce(write.request)
-      .mockReturnValueOnce(read.request)
-      .mockReturnValue(response([message('m1')]))
-    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    const page = pending()
+    server({ page }, write)
+    const { result } = await renderHook(
+      () => ({ action: useGroupAction(), thread: useGroupThread('g1', true) }),
+      { wrapper },
+    )
     let done!: Promise<unknown>
     await act(async () => {
-      done = result.current.mutateAsync({ action: 'react', entryId: 'e1', value: 0 })
+      done = unlike(result.current.action)
       await new Promise((resolve) => setTimeout(resolve, 0))
     })
-    // A poll or a catch-up's whole page, read before the unlike is written.
-    void client.invalidateQueries({ queryKey: messagesKey })
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(2))
+    await act(async () => {
+      void client.refetchQueries({ queryKey: messagesKey })
+    })
     await act(async () => {
       write.settle({ data: null, error: null })
       await done
     })
-    await act(async () => read.settle({ data: [message('m1'), liked('l1')], error: null }))
-    await waitFor(() => expect(ids(client)).toEqual(['m1']))
-    // Asked again after the write, rather than left with the old read.
-    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(3))
-    unsubscribe()
+    await act(async () => page.settle({ data: [message('m1'), liked('l1')], error: null }))
+    expect(ids(client)).toEqual(['m1'])
+  })
+
+  it('keeps the line out when a catch-up read before the unlike lands after it', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1'), liked('l1')))
+    const recent = pending()
+    server({ recent })
+    const { result } = await renderHook(
+      () => ({ action: useGroupAction(), live: useGroupChatLive('g1') }),
+      { wrapper },
+    )
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('message', { ids: ['m2'] }))
+    await act(async () => {
+      await unlike(result.current.action)
+    })
+    // The catch-up the unlike queues, read after the write; held open, so
+    // what the first one laid in can be seen on its own.
+    const after = pending()
+    server({ recent: after })
+    await act(async () =>
+      recent.settle({ data: [message('m1'), liked('l1'), message('m2', false, 6)], error: null }),
+    )
+    // The new message comes in; the old line does not.
+    expect(ids(client)).toEqual(['m1', 'm2'])
+    await act(async () =>
+      after.settle({ data: [message('m1'), message('m2', false, 6)], error: null }),
+    )
+    await waitFor(() => expect(ids(client)).toEqual(['m1', 'm2']))
+  })
+
+  it('keeps the line out of an older page read before the unlike', async () => {
+    const { client, wrapper } = setup()
+    const newest = Array.from({ length: THREAD_PAGE }, (_, index) =>
+      message(`m${index + 10}`, false, index + 10),
+    )
+    client.setQueryData(messagesKey, { messages: newest, more: true })
+    const older = pending()
+    server({ older })
+    const { result } = await renderHook(
+      () => ({ action: useGroupAction(), thread: useGroupThread('g1', true) }),
+      { wrapper },
+    )
+    let loading!: Promise<void>
+    await act(async () => {
+      loading = result.current.thread.loadOlder()
+    })
+    await act(async () => {
+      await unlike(result.current.action)
+    })
+    await act(async () => {
+      older.settle({ data: [message('m1'), liked('l1')], error: null })
+      await loading
+    })
+    expect(ids(client)?.slice(0, 2)).toEqual(['m1', 'm10'])
+  })
+
+  it('keeps a like line read after the unlike, as from a like again elsewhere', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1'), liked('l1')))
+    server({})
+    const { result } = await renderHook(
+      () => ({ action: useGroupAction(), thread: useGroupThread('g1', true) }),
+      { wrapper },
+    )
+    await act(async () => {
+      await unlike(result.current.action)
+    })
+    // A like given again on another phone: a new line, read after the unlike.
+    mockRpc.mockImplementation(() => response([message('m1'), liked('l2')]))
+    await act(async () => {
+      await client.refetchQueries({ queryKey: messagesKey })
+    })
+    expect(ids(client)).toEqual(['m1', 'l2'])
   })
 })
 

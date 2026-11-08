@@ -411,6 +411,44 @@ export function useGroupBoard(groupId: string, day: string, enabled: boolean, li
   })
 }
 
+/** The viewer's own "liked" line for one food. */
+const ownLikeLine = (message: GroupMessage, entryId: string) =>
+  message.mine && message.event?.kind === 'liked' && message.event.food?.entry_id === entryId
+
+/**
+ * Thread reads are numbered as they are sent, and each food's unlike keeps the
+ * number of the last read sent before it landed. A read sent before may hold
+ * the old "liked" line, and landing after the unlike took it out would lay it
+ * back (a poll, a catch-up or an older page already on its way). A read sent
+ * after has the server's answer. Counted rather than timed, so two in the same
+ * millisecond are still in order.
+ */
+let threadReads = 0
+const unlikedAt = new Map<string, number>()
+
+/** The ids of own like lines in the page of read number `sentAt` whose food was unliked since. */
+function staleLikes(page: GroupMessage[], sentAt: number): Set<string> {
+  const stale = new Set<string>()
+  if (!unlikedAt.size) return stale
+  for (const message of page) {
+    const entryId =
+      message.mine && message.event?.kind === 'liked' ? message.event.food?.entry_id : undefined
+    const at = entryId === undefined ? undefined : unlikedAt.get(entryId)
+    if (at !== undefined && sentAt <= at) stale.add(message.id)
+  }
+  return stale
+}
+
+/**
+ * Drops them after the page is laid in, not before: the page's length is what
+ * says whether the thread goes further back.
+ */
+function withoutStale(thread: GroupThread, stale: Set<string>): GroupThread {
+  return stale.size
+    ? { ...thread, messages: thread.messages.filter((message) => !stale.has(message.id)) }
+    : thread
+}
+
 /** How many messages a page of the thread holds. */
 export const THREAD_PAGE = 50
 
@@ -501,6 +539,7 @@ export function useGroupThread(groupId: string, live: boolean) {
   const thread = useQuery({
     queryKey: key,
     queryFn: async ({ signal }) => {
+      const sentAt = ++threadReads
       const newest = (await rpc(
         'group_messages',
         { p_group_id: groupId, p_limit: THREAD_PAGE, p_events: true },
@@ -508,7 +547,10 @@ export function useGroupThread(groupId: string, live: boolean) {
       )) as unknown as GroupMessage[]
       // The thread as it is now, not as it was when the read started: an older
       // page or a removal may have landed meanwhile.
-      return mergeNewest(client.getQueryData<GroupThread>(key), newest)
+      return withoutStale(
+        mergeNewest(client.getQueryData<GroupThread>(key), newest),
+        staleLikes(newest, sentAt),
+      )
     },
     // Joined, the poll is only a net (see above): catch-ups and rejoins keep
     // the thread current, and a minute's whole page was most of what it cost.
@@ -527,6 +569,7 @@ export function useGroupThread(groupId: string, live: boolean) {
     loading.current = true
     setLoadingOlder(true)
     try {
+      const sentAt = ++threadReads
       const page = (await rpc('group_messages', {
         p_group_id: groupId,
         p_before_at: oldest.created_at,
@@ -538,7 +581,10 @@ export function useGroupThread(groupId: string, live: boolean) {
       // thread again meanwhile has its own oldest message.
       client.setQueryData<GroupThread>(messagesKey(userId, groupId), (current) =>
         current?.messages[0]?.id === oldest.id
-          ? { messages: [...page, ...current.messages], more: page.length === THREAD_PAGE }
+          ? withoutStale(
+              { messages: [...page, ...current.messages], more: page.length === THREAD_PAGE },
+              staleLikes(page, sentAt),
+            )
           : current,
       )
     } catch {
@@ -704,6 +750,7 @@ export function useGroupChatLive(groupId: string): boolean {
       catching = (async () => {
         try {
           await pendingRead()?.catch(() => undefined)
+          const sentAt = ++threadReads
           const recent = (await rpc('group_messages', {
             p_group_id: groupId,
             p_limit: CATCH_UP,
@@ -715,7 +762,7 @@ export function useGroupChatLive(groupId: string): boolean {
           client.setQueryData<GroupThread>(key, (held) => {
             const merged = mergeCatchUp(held, recent)
             if (!merged) whole = true
-            return merged ?? held
+            return merged ? withoutStale(merged, staleLikes(recent, sentAt)) : held
           })
           if (whole) refetch()
         } catch {
@@ -1343,9 +1390,6 @@ const named = (name: string) => (query: { queryKey: readonly unknown[] }) =>
   query.queryKey[2] === name
 const ofGroup = (groupId: string) => (query: { queryKey: readonly unknown[] }) =>
   (query.queryKey[3] as { groupId?: string } | undefined)?.groupId === groupId
-/** The viewer's own "liked" line for one food. */
-const ownLikeLine = (message: GroupMessage, entryId: string) =>
-  message.mine && message.event?.kind === 'liked' && message.event.food?.entry_id === entryId
 
 /** Every cached board, patched in place: a reaction or a move shows in every group at once. */
 function patchEntry(
@@ -1580,36 +1624,18 @@ export function useGroupAction() {
           // takes it away. Taken away here at once; written, it is read by the
           // chat on screen now, and by any other when it next opens.
           if (!error && input.value !== 1) {
-            const takeOut = () =>
-              client.setQueriesData<GroupThread>(
-                { queryKey: root, predicate: named('group_messages') },
-                (thread) => {
-                  const kept = thread?.messages.filter(
-                    (message) => !ownLikeLine(message, input.entryId),
-                  )
-                  return thread && kept && kept.length < thread.messages.length
-                    ? { ...thread, messages: kept }
-                    : thread
-                },
-              )
-            // A thread read still on its way may have been read before the
-            // unlike was written, and would lay the line back when it lands,
-            // whether it began before the tap or while the write was going.
-            // It is stopped and asked again, now after the write; the line
-            // may be in it even when the page held does not have it yet.
-            const reading = client
-              .getQueryCache()
-              .findAll({ queryKey: root, predicate: named('group_messages') })
-              .filter((query) => query.state.fetchStatus === 'fetching')
-            if (reading.length) {
-              const stopped = (query: Query) => reading.includes(query)
-              void client.cancelQueries({ queryKey: root, predicate: stopped }).then(() => {
-                takeOut()
-                void client.refetchQueries({ queryKey: root, predicate: stopped })
-              })
-            } else {
-              takeOut()
-            }
+            unlikedAt.set(input.entryId, threadReads)
+            client.setQueriesData<GroupThread>(
+              { queryKey: root, predicate: named('group_messages') },
+              (thread) => {
+                const kept = thread?.messages.filter(
+                  (message) => !ownLikeLine(message, input.entryId),
+                )
+                return thread && kept && kept.length < thread.messages.length
+                  ? { ...thread, messages: kept }
+                  : thread
+              },
+            )
           }
           void client.invalidateQueries({
             queryKey: root,
