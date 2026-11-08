@@ -799,6 +799,28 @@ describe("the viewer's own like line", () => {
     })
     await waitFor(() => expect(ids(client)).toEqual(['m1', 'l2']))
   })
+
+  it('keeps the line out when a read already on its way when the like is taken back lands after', async () => {
+    const { client, wrapper } = setup()
+    // The food's card is older than the page held: only the like line names it.
+    client.setQueryData(messagesKey, thread(message('m1'), liked('l1')))
+    const read = pending()
+    mockRpc.mockReturnValueOnce(read.request)
+    const query = watchMessages(client)
+    const unsubscribe = query.subscribe(() => undefined)
+    void client.invalidateQueries({ queryKey: messagesKey })
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1))
+
+    mockRpc.mockReturnValue(response(null))
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    await act(async () => {
+      await result.current.mutateAsync({ action: 'react', entryId: 'e1', value: 0 })
+    })
+    // The read began before the unlike was written, so it still has the line.
+    await act(async () => read.settle({ data: [message('m1'), liked('l1')], error: null }))
+    expect(ids(client)).toEqual(['m1'])
+    unsubscribe()
+  })
 })
 
 it('lets a fetch already on its way land before catching up, rather than restarting it', async () => {

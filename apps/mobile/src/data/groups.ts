@@ -1480,14 +1480,18 @@ export function useGroupAction() {
           // the second. A read already on its way saw the entry before this
           // write, and would draw the old answer over it; only the threads
           // holding this food are stopped, so a thread fetching a message
-          // that just arrived keeps it. A refusal puts each cache's own vote
-          // back, not whole boards.
+          // that just arrived keeps it. A like line counts too: its card can be
+          // older than the page held, and a read begun before an unlike would
+          // put the line back after onSettled took it out. A refusal puts each
+          // cache's own vote back, not whole boards.
           const holds = (query: Query) =>
             named('group_board')(query) ||
             (named('group_messages')(query) &&
               Boolean(
                 (query.state.data as GroupThread | undefined)?.messages.some(
-                  (message) => message.food?.entry_id === input.entryId,
+                  (message) =>
+                    message.food?.entry_id === input.entryId ||
+                    message.event?.food?.entry_id === input.entryId,
                 ),
               ))
           await client.cancelQueries({ queryKey: root, predicate: holds })
