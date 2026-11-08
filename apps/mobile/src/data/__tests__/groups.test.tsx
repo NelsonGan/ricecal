@@ -685,6 +685,47 @@ describe('live chat', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(ids(client)).toEqual(['m2'])
   })
+
+  it('keeps a deleted message out when a read sent before the delete lands after it', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1', true), message('m2')))
+    const page = pending()
+    mockRpc.mockImplementation((name: string) =>
+      name === 'delete_group_message' ? response(null) : page.request,
+    )
+    const { result } = await renderHook(
+      () => ({ action: useGroupAction(), thread: useGroupThread('g1', true) }),
+      { wrapper },
+    )
+    await act(async () => {
+      void client.refetchQueries({ queryKey: messagesKey })
+    })
+    await act(async () => {
+      await result.current.action.mutateAsync({
+        action: 'deleteMessage',
+        groupId: 'g1',
+        messageId: 'm1',
+      })
+    })
+    await act(async () => page.settle({ data: [message('m1', true), message('m2')], error: null }))
+    expect(ids(client)).toEqual(['m2'])
+  })
+
+  it('keeps a message announced as removed out of a catch-up sent before', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, thread(message('m1'), message('m2')))
+    const recent = pending()
+    mockRpc.mockReturnValueOnce(recent.request).mockReturnValue(response([message('m2')]))
+    await renderHook(() => useGroupChatLive('g1'), { wrapper })
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('message', { ids: ['m3'] }))
+    // Another member deletes m1 while the catch-up is on its way.
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('removed', { ids: ['m1'] }))
+    expect(ids(client)).toEqual(['m2'])
+    await act(async () =>
+      recent.settle({ data: [message('m1'), message('m2'), message('m3', false, 3)], error: null }),
+    )
+    expect(ids(client)).toEqual(['m2', 'm3'])
+  })
 })
 
 it("leaves a broadcast to the viewer's own send while it is on its way", async () => {
@@ -898,16 +939,30 @@ describe("the viewer's own like line", () => {
     await waitFor(() => expect(ids(client)).toEqual(['m1', 'm2']))
   })
 
-  it('keeps the line out of an older page read before the unlike', async () => {
+  it('keeps a line not held yet out of an older page read before the unlike', async () => {
     const { client, wrapper } = setup()
     const newest = Array.from({ length: THREAD_PAGE }, (_, index) =>
       message(`m${index + 10}`, false, index + 10),
     )
     client.setQueryData(messagesKey, { messages: newest, more: true })
     const older = pending()
-    server({ older })
+    // The catch-up the unlike sends reads the newest few, as they are.
+    const latest = { data: newest.slice(-CATCH_UP), error: null }
+    server({
+      older,
+      recent: {
+        request: Object.assign(Promise.resolve(latest), {
+          abortSignal: () => Promise.resolve(latest),
+        }),
+        settle: () => undefined,
+      },
+    })
     const { result } = await renderHook(
-      () => ({ action: useGroupAction(), thread: useGroupThread('g1', true) }),
+      () => ({
+        action: useGroupAction(),
+        thread: useGroupThread('g1', true),
+        live: useGroupChatLive('g1'),
+      }),
       { wrapper },
     )
     let loading!: Promise<void>
@@ -917,6 +972,8 @@ describe("the viewer's own like line", () => {
     await act(async () => {
       await unlike(result.current.action)
     })
+    // The unlike deletes the line, and the server announces it.
+    await act(async () => mockListeners.get(TOPIC)?.onEvent('removed', { ids: ['l1'] }))
     await act(async () => {
       older.settle({ data: [message('m1'), liked('l1')], error: null })
       await loading

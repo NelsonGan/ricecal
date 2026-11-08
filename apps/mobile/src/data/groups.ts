@@ -416,34 +416,44 @@ const ownLikeLine = (message: GroupMessage, entryId: string) =>
   message.mine && message.event?.kind === 'liked' && message.event.food?.entry_id === entryId
 
 /**
- * Thread reads are numbered as they are sent, and each food's unlike keeps the
- * number of the last read sent before it landed. A read sent before may hold
- * the old "liked" line, and landing after the unlike took it out would lay it
- * back (a poll, a catch-up or an older page already on its way). A read sent
- * after has the server's answer. Counted rather than timed, so two in the same
- * millisecond are still in order.
+ * Messages taken out of a thread here (deleted, reported, hidden, or a like line
+ * whose like was taken back), each with the number of the last thread read sent
+ * before it went. Reads are numbered as they are sent, a counter so two in one
+ * millisecond keep their order. A read sent before a removal may still hold the
+ * message, and landing after it would lay it back (a poll, a catch-up or an
+ * older page already on its way); one sent after has the server's answer. Only
+ * the newest few hundred are kept: no read is on its way for that many.
  */
 let threadReads = 0
-const unlikedAt = new Map<string, number>()
+const removedAt = new Map<string, number>()
+const REMEMBERED = 500
 
-/** The ids of own like lines in the page of read number `sentAt` whose food was unliked since. */
-function staleLikes(page: GroupMessage[], sentAt: number): Set<string> {
-  const stale = new Set<string>()
-  if (!unlikedAt.size) return stale
-  for (const message of page) {
-    const entryId =
-      message.mine && message.event?.kind === 'liked' ? message.event.food?.entry_id : undefined
-    const at = entryId === undefined ? undefined : unlikedAt.get(entryId)
-    if (at !== undefined && sentAt <= at) stale.add(message.id)
+function remember(ids: Iterable<string>) {
+  for (const id of ids) {
+    removedAt.delete(id)
+    removedAt.set(id, threadReads)
   }
-  return stale
+  for (const id of removedAt.keys()) {
+    if (removedAt.size <= REMEMBERED) break
+    removedAt.delete(id)
+  }
 }
 
 /**
- * Drops them after the page is laid in, not before: the page's length is what
- * says whether the thread goes further back.
+ * The thread with `page` laid in, less what was removed after the page's read
+ * was sent. Dropped after the merge, not before: the page's length is what says
+ * whether the thread goes further back.
  */
-function withoutStale(thread: GroupThread, stale: Set<string>): GroupThread {
+function withoutRemoved(thread: GroupThread, page: GroupMessage[], sentAt: number): GroupThread {
+  if (!removedAt.size) return thread
+  const stale = new Set(
+    page
+      .filter((message) => {
+        const at = removedAt.get(message.id)
+        return at !== undefined && sentAt <= at
+      })
+      .map((message) => message.id),
+  )
   return stale.size
     ? { ...thread, messages: thread.messages.filter((message) => !stale.has(message.id)) }
     : thread
@@ -547,9 +557,10 @@ export function useGroupThread(groupId: string, live: boolean) {
       )) as unknown as GroupMessage[]
       // The thread as it is now, not as it was when the read started: an older
       // page or a removal may have landed meanwhile.
-      return withoutStale(
+      return withoutRemoved(
         mergeNewest(client.getQueryData<GroupThread>(key), newest),
-        staleLikes(newest, sentAt),
+        newest,
+        sentAt,
       )
     },
     // Joined, the poll is only a net (see above): catch-ups and rejoins keep
@@ -581,9 +592,10 @@ export function useGroupThread(groupId: string, live: boolean) {
       // thread again meanwhile has its own oldest message.
       client.setQueryData<GroupThread>(messagesKey(userId, groupId), (current) =>
         current?.messages[0]?.id === oldest.id
-          ? withoutStale(
+          ? withoutRemoved(
               { messages: [...page, ...current.messages], more: page.length === THREAD_PAGE },
-              staleLikes(page, sentAt),
+              page,
+              sentAt,
             )
           : current,
       )
@@ -762,7 +774,7 @@ export function useGroupChatLive(groupId: string): boolean {
           client.setQueryData<GroupThread>(key, (held) => {
             const merged = mergeCatchUp(held, recent)
             if (!merged) whole = true
-            return merged ? withoutStale(merged, staleLikes(recent, sentAt)) : held
+            return merged ? withoutRemoved(merged, recent, sentAt) : held
           })
           if (whole) refetch()
         } catch {
@@ -803,6 +815,7 @@ export function useGroupChatLive(groupId: string): boolean {
         const ids = broadcastIds(payload)
         if (!ids.length) return
         if (event === 'removed') {
+          remember(ids)
           patchThread(client, userId, groupId, (messages) =>
             messages.some((message) => ids.includes(message.id))
               ? messages.filter((message) => !ids.includes(message.id))
@@ -1623,8 +1636,18 @@ export function useGroupAction() {
           // A like writes a line in each chat the two share, and anything else
           // takes it away. Taken away here at once; written, it is read by the
           // chat on screen now, and by any other when it next opens.
+          // A line not held yet is announced as removed to an open chat.
           if (!error && input.value !== 1) {
-            unlikedAt.set(input.entryId, threadReads)
+            for (const [, thread] of client.getQueriesData<GroupThread>({
+              queryKey: root,
+              predicate: named('group_messages'),
+            })) {
+              remember(
+                (thread?.messages ?? [])
+                  .filter((message) => ownLikeLine(message, input.entryId))
+                  .map((message) => message.id),
+              )
+            }
             client.setQueriesData<GroupThread>(
               { queryKey: root, predicate: named('group_messages') },
               (thread) => {
@@ -1685,6 +1708,7 @@ export function useGroupAction() {
           // Deleted or reported, it leaves the thread here and needs no reread;
           // only the chat bar's preview may have been that message.
           if (!error) {
+            remember([input.messageId])
             patchThread(client, userId, input.groupId, (messages) =>
               messages.filter((message) => message.id !== input.messageId),
             )
