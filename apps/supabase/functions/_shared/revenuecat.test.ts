@@ -4,10 +4,12 @@ import {
   accountNoLongerExists,
   at,
   isStale,
+  needsStoreCheck,
   planOf,
   type RevenueCatEvent,
   sandboxAllowed,
   statusFor,
+  transferParties,
 } from './revenuecat.ts'
 
 const event = (partial: Partial<RevenueCatEvent>): RevenueCatEvent => partial
@@ -90,12 +92,36 @@ Deno.test('a one-off purchase is active with no period', () => {
   assertEquals(statusFor(event({ type: 'NON_RENEWING_PURCHASE' })), 'active')
 })
 
-Deno.test('TRANSFER is ignored rather than credited to a guess', () => {
+Deno.test('TRANSFER gets no status of its own', () => {
   // It names the two ends in `transferred_from` / `transferred_to`, not in
-  // `app_user_id`, so acting on it would grant the app to whichever end the
-  // caller's fallback landed on — half the time the account that just gave the
-  // subscription up.
+  // `app_user_id`, so a status read off it would land on whichever end the
+  // caller's fallback picked. The webhook asks RevenueCat about both instead.
   assertEquals(statusFor(event({ type: 'TRANSFER', period_type: 'NORMAL' })), null)
+})
+
+Deno.test('CANCELLATION and TRANSFER are settled by asking RevenueCat', () => {
+  // A refunded lifetime purchase arrives as a CANCELLATION and nothing after
+  // it, and a lifetime row has no date to run out: read off the event, it kept
+  // Pro for good. The same for every account a TRANSFER left.
+  assertEquals(needsStoreCheck(event({ type: 'CANCELLATION' })), true)
+  assertEquals(needsStoreCheck(event({ type: 'TRANSFER' })), true)
+  for (const type of ['INITIAL_PURCHASE', 'RENEWAL', 'EXPIRATION', 'BILLING_ISSUE', 'TEST']) {
+    assertEquals(needsStoreCheck(event({ type })), false)
+  }
+})
+
+Deno.test('both ends of a TRANSFER are named once each', () => {
+  const a = '11111111-1111-4111-8111-111111111111'
+  const b = '22222222-2222-4222-8222-222222222222'
+  assertEquals(
+    transferParties(event({ type: 'TRANSFER', transferred_from: [a, a], transferred_to: [b] })),
+    [a, b],
+  )
+  assertEquals(transferParties(event({ type: 'TRANSFER' })), [])
+  assertEquals(
+    transferParties(event({ type: 'TRANSFER', transferred_from: null, transferred_to: [''] })),
+    [],
+  )
 })
 
 Deno.test('events that say nothing about entitlement change nothing', () => {

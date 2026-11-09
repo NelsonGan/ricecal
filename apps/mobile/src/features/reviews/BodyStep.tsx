@@ -5,6 +5,7 @@ import { View } from 'react-native'
 
 import type { ReviewBucket, ReviewKind, ReviewSummary } from '@/data'
 import { TrendChip, TrendLine } from '@/features/progress'
+import { ReplayMask } from '@/lib/replay-mask'
 import { fromKg, showChange, showWeight, type WeightUnit } from '@/lib/units'
 import { volume } from '@/lib/water'
 import { Card, Divider, Text } from '@/ui'
@@ -46,122 +47,128 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
   return (
     <>
       {hasWeight ? (
-        <Shareable title={t('reviews:body.weight')}>
-          <Card contentClassName="gap-2 p-card">
-            {/* See `CaloriesStep`: sixteen points under every heading. */}
-            <Text variant="overline" className="mb-2">
-              {t('reviews:body.weight')}
-            </Text>
+        // Kept out of replays, like every weight.
+        <ReplayMask>
+          <Shareable title={t('reviews:body.weight')} masked>
+            <Card contentClassName="gap-2 p-card">
+              {/* See `CaloriesStep`: sixteen points under every heading. */}
+              <Text variant="overline" className="mb-2">
+                {t('reviews:body.weight')}
+              </Text>
 
-            <View className="flex-row items-end justify-between gap-md">
-              <View className="flex-row items-baseline gap-2">
-                <Text className="font-display text-[34px] leading-[42px] text-ink">
-                  {showWeight(summary.weightLast ?? 0, unit)}
-                </Text>
-                <Text variant="label" className="text-muted">
-                  {t(`common:unit.${unit}`)}
-                </Text>
+              <View className="flex-row items-end justify-between gap-md">
+                <View className="flex-row items-baseline gap-2">
+                  <Text className="font-display text-[34px] leading-[42px] text-ink">
+                    {showWeight(summary.weightLast ?? 0, unit)}
+                  </Text>
+                  <Text variant="label" className="text-muted">
+                    {t(`common:unit.${unit}`)}
+                  </Text>
+                </View>
+
+                {summary.weightChange === null ? null : (
+                  <TrendChip
+                    tone={summary.weightChange <= 0 ? 'pandan' : 'kaya'}
+                    direction={summary.weightChange <= 0 ? 'down' : 'up'}
+                    label={`${showChange(summary.weightChange, unit)} ${t(`common:unit.${unit}`)}`}
+                  />
+                )}
               </View>
 
-              {summary.weightChange === null ? null : (
-                <TrendChip
-                  tone={summary.weightChange <= 0 ? 'pandan' : 'kaya'}
-                  direction={summary.weightChange <= 0 ? 'down' : 'up'}
-                  label={`${showChange(summary.weightChange, unit)} ${t(`common:unit.${unit}`)}`}
-                />
-              )}
-            </View>
+              <TrendLine
+                height={104}
+                // The same scale the other lines in a review carry, in the
+                // reader's unit; a tap still shares the card.
+                formatValue={(value) => `${showWeight(value, unit)} ${t(`common:unit.${unit}`)}`}
+                unitFactor={fromKg(1, unit)}
+                interactive={false}
+                points={buckets.map((bucket) => ({
+                  key: bucket.start,
+                  label: '',
+                  value: bucket.weight,
+                }))}
+                // What the period opened at, so a line whose first weigh-in is on
+                // Wednesday still starts at the left edge rather than partway
+                // across. Recovered rather than fetched: the change is measured
+                // from exactly that reading, so the last weight less the change IS
+                // it — and where there was no earlier reading the change was
+                // measured from the first one inside the period, which puts the
+                // line's start on its own first point and draws the same shape.
+                //
+                // Null when the change is, which is now the single-weigh-in case:
+                // there is nothing to carry from, and one point drawn from itself
+                // and one point drawn from nothing are the same point.
+                carryFrom={
+                  summary.weightLast !== null && summary.weightChange !== null
+                    ? summary.weightLast - summary.weightChange
+                    : null
+                }
+                accessibilityLabel={t('reviews:body.weightChart')}
+              />
 
-            <TrendLine
-              height={104}
-              // The same scale the other lines in a review carry, in the
-              // reader's unit; a tap still shares the card.
-              formatValue={(value) => `${showWeight(value, unit)} ${t(`common:unit.${unit}`)}`}
-              unitFactor={fromKg(1, unit)}
-              interactive={false}
-              points={buckets.map((bucket) => ({
-                key: bucket.start,
-                label: '',
-                value: bucket.weight,
-              }))}
-              // What the period opened at, so a line whose first weigh-in is on
-              // Wednesday still starts at the left edge rather than partway
-              // across. Recovered rather than fetched: the change is measured
-              // from exactly that reading, so the last weight less the change IS
-              // it — and where there was no earlier reading the change was
-              // measured from the first one inside the period, which puts the
-              // line's start on its own first point and draws the same shape.
-              //
-              // Null when the change is, which is now the single-weigh-in case:
-              // there is nothing to carry from, and one point drawn from itself
-              // and one point drawn from nothing are the same point.
-              carryFrom={
-                summary.weightLast !== null && summary.weightChange !== null
-                  ? summary.weightLast - summary.weightChange
-                  : null
-              }
-              accessibilityLabel={t('reviews:body.weightChart')}
-            />
-
-            <Text variant="meta">{t('reviews:body.weighIns', { count: summary.weighIns })}</Text>
-          </Card>
-        </Shareable>
+              <Text variant="meta">{t('reviews:body.weighIns', { count: summary.weighIns })}</Text>
+            </Card>
+          </Shareable>
+        </ReplayMask>
       ) : null}
 
       {hasSteps ? (
-        <Shareable title={t('reviews:body.steps')}>
-          <Card contentClassName="gap-2 p-card">
-            <Text variant="overline" className="mb-2">
-              {t('reviews:body.steps')}
-            </Text>
-
-            <View className="flex-row items-baseline justify-between gap-md">
-              <Text className="font-display text-[30px] leading-[38px] text-ink">
-                {Math.round(summary.steps ?? 0).toLocaleString()}
+        // Steps come from Apple Health or Health Connect: kept out of replays.
+        <ReplayMask>
+          <Shareable title={t('reviews:body.steps')} masked>
+            <Card contentClassName="gap-2 p-card">
+              <Text variant="overline" className="mb-2">
+                {t('reviews:body.steps')}
               </Text>
-              {summary.stepGoal ? (
-                <Text variant="meta" numberOfLines={1} className="min-w-0 shrink">
-                  {/* Out of the days that were MEASURED, matching the average
+
+              <View className="flex-row items-baseline justify-between gap-md">
+                <Text className="font-display text-[30px] leading-[38px] text-ink">
+                  {Math.round(summary.steps ?? 0).toLocaleString()}
+                </Text>
+                {summary.stepGoal ? (
+                  <Text variant="meta" numberOfLines={1} className="min-w-0 shrink">
+                    {/* Out of the days that were MEASURED, matching the average
                       beside it — `review_summary` filters that on `has_activity`
                       and this card is only drawn when `activeDays > 0` at all.
                       Against `days` a month whose health store was connected
                       halfway through claimed the goal was missed on every day
                       before the connection existed. */}
-                  {t('reviews:body.stepGoal', {
-                    done: summary.stepGoalDays,
-                    total: summary.activeDays,
-                    goal: summary.stepGoal.toLocaleString(),
-                  })}
-                </Text>
-              ) : null}
-            </View>
+                    {t('reviews:body.stepGoal', {
+                      done: summary.stepGoalDays,
+                      total: summary.activeDays,
+                      goal: summary.stepGoal.toLocaleString(),
+                    })}
+                  </Text>
+                ) : null}
+              </View>
 
-            {/* A line from zero with the step goal dashed: a day on or over
+              {/* A line from zero with the step goal dashed: a day on or over
                 it is pandan, one short of it kaya, as on Trends. */}
-            <TrendLine
-              height={104}
-              fromZero
-              goal={summary.stepGoal || null}
-              minPad={500}
-              interactive={false}
-              dotTone={(value) => (value >= (summary.stepGoal ?? 0) ? 'pandan' : 'kaya')}
-              points={buckets.map((bucket, position) => ({
-                key: bucket.start,
-                label:
-                  kind === 'week'
-                    ? format(parseISO(bucket.start), 'EEEEE')
-                    : t('progress:range.week', { index: position + 1 }),
-                value: bucket.steps === null ? null : Math.round(bucket.steps),
-              }))}
-              gaps="join"
-              formatValue={(value) => Math.round(value).toLocaleString()}
-              accessibilityLabel={t('reviews:body.stepsChart')}
-            />
-          </Card>
-        </Shareable>
+              <TrendLine
+                height={104}
+                fromZero
+                goal={summary.stepGoal || null}
+                minPad={500}
+                interactive={false}
+                dotTone={(value) => (value >= (summary.stepGoal ?? 0) ? 'pandan' : 'kaya')}
+                points={buckets.map((bucket, position) => ({
+                  key: bucket.start,
+                  label:
+                    kind === 'week'
+                      ? format(parseISO(bucket.start), 'EEEEE')
+                      : t('progress:range.week', { index: position + 1 }),
+                  value: bucket.steps === null ? null : Math.round(bucket.steps),
+                }))}
+                gaps="join"
+                formatValue={(value) => Math.round(value).toLocaleString()}
+                accessibilityLabel={t('reviews:body.stepsChart')}
+              />
+            </Card>
+          </Shareable>
+        </ReplayMask>
       ) : null}
 
-      <Shareable title={t('reviews:body.others')}>
+      <Shareable title={t('reviews:body.others')} masked={hasSteps}>
         {/* See `FoodStep`: a `gap-0` card owes its header the space back. */}
         <Card title={t('reviews:body.others')} contentClassName="gap-0 p-card">
           <View className="mt-4" />
@@ -171,7 +178,9 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
             value={t('reviews:body.waterValue', { amount: waterAmount(summary.water) })}
           />
           {hasSteps ? (
-            <>
+            // Exercise minutes, sessions, active energy and distance are health
+            // readings: kept out of replays. Water above stays visible.
+            <ReplayMask>
               <Divider className="my-3" />
               <OtherRow
                 label={t('reviews:body.move')}
@@ -190,7 +199,7 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
                   value: Math.round(summary.activeKcal ?? 0).toLocaleString(),
                 })}
               />
-            </>
+            </ReplayMask>
           ) : null}
         </Card>
       </Shareable>

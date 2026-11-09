@@ -15,6 +15,7 @@ import {
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { computeTargets, goalDate } from '@/lib/nutrition'
+import { ReplayMask } from '@/lib/replay-mask'
 import { Button, CalorieRing, Icon, Screen, StatTile } from '@/ui'
 
 /**
@@ -221,13 +222,16 @@ export default function TargetStep() {
           is doing instead of showing a dash — "steady" is the answer, not a
           missing measurement. */}
       <View className="flex-row gap-2.5">
-        <StatTile
-          className="flex-1"
-          tone="pandan"
-          icon={<Icon set="body" name="target" size={26} />}
-          label={t('target.goalWeight')}
-          value={`${targetWeightKg.toFixed(1)} ${t('common:unit.kg')}`}
-        />
+        {/* Kept out of replays, like every weight. */}
+        <ReplayMask style={{ flex: 1 }}>
+          <StatTile
+            className="flex-1"
+            tone="pandan"
+            icon={<Icon set="body" name="target" size={26} />}
+            label={t('target.goalWeight')}
+            value={`${targetWeightKg.toFixed(1)} ${t('common:unit.kg')}`}
+          />
+        </ReplayMask>
         <StatTile
           className="flex-1"
           tone="water"

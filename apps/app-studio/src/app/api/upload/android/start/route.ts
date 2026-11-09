@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   if (!ready.ok) return NextResponse.json({ error: ready.why }, { status: 503 });
 
   const { device } = await req.json() as { device: string };
-  if (!ANDROID_IMAGE_TYPES[device]?.length) {
+  if (!Object.hasOwn(ANDROID_IMAGE_TYPES, device)) {
     return NextResponse.json({ error: `Unknown device: ${device}` }, { status: 400 });
   }
 

@@ -7,6 +7,7 @@ import type { ActivitySession } from '@/data'
 import { formatTime } from '@/features/shared'
 import { datePattern } from '@/lib/dates'
 import { ZONE_ORDER } from '@/lib/health'
+import { ReplayMask } from '@/lib/replay-mask'
 import { Card, cn, Icon, type IconProps, Text } from '@/ui'
 import { clock, count } from './format'
 import { HeartRateCard } from './HeartRateCard'
@@ -41,101 +42,111 @@ export function WorkoutDetails({ session }: { session: ActivitySession }) {
   const zoneTotal = zones ? ZONE_ORDER.reduce((sum, zone) => sum + zones[zone], 0) : 0
   const hasHeart = session.avgHr != null || session.maxHr != null || zoneTotal > 0
 
+  // A workout read from Apple Health or Health Connect: each block is kept out
+  // of replays separately, so the screen's gap between them stays as it was.
   return (
     <>
-      <View className={cn('overflow-hidden rounded-card border p-5', tone.fill, tone.line)}>
-        <Text variant="title">{name}</Text>
-        <Text variant="meta" className="mt-0.5">
-          {format(parseISO(session.startedAt), datePattern('dayMonthYear'))}
-          {' · '}
-          {formatTime(session.startedAt)}
-        </Text>
+      <ReplayMask>
+        <View className={cn('overflow-hidden rounded-card border p-5', tone.fill, tone.line)}>
+          <Text variant="title">{name}</Text>
+          <Text variant="meta" className="mt-0.5">
+            {format(parseISO(session.startedAt), datePattern('dayMonthYear'))}
+            {' · '}
+            {formatTime(session.startedAt)}
+          </Text>
 
-        <View className="mt-2 min-h-[112px] flex-row items-center gap-2">
-          <View className="min-w-0 flex-1">
-            <Text variant="overlineSm" className={tone.ink}>
-              {t(details.distance ? 'activity:workout.distance' : 'activity:workout.time')}
-            </Text>
-            <Text
-              variant="displayLg"
-              className={cn('text-[44px]', tone.ink)}
-              numberOfLines={1}
-              adjustsFontSizeToFit
-              minimumFontScale={0.65}
-            >
-              {details.distance?.value ?? clock(session.durationS)}
-            </Text>
-            {details.distance ? (
-              <Text variant="label" className={tone.ink}>
-                {t(
-                  details.distance.unit === 'm'
-                    ? 'activity:workout.metresUnit'
-                    : 'activity:workout.kilometresUnit',
-                )}
+          <View className="mt-2 min-h-[112px] flex-row items-center gap-2">
+            <View className="min-w-0 flex-1">
+              <Text variant="overlineSm" className={tone.ink}>
+                {t(details.distance ? 'activity:workout.distance' : 'activity:workout.time')}
               </Text>
+              <Text
+                variant="displayLg"
+                className={cn('text-[44px]', tone.ink)}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.65}
+              >
+                {details.distance?.value ?? clock(session.durationS)}
+              </Text>
+              {details.distance ? (
+                <Text variant="label" className={tone.ink}>
+                  {t(
+                    details.distance.unit === 'm'
+                      ? 'activity:workout.metresUnit'
+                      : 'activity:workout.kilometresUnit',
+                  )}
+                </Text>
+              ) : null}
+            </View>
+
+            {!wideText ? (
+              <View
+                className="h-[112px] w-[112px] items-center justify-center"
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
+                <View
+                  className={cn('absolute h-[110px] w-[110px] rounded-full border', tone.line)}
+                />
+                <View className={cn('absolute h-[90px] w-[90px] rounded-full border', tone.line)} />
+                <Icon {...workoutIcon(session.kind)} size={96} />
+              </View>
             ) : null}
           </View>
 
-          {!wideText ? (
-            <View
-              className="h-[112px] w-[112px] items-center justify-center"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            >
-              <View className={cn('absolute h-[110px] w-[110px] rounded-full border', tone.line)} />
-              <View className={cn('absolute h-[90px] w-[90px] rounded-full border', tone.line)} />
-              <Icon {...workoutIcon(session.kind)} size={96} />
-            </View>
-          ) : null}
-        </View>
-
-        <View className={cn('mt-3 border-t pt-3', wideText ? 'gap-3' : 'flex-row', tone.line)}>
-          <Metric
-            label={t(details.distance ? 'activity:workout.time' : 'activity:workout.energy')}
-            value={details.distance ? clock(session.durationS) : count(session.activeKcal)}
-            unit={details.distance ? undefined : t('common:unit.kcal')}
-            icon={{ set: 'body', name: details.distance ? 'stopwatch' : 'flame-burn' }}
-            className={wideText ? undefined : 'flex-1'}
-          />
-          {details.distance ? (
+          <View className={cn('mt-3 border-t pt-3', wideText ? 'gap-3' : 'flex-row', tone.line)}>
             <Metric
-              label={t('activity:workout.energy')}
-              value={count(session.activeKcal)}
-              unit={t('common:unit.kcal')}
-              icon={{ set: 'body', name: 'flame-burn' }}
-              className={cn(wideText ? 'border-t pt-3' : 'ml-4 flex-1 border-l pl-4', tone.line)}
-            />
-          ) : null}
-        </View>
-      </View>
-
-      {details.rhythm || session.elevationM != null ? (
-        <Card contentClassName={cn('py-4', wideText ? 'gap-3' : 'flex-row gap-0')}>
-          {details.rhythm ? (
-            <Metric
-              label={t(
-                details.rhythm.unit === 'speedUnit'
-                  ? 'activity:workout.speed'
-                  : 'activity:workout.pace',
-              )}
-              value={t(`activity:workout.${details.rhythm.unit}`, { value: details.rhythm.value })}
-              icon={{ set: 'body', name: details.kind === 'cycle' ? 'cycling' : 'stopwatch' }}
+              label={t(details.distance ? 'activity:workout.time' : 'activity:workout.energy')}
+              value={details.distance ? clock(session.durationS) : count(session.activeKcal)}
+              unit={details.distance ? undefined : t('common:unit.kcal')}
+              icon={{ set: 'body', name: details.distance ? 'stopwatch' : 'flame-burn' }}
               className={wideText ? undefined : 'flex-1'}
             />
-          ) : null}
-          {session.elevationM != null ? (
-            <Metric
-              label={t('activity:workout.elevation')}
-              value={t('activity:workout.metres', { value: count(session.elevationM) })}
-              icon={{ set: 'body', name: 'mountain' }}
-              className={cn(
-                !wideText && 'flex-1',
-                details.rhythm &&
-                  (wideText ? 'border-line border-t pt-3' : 'ml-4 border-line border-l pl-4'),
-              )}
-            />
-          ) : null}
-        </Card>
+            {details.distance ? (
+              <Metric
+                label={t('activity:workout.energy')}
+                value={count(session.activeKcal)}
+                unit={t('common:unit.kcal')}
+                icon={{ set: 'body', name: 'flame-burn' }}
+                className={cn(wideText ? 'border-t pt-3' : 'ml-4 flex-1 border-l pl-4', tone.line)}
+              />
+            ) : null}
+          </View>
+        </View>
+      </ReplayMask>
+
+      {details.rhythm || session.elevationM != null ? (
+        <ReplayMask>
+          <Card contentClassName={cn('py-4', wideText ? 'gap-3' : 'flex-row gap-0')}>
+            {details.rhythm ? (
+              <Metric
+                label={t(
+                  details.rhythm.unit === 'speedUnit'
+                    ? 'activity:workout.speed'
+                    : 'activity:workout.pace',
+                )}
+                value={t(`activity:workout.${details.rhythm.unit}`, {
+                  value: details.rhythm.value,
+                })}
+                icon={{ set: 'body', name: details.kind === 'cycle' ? 'cycling' : 'stopwatch' }}
+                className={wideText ? undefined : 'flex-1'}
+              />
+            ) : null}
+            {session.elevationM != null ? (
+              <Metric
+                label={t('activity:workout.elevation')}
+                value={t('activity:workout.metres', { value: count(session.elevationM) })}
+                icon={{ set: 'body', name: 'mountain' }}
+                className={cn(
+                  !wideText && 'flex-1',
+                  details.rhythm &&
+                    (wideText ? 'border-line border-t pt-3' : 'ml-4 border-line border-l pl-4'),
+                )}
+              />
+            ) : null}
+          </Card>
+        </ReplayMask>
       ) : null}
 
       {hasHeart ? (

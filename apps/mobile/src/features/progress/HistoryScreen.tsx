@@ -18,6 +18,7 @@ import {
 } from '@/data'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
+import { ReplayMask } from '@/lib/replay-mask'
 import { showChange, UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
 import { volume } from '@/lib/water'
 import { radius, spacing } from '@/theme/tokens'
@@ -128,19 +129,23 @@ export function HistoryScreen({ metric }: { metric: HistoryMetric }) {
         data={groups}
         keyExtractor={(group) => group.key}
         renderItem={({ item }) => (
-          <Card contentClassName="gap-0 px-4 pb-1 pt-4">
-            <View className="flex-row items-center justify-between gap-3 border-track border-b-2 pb-3">
-              <Text variant="subtitle" className="min-w-0 shrink" numberOfLines={1}>
-                {item.title}
-              </Text>
-              {item.figure ? (
-                <Text variant="label" className="text-muted">
-                  {item.figure}
+          // Weigh-ins are kept out of replays: a weight may come from Apple Health
+          // or Health Connect. The calorie and water histories stay visible.
+          <ReplayMask enabled={metric === 'weight'}>
+            <Card contentClassName="gap-0 px-4 pb-1 pt-4">
+              <View className="flex-row items-center justify-between gap-3 border-track border-b-2 pb-3">
+                <Text variant="subtitle" className="min-w-0 shrink" numberOfLines={1}>
+                  {item.title}
                 </Text>
-              ) : null}
-            </View>
-            {item.rows}
-          </Card>
+                {item.figure ? (
+                  <Text variant="label" className="text-muted">
+                    {item.figure}
+                  </Text>
+                ) : null}
+              </View>
+              {item.rows}
+            </Card>
+          </ReplayMask>
         )}
         ItemSeparatorComponent={Gap}
         ListEmptyComponent={

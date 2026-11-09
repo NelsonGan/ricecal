@@ -39,6 +39,7 @@ import {
   workoutBurn,
   clock as workoutClock,
 } from '@/features/workouts'
+import { ReplayMask } from '@/lib/replay-mask'
 import { unitFor } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { AppBar, Button, Dialog, Icon, Screen, Tappable, Text, useHeld } from '@/ui'
@@ -379,20 +380,25 @@ function WatchPulse({ workoutId, compact = false }: { workoutId: string; compact
   const { t } = useTranslation(['activity'])
   const bpm = useWatchPulse(workoutId)
   if (bpm === null) return null
+  // The watch's heart rate is health data: kept out of session replays.
   if (compact) {
     return (
-      <View className="flex-row items-center gap-1">
-        <Icon set="body" name="heart-rate" size={18} />
-        <Text variant="label">{t('activity:workout.bpm', { value: bpm })}</Text>
-      </View>
+      <ReplayMask>
+        <View className="flex-row items-center gap-1">
+          <Icon set="body" name="heart-rate" size={18} />
+          <Text variant="label">{t('activity:workout.bpm', { value: bpm })}</Text>
+        </View>
+      </ReplayMask>
     )
   }
   return (
-    <Stat
-      label={t('activity:workout.heartRate')}
-      value={t('activity:workout.bpm', { value: bpm })}
-      leading={<LiveHeart bpm={bpm} />}
-    />
+    <ReplayMask>
+      <Stat
+        label={t('activity:workout.heartRate')}
+        value={t('activity:workout.bpm', { value: bpm })}
+        leading={<LiveHeart bpm={bpm} />}
+      />
+    </ReplayMask>
   )
 }
 
@@ -408,26 +414,35 @@ function LiveBurn({ workout, compact = false }: { workout: LiveWorkout; compact?
   const watchKcal = useWatchEnergy(workout.id)
   const burn = workoutBurn(workout, (now - workout.startedAt) / 1000, body, watchKcal)
   const note = burnNote(t, burn.source, body !== undefined)
+  // The watch's own active energy is health data: kept out of session replays.
+  // Our estimate, shown without a watch, is not.
+  const fromWatch = watchKcal !== null
   if (compact) {
     return (
-      <View className="flex-row items-center gap-1">
-        <Icon set="body" name="flame-burn" size={18} />
-        <Text variant="label">
-          {burn.kcal === null
-            ? '—'
-            : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })}
-        </Text>
-      </View>
+      <ReplayMask enabled={fromWatch}>
+        <View className="flex-row items-center gap-1">
+          <Icon set="body" name="flame-burn" size={18} />
+          <Text variant="label">
+            {burn.kcal === null
+              ? '—'
+              : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })}
+          </Text>
+        </View>
+      </ReplayMask>
     )
   }
   return (
-    <Stat
-      label={t('workouts:detail.kcalLabel')}
-      value={
-        burn.kcal === null ? '—' : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })
-      }
-      info={note}
-    />
+    <ReplayMask enabled={fromWatch}>
+      <Stat
+        label={t('workouts:detail.kcalLabel')}
+        value={
+          burn.kcal === null
+            ? '—'
+            : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })
+        }
+        info={note}
+      />
+    </ReplayMask>
   )
 }
 

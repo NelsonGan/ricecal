@@ -20,16 +20,19 @@
 // secret must not be an open door onto the table that decides who has paid.
 
 import { createClient } from '@supabase/supabase-js'
+import { syncFromStore } from '../_shared/entitlement.ts'
 import { json } from '../_shared/http.ts'
 import {
   accountNoLongerExists,
   at,
   ENTITLEMENT,
   isStale,
+  needsStoreCheck,
   planOf,
   type RevenueCatEvent,
   sandboxAllowed,
   statusFor,
+  transferParties,
 } from '../_shared/revenuecat.ts'
 
 /**
@@ -52,6 +55,51 @@ async function tokenMatches(presented: string, expected: string): Promise<boolea
   let diff = 0
   for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i]
   return diff === 0
+}
+
+function serviceClient() {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  )
+}
+
+/**
+ * Settle a CANCELLATION or TRANSFER by asking RevenueCat about each account and
+ * writing its answer (`needsStoreCheck` says why the event cannot be read
+ * directly). A 500 when RevenueCat cannot be asked or the write fails, so
+ * RevenueCat delivers the event again rather than the refund being lost.
+ */
+async function settleFromStore(event: RevenueCatEvent, userIds: string[]): Promise<Response> {
+  const db = serviceClient()
+  const happenedAt = at(event.event_timestamp_ms)
+  const settled: Record<string, string> = {}
+  for (const userId of userIds) {
+    let verdict: Awaited<ReturnType<typeof syncFromStore>>
+    try {
+      verdict = await syncFromStore(db, userId, happenedAt)
+    } catch (error) {
+      if (accountNoLongerExists(error as { code?: string; message?: string })) {
+        settled[userId] = 'account no longer exists'
+        continue
+      }
+      console.error(`[revenuecat] ${event.type} write failed:`, (error as Error).message)
+      return json({ ok: false, error: 'could not record the event' }, 500)
+    }
+    if (!verdict) {
+      // Why is on the line before, from `fetchSubscriber`: no key, a timeout or
+      // an error from RevenueCat. A 500 either way, so RevenueCat delivers it
+      // again and a key restored within its retry window still applies it.
+      console.error(`[revenuecat] ${event.type} for ${userId}: could not ask RevenueCat; retrying`)
+      return json({ ok: false, error: 'could not confirm with RevenueCat' }, 500)
+    }
+    settled[userId] = verdict
+  }
+  console.log(
+    `[revenuecat] ${event.type}${event.cancel_reason ? ` (${event.cancel_reason})` : ''}:`,
+    JSON.stringify(settled),
+  )
+  return json({ ok: true, settled })
 }
 
 Deno.serve(async (req: Request) => {
@@ -80,6 +128,17 @@ Deno.serve(async (req: Request) => {
 
   const event = payload.event
   if (!event) return json({ ok: false, error: 'no event' }, 400)
+
+  // A TRANSFER names its accounts in `transferred_from` / `transferred_to` and
+  // carries no `app_user_id`, so it is settled here, before the checks below
+  // that need one. Both ends are asked: the accounts it left lose Pro, the one
+  // it went to gains it. The sandbox rule is applied per account by
+  // `syncFromStore`, which never grants on a sandbox purchase it does not cover.
+  if (event.type === 'TRANSFER') {
+    const ids = transferParties(event).filter((id) => UUID.test(id))
+    if (ids.length === 0) return json({ ok: true, ignored: 'transfer between no accounts of ours' })
+    return await settleFromStore(event, ids)
+  }
 
   // `app_user_id` is the Supabase user id the app told RevenueCat about (see
   // `identifyPurchaser`). An anonymous id means the SDK was configured before
@@ -134,13 +193,15 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, ignored: `not the ${ENTITLEMENT} entitlement` })
   }
 
+  // A CANCELLATION is either "auto-renew off" or "refunded", and only RevenueCat
+  // knows which. Asking it keeps the first on Pro until its period ends and
+  // takes the second, lifetime included, off now.
+  if (needsStoreCheck(event)) return await settleFromStore(event, [appUserId])
+
   const status = statusFor(event)
   if (!status) return json({ ok: true, ignored: `nothing to do for ${event.type}` })
 
-  const db = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-  )
+  const db = serviceClient()
 
   const plan = planOf(event.product_id)
   const expires = at(event.expiration_at_ms)

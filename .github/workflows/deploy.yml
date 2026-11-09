@@ -98,7 +98,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -246,11 +246,11 @@ jobs:
       # archives the same toolchain main does unless asked otherwise.
       - name: Select Xcode
         if: matrix.platform == 'ios'
-        uses: maxim-lobanov/setup-xcode@v1
+        uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: ${{ github.event.inputs.xcode || '27.1' }}
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -264,9 +264,9 @@ jobs:
           java-version: 17
 
       - name: Set up EAS CLI
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8
         with:
-          eas-version: latest
+          eas-version: 27.5.0
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: Cache eas-build-local
@@ -393,8 +393,8 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          mkdir -p build-logs
-          cp -R ~/Library/Logs/gym build-logs/gym 2>/dev/null || true
+          mkdir -p "$RUNNER_TEMP/raw-logs" build-logs
+          cp -R ~/Library/Logs/gym "$RUNNER_TEMP/raw-logs/gym" 2>/dev/null || true
           # The local build plugin works out of a temp directory whose name is a
           # fresh uuid per run, so the logs can only be found by searching. The
           # `logs/` subdirectory of that tree is where gym's raw xcodebuild
@@ -402,11 +402,33 @@ jobs:
           # EAS_LOCAL_BUILD_SKIP_CLEANUP above.
           find "${TMPDIR:-/tmp}" -maxdepth 8 -path '*eas-build-local*' \
             \( -name '*.log' -o -name '*.txt' \) \
-            -exec cp {} build-logs/ \; 2>/dev/null || true
-          # Say so rather than leaving an empty artifact to be read as "the
-          # build printed nothing".
-          if [ -z "$(ls -A build-logs 2>/dev/null)" ]; then
-            echo "::warning::No build logs found — the local build tree was already gone."
+            -exec cp {} "$RUNNER_TEMP/raw-logs/" \; 2>/dev/null || true
+          # The artifact is public, and GitHub masks secrets in the job log only,
+          # never inside an artifact. The raw logs print each script phase's
+          # environment, which holds EXPO_TOKEN and whatever EAS injects into
+          # the build (POSTHOG_CLI_API_KEY and the like), and the values EAS
+          # injects never pass through this step to be redacted by value. So
+          # the raw logs stay on the runner, and what is uploaded is the lines
+          # around each compiler or build error: the file, the line and the
+          # message, which is what the logs are collected for.
+          find "$RUNNER_TEMP/raw-logs" -type f | while read -r file; do
+            excerpt="build-logs/$(basename "$file").errors.txt"
+            grep -n -E -B3 -A8 'error:|fatal error|\*\* (ARCHIVE|BUILD) FAILED|Undefined symbols|ld: |PhaseScriptExecution failed|xcodebuild: error' "$file" > "$excerpt" 2>/dev/null || true
+            [ -s "$excerpt" ] || rm -f "$excerpt"
+          done
+          # Then strip any environment line and the one token this step can see,
+          # and upload nothing at all if that token is still in there.
+          if [ -n "$(ls -A build-logs 2>/dev/null)" ]; then
+            find build-logs -type f -exec perl -ni -e 'print unless /^[0-9]+[-:]\s*(export\s+)?[A-Za-z_][A-Za-z0-9_]*\\?=/' {} +
+            if [ -n "${EXPO_TOKEN:-}" ]; then
+              find build-logs -type f -exec perl -pi -e 's/\Q$ENV{EXPO_TOKEN}\E/[redacted]/g' {} +
+              if grep -rqF -- "$EXPO_TOKEN" build-logs; then
+                echo "::warning::A build log still held EXPO_TOKEN after scrubbing, so no logs are uploaded."
+                rm -rf build-logs
+              fi
+            fi
+          else
+            echo "::warning::No build errors found in the logs, or the local build tree was already gone."
           fi
           ls -la build-logs || true
 
@@ -453,7 +475,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -461,9 +483,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Set up EAS CLI
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8
         with:
-          eas-version: latest
+          eas-version: 27.5.0
           token: ${{ secrets.EXPO_TOKEN }}
 
       # Cloud, not `--local`, and `--no-wait`: a dev client is a one-off artefact

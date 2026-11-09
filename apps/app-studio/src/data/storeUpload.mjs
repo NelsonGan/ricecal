@@ -107,7 +107,19 @@ export async function androidReady() {
  * @returns {string} the directory written
  */
 export function stageLocale(root, locale, screenshots) {
+  // The locale and the filenames arrive in a request body and end up in a
+  // path that is deleted recursively and then written to. Unchecked, a
+  // locale of `../../..` deletes and overwrites anything this user can, so
+  // both are held to the shapes the studio actually sends.
+  if (!STAGED_LOCALE.test(String(locale))) throw new Error(`Refusing to stage locale ${JSON.stringify(locale)}`);
+  if (!Array.isArray(screenshots)) throw new Error('screenshots must be an array');
+  for (const shot of screenshots) {
+    if (!STAGED_FILENAME.test(String(shot?.filename))) {
+      throw new Error(`Refusing to stage file ${JSON.stringify(shot?.filename)}`);
+    }
+  }
   const dir = path.join(root, locale);
+  if (path.dirname(path.resolve(dir)) !== path.resolve(root)) throw new Error('Staging path escapes its root');
   fs.rmSync(dir, { recursive: true, force: true });
   fs.mkdirSync(dir, { recursive: true });
   for (const shot of screenshots) {
@@ -115,6 +127,11 @@ export function stageLocale(root, locale, screenshots) {
   }
   return dir;
 }
+
+/** A store or studio locale: `en`, `zh-Hant`, `en-US`, `es-419`, `sr-Latn-RS`. */
+const STAGED_LOCALE = /^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8}){0,2}$/;
+/** A bare PNG name, such as `01-today.png`: no directory part. */
+const STAGED_FILENAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,100}\.png$/i;
 
 /** PNGs in a directory, in the order both stores will show them. */
 export function sortedPngs(dir) {

@@ -115,3 +115,27 @@ Deno.test('a payload with nothing in it does not throw', () => {
   assertEquals(subscriberFrom({}, NOW).active, false)
   assertEquals(subscriberFrom({ subscriber: {} }, NOW).active, false)
 })
+
+Deno.test('a sandbox lifetime purchase says so too, from its one-off entry', () => {
+  // A one-off purchase has no `subscriptions` entry. Its sandbox flag and store
+  // are on its `non_subscriptions` entry, the newest of which is the one
+  // granting; read only from `subscriptions`, every sandbox lifetime looked like
+  // a production one.
+  const read = subscriberFrom(
+    {
+      subscriber: {
+        entitlements: { pro: { expires_date: null, product_identifier: 'ricecal_pro_lifetime' } },
+        non_subscriptions: {
+          ricecal_pro_lifetime: [
+            { is_sandbox: false, store: 'play_store' },
+            { is_sandbox: true, store: 'app_store' },
+          ],
+        },
+      },
+    },
+    NOW,
+  )
+  assertEquals(read.active, true)
+  assertEquals(read.sandbox, true)
+  assertEquals(read.store, 'app_store')
+})

@@ -54,6 +54,28 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        /*
+         * The baseline every page gets. The site holds no session, so these
+         * guard the visitor rather than an account: no framing (nothing
+         * legitimate embeds the site), no MIME sniffing, HTTPS only, and no
+         * camera, microphone or location for any script that ends up here.
+         * The Content-Security-Policy below is `frame-ancestors` only. A
+         * script and style policy does not exist yet (GA and PostHog load
+         * scripts from three hosts, and vinext inlines its own), and when it
+         * does it goes into this same header: a second CSP header would be
+         * enforced alongside this one, not instead of it.
+         */
+        headers: [
+          { key: "Strict-Transport-Security", value: "max-age=31536000" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+        source: "/:path*",
+      },
+      {
         // A share token is a bearer credential. Set this on the response,
         // before the browser discovers any assets in the document, so the
         // token cannot become a Referer header.

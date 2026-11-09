@@ -26,6 +26,7 @@ import { ScreenTitle, SettingRow } from '@/features/shared'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { askForRating } from '@/lib/rating'
+import { ReplayMask } from '@/lib/replay-mask'
 import { showWeight, UNIT_KEY, unitFor } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -193,14 +194,20 @@ export default function MeScreen() {
               `unitFor(undefined)` is kilograms — so an imperial account whose
               weight landed first would read its own figure in the unit it does
               not use, then watch it change. A dash says nothing instead. */}
-          <StatTile
-            className="flex-1"
-            tone="track"
-            label={t(UNIT_KEY[weightUnit]).toUpperCase()}
-            value={
-              weight === undefined || settings === undefined ? '—' : showWeight(weight, weightUnit)
-            }
-          />
+          {/* Kept out of replays: the weight may come from Apple Health or
+              Health Connect. The mask takes the tile's share of the row. */}
+          <ReplayMask style={{ flex: 1 }}>
+            <StatTile
+              className="flex-1"
+              tone="track"
+              label={t(UNIT_KEY[weightUnit]).toUpperCase()}
+              value={
+                weight === undefined || settings === undefined
+                  ? '—'
+                  : showWeight(weight, weightUnit)
+              }
+            />
+          </ReplayMask>
           <StatTile
             className="flex-1"
             tone="track"

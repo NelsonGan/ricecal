@@ -34,7 +34,7 @@ jobs:
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@1dedf2c611547ede7232d26866dd3c56ab903bbb # v1
         with:
           # PINNED, not `latest`. Resolving "latest" costs a GitHub API call on
           # every run, and that call is rate-limited per runner IP — shared

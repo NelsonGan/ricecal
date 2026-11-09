@@ -5,6 +5,7 @@ import { View } from 'react-native'
 
 import { bodyFrom, type TrendBucket, type TrendRange, type TrendSummary, useProfile } from '@/data'
 import { goalDate } from '@/lib/nutrition'
+import { ReplayMask } from '@/lib/replay-mask'
 import { fromKg, showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { Icon, Text } from '@/ui'
 import { pointNames, SPAN_KEY } from './axis'
@@ -71,79 +72,84 @@ export function WeightCard({
     ? pointNames(buckets, range, (from, to) => t('progress:range.between', { from, to }))
     : []
 
+  // Weight, which may come from Apple Health or Health Connect: kept out of replays.
   return (
-    <TrendCard
-      heading={{
-        icon: { set: 'body', name: 'weighing-scale' },
-        title: t('progress:metric.weight'),
-      }}
-      onOpen={() => router.push('/history/weight')}
-      openLabel={t('progress:history.weightTitle')}
-      loading={loading || !buckets}
-      problem={problem}
-      onRetry={onRetry}
-      figure={current === null ? undefined : { value: showWeight(current, unit), unit: unitLabel }}
-      chip={
-        // Under what one decimal can show, there is no change to name.
-        change === null || Math.abs(change) < 0.05 ? null : (
-          <TrendChip
-            tone={change < 0 ? 'pandan' : 'kaya'}
-            direction={change < 0 ? 'down' : 'up'}
-            label={t('progress:weight.change', {
-              value: showWeight(Math.abs(change), unit),
-              unit: unitLabel,
-            })}
-          />
-        )
-      }
-    >
-      {current === null || !buckets || !summary ? (
-        <Text variant="meta">{t('progress:weight.empty')}</Text>
-      ) : (
-        <>
-          {/* With no reading in the range the line would be one held value
-              with nothing on it; the figure above already says the weight. */}
-          {summary.weighIns === 0 ? null : (
-            <TrendLine
-              goal={goalLine}
-              points={buckets.map((bucket, index) => ({
-                key: bucket.start,
-                ...names[index],
-                value: bucket.weight,
-              }))}
-              carryFrom={summary.weightBefore}
-              formatValue={(value) => `${showWeight(value, unit)} ${unitLabel}`}
-              unitFactor={fromKg(1, unit)}
-              accessibilityLabel={t('progress:weight.chart', { span: t(SPAN_KEY[range]) })}
+    <ReplayMask>
+      <TrendCard
+        heading={{
+          icon: { set: 'body', name: 'weighing-scale' },
+          title: t('progress:metric.weight'),
+        }}
+        onOpen={() => router.push('/history/weight')}
+        openLabel={t('progress:history.weightTitle')}
+        loading={loading || !buckets}
+        problem={problem}
+        onRetry={onRetry}
+        figure={
+          current === null ? undefined : { value: showWeight(current, unit), unit: unitLabel }
+        }
+        chip={
+          // Under what one decimal can show, there is no change to name.
+          change === null || Math.abs(change) < 0.05 ? null : (
+            <TrendChip
+              tone={change < 0 ? 'pandan' : 'kaya'}
+              direction={change < 0 ? 'down' : 'up'}
+              label={t('progress:weight.change', {
+                value: showWeight(Math.abs(change), unit),
+                unit: unitLabel,
+              })}
             />
-          )}
+          )
+        }
+      >
+        {current === null || !buckets || !summary ? (
+          <Text variant="meta">{t('progress:weight.empty')}</Text>
+        ) : (
+          <>
+            {/* With no reading in the range the line would be one held value
+              with nothing on it; the figure above already says the weight. */}
+            {summary.weighIns === 0 ? null : (
+              <TrendLine
+                goal={goalLine}
+                points={buckets.map((bucket, index) => ({
+                  key: bucket.start,
+                  ...names[index],
+                  value: bucket.weight,
+                }))}
+                carryFrom={summary.weightBefore}
+                formatValue={(value) => `${showWeight(value, unit)} ${unitLabel}`}
+                unitFactor={fromKg(1, unit)}
+                accessibilityLabel={t('progress:weight.chart', { span: t(SPAN_KEY[range]) })}
+              />
+            )}
 
-          {remaining === null || target === null ? null : (
-            <View className="flex-row items-center gap-2">
-              <Icon set="body" name="target" size={18} />
-              <Text variant="meta" className="min-w-0 flex-1" numberOfLines={2}>
-                {remaining < 0.1
-                  ? t('progress:weight.atGoal')
-                  : t('progress:weight.toGoal', {
-                      value: showWeight(remaining, unit),
-                      target: showWeight(target, unit),
-                      unit: unitLabel,
-                    })}
-              </Text>
-              {reachedOn && remaining >= 0.1 ? (
-                <Text variant="caption">
-                  {t('progress:weight.weeksAway', {
-                    count: Math.max(
-                      1,
-                      Math.ceil(differenceInCalendarDays(reachedOn, new Date()) / 7),
-                    ),
-                  })}
+            {remaining === null || target === null ? null : (
+              <View className="flex-row items-center gap-2">
+                <Icon set="body" name="target" size={18} />
+                <Text variant="meta" className="min-w-0 flex-1" numberOfLines={2}>
+                  {remaining < 0.1
+                    ? t('progress:weight.atGoal')
+                    : t('progress:weight.toGoal', {
+                        value: showWeight(remaining, unit),
+                        target: showWeight(target, unit),
+                        unit: unitLabel,
+                      })}
                 </Text>
-              ) : null}
-            </View>
-          )}
-        </>
-      )}
-    </TrendCard>
+                {reachedOn && remaining >= 0.1 ? (
+                  <Text variant="caption">
+                    {t('progress:weight.weeksAway', {
+                      count: Math.max(
+                        1,
+                        Math.ceil(differenceInCalendarDays(reachedOn, new Date()) / 7),
+                      ),
+                    })}
+                  </Text>
+                ) : null}
+              </View>
+            )}
+          </>
+        )}
+      </TrendCard>
+    </ReplayMask>
   )
 }

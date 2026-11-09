@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 
 import type { ActivitySession } from '@/data'
 import { formatTime, ItemRow } from '@/features/shared'
+import { ReplayMask } from '@/lib/replay-mask'
 import { count, distance, duration } from './format'
 import { showsDistance, workoutIcon, workoutKindKey } from './workoutKind'
 
@@ -24,16 +25,19 @@ export function SessionItem({ session, onPress }: SessionItemProps) {
   const far = showsDistance(session.kind) ? distance(session.distanceM) : null
   if (far) parts.push(far)
 
+  // A workout read from Apple Health or Health Connect: kept out of replays.
   return (
-    <ItemRow
-      title={session.kindLabel?.trim() || t(workoutKindKey(session.kind))}
-      icon={workoutIcon(session.kind)}
-      detail={parts.join(' · ')}
-      value={count(session.activeKcal)}
-      unit={t('common:unit.kcal')}
-      valueTone="hibiscus"
-      compact
-      onPress={onPress}
-    />
+    <ReplayMask>
+      <ItemRow
+        title={session.kindLabel?.trim() || t(workoutKindKey(session.kind))}
+        icon={workoutIcon(session.kind)}
+        detail={parts.join(' · ')}
+        value={count(session.activeKcal)}
+        unit={t('common:unit.kcal')}
+        valueTone="hibiscus"
+        compact
+        onPress={onPress}
+      />
+    </ReplayMask>
   )
 }

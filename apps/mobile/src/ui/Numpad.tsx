@@ -25,6 +25,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ReplayMask } from '@/lib/replay-mask'
 import { motion, radius, slab, spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import { useWindowLayout } from './adaptive'
@@ -106,6 +107,8 @@ export type NumpadFieldSpec = {
   replaceFirst: boolean
   /** A column of extra keys, for a field that is one of many. See `NumpadTools`. */
   tools?: NumpadTools
+  /** Kept out of session replays while this field has the pad. */
+  masked?: boolean
 }
 
 /**
@@ -370,6 +373,11 @@ export type NumpadFieldOptions = {
   replaceFirst?: boolean
   /** Extra keys for a field that is one of a run of them. See `NumpadTools`. */
   tools?: NumpadTools
+  /**
+   * The field holds health data or a weight, so the pad is kept out of session
+   * replays while it has it: the keys pressed would give the value away.
+   */
+  masked?: boolean
   /** Pass a field's own handlers through; this hook composes rather than replaces. */
   onFocus?: () => void
   onBlur?: () => void
@@ -401,6 +409,7 @@ export function useNumpadField({
   label,
   replaceFirst = false,
   tools,
+  masked = false,
   onFocus,
   onBlur,
   enabled = true,
@@ -419,8 +428,9 @@ export function useNumpadField({
     maxLength,
     replaceFirst,
     tools,
+    masked,
   })
-  field.current = { value, onChangeText, decimal, label, maxLength, replaceFirst, tools }
+  field.current = { value, onChangeText, decimal, label, maxLength, replaceFirst, tools, masked }
 
   // One session object for the life of the field, so `close` can tell whether
   // the pad it is being asked to shut is still this field's.
@@ -676,140 +686,142 @@ function NumpadSurface({
         slide,
       ]}
     >
-      {/* Says what is being edited, because the field itself is often under the
+      <ReplayMask enabled={spec.masked === true}>
+        {/* Says what is being edited, because the field itself is often under the
           pad by the time it opens, and carries the way out on the right — where
           the platform's own pill had taught everybody to reach. */}
-      <View
-        className="flex-row items-center gap-1.5"
-        style={{ height: context.headerHeight, marginBottom: KEY_GAP }}
-      >
-        {/* A label with a line break is a name over a detail: the exercise,
+        <View
+          className="flex-row items-center gap-1.5"
+          style={{ height: context.headerHeight, marginBottom: KEY_GAP }}
+        >
+          {/* A label with a line break is a name over a detail: the exercise,
             then the set and unit, so neither is cut off by the keys beside it. */}
-        <View className="min-w-0 flex-1">
-          {detail ? (
-            <Text variant="caption" numberOfLines={1}>
-              {title}
+          <View className="min-w-0 flex-1">
+            {detail ? (
+              <Text variant="caption" numberOfLines={1}>
+                {title}
+              </Text>
+            ) : null}
+            <Text variant="label" numberOfLines={1}>
+              {detail ?? title}
             </Text>
-          ) : null}
-          <Text variant="label" numberOfLines={1}>
-            {detail ?? title}
-          </Text>
+          </View>
+          {tools ? (
+            // An icon rather than "Done": on the last field Next already says it.
+            <Tappable
+              className="h-[34px] w-[40px] items-center justify-center rounded-sm bg-surface"
+              hitSlop={5}
+              onPress={context.dismiss}
+              accessibilityRole="button"
+              accessibilityLabel={context.labels.done}
+            >
+              <Icon set="ui" name="chevron-down" size={18} tintColor={colors.pandanInk} />
+            </Tappable>
+          ) : (
+            <Tappable
+              className="px-2 py-1.5"
+              onPress={context.dismiss}
+              accessibilityRole="button"
+              accessibilityLabel={context.labels.done}
+            >
+              <Text variant="label" className="text-pandan-ink">
+                {context.labels.done}
+              </Text>
+            </Tappable>
+          )}
         </View>
-        {tools ? (
-          // An icon rather than "Done": on the last field Next already says it.
-          <Tappable
-            className="h-[34px] w-[40px] items-center justify-center rounded-sm bg-surface"
-            hitSlop={5}
-            onPress={context.dismiss}
-            accessibilityRole="button"
-            accessibilityLabel={context.labels.done}
-          >
-            <Icon set="ui" name="chevron-down" size={18} tintColor={colors.pandanInk} />
-          </Tappable>
-        ) : (
-          <Tappable
-            className="px-2 py-1.5"
-            onPress={context.dismiss}
-            accessibilityRole="button"
-            accessibilityLabel={context.labels.done}
-          >
-            <Text variant="label" className="text-pandan-ink">
-              {context.labels.done}
-            </Text>
-          </Tappable>
-        )}
-      </View>
 
-      <View className="flex-row" style={{ gap: KEY_GAP }}>
-        <View className="flex-[3]" style={{ gap: KEY_GAP }}>
-          {ROWS.map((row) => (
-            <View key={row[0]} className="flex-row" style={{ gap: KEY_GAP }}>
-              {row.map((key) => {
-                // The decimal key is blanked rather than dropped on a whole-number
-                // field. Dropped, the row rebalances and 0 slides off centre —
-                // and 0 is the key on that row anybody is aiming for.
-                if (key === '.' && !spec.decimal) {
-                  return <View key={key} className={cn('flex-1', KEY_BOX)} />
-                }
-                return (
-                  <Squish
-                    key={key}
-                    containerClassName={cn('flex-1', KEY_BOX)}
-                    className="flex-1 items-center justify-center bg-surface"
-                    slabClassName="bg-line"
-                    depth={slab.sm}
-                    radius={radius.sm}
-                    onPress={() => press(key)}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      key === 'back'
-                        ? context.labels.backspace
-                        : key === '.'
-                          ? context.labels.decimal
-                          : key
-                    }
-                  >
-                    {key === 'back' ? (
-                      // No rub-out in the icon set, and a trash can is a
-                      // different promise. The arrow is what the a11y label
-                      // above explains.
-                      <Icon set="ui" name="arrow-left" size={22} tintColor={colors.muted} />
-                    ) : (
-                      // Keep Baloo 2's full glyph box inside the key. A tighter
-                      // implicit leading clipped the digits on newer iOS.
-                      <Text className="font-display text-[24px] leading-[29px] text-heading">
-                        {key}
-                      </Text>
-                    )}
-                  </Squish>
-                )
-              })}
-            </View>
-          ))}
-        </View>
-        {tools ? (
-          // Two keys, each two rows tall: easy to hit without looking.
-          <View className="flex-[1.2]" style={{ gap: KEY_GAP }}>
-            {tools.complete ? (
+        <View className="flex-row" style={{ gap: KEY_GAP }}>
+          <View className="flex-[3]" style={{ gap: KEY_GAP }}>
+            {ROWS.map((row) => (
+              <View key={row[0]} className="flex-row" style={{ gap: KEY_GAP }}>
+                {row.map((key) => {
+                  // The decimal key is blanked rather than dropped on a whole-number
+                  // field. Dropped, the row rebalances and 0 slides off centre —
+                  // and 0 is the key on that row anybody is aiming for.
+                  if (key === '.' && !spec.decimal) {
+                    return <View key={key} className={cn('flex-1', KEY_BOX)} />
+                  }
+                  return (
+                    <Squish
+                      key={key}
+                      containerClassName={cn('flex-1', KEY_BOX)}
+                      className="flex-1 items-center justify-center bg-surface"
+                      slabClassName="bg-line"
+                      depth={slab.sm}
+                      radius={radius.sm}
+                      onPress={() => press(key)}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        key === 'back'
+                          ? context.labels.backspace
+                          : key === '.'
+                            ? context.labels.decimal
+                            : key
+                      }
+                    >
+                      {key === 'back' ? (
+                        // No rub-out in the icon set, and a trash can is a
+                        // different promise. The arrow is what the a11y label
+                        // above explains.
+                        <Icon set="ui" name="arrow-left" size={22} tintColor={colors.muted} />
+                      ) : (
+                        // Keep Baloo 2's full glyph box inside the key. A tighter
+                        // implicit leading clipped the digits on newer iOS.
+                        <Text className="font-display text-[24px] leading-[29px] text-heading">
+                          {key}
+                        </Text>
+                      )}
+                    </Squish>
+                  )
+                })}
+              </View>
+            ))}
+          </View>
+          {tools ? (
+            // Two keys, each two rows tall: easy to hit without looking.
+            <View className="flex-[1.2]" style={{ gap: KEY_GAP }}>
+              {tools.complete ? (
+                <Squish
+                  containerClassName={TALL_KEY_BOX}
+                  className="flex-1 items-center justify-center gap-1 bg-pandan-soft"
+                  slabClassName="bg-pandan-soft-line"
+                  depth={slab.sm}
+                  radius={radius.sm}
+                  onPress={() => session.field.current.tools?.complete?.onPress()}
+                  accessibilityRole="button"
+                  accessibilityLabel={tools.complete.accessibilityLabel ?? tools.complete.label}
+                >
+                  <Icon set="ui" name="check" size={22} tintColor={colors.pandanInk} />
+                  <Text className="font-display text-[16px] leading-[21px] text-pandan-ink">
+                    {tools.complete.label}
+                  </Text>
+                </Squish>
+              ) : (
+                <View className={TALL_KEY_BOX} />
+              )}
               <Squish
                 containerClassName={TALL_KEY_BOX}
-                className="flex-1 items-center justify-center gap-1 bg-pandan-soft"
-                slabClassName="bg-pandan-soft-line"
+                className="flex-1 items-center justify-center bg-pandan"
+                slabClassName="bg-pandan-slab"
                 depth={slab.sm}
                 radius={radius.sm}
-                onPress={() => session.field.current.tools?.complete?.onPress()}
+                onPress={() => {
+                  const live = session.field.current.tools?.next
+                  if (live) live.onPress()
+                  else context.dismiss()
+                }}
                 accessibilityRole="button"
-                accessibilityLabel={tools.complete.accessibilityLabel ?? tools.complete.label}
+                accessibilityLabel={tools.next?.label ?? context.labels.done}
               >
-                <Icon set="ui" name="check" size={22} tintColor={colors.pandanInk} />
-                <Text className="font-display text-[16px] leading-[21px] text-pandan-ink">
-                  {tools.complete.label}
+                <Text className="font-display text-[18px] leading-[23px] text-on-pandan">
+                  {tools.next?.label ?? context.labels.done}
                 </Text>
               </Squish>
-            ) : (
-              <View className={TALL_KEY_BOX} />
-            )}
-            <Squish
-              containerClassName={TALL_KEY_BOX}
-              className="flex-1 items-center justify-center bg-pandan"
-              slabClassName="bg-pandan-slab"
-              depth={slab.sm}
-              radius={radius.sm}
-              onPress={() => {
-                const live = session.field.current.tools?.next
-                if (live) live.onPress()
-                else context.dismiss()
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={tools.next?.label ?? context.labels.done}
-            >
-              <Text className="font-display text-[18px] leading-[23px] text-on-pandan">
-                {tools.next?.label ?? context.labels.done}
-              </Text>
-            </Squish>
-          </View>
-        ) : null}
-      </View>
+            </View>
+          ) : null}
+        </View>
+      </ReplayMask>
     </Animated.View>
   )
 }

@@ -19,6 +19,11 @@ export type RevenueCatEvent = {
   purchased_at_ms?: number | null
   /** When the event happened, which orders deliveries. See `isStale`. */
   event_timestamp_ms?: number | null
+  /** On a CANCELLATION: `CUSTOMER_SUPPORT` is a refund. Logged, not trusted. */
+  cancel_reason?: string | null
+  /** On a TRANSFER: the accounts the purchase left, and the ones it went to. */
+  transferred_from?: string[] | null
+  transferred_to?: string[] | null
 }
 
 /** The entitlement this app sells. An event about anything else is not ours. */
@@ -127,23 +132,43 @@ export function statusFor(
     case 'BILLING_ISSUE':
       return 'billing_retry'
 
-    // TEST is the dashboard's "send test event" button, SUBSCRIBER_ALIAS is
-    // two ids being merged, CANCELLATION is covered above. None of them says
-    // anything new about entitlement, and answering 200 keeps RevenueCat from
-    // retrying something we deliberately ignored.
+    // TEST is the dashboard's "send test event" button and SUBSCRIBER_ALIAS is
+    // two ids being merged. Neither says anything new about entitlement, and
+    // answering 200 keeps RevenueCat from retrying something we ignored.
     //
-    // TRANSFER is here DELIBERATELY, and it is the one that took thinking
-    // about. It moves a purchase between app_user_ids, and it describes that
-    // move in `transferred_from` / `transferred_to` rather than in
-    // `app_user_id` — which the caller has already fallen back to
-    // `original_app_user_id` to fill in. Granting on it would therefore credit
-    // whichever of the two ends that fallback happened to land on, and half
-    // the time that is the account the subscription just left. Ignoring it
-    // costs the receiving account nothing lasting: the next renewal or restore
-    // says who owns it, in a payload that is unambiguous about it.
+    // CANCELLATION and TRANSFER have no status of their own either: one can
+    // mean "still paid up" or "refunded", the other names its accounts outside
+    // `app_user_id`. The webhook settles both by asking RevenueCat about each
+    // account (`needsStoreCheck`) before it ever calls this.
     default:
       return null
   }
+}
+
+/**
+ * Events whose meaning only RevenueCat's current answer can settle, so the
+ * webhook asks RevenueCat about the account instead of reading the event.
+ *
+ * CANCELLATION is both "auto-renew turned off, access until the period ends"
+ * and "refunded". RevenueCat's docs promise no EXPIRATION after a refunded
+ * one-off purchase, and a lifetime row has no end date to run out, so ignoring
+ * the event left every refunded lifetime purchase on Pro for good. Asking
+ * covers both readings: an unsubscribed renewal is still live there until its
+ * period ends, and a refund is not.
+ *
+ * TRANSFER moves a purchase between accounts and says so only in
+ * `transferred_from` and `transferred_to`. Ignoring it left every account the
+ * purchase left on Pro, so one lifetime purchase restored onto account after
+ * account made each of them Pro for good.
+ */
+export function needsStoreCheck(event: RevenueCatEvent): boolean {
+  return event.type === 'CANCELLATION' || event.type === 'TRANSFER'
+}
+
+/** Both ends of a TRANSFER, deduplicated, as RevenueCat named them. */
+export function transferParties(event: RevenueCatEvent): string[] {
+  const ids = [...(event.transferred_from ?? []), ...(event.transferred_to ?? [])]
+  return [...new Set(ids.filter((id): id is string => typeof id === 'string' && id !== ''))]
 }
 
 /**
