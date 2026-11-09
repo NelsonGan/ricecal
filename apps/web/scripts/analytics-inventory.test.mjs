@@ -15,12 +15,16 @@ const readme = readFileSync(new URL("../../README.md", web), "utf8");
 
 // A plain object of display names rather than a typed plan, so the names are
 // read straight from the source.
-const events = [
-  ...(readFileSync(new URL("src/lib/analytics.ts", web), "utf8")
+const body =
+  readFileSync(new URL("src/lib/analytics.ts", web), "utf8")
     .split("export const EVENTS = {")[1]
-    ?.split("} as const")[0]
-    ?.matchAll(/^\s+\w+: "([^"]+)",$/gm) ?? []),
-].map(([, name]) => name);
+    ?.split("} as const")[0] ?? "";
+const events = [...body.matchAll(/^\s*["']?\w+["']?\s*:\s*["']([^"']+)["']/gm)].map(
+  ([, name]) => name,
+);
+// Every entry line, so one written in a shape the names above miss fails
+// rather than going unchecked.
+const entries = body.split("\n").filter((line) => /^\s*["']?\w+["']?\s*:/.test(line));
 
 const table = readme
   .split("<!-- analytics-website-events:start -->")[1]
@@ -28,6 +32,7 @@ const table = readme
 
 test("documents every website event with a source that exists in apps/web", () => {
   assert.ok(events.length > 0, "found no names in EVENTS");
+  assert.equal(events.length, entries.length, "an EVENTS entry is not a plain string name");
   assert.ok(table, "the README has no website events table");
   const rows = table
     .split("\n")
