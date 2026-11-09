@@ -388,19 +388,11 @@ function WatchPulse({ workoutId }: { workoutId: string }) {
  */
 function LiveBurn({ workout }: { workout: LiveWorkout }) {
   const { t } = useTranslation(['workouts', 'common'])
-  const { burn, weighed, fromWatch } = useLiveBurn(workout)
+  const { burn, text, weighed, fromWatch } = useLiveBurn(workout)
   const note = burnNote(t, burn.source, weighed)
   return (
     <ReplayMask enabled={fromWatch}>
-      <Stat
-        label={t('workouts:detail.kcalLabel')}
-        value={
-          burn.kcal === null
-            ? '—'
-            : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })
-        }
-        info={note}
-      />
+      <Stat label={t('workouts:detail.kcalLabel')} value={text ?? '—'} info={note} />
     </ReplayMask>
   )
 }

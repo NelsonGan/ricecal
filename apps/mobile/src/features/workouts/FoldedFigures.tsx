@@ -4,25 +4,9 @@ import { View } from 'react-native'
 
 import { ReplayMask } from '@/lib/replay-mask'
 import { Icon, Tappable, Text } from '@/ui'
-import { workoutBurn } from './burn'
-import { useEnergyBody } from './energyBody'
-import { useNow } from './live'
+import { useLiveBurn } from './liveBurn'
 import type { LiveWorkout } from './model'
-import { useWatchEnergy, useWatchPulse } from './pulse'
-
-/**
- * The burn so far, on its own five second clock, since an estimate moves
- * slowly and a watch streams no faster. The watch's own active energy is
- * health data and is kept out of session replays (`fromWatch`); our estimate,
- * shown without a watch, is not.
- */
-export function useLiveBurn(workout: LiveWorkout) {
-  const now = useNow(5000)
-  const body = useEnergyBody()
-  const watchKcal = useWatchEnergy(workout.id)
-  const burn = workoutBurn(workout, (now - workout.startedAt) / 1000, body, watchKcal)
-  return { burn, weighed: body !== undefined, fromWatch: watchKcal !== null }
-}
+import { useWatchPulse } from './pulse'
 
 /**
  * The folded row: heart rate and burn on one line, the whole row the toggle.
@@ -46,10 +30,8 @@ export function FoldedFigures({
 }) {
   const { t } = useTranslation(['workouts', 'activity'])
   const bpm = useWatchPulse(workout.id)
-  const { burn, fromWatch } = useLiveBurn(workout)
+  const { text: kcalText, fromWatch } = useLiveBurn(workout)
   const bpmText = bpm === null ? null : t('activity:workout.bpm', { value: bpm })
-  const kcalText =
-    burn.kcal === null ? null : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })
   const spoken = [pulsing ? bpmText : null, kcalText].filter(Boolean).join(', ')
   return (
     <Tappable

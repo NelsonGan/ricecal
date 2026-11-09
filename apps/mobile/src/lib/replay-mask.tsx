@@ -17,6 +17,10 @@ import { View, type ViewProps } from 'react-native'
  * - `importantForAccessibility="no"` stops that label hiding the children from
  *   TalkBack; VoiceOver reads the children because the wrapper is not itself an
  *   accessibility element.
+ * - Inside a button or other accessible element with no label of its own, both
+ *   screen readers build that element's label from its children's labels, and
+ *   so say "ph-no-capture". Give such an element its own `accessibilityLabel`
+ *   (the live workout's folded figures row does).
  * - `collapsable={false}` keeps the wrapper in the native tree. Flattened away,
  *   which React Native does to layout-only views, there is nothing to mask.
  *

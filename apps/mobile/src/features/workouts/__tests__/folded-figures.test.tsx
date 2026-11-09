@@ -13,7 +13,8 @@ import { receivePulse } from '../pulse'
  */
 
 // The estimate's body comes from the diary; the watch's figures need none.
-jest.mock('../energyBody', () => ({ useEnergyBody: () => undefined }))
+let mockBody: { weightKg: number; restingKcalPerDay: number | null } | undefined
+jest.mock('../energyBody', () => ({ useEnergyBody: () => mockBody }))
 // The live document's clock, without the diary it is kept beside.
 jest.mock('../live', () => ({ useNow: () => Date.now() }))
 
@@ -49,16 +50,20 @@ function walk(node: Node, labelled: boolean, inButton: boolean): [number, number
   return [all, spoken]
 }
 
-const row = () =>
+const row = (shown = workout, pulsing = true) =>
   render(
     <FoldedFigures
-      workout={workout}
-      pulsing
+      workout={shown}
+      pulsing={pulsing}
       hint="Heart rate, Burned"
       onPress={() => {}}
       chevron={null}
     />,
   )
+
+beforeEach(() => {
+  mockBody = undefined
+})
 
 it('says the figures a watch streams rather than the replay mask', async () => {
   receivePulse({ workoutId: workout.id, bpm: 128, kcal: 230.4, at: Date.now() })
@@ -71,4 +76,40 @@ it('says the figures a watch streams rather than the replay mask', async () => {
   expect(masks(screen.toJSON() as Node)).toEqual([2, 0])
   expect(screen.getByText('128 bpm')).toBeTruthy()
   expect(screen.getByText('230 kcal')).toBeTruthy()
+})
+
+it('leaves our own estimate unmasked and speaks it', async () => {
+  mockBody = { weightKg: 70, restingKcalPerDay: null }
+  await row(newWorkout({ id: 'w-estimate', name: 'Legs', startedAt: Date.now() }), false)
+
+  expect(screen.getByRole('button').props.accessibilityLabel).toBe('0 kcal')
+  expect(masks(screen.toJSON() as Node)).toEqual([0, 0])
+})
+
+it("masks the watch's figure saved on the workout when none has streamed since", async () => {
+  // A relaunch mid-workout: the watch's energy is on the document, the stream
+  // in memory is empty.
+  const saved = {
+    ...newWorkout({ id: 'w-saved', name: 'Pull', startedAt: Date.now() }),
+    watch: { recorded: true, appliedSeq: 1, kcal: 310 },
+  }
+  await row(saved, false)
+
+  expect(screen.getByRole('button').props.accessibilityLabel).toBe('310 kcal')
+  expect(masks(screen.toJSON() as Node)).toEqual([1, 0])
+})
+
+it('says no heart rate while the row is not showing one', async () => {
+  receivePulse({ workoutId: 'w-quiet', bpm: 99, kcal: 12, at: Date.now() })
+  await row(newWorkout({ id: 'w-quiet', name: 'Core', startedAt: Date.now() }), false)
+
+  expect(screen.getByRole('button').props.accessibilityLabel).toBe('12 kcal')
+  expect(screen.queryByText('99 bpm')).toBeNull()
+})
+
+it('leaves a row with no figure to read its children', async () => {
+  await row(newWorkout({ id: 'w-none', name: 'Arms', startedAt: Date.now() }), false)
+
+  expect(screen.getByRole('button').props.accessibilityLabel).toBeUndefined()
+  expect(screen.getByText('—')).toBeTruthy()
 })
