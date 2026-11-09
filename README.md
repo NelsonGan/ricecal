@@ -7101,10 +7101,11 @@ retention and RevenueCat for finance; neither is the count of custom app events.
 
 The public acquisition site is `apps/web` (see [The website](#the-website)).
 Its emitter, `apps/web/src/lib/analytics.ts`, declares every event in `EVENTS`,
-and this section is its contract. The inventory test checks that every name in
-`EVENTS` has a row in the table below and that each row's source files exist in
-`apps/web`; the payloads, mappings and gates are still read by hand, so update
-this section in the same change as the code.
+and this section is its contract. `apps/web/scripts/analytics-inventory.test.mjs`
+checks that every name in `EVENTS` has a row in the table below and that each
+row's source files exist in `apps/web`; the Web workflow runs it, so a website
+pull request is checked without the app's. The payloads, mappings and gates are
+still read by hand, so update this section in the same change as the code.
 
 The website reports to the same PostHog project (`659954`) as the app. GA4
 shares RiceCal property `553863111` through web stream `15786444693`, public
