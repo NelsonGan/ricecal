@@ -82,6 +82,24 @@ the target style, pass one or two existing assets with `-i` from the start.
    image in. Then run whatever asset pipeline the repo uses (icon registry generators,
    compression, etc.).
 
+## Where RiceCal art goes
+
+Every RiceCal surface is in this repo, and each keeps its own copies:
+
+- **The app**: `apps/mobile/assets/` (icons under `assets/icons/<set>/`, exercise
+  art under `assets/exercises/`). It is the source for food and dish icons.
+- **The website**: `apps/web/public/`. Its dish and food icons are copies of the
+  app's (`public/icons/`). Copy a new one across rather than drawing a second
+  version, and draw site pictures at the size they are shown, since the site has
+  no image optimizer.
+- **The App Studio**: `apps/app-studio/public/assets/app-store/` for store
+  creatives. Record a generated creative's prompt, dimensions and checksum in
+  `artwork-provenance.json`, or in `food-camera/catalog.json` for a food photo
+  (README, *The App Studio*), and recompress PNGs with
+  `oxipng -o 4 --nc --strip safe` before recording the checksum.
+
+Every committed image stays in history forever, so commit only the chosen one.
+
 ## Troubleshooting
 
 - `codex CLI not found`: install Codex, or set `CODEX_BIN`. The ChatGPT desktop app

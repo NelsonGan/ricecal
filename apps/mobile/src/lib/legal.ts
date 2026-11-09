@@ -10,7 +10,7 @@ import { Linking } from 'react-native'
  * `ProDetails`, and the missing pair is one of the commonest reasons a paywall
  * is rejected.
  *
- * Our own documents rather than Apple's standard EULA. `ricecal-web` serves both,
+ * Our own documents rather than Apple's standard EULA. The website (`apps/web`) serves both,
  * and the deletion page beside them is what guideline 5.1.1(v) points at.
  *
  * These are the addresses filed in App Store Connect, and the same `ricecal.app`

@@ -1,0 +1,110 @@
+name: Web
+
+# The website in apps/web (ricecal.app): checks and builds every pull request
+# that touches it, uploads the build as a version of the ricecal-web Worker
+# without sending it traffic, and deploys `main`. README: *The website*.
+#
+# The checkout is shallow and sparse: the App Studio's captures alone are
+# hundreds of MB, and this job needs none of them. pnpm still needs the root
+# manifest, lockfile and `patches/` to install from the frozen lockfile.
+run-name: >-
+  ${{ github.event_name == 'pull_request' && format('Web · PR #{0}', github.event.number)
+   || github.ref == 'refs/heads/main' && 'Web · Production deploy'
+   || format('Web · {0}', github.ref_name) }}
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/web.yml'
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/web.yml'
+  workflow_dispatch:
+
+# A newer push to a pull request replaces its older run. Production deploys
+# queue rather than cancel, so each merge is deployed in order.
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: ${{ github.ref == 'refs/heads/main' && 'Web · Check, build and deploy' || 'Web · Check, build and upload' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: apps/web
+    env:
+      # The account API token ricecal-web-github-actions: Workers Scripts and
+      # Account Settings (read) on the account; Zone (read), Workers Routes,
+      # DNS and SSL and Certificates on ricecal.app, for the two custom
+      # domains. Pull requests from forks get no secrets, so they skip the
+      # upload.
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WEB_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            apps/web
+            patches
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # The website and what it depends on, not the whole workspace: the root
+      # install pulls Expo and its native toolchain.
+      - name: Install dependencies
+        working-directory: .
+        run: pnpm install --frozen-lockfile --filter "./apps/web..."
+
+      - name: Lint
+        run: pnpm lint
+
+      # Generates the route and binding types first, so it needs no build.
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      # A production deploy needs the token; a pull request without it (a fork)
+      # still gets every check and the build.
+      - name: Check the Cloudflare token
+        id: token
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          elif [ "$GITHUB_REF" = refs/heads/main ]; then
+            echo "::error::The CLOUDFLARE_WEB_API_TOKEN secret is not set, so main cannot deploy."
+            exit 1
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No CLOUDFLARE_WEB_API_TOKEN: skipping the Worker upload."
+          fi
+
+      # Pull requests and other branches: upload the build as a version without
+      # sending it any traffic. This proves the Worker uploads and binds.
+      - name: Upload Worker version
+        if: github.ref != 'refs/heads/main' && steps.token.outputs.present == 'true'
+        run: pnpm run upload
+
+      - name: Deploy to production
+        if: github.ref == 'refs/heads/main'
+        run: pnpm run deploy:prebuilt

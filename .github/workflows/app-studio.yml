@@ -1,0 +1,78 @@
+name: App Studio
+
+# Checks the App Studio in apps/app-studio (the store screenshots, creatives
+# and listing copy) on every pull request and push to `main` that touches it.
+# It deploys nothing: uploads to the stores run by hand from a Mac that holds
+# the store CLIs' credentials. README: *The App Studio*.
+run-name: >-
+  ${{ github.event_name == 'pull_request' && format('App Studio · PR #{0}', github.event.number)
+   || format('App Studio · {0}', github.ref_name) }}
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/app-studio/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/app-studio.yml'
+  pull_request:
+    paths:
+      - 'apps/app-studio/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/app-studio.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: app-studio-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: App Studio · Test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/app-studio
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            apps/app-studio
+            patches
+
+      - uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # The Search creative tests encode and decode real video.
+      - name: Install ffmpeg
+        working-directory: .
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
+
+      - name: Install dependencies
+        working-directory: .
+        run: pnpm install --frozen-lockfile --filter "./apps/app-studio..."
+
+      - name: Test
+        run: pnpm test
+
+      # Every capture against the size, checksum and store mapping it was
+      # recorded with.
+      - name: Check the screenshots
+        run: pnpm check:screenshots
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build

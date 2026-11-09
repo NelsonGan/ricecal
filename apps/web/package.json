@@ -11,8 +11,7 @@
     "typecheck": "vinext typegen && cf workers types && tsc --noEmit",
     "deploy": "vinext-cloudflare deploy",
     "deploy:prebuilt": "vinext-cloudflare deploy --skip-build",
-    "upload": "cf workers versions create --prebuilt --mode production",
-    "ci:install": "pnpm --dir ../.. install --frozen-lockfile --filter @ricecal/web..."
+    "upload": "cf workers versions create --prebuilt --mode production"
   },
   "dependencies": {
     "@vinext/cloudflare": "^1.2.1",

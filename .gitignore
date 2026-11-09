@@ -95,3 +95,8 @@ apps/supabase/data/photo-bench/
 apps/supabase/data/foods/*.json
 apps/supabase/data/foods/.reports/
 apps/supabase/data/foods/aliases/
+
+# Scratch space for PR screenshots and recordings. They go up as GitHub
+# attachments (`gh pr create/edit --attach`) and are never committed: 101 MB of
+# them once sat in every clone.
+.github/pr-assets/
