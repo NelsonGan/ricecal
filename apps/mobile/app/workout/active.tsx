@@ -12,6 +12,7 @@ import {
   discardWorkout,
   doneSets,
   type FinishParams,
+  FoldedFigures,
   getActiveWorkout,
   LiveHeart,
   type LiveWorkout,
@@ -24,25 +25,23 @@ import {
   setWorkoutPrefs,
   showsVolume,
   unfinishedSets,
-  useEnergyBody,
+  useLiveBurn,
   useLiveWorkout,
   useLoggerOpen,
   useNow,
   useRestComplete,
-  useWatchEnergy,
   useWatchPulse,
   useWatchPulsing,
   useWorkoutPrefs,
   volumeText,
   WorkoutEditor,
   WorkoutUnavailable,
-  workoutBurn,
   clock as workoutClock,
 } from '@/features/workouts'
 import { ReplayMask } from '@/lib/replay-mask'
 import { unitFor } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
-import { AppBar, Button, Dialog, Icon, Screen, Tappable, Text, useHeld } from '@/ui'
+import { AppBar, Button, Dialog, Screen, Tappable, Text, useHeld } from '@/ui'
 
 /**
  * The logger: a workout being trained.
@@ -353,44 +352,24 @@ function BodyFigures({ workout, pulsing }: { workout: LiveWorkout; pulsing: bool
           </Tappable>
         </View>
       ) : (
-        <Tappable
+        <FoldedFigures
+          workout={workout}
+          pulsing={pulsing}
+          hint={label}
           onPress={toggle}
-          accessibilityRole="button"
-          accessibilityHint={label}
-          accessibilityState={{ expanded: false }}
-          className="flex-row items-center gap-3 py-2.5"
-        >
-          {pulsing ? (
-            <>
-              <WatchPulse workoutId={workout.id} compact />
-              <View className="h-4 border-line border-l" />
-            </>
-          ) : null}
-          <LiveBurn workout={workout} compact />
-          <View className="flex-1" />
-          {chevron}
-        </Tappable>
+          chevron={chevron}
+        />
       )}
     </View>
   )
 }
 
 /** The heart rate an Apple Watch recording this workout is streaming, while it is. */
-function WatchPulse({ workoutId, compact = false }: { workoutId: string; compact?: boolean }) {
+function WatchPulse({ workoutId }: { workoutId: string }) {
   const { t } = useTranslation(['activity'])
   const bpm = useWatchPulse(workoutId)
   if (bpm === null) return null
   // The watch's heart rate is health data: kept out of session replays.
-  if (compact) {
-    return (
-      <ReplayMask>
-        <View className="flex-row items-center gap-1">
-          <Icon set="body" name="heart-rate" size={18} />
-          <Text variant="label">{t('activity:workout.bpm', { value: bpm })}</Text>
-        </View>
-      </ReplayMask>
-    )
-  }
   return (
     <ReplayMask>
       <Stat
@@ -407,30 +386,10 @@ function WatchPulse({ workoutId, compact = false }: { workoutId: string; compact
  * recording, our estimate otherwise (`workoutBurn`). Its own five second clock,
  * since an estimate moves slowly and a watch streams no faster.
  */
-function LiveBurn({ workout, compact = false }: { workout: LiveWorkout; compact?: boolean }) {
+function LiveBurn({ workout }: { workout: LiveWorkout }) {
   const { t } = useTranslation(['workouts', 'common'])
-  const now = useNow(5000)
-  const body = useEnergyBody()
-  const watchKcal = useWatchEnergy(workout.id)
-  const burn = workoutBurn(workout, (now - workout.startedAt) / 1000, body, watchKcal)
-  const note = burnNote(t, burn.source, body !== undefined)
-  // The watch's own active energy is health data: kept out of session replays.
-  // Our estimate, shown without a watch, is not.
-  const fromWatch = watchKcal !== null
-  if (compact) {
-    return (
-      <ReplayMask enabled={fromWatch}>
-        <View className="flex-row items-center gap-1">
-          <Icon set="body" name="flame-burn" size={18} />
-          <Text variant="label">
-            {burn.kcal === null
-              ? '—'
-              : t('workouts:detail.kcal', { value: burn.kcal.toLocaleString() })}
-          </Text>
-        </View>
-      </ReplayMask>
-    )
-  }
+  const { burn, weighed, fromWatch } = useLiveBurn(workout)
+  const note = burnNote(t, burn.source, weighed)
   return (
     <ReplayMask enabled={fromWatch}>
       <Stat
