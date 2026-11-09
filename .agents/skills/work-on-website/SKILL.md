@@ -44,18 +44,25 @@ markdown-only or comment-only change needs no build.
 ## Seeing a change
 
 There is no browser automation in the repo. Look at every visible change, in
-both colour schemes and at a phone width. With the T3 preview tools, open
-`http://localhost:3000`. Without them, headless Chrome takes the same pictures
-(`preferredColorScheme=0` is dark, `1` is light):
+both colour schemes and at a phone width.
+
+- **Phone width: the T3 preview tools.** Open `http://localhost:3000`
+  (`preview_open` with `target: { kind: "environment-port", port: 3000 }`),
+  then `preview_resize` to 390 × 844 and `preview_set_appearance` for light and
+  dark. Headless Chrome cannot do this: it never lays a page out narrower than
+  500 px, so a `--window-size=390,…` screenshot is a cropped 500 px page that
+  looks like overflow.
+- **Desktop, from the shell: headless Chrome.** `preferredColorScheme=0` is
+  dark, `1` is light:
 
 ```sh
 C="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 "$C" --headless=new --disable-gpu --hide-scrollbars --user-data-dir="$TMPDIR/chrome-web" \
-  --window-size=390,844 --blink-settings=preferredColorScheme=1 \
-  --virtual-time-budget=10000 --screenshot="$TMPDIR/web-phone-light.png" http://localhost:3000/my
+  --window-size=1280,900 --blink-settings=preferredColorScheme=1 \
+  --virtual-time-budget=10000 --screenshot="$TMPDIR/web-desktop-light.png" http://localhost:3000/my
 ```
 
-Use `--window-size=1280,900` for desktop. Stop `pnpm web:dev` when you are done
+Stop `pnpm web:dev` when you are done
 (`kill $(lsof -tnP -iTCP:3000 -sTCP:LISTEN)`); another worktree may want port
 3000. Save PR screenshots in `.github/pr-assets/<topic>/` (ignored by git) and
 attach them with `gh pr create/edit --attach`; never commit them (see `create-pr`).

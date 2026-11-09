@@ -173,6 +173,14 @@ conventional-commits prefix.
 
 These are the ones an agent hits first. The README has the rest.
 
+**The history was rewritten on 2026-11-09.** Every branch was force-pushed
+without `.github/pr-assets/` (159 MB of committed PR screenshots), so every
+commit before that date has a new SHA. A branch, worktree or clone made before
+then still carries the old history: move only its own commits onto the new
+`main` (`git rebase --onto origin/main <the old main commit it started from>`)
+and never push it as it is, or the screenshots come back. Old PR descriptions
+still show their images, because GitHub keeps each PR's commits.
+
 **Devices come from a small pool.** Every simulator and emulator is leased
 from the Simlock pool on this machine (see "Driving the iOS app"), which runs two
 devices at once and at most one Android emulator, so close yours when you are
