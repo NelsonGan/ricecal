@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { iosReady, stageLocale, stagingDir, uploadIOSLocale } from '../_lib';
+import { IOS_DEVICE_TYPE, iosReady, stageLocale, stagingDir, uploadIOSLocale } from '../_lib';
 
 /** Stage one locale's screenshots on disk, then hand them to `asc`. */
 export async function POST(req: NextRequest) {
@@ -11,6 +11,10 @@ export async function POST(req: NextRequest) {
     locale: string;
     screenshots: Array<{ filename: string; data: string }>;
   };
+  // Checked before staging, because `device` is a directory name there.
+  if (!Object.hasOwn(IOS_DEVICE_TYPE, device)) {
+    return NextResponse.json({ error: `Unknown device: ${device}` }, { status: 400 });
+  }
 
   try {
     const dir = stageLocale(stagingDir('ios', device), locale, screenshots);
