@@ -6080,9 +6080,12 @@ was last written more than a week ago (`lifetimeDueForCheck`, through
 `stillEntitled`). RevenueCat sends no expiry only for a one-off purchase, so
 that catches a lifetime product whose name `planOf` cannot read, and a Pro row
 made by hand, which has no RevenueCat id, is never asked about. Every path that
-hands out Pro asks: `isEntitled`, `claimScan` once the claim says the account
-is Pro (photographing a plate never reaches `isEntitled`), and the app's
-`entitlement` function. It expires the row only if RevenueCat says it is not
+hands out Pro asks: `isEntitled`, `claimScan` in the background once the claim
+says the account is Pro (photographing a plate never reaches `isEntitled`; the
+scan does not wait, and a refund found applies from the next one), and the
+app's `entitlement` function. A Pro gate that reads the row only in SQL
+(`is_entitled`) still trusts it until one of those has run, which a lifetime
+account using the app does within its next scan or sync. It expires the row only if RevenueCat says it is not
 entitled. RevenueCat unreachable leaves it standing, and that function instance
 waits an hour before asking about the account again, so an outage does not put
 RevenueCat's timeout on every request.
@@ -9819,13 +9822,14 @@ of it:
 ```sql
 insert into public.subscriptions (user_id, status, plan)
 values ('<your uuid>', 'active', 'yearly')
-on conflict (user_id) do update set status = 'active';
+on conflict (user_id) do update
+  set status = 'active', plan = 'yearly', current_period_end = null, rc_app_user_id = null;
 ```
 
-Leave `rc_app_user_id` unset on a row made by hand, as this does: a row with
-one and no end date is taken for a lifetime purchase and re-checked with
-RevenueCat once a week, and RevenueCat has no purchase behind a hand-made one,
-so it would be expired.
+It clears the end date, or a lapsed row would stay lapsed whatever its status
+says, and it clears `rc_app_user_id`. A row with one and no end date is taken
+for a lifetime purchase and re-checked with RevenueCat once a week, and
+RevenueCat has no purchase behind a hand-made one, so it would be expired.
 
 Testing the other direction is the same row with `status = 'none'`, or no row at
 all. `scan_usage` is where the day's count lives, and deleting the row is how you

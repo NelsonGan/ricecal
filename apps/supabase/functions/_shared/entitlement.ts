@@ -160,6 +160,11 @@ export function lifetimeDueForCheck(
 const failedChecks = new Map<string, number>()
 const RETRY_FAILED_CHECK_MS = 60 * 60 * 1000
 
+/** Forgets every remembered failure. For tests. */
+export function forgetFailedChecks(): void {
+  failedChecks.clear()
+}
+
 function noteFailedCheck(userId: string) {
   const now = Date.now()
   if (failedChecks.size > 1000) {
@@ -446,20 +451,49 @@ export async function claimScan(db: SupabaseClient, userId: string): Promise<voi
   // A Pro claim on a lifetime row due its weekly check is checked here too:
   // photographing a plate is the one model path that never goes through
   // `isEntitled`, so `claim_scan` would otherwise keep a refunded lifetime on
-  // the Pro ceiling for good. After the claim, so a free account pays nothing
-  // extra; a refund found here applies from the next scan.
-  if (data?.entitled) {
-    const { data: row } = await db
-      .from('subscriptions')
-      .select(ROW)
-      .eq('user_id', userId)
-      .maybeSingle<SubscriptionRow>()
-    if (row && lifetimeDueForCheck(row)) await stillEntitled(db, userId, row)
-  }
+  // the Pro ceiling for good. In the background, since this scan's claim is
+  // already made and a refund found here applies from the next one.
+  if (data?.entitled) inBackground(recheckLifetime(db, userId))
 
   if (data && !data.allowed) {
     throw new ScanLimitReached(data.used, data.daily_limit, data.entitled)
   }
+}
+
+/** When each account's row was last looked at by `recheckLifetime`, per instance. */
+const lastLooked = new Map<string, number>()
+const LOOK_AGAIN_MS = 60 * 60 * 1000
+
+/**
+ * The lifetime check for a scan: read the row and run `stillEntitled` if it is
+ * due. At most once an hour per account per instance, so a Pro account's scans
+ * do not each pay for a second read of `subscriptions` to learn what the first
+ * scan of the hour already did.
+ */
+async function recheckLifetime(db: SupabaseClient, userId: string): Promise<void> {
+  const now = Date.now()
+  const looked = lastLooked.get(userId)
+  if (looked !== undefined && now - looked < LOOK_AGAIN_MS) return
+  if (lastLooked.size > 1000) {
+    for (const [id, at] of lastLooked) if (now - at > LOOK_AGAIN_MS) lastLooked.delete(id)
+  }
+  lastLooked.set(userId, now)
+  const { data: row } = await db
+    .from('subscriptions')
+    .select(ROW)
+    .eq('user_id', userId)
+    .maybeSingle<SubscriptionRow>()
+  if (row && lifetimeDueForCheck(row)) await stillEntitled(db, userId, row)
+}
+
+/** Runs work past the response where the edge runtime allows it, and never throws. */
+function inBackground(work: Promise<unknown>): void {
+  const settled = work.catch((error) =>
+    console.error('[entitlement] background check failed:', (error as Error).message),
+  )
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+    .EdgeRuntime
+  runtime?.waitUntil?.(settled)
 }
 
 /**

@@ -336,24 +336,26 @@ export default function GoalsScreen() {
                   without it both the direction and the taper are invisible: a user
                   two kilos out sees a budget move for no stated reason. Shown for
                   the target being edited, so it answers the drag immediately
-                  rather than on save. */}
-              <View className="flex-row items-center justify-between">
-                <Text variant="label" className="text-muted">
-                  {t('profile:goals.weeklyPace')}
-                </Text>
-                <Text variant="label">
-                  {pace === 0
-                    ? t('profile:goals.paceHolding')
-                    : t(pace < 0 ? 'profile:goals.paceLosing' : 'profile:goals.paceGaining', {
-                        // Two decimals rather than `showWeight`'s one: a pace is a
-                        // fraction of a unit a week, and rounded to 0.1 the
-                        // difference between a gentle plan and a brisk one
-                        // disappears.
-                        value: fromKg(Math.abs(pace), unit).toFixed(2),
-                        unit: unitLabel,
-                      })}
-                </Text>
-              </View>
+                  rather than on save. A weight a week, so kept out of replays too. */}
+              <ReplayMask>
+                <View className="flex-row items-center justify-between">
+                  <Text variant="label" className="text-muted">
+                    {t('profile:goals.weeklyPace')}
+                  </Text>
+                  <Text variant="label">
+                    {pace === 0
+                      ? t('profile:goals.paceHolding')
+                      : t(pace < 0 ? 'profile:goals.paceLosing' : 'profile:goals.paceGaining', {
+                          // Two decimals rather than `showWeight`'s one: a pace is a
+                          // fraction of a unit a week, and rounded to 0.1 the
+                          // difference between a gentle plan and a brisk one
+                          // disappears.
+                          value: fromKg(Math.abs(pace), unit).toFixed(2),
+                          unit: unitLabel,
+                        })}
+                  </Text>
+                </View>
+              </ReplayMask>
             </Card>
 
             <Card title={t('profile:goals.other')}>

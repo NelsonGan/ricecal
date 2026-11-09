@@ -188,6 +188,7 @@ export function WeighInSheet({ date, onClose, unit, onUnitChange }: WeighInSheet
               // hundred and twenty taps.
               editable
               editLabel={t('progress:weight.sheetTitle')}
+              replayMasked
               accessibilityLabel={t('progress:weight.sheetTitle')}
               decrementLabel={t('common:a11y.decrease')}
               incrementLabel={t('common:a11y.increase')}

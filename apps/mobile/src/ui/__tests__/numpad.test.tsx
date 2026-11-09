@@ -39,11 +39,13 @@ function Harness({
   initial = '',
   keyboardType = 'decimal-pad' as const,
   selectTextOnFocus = false,
+  replayMasked = false,
 }: {
   label?: string
   initial?: string
   keyboardType?: 'decimal-pad' | 'number-pad' | 'numeric' | 'default'
   selectTextOnFocus?: boolean
+  replayMasked?: boolean
 }) {
   const [value, setValue] = useState(initial)
   return (
@@ -56,6 +58,7 @@ function Harness({
             onChangeText={setValue}
             keyboardType={keyboardType}
             selectTextOnFocus={selectTextOnFocus}
+            replayMasked={replayMasked}
           />
         </NumpadHost>
       </NumpadProvider>
@@ -83,6 +86,19 @@ async function tap(name: string) {
 }
 
 describe('Numpad', () => {
+  it('is kept out of session replays while a masked field has it', async () => {
+    // The keys pressed would give away the weight the masked field hides.
+    await render(<Harness label="Weight" replayMasked />)
+    await openPad('Weight')
+    expect(screen.queryAllByLabelText('ph-no-capture').length).toBeGreaterThan(0)
+  })
+
+  it('stays visible in session replays for every other field', async () => {
+    await render(<Harness label="Servings" />)
+    await openPad('Servings')
+    expect(screen.queryAllByLabelText('ph-no-capture')).toHaveLength(0)
+  })
+
   it('stays shut until a numeric field is focused, and names the field when it opens', async () => {
     await render(<Harness label="Servings" />)
     expect(screen.queryByRole('button', { name: '7' })).toBeNull()

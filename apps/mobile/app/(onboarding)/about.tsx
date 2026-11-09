@@ -205,6 +205,7 @@ export default function AboutStep() {
           <TextField
             containerClassName="flex-1"
             label={t('about.weight')}
+            replayMasked
             keyboardType="decimal-pad"
             placeholder={inFeet ? t('about.weightPlaceholderLb') : t('about.weightPlaceholder')}
             value={fields.weight}

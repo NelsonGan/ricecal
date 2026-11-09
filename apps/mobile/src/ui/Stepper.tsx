@@ -18,6 +18,12 @@ export type StepperProps = {
   max?: number
   /** Unit shown under the value: "plates", "kg", "ml". */
   unit?: string
+  /**
+   * The value is health data or a weight: the app's own number pad is kept out
+   * of session replays while this field has it, so the keys pressed do not give
+   * away what the masked field hides.
+   */
+  replayMasked?: boolean
   /** Override how the value reads. Defaults to a fraction-aware format. */
   format?: (value: number) => string
   /**
@@ -63,6 +69,7 @@ export function Stepper({
   decrementLabel,
   incrementLabel,
   className,
+  replayMasked = false,
 }: StepperProps) {
   const atMin = value - step < min
   const atMax = value + step > max
@@ -125,6 +132,7 @@ export function Stepper({
     value: typed ?? '',
     onChangeText: setTyped,
     label: editLabel ?? unit,
+    masked: replayMasked,
     onFocus: startEditing,
     onBlur: commit,
     returnKeyType: 'done',

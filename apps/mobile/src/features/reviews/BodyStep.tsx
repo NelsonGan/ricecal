@@ -49,7 +49,7 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
       {hasWeight ? (
         // Kept out of replays, like every weight.
         <ReplayMask>
-          <Shareable title={t('reviews:body.weight')}>
+          <Shareable title={t('reviews:body.weight')} masked>
             <Card contentClassName="gap-2 p-card">
               {/* See `CaloriesStep`: sixteen points under every heading. */}
               <Text variant="overline" className="mb-2">
@@ -113,59 +113,62 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
       ) : null}
 
       {hasSteps ? (
-        <Shareable title={t('reviews:body.steps')}>
-          <Card contentClassName="gap-2 p-card">
-            <Text variant="overline" className="mb-2">
-              {t('reviews:body.steps')}
-            </Text>
-
-            <View className="flex-row items-baseline justify-between gap-md">
-              <Text className="font-display text-[30px] leading-[38px] text-ink">
-                {Math.round(summary.steps ?? 0).toLocaleString()}
+        // Steps come from Apple Health or Health Connect: kept out of replays.
+        <ReplayMask>
+          <Shareable title={t('reviews:body.steps')} masked>
+            <Card contentClassName="gap-2 p-card">
+              <Text variant="overline" className="mb-2">
+                {t('reviews:body.steps')}
               </Text>
-              {summary.stepGoal ? (
-                <Text variant="meta" numberOfLines={1} className="min-w-0 shrink">
-                  {/* Out of the days that were MEASURED, matching the average
+
+              <View className="flex-row items-baseline justify-between gap-md">
+                <Text className="font-display text-[30px] leading-[38px] text-ink">
+                  {Math.round(summary.steps ?? 0).toLocaleString()}
+                </Text>
+                {summary.stepGoal ? (
+                  <Text variant="meta" numberOfLines={1} className="min-w-0 shrink">
+                    {/* Out of the days that were MEASURED, matching the average
                       beside it — `review_summary` filters that on `has_activity`
                       and this card is only drawn when `activeDays > 0` at all.
                       Against `days` a month whose health store was connected
                       halfway through claimed the goal was missed on every day
                       before the connection existed. */}
-                  {t('reviews:body.stepGoal', {
-                    done: summary.stepGoalDays,
-                    total: summary.activeDays,
-                    goal: summary.stepGoal.toLocaleString(),
-                  })}
-                </Text>
-              ) : null}
-            </View>
+                    {t('reviews:body.stepGoal', {
+                      done: summary.stepGoalDays,
+                      total: summary.activeDays,
+                      goal: summary.stepGoal.toLocaleString(),
+                    })}
+                  </Text>
+                ) : null}
+              </View>
 
-            {/* A line from zero with the step goal dashed: a day on or over
+              {/* A line from zero with the step goal dashed: a day on or over
                 it is pandan, one short of it kaya, as on Trends. */}
-            <TrendLine
-              height={104}
-              fromZero
-              goal={summary.stepGoal || null}
-              minPad={500}
-              interactive={false}
-              dotTone={(value) => (value >= (summary.stepGoal ?? 0) ? 'pandan' : 'kaya')}
-              points={buckets.map((bucket, position) => ({
-                key: bucket.start,
-                label:
-                  kind === 'week'
-                    ? format(parseISO(bucket.start), 'EEEEE')
-                    : t('progress:range.week', { index: position + 1 }),
-                value: bucket.steps === null ? null : Math.round(bucket.steps),
-              }))}
-              gaps="join"
-              formatValue={(value) => Math.round(value).toLocaleString()}
-              accessibilityLabel={t('reviews:body.stepsChart')}
-            />
-          </Card>
-        </Shareable>
+              <TrendLine
+                height={104}
+                fromZero
+                goal={summary.stepGoal || null}
+                minPad={500}
+                interactive={false}
+                dotTone={(value) => (value >= (summary.stepGoal ?? 0) ? 'pandan' : 'kaya')}
+                points={buckets.map((bucket, position) => ({
+                  key: bucket.start,
+                  label:
+                    kind === 'week'
+                      ? format(parseISO(bucket.start), 'EEEEE')
+                      : t('progress:range.week', { index: position + 1 }),
+                  value: bucket.steps === null ? null : Math.round(bucket.steps),
+                }))}
+                gaps="join"
+                formatValue={(value) => Math.round(value).toLocaleString()}
+                accessibilityLabel={t('reviews:body.stepsChart')}
+              />
+            </Card>
+          </Shareable>
+        </ReplayMask>
       ) : null}
 
-      <Shareable title={t('reviews:body.others')}>
+      <Shareable title={t('reviews:body.others')} masked={hasSteps}>
         {/* See `FoodStep`: a `gap-0` card owes its header the space back. */}
         <Card title={t('reviews:body.others')} contentClassName="gap-0 p-card">
           <View className="mt-4" />
@@ -175,7 +178,9 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
             value={t('reviews:body.waterValue', { amount: waterAmount(summary.water) })}
           />
           {hasSteps ? (
-            <>
+            // Exercise minutes, sessions, active energy and distance are health
+            // readings: kept out of replays. Water above stays visible.
+            <ReplayMask>
               <Divider className="my-3" />
               <OtherRow
                 label={t('reviews:body.move')}
@@ -194,7 +199,7 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
                   value: Math.round(summary.activeKcal ?? 0).toLocaleString(),
                 })}
               />
-            </>
+            </ReplayMask>
           ) : null}
         </Card>
       </Shareable>

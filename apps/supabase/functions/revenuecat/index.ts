@@ -71,16 +71,6 @@ function serviceClient() {
  * RevenueCat delivers the event again rather than the refund being lost.
  */
 async function settleFromStore(event: RevenueCatEvent, userIds: string[]): Promise<Response> {
-  // No key is a setting to fix, and said so loudly. Still a 500, so RevenueCat
-  // keeps delivering: a key restored within its retry window still applies the
-  // refund, where a 200 would have dropped it for good.
-  if (!Deno.env.get('REVENUECAT_API_KEY')) {
-    console.error(
-      `[revenuecat] REVENUECAT_API_KEY is not set, so a ${event.type} cannot be checked;` +
-        ' set it, or refunds and transfers keep Pro',
-    )
-    return json({ ok: false, error: 'REVENUECAT_API_KEY is not set' }, 500)
-  }
   const db = serviceClient()
   const happenedAt = at(event.event_timestamp_ms)
   const settled: Record<string, string> = {}
@@ -97,6 +87,9 @@ async function settleFromStore(event: RevenueCatEvent, userIds: string[]): Promi
       return json({ ok: false, error: 'could not record the event' }, 500)
     }
     if (!verdict) {
+      // Why is on the line before, from `fetchSubscriber`: no key, a timeout or
+      // an error from RevenueCat. A 500 either way, so RevenueCat delivers it
+      // again and a key restored within its retry window still applies it.
       console.error(`[revenuecat] ${event.type} for ${userId}: could not ask RevenueCat; retrying`)
       return json({ ok: false, error: 'could not confirm with RevenueCat' }, 500)
     }

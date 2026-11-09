@@ -35,6 +35,12 @@ export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
   rightSlot?: ReactNode
   /** The bordered box. Layout and sizing of the field itself. */
   className?: string
+  /**
+   * The value is health data or a weight: the app's own number pad is kept out
+   * of session replays while this field has it, so the keys pressed do not give
+   * away what the masked field hides.
+   */
+  replayMasked?: boolean
   /** The `TextInput` inside it — for a field whose value wants display type. */
   inputClassName?: string
   containerClassName?: string
@@ -78,6 +84,7 @@ export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function 
     className,
     inputClassName,
     containerClassName,
+    replayMasked = false,
     onFocus,
     onBlur,
     editable = true,
@@ -124,6 +131,7 @@ export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function 
     label,
     maxLength,
     replaceFirst: Boolean(selectTextOnFocus),
+    masked: replayMasked,
     onFocus: () => setFocused(true),
     onBlur: () => setFocused(false),
   })

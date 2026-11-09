@@ -10,12 +10,12 @@ import {
 } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Pressable, View, type ViewInstance } from 'react-native'
-
+import { ReplayMask } from '@/lib/replay-mask'
 import { captureView, type Shot, sharePicture } from '@/lib/share'
 import { spacing } from '@/theme/tokens'
 import { Button, cn, Sheet, Text } from '@/ui'
 
-type Capture = (view: RefObject<ViewInstance | null>) => Promise<void>
+type Capture = (view: RefObject<ViewInstance | null>, masked?: boolean) => Promise<void>
 
 const CaptureContext = createContext<Capture | null>(null)
 
@@ -56,13 +56,17 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
 
   const [shot, setShot] = useState<Shot | null>(null)
   const [shotIsBranded, setShotIsBranded] = useState(false)
+  // Whether the card the picture came from is kept out of session replays.
+  // The preview is a fresh picture of it, so it is kept out with it.
+  const [shotMasked, setShotMasked] = useState(false)
   const [previewReady, setPreviewReady] = useState(false)
   const [sending, setSending] = useState(false)
   const preview = useRef<ViewInstance>(null)
 
-  const capture = useCallback<Capture>(async (view) => {
+  const capture = useCallback<Capture>(async (view, masked = false) => {
     const taken = await captureView(view)
     if (taken) {
+      setShotMasked(masked)
       setShotIsBranded(false)
       setPreviewReady(false)
       setShot(taken)
@@ -120,31 +124,33 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
           // Held to the card's own proportions rather than a fixed height: no
           // two cards on the page are the same shape, and a preview that
           // letterboxes one is a preview of something the share does not send.
-          <View
-            ref={preview}
-            collapsable={false}
-            style={{ width: '100%', aspectRatio: shot.width / shot.height }}
-          >
-            <Image
-              source={{ uri: shot.uri }}
-              style={{ position: 'absolute', inset: 0 }}
-              contentFit="contain"
-              onLoad={() => setPreviewReady(true)}
-              accessibilityLabel={t('share.preview')}
-            />
-            {shotIsBranded ? null : (
-              <View
-                pointerEvents="none"
-                accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-                className="absolute flex-row items-center gap-1.5"
-                style={{ top: MARK_TOP, right: spacing.card }}
-              >
-                <Image source={MARK} style={{ width: 17, height: 17, borderRadius: 5 }} />
-                <Text variant="micro">{t('card.brand')}</Text>
-              </View>
-            )}
-          </View>
+          <MaskedWhen when={shotMasked}>
+            <View
+              ref={preview}
+              collapsable={false}
+              style={{ width: '100%', aspectRatio: shot.width / shot.height }}
+            >
+              <Image
+                source={{ uri: shot.uri }}
+                style={{ position: 'absolute', inset: 0 }}
+                contentFit="contain"
+                onLoad={() => setPreviewReady(true)}
+                accessibilityLabel={t('share.preview')}
+              />
+              {shotIsBranded ? null : (
+                <View
+                  pointerEvents="none"
+                  accessibilityElementsHidden
+                  importantForAccessibility="no-hide-descendants"
+                  className="absolute flex-row items-center gap-1.5"
+                  style={{ top: MARK_TOP, right: spacing.card }}
+                >
+                  <Image source={MARK} style={{ width: 17, height: 17, borderRadius: 5 }} />
+                  <Text variant="micro">{t('card.brand')}</Text>
+                </View>
+              )}
+            </View>
+          </MaskedWhen>
         ) : null}
       </Sheet>
     </CaptureContext.Provider>
@@ -160,6 +166,12 @@ export type ShareableProps = {
   title: string
   children: ReactNode
   className?: string
+  /**
+   * The card shows health data or a weight. Its share preview is then kept out
+   * of session replays too; masking the card itself is the caller's, so a card
+   * can mask only the rows that need it.
+   */
+  masked?: boolean
 }
 
 /**
@@ -168,7 +180,7 @@ export type ShareableProps = {
  * Keeping the mark out of this tree means tapping can never paint it over the
  * original card for a frame while the first capture is taken.
  */
-export function Shareable({ title, children, className }: ShareableProps) {
+export function Shareable({ title, children, className, masked = false }: ShareableProps) {
   const { t } = useTranslation('reviews')
   const capture = useContext(CaptureContext)
   const view = useRef<ViewInstance>(null)
@@ -176,7 +188,7 @@ export function Shareable({ title, children, className }: ShareableProps) {
   return (
     <Pressable
       ref={view}
-      onPress={() => void capture?.(view)}
+      onPress={() => void capture?.(view, masked)}
       className={cn(className)}
       accessibilityRole="button"
       accessibilityLabel={t('share.card', { card: title })}
@@ -184,6 +196,11 @@ export function Shareable({ title, children, className }: ShareableProps) {
       {children}
     </Pressable>
   )
+}
+
+/** `ReplayMask` around the children when `when` holds, and nothing otherwise. */
+function MaskedWhen({ when, children }: { when: boolean; children: ReactNode }) {
+  return when ? <ReplayMask>{children}</ReplayMask> : children
 }
 
 /** The app icon, at the size a corner of a shared card wants it. */

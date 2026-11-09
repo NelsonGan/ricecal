@@ -3,9 +3,11 @@ import { assertEquals, assertRejects } from 'jsr:@std/assert@^1'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   entitledBy,
+  forgetFailedChecks,
   LIFETIME_RECHECK_MS,
   lifetimeDueForCheck,
   reconcileEntitlement,
+  stillEntitled,
   syncFromStore,
 } from './entitlement.ts'
 
@@ -151,15 +153,20 @@ function fakeDb(initial: Row | null, clashes = 0) {
   return { db: db as unknown as SupabaseClient, writes }
 }
 
+/** How many times the stubbed RevenueCat has been asked. */
+let revenueCatCalls = 0
+
 /** Runs `fn` with RevenueCat answering `body`, or failing when it is null. */
 async function withRevenueCat<T>(body: unknown | null, fn: () => Promise<T>): Promise<T> {
   const realFetch = globalThis.fetch
   const hadKey = Deno.env.get('REVENUECAT_API_KEY')
   Deno.env.set('REVENUECAT_API_KEY', 'test-key')
-  globalThis.fetch = (async () =>
-    body === null
+  globalThis.fetch = (async () => {
+    revenueCatCalls += 1
+    return body === null
       ? new Response('unavailable', { status: 503 })
-      : new Response(JSON.stringify(body), { status: 200 })) as typeof fetch
+      : new Response(JSON.stringify(body), { status: 200 })
+  }) as typeof fetch
   try {
     return await fn()
   } finally {
@@ -292,4 +299,53 @@ Deno.test('the miss path only ever writes "entitled"', async () => {
   const unreachable = fakeDb(null)
   assertEquals(await withRevenueCat(null, () => reconcileEntitlement(unreachable.db, USER)), false)
   assertEquals(unreachable.writes.length, 0)
+})
+
+const DUE_LIFETIME_ROW = {
+  ...ACTIVE_LIFETIME_ROW,
+  rc_app_user_id: USER,
+  updated_at: '2026-01-01T00:00:00.000Z',
+}
+
+Deno.test('stillEntitled takes Pro away only on a definite "no"', async () => {
+  forgetFailedChecks()
+  const refunded = fakeDb(DUE_LIFETIME_ROW)
+  assertEquals(
+    await withRevenueCat(REFUNDED, () => stillEntitled(refunded.db, USER, DUE_LIFETIME_ROW)),
+    false,
+  )
+  const honoured = fakeDb(DUE_LIFETIME_ROW)
+  assertEquals(
+    await withRevenueCat(LIFETIME, () => stillEntitled(honoured.db, USER, DUE_LIFETIME_ROW)),
+    true,
+  )
+  // Not due: not even asked.
+  revenueCatCalls = 0
+  const fresh = { ...DUE_LIFETIME_ROW, updated_at: new Date().toISOString() }
+  assertEquals(
+    await withRevenueCat(REFUNDED, () => stillEntitled(fakeDb(fresh).db, USER, fresh)),
+    true,
+  )
+  assertEquals(revenueCatCalls, 0)
+})
+
+Deno.test('an unreachable RevenueCat is asked about an account once an hour, not every request', async () => {
+  forgetFailedChecks()
+  const { db } = fakeDb(DUE_LIFETIME_ROW)
+  revenueCatCalls = 0
+  assertEquals(await withRevenueCat(null, () => stillEntitled(db, USER, DUE_LIFETIME_ROW)), true)
+  assertEquals(revenueCatCalls, 1)
+  // Within the hour: the row stands, and RevenueCat is not asked again.
+  assertEquals(
+    await withRevenueCat(REFUNDED, () => stillEntitled(db, USER, DUE_LIFETIME_ROW)),
+    true,
+  )
+  assertEquals(revenueCatCalls, 1)
+  // Forgotten (an hour later, or a fresh instance): asked, and the refund lands.
+  forgetFailedChecks()
+  assertEquals(
+    await withRevenueCat(REFUNDED, () => stillEntitled(db, USER, DUE_LIFETIME_ROW)),
+    false,
+  )
+  assertEquals(revenueCatCalls, 2)
 })

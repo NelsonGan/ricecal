@@ -74,7 +74,9 @@ const isLive = (iso: string | null | undefined, now: number): boolean =>
 export async function fetchSubscriber(appUserId: string): Promise<StoreSubscriber | null> {
   const key = Deno.env.get('REVENUECAT_API_KEY')
   if (!key) {
-    console.warn('[revenuecat-api] REVENUECAT_API_KEY is not set; cannot reconcile')
+    // An error, not a warning: without the key no refund or transfer can be
+    // settled, and the webhook keeps asking RevenueCat to retry them.
+    console.error('[revenuecat-api] REVENUECAT_API_KEY is not set; cannot ask RevenueCat')
     return null
   }
 
