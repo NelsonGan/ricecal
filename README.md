@@ -8554,7 +8554,10 @@ name), another origin or site (any other page open in the browser), and any
 write that is not JSON (the only kind a cross-site page can send without a
 CORS preflight). `stageLocale` accepts only locale and PNG names of the shapes
 the studio sends, since both become a path it deletes and rewrites. Keep all
-three when adding a route. Pick a view and a language on the left,
+three when adding a route. Next cuts the body of any request the middleware
+sees at `middlewareClientMaxBodySize` in `next.config.ts` (200 MB here, 10 MB
+by default) and hands the route only the first part, so a route that takes
+more than a locale of screenshots needs that raised too. Pick a view and a language on the left,
 preview the scenes, and export one asset, the whole set, or every locale at
 once. Device and language controls stay locked while an export runs. Missing
 images or incomplete scene sets report an error instead of creating a partial ZIP.

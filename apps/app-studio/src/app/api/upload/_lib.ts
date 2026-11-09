@@ -6,6 +6,7 @@
  * where captured PNGs are staged, and the Play edit that has to outlive the
  * request that opened it.
  */
+import type { NextRequest } from 'next/server';
 import path from 'path';
 
 export {
@@ -55,3 +56,20 @@ export const androidSessions: Map<string, AndroidSession> =
 if (!globalThis.__androidSessions) {
   globalThis.__androidSessions = androidSessions;
 }
+
+/**
+ * A screenshot upload's JSON body, or null when it is not JSON or arrived cut
+ * short (Next cuts bodies above `middlewareClientMaxBodySize`, next.config.ts).
+ * Without this the route threw outside its `try` and answered a bare 500.
+ */
+export async function readUpload<T>(req: NextRequest): Promise<T | null> {
+  try {
+    return (await req.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+export const UNREADABLE_UPLOAD =
+  'Could not read this upload: it was not JSON, or it was cut short above the size limit in next.config.ts.';
+
