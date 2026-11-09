@@ -112,14 +112,16 @@ export async function isEntitled(db: SupabaseClient, userId: string): Promise<bo
 }
 
 /** The columns every entitlement read takes. */
-export const ROW = 'status, plan, current_period_end, last_event_at, updated_at'
+export const ROW = 'status, plan, current_period_end, last_event_at, rc_app_user_id, updated_at'
 
 export type SubscriptionRow = {
   status?: string | null
   plan?: string | null
   current_period_end?: string | null
   last_event_at?: string | null
-  updated_at?: string | null
+  rc_app_user_id?: string | null
+  /** `not null default now()`, and bumped by a trigger on every write. */
+  updated_at?: string
 }
 
 /**
@@ -133,25 +135,39 @@ export type SubscriptionRow = {
 export const LIFETIME_RECHECK_MS = 7 * 24 * 60 * 60 * 1000
 
 /**
- * A lifetime row last written over a week ago.
- *
- * Keyed on the plan, not on a missing end date: a Pro row granted by hand (the
- * one-row fix in the README) has no end date either, and RevenueCat knows
- * nothing about it, so asking would take it away.
+ * A lifetime row last written over a week ago: no end date, and written from
+ * RevenueCat (`rc_app_user_id` set), which only sends no expiry for a one-off
+ * purchase. Keyed on where the row came from rather than on `plan`, which is
+ * null for a product id `planOf` cannot read. A Pro row made by hand (the
+ * README's one-row fix) has no RevenueCat id and RevenueCat knows nothing about
+ * it, so it is never asked about and never taken away.
  */
 export function lifetimeDueForCheck(
   row: SubscriptionRow | null | undefined,
   now: Date = new Date(),
 ): boolean {
-  if (row?.plan !== 'lifetime' || row.current_period_end) return false
+  if (!row?.rc_app_user_id || row.current_period_end) return false
   const written = Date.parse(row.updated_at ?? '')
   // No timestamp to go on is due rather than exempt.
   return !Number.isFinite(written) || now.getTime() - written > LIFETIME_RECHECK_MS
 }
 
-/** When each account's lifetime check last failed, so an outage is asked once an hour. */
+/**
+ * When each account's lifetime check last failed, so an outage is asked about
+ * once an hour. Per function instance: a fresh instance asks once more, which
+ * bounds the cost without a table to keep it in.
+ */
 const failedChecks = new Map<string, number>()
 const RETRY_FAILED_CHECK_MS = 60 * 60 * 1000
+
+function noteFailedCheck(userId: string) {
+  const now = Date.now()
+  if (failedChecks.size > 1000) {
+    for (const [id, at] of failedChecks)
+      if (now - at > RETRY_FAILED_CHECK_MS) failedChecks.delete(id)
+  }
+  failedChecks.set(userId, now)
+}
 
 /**
  * An entitled row, re-checked with RevenueCat when it is a lifetime row that is
@@ -175,7 +191,7 @@ export async function stillEntitled(
     console.error('[entitlement] lifetime re-check failed:', (error as Error).message)
     return null
   })
-  if (verdict === null) failedChecks.set(userId, Date.now())
+  if (verdict === null) noteFailedCheck(userId)
   else failedChecks.delete(userId)
   return verdict !== 'not_entitled'
 }
@@ -187,22 +203,38 @@ export async function stillEntitled(
  * null when RevenueCat could not be asked, which the caller must not read as
  * "no". Throws when the write fails, so the webhook can ask for a retry.
  *
- * `not_entitled` only downgrades a row that is entitled now: an expired or
- * missing one keeps the end date of the period that was really paid for, which
- * retention reads. `last_event_at` moves forward only.
+ * On "not entitled", a row that is entitled now is expired as of now; one at
+ * billing retry, or past its end with an `active` status nobody corrected, is
+ * expired with its end date left as it was, since retention reads that date; an
+ * expired row or none is left alone. `last_event_at` moves forward in every
+ * case, so an older event delivered later is still recognised as stale.
  *
- * Each write lands only if the row is the one that was read (`updated_at`
- * unchanged), so a webhook event applied in between is not overwritten by an
- * older answer. On a clash it asks again once, then gives up with an error.
+ * `upwardOnly` is the miss path (`reconcileEntitlement`): it writes on
+ * "entitled" and on nothing else, so a timeout can never read as a refund.
+ *
+ * Each write lands only over the row as it was read (`updated_at` unchanged),
+ * so an event the webhook applies in between is not overwritten with an older
+ * answer. On a clash it asks again once, then gives up with an error.
  */
 export async function syncFromStore(
   db: SupabaseClient,
   userId: string,
   happenedAt: string | null = null,
+  { upwardOnly = false }: { upwardOnly?: boolean } = {},
 ): Promise<'entitled' | 'not_entitled' | null> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const store = await fetchSubscriber(userId)
     if (!store) return null
+
+    const sandboxRefused = store.active && store.sandbox && !sandboxAllowed(userId)
+    if (sandboxRefused) {
+      console.warn(
+        `[entitlement] ${userId} is entitled in RevenueCat but only in the SANDBOX;` +
+          ' REVENUECAT_SANDBOX_SUBSCRIBERS does not cover it',
+      )
+    }
+    const entitled = store.active && !sandboxRefused
+    if (!entitled && upwardOnly) return 'not_entitled'
 
     const { data: current, error: readError } = await db
       .from('subscriptions')
@@ -213,66 +245,52 @@ export async function syncFromStore(
 
     const lastEventAt = laterOf(current?.last_event_at ?? null, happenedAt)
     const ordering: Record<string, string> = lastEventAt ? { last_event_at: lastEventAt } : {}
-    const sandboxRefused = store.active && store.sandbox && !sandboxAllowed(userId)
-    if (sandboxRefused) {
-      console.warn(
-        `[entitlement] ${userId} is entitled in RevenueCat but only in the SANDBOX;` +
-          ' REVENUECAT_SANDBOX_SUBSCRIBERS does not cover it',
-      )
-    }
 
-    if (store.active && !sandboxRefused) {
+    if (entitled) {
       const landed = await writeEntitled(db, userId, store, {
         extra: ordering,
-        expect: current ? (current.updated_at ?? null) : 'absent',
+        expect: current?.updated_at ?? 'absent',
       })
       if (landed) return 'entitled'
       continue
     }
 
-    // Nothing to take away: no row, or one that already says it is over.
-    if (!current || !entitledBy(current)) return 'not_entitled'
-
+    if (!current) return 'not_entitled'
     const now = new Date().toISOString()
-    const { data: written, error } = await onlyIfUnchanged(
-      db
-        .from('subscriptions')
-        .update({
-          status: 'expired',
-          trial_ends_at: null,
-          // Ended now, as far as anyone can say: a refund has no period to run out.
-          current_period_end: now,
-          ...ordering,
-          updated_at: now,
-        })
-        .eq('user_id', userId),
-      current.updated_at ?? null,
-    ).select('user_id')
+    const patch: Record<string, string | null> = entitledBy(current)
+      ? // Ended now, as far as anyone can say: a refund has no period to run out.
+        { status: 'expired', trial_ends_at: null, current_period_end: now }
+      : LAPSING.has(current.status ?? '')
+        ? { status: 'expired', trial_ends_at: null }
+        : {}
+    if (lastEventAt && lastEventAt !== current.last_event_at) patch.last_event_at = lastEventAt
+    if (Object.keys(patch).length === 0) return 'not_entitled'
+
+    const { data: written, error } = await db
+      .from('subscriptions')
+      .update({ ...patch, updated_at: now })
+      .eq('user_id', userId)
+      .eq('updated_at', current.updated_at ?? '')
+      .select('user_id')
     if (error) {
       throw Object.assign(new Error(`could not expire the subscription: ${error.message}`), {
         code: error.code,
       })
     }
     if ((written ?? []).length > 0) {
-      console.warn(
-        `[entitlement] ${userId} is not entitled in RevenueCat; the mirror now says expired`,
-      )
+      if (patch.status) {
+        console.warn(
+          `[entitlement] ${userId} is not entitled in RevenueCat; the mirror now says expired`,
+        )
+      }
       return 'not_entitled'
     }
   }
   throw new Error('the subscription kept changing while it was being settled')
 }
 
-/** The two filters `onlyIfUnchanged` needs from a supabase-js update builder. */
-type Narrowable<Q> = {
-  eq(column: 'updated_at', value: string): Q
-  is(column: 'updated_at', value: null): Q
-}
-
-/** Narrows an update to the row as it was read, by its `updated_at`. */
-function onlyIfUnchanged<Q extends Narrowable<Q>>(query: Q, updatedAt: string | null): Q {
-  return updatedAt === null ? query.is('updated_at', null) : query.eq('updated_at', updatedAt)
-}
+/** Statuses that still claim something, and become `expired` on a definite "no". */
+const LAPSING = new Set(['active', 'trial', 'billing_retry'])
 
 /** The later of two ISO timestamps, either of which may be missing. */
 function laterOf(a: string | null, b: string | null): string | null {
@@ -284,9 +302,9 @@ function laterOf(a: string | null, b: string | null): string | null {
 /**
  * The row RevenueCat's "entitled" answer becomes. Throws if it cannot be written.
  *
- * With `expect` unset it upserts, as the miss path always has. With `expect` it
- * writes only over the row as it was read (`'absent'`: only if there is none
- * yet) and answers false when somebody wrote first.
+ * `expect` is the `updated_at` the row was read with, and the write lands only
+ * over that row (`'absent'`: only if there is none yet). False means somebody
+ * wrote first, and the caller asks again.
  *
  * Store and product are only written when RevenueCat names them. A one-off
  * purchase has no subscription entry, so its store comes back null, and
@@ -296,7 +314,7 @@ async function writeEntitled(
   db: SupabaseClient,
   userId: string,
   store: StoreSubscriber,
-  options: { extra?: Record<string, string>; expect?: string | null | 'absent' } = {},
+  options: { extra?: Record<string, string>; expect: string | 'absent' },
 ): Promise<boolean> {
   const values = {
     status: store.trial ? 'trial' : 'active',
@@ -314,13 +332,6 @@ async function writeEntitled(
     throw Object.assign(new Error(error.message), { code: error.code })
   }
 
-  if (options.expect === undefined) {
-    const { error } = await db
-      .from('subscriptions')
-      .upsert({ user_id: userId, ...values }, { onConflict: 'user_id' })
-    if (error) fail(error)
-    return true
-  }
   if (options.expect === 'absent') {
     const { error } = await db.from('subscriptions').insert({ user_id: userId, ...values })
     // Somebody inserted it first: their row stands, and the caller asks again.
@@ -328,10 +339,12 @@ async function writeEntitled(
     if (error) fail(error)
     return true
   }
-  const { data, error } = await onlyIfUnchanged(
-    db.from('subscriptions').update(values).eq('user_id', userId),
-    options.expect,
-  ).select('user_id')
+  const { data, error } = await db
+    .from('subscriptions')
+    .update(values)
+    .eq('user_id', userId)
+    .eq('updated_at', options.expect)
+    .select('user_id')
   if (error) fail(error)
   return (data ?? []).length > 0
 }
@@ -343,33 +356,26 @@ async function writeEntitled(
  * one thing only, so anything that stops a single delivery leaves an account that
  * has paid refused for ever with nothing to notice. Each such case now costs one
  * extra HTTP call on the next Pro request, and then corrects itself.
+ *
+ * Upward only (`syncFromStore`'s `upwardOnly`), and through the same guarded
+ * write, so a refund the webhook records while RevenueCat is being asked is not
+ * overwritten with the older "active".
  */
 export async function reconcileEntitlement(db: SupabaseClient, userId: string): Promise<boolean> {
-  const store = await fetchSubscriber(userId)
-  // Could not ask. The row's own verdict stands, which is a refusal.
-  if (!store) return false
-  if (!store.active) return false
-
-  if (store.sandbox && !sandboxAllowed(userId)) {
-    console.warn(
-      `[entitlement] ${userId} is entitled in RevenueCat but only in the SANDBOX;` +
-        ' REVENUECAT_SANDBOX_SUBSCRIBERS does not cover it',
-    )
-    return false
-  }
-
   try {
-    await writeEntitled(db, userId, store)
+    const verdict = await syncFromStore(db, userId, null, { upwardOnly: true })
+    if (verdict === 'entitled') {
+      console.warn(`[entitlement] reconciled ${userId} from RevenueCat; the webhook had not landed`)
+    }
+    // Null is "could not ask": the row's own verdict stands, which is a refusal.
+    return verdict === 'entitled'
   } catch (error) {
-    // The account IS entitled — RevenueCat just said so — and failing to record
-    // that is our problem rather than theirs. Let the request through and let
-    // the next one try the write again.
+    // Only reached once RevenueCat has said the account IS entitled (upward-only
+    // never writes otherwise), so failing to record that is our problem rather
+    // than theirs. Let the request through; the next one tries the write again.
     console.error('[entitlement] reconciled but could not write:', (error as Error).message)
     return true
   }
-
-  console.warn(`[entitlement] reconciled ${userId} from RevenueCat; the webhook had not landed`)
-  return true
 }
 
 /**
@@ -409,16 +415,6 @@ export async function requireEntitlement(
  * much anybody gets, and a database blip must not read as "you are cut off".
  */
 export async function claimScan(db: SupabaseClient, userId: string): Promise<void> {
-  // A lifetime row due its weekly check is checked here too: photographing a
-  // plate is the one model path that never goes through `isEntitled`, and
-  // `claim_scan` would otherwise keep a refunded lifetime on the Pro ceiling.
-  const { data: row } = await db
-    .from('subscriptions')
-    .select(ROW)
-    .eq('user_id', userId)
-    .maybeSingle<SubscriptionRow>()
-  if (entitledBy(row) && row) await stillEntitled(db, userId, row)
-
   const claim = async () =>
     await db
       .rpc('claim_scan', { p_user: userId })
@@ -445,6 +441,20 @@ export async function claimScan(db: SupabaseClient, userId: string): Promise<voi
       console.error('[quota] re-claim failed, allowing uncounted:', error.message)
       return
     }
+  }
+
+  // A Pro claim on a lifetime row due its weekly check is checked here too:
+  // photographing a plate is the one model path that never goes through
+  // `isEntitled`, so `claim_scan` would otherwise keep a refunded lifetime on
+  // the Pro ceiling for good. After the claim, so a free account pays nothing
+  // extra; a refund found here applies from the next scan.
+  if (data?.entitled) {
+    const { data: row } = await db
+      .from('subscriptions')
+      .select(ROW)
+      .eq('user_id', userId)
+      .maybeSingle<SubscriptionRow>()
+    if (row && lifetimeDueForCheck(row)) await stillEntitled(db, userId, row)
   }
 
   if (data && !data.allowed) {

@@ -5,6 +5,7 @@ import {
   entitledBy,
   LIFETIME_RECHECK_MS,
   lifetimeDueForCheck,
+  reconcileEntitlement,
   syncFromStore,
 } from './entitlement.ts'
 
@@ -73,23 +74,25 @@ Deno.test('the boundary refuses rather than granting one last request', () => {
 Deno.test('a lifetime row is re-checked once a week, and nothing else is', () => {
   const fresh = new Date(NOW.getTime() - LIFETIME_RECHECK_MS + 60_000).toISOString()
   const stale = new Date(NOW.getTime() - LIFETIME_RECHECK_MS - 60_000).toISOString()
-  const lifetime = { plan: 'lifetime', current_period_end: null }
+  const lifetime = { plan: 'lifetime', current_period_end: null, rc_app_user_id: 'rc' }
   assertEquals(lifetimeDueForCheck({ ...lifetime, updated_at: fresh }, NOW), false)
   assertEquals(lifetimeDueForCheck({ ...lifetime, updated_at: stale }, NOW), true)
   // No timestamp is due rather than exempt.
   assertEquals(lifetimeDueForCheck(lifetime, NOW), true)
+  // A lifetime product `planOf` cannot name is still lifetime: no end date
+  // from RevenueCat means a one-off purchase.
+  assertEquals(lifetimeDueForCheck({ ...lifetime, plan: null, updated_at: stale }, NOW), true)
   // A row with an end date is bounded by it already.
   assertEquals(
     lifetimeDueForCheck({ ...lifetime, current_period_end: LATER, updated_at: stale }, NOW),
     false,
   )
-  // A Pro row granted by hand has no end date and no RevenueCat purchase behind
-  // it. Asking RevenueCat would take it away, so it is never asked about.
+  // A Pro row granted by hand has no RevenueCat id and no purchase behind it.
+  // Asking RevenueCat would take it away, so it is never asked about.
   assertEquals(
     lifetimeDueForCheck({ plan: 'yearly', current_period_end: null, updated_at: stale }, NOW),
     false,
   )
-  assertEquals(lifetimeDueForCheck({ current_period_end: null, updated_at: stale }, NOW), false)
   assertEquals(lifetimeDueForCheck(null, NOW), false)
 })
 
@@ -111,10 +114,6 @@ function fakeDb(initial: Row | null, clashes = 0) {
     const query = {
       eq: (column: string, value: unknown) => {
         if (column === 'updated_at') expected = value
-        return query
-      },
-      is: (_column: string, value: unknown) => {
-        expected = value
         return query
       },
       select: async () => {
@@ -239,7 +238,9 @@ Deno.test('an older event does not move the ordering backwards', async () => {
     last_event_at: '2026-08-17T00:00:00.000Z',
   })
   await withRevenueCat(REFUNDED, () => syncFromStore(db, USER, '2026-08-01T00:00:00.000Z'))
-  assertEquals(writes[0].values.last_event_at, '2026-08-17T00:00:00.000Z')
+  // The refund is applied, and the newer stamp the row already had is left alone.
+  assertEquals(writes[0].values.status, 'expired')
+  assertEquals('last_event_at' in writes[0].values, false)
 })
 
 Deno.test('a write that loses to another writer asks again, and gives up after that', async () => {
@@ -250,4 +251,45 @@ Deno.test('a write that loses to another writer asks again, and gives up after t
   const always = fakeDb(ACTIVE_LIFETIME_ROW, 5)
   await assertRejects(() => withRevenueCat(REFUNDED, () => syncFromStore(always.db, USER)))
   assertEquals(always.writes.length, 0)
+})
+
+Deno.test('a refund on a row at billing retry expires it, and keeps its real end date', async () => {
+  const row = { status: 'billing_retry', plan: 'yearly', current_period_end: EARLIER }
+  const { db, writes } = fakeDb(row)
+  assertEquals(
+    await withRevenueCat(REFUNDED, () => syncFromStore(db, USER, '2026-08-17T00:00:00.000Z')),
+    'not_entitled',
+  )
+  assertEquals(writes.length, 1)
+  assertEquals(writes[0].values.status, 'expired')
+  assertEquals('current_period_end' in writes[0].values, false)
+  assertEquals(writes[0].values.last_event_at, '2026-08-17T00:00:00.000Z')
+})
+
+Deno.test('a newer event on an expired row still moves the ordering on', async () => {
+  // Without it, an older RENEWAL delivered afterwards would not look stale and
+  // would make the refunded account Pro again.
+  const row = { status: 'expired', current_period_end: EARLIER, last_event_at: EARLIER }
+  const { db, writes } = fakeDb(row)
+  await withRevenueCat(REFUNDED, () => syncFromStore(db, USER, '2026-08-17T00:00:00.000Z'))
+  assertEquals(writes.length, 1)
+  assertEquals(writes[0].values.last_event_at, '2026-08-17T00:00:00.000Z')
+  assertEquals('status' in writes[0].values, false)
+})
+
+Deno.test('the miss path only ever writes "entitled"', async () => {
+  const refused = fakeDb({ status: 'expired', current_period_end: EARLIER })
+  assertEquals(await withRevenueCat(REFUNDED, () => reconcileEntitlement(refused.db, USER)), false)
+  assertEquals(refused.writes.length, 0)
+
+  const missing = fakeDb(null)
+  assertEquals(await withRevenueCat(LIFETIME, () => reconcileEntitlement(missing.db, USER)), true)
+  assertEquals(
+    missing.writes.map((write) => write.kind),
+    ['insert'],
+  )
+
+  const unreachable = fakeDb(null)
+  assertEquals(await withRevenueCat(null, () => reconcileEntitlement(unreachable.db, USER)), false)
+  assertEquals(unreachable.writes.length, 0)
 })
