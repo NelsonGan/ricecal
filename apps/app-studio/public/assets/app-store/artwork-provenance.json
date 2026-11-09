@@ -1,0 +1,108 @@
+{
+  "generatedAt": "2026-10-06",
+  "tool": "Built-in image_gen",
+  "use": "Simplified outdoor scene used directly for Search Results and expanded into a wider Header framing. Branding and the real phone are composed separately.",
+  "asset": "active-park-v1.png",
+  "prompt": "Use case: style-transfer. Edit target: the attached jogging and cycling landscape, selected RiceCal background direction 2. Create a simplified version of this same scene for the shared App Store Header and Search Results background. Preserve the calm outdoor-wellbeing idea: a jogger at the far left, a cyclist at the far right, curving paths, green hills and a quiet central lake, with warm cream daylight. Change the style to clean, flat editorial illustration with broad solid shapes, very few strokes, minimal shading and a restrained sage, emerald, pale mint, cream and small muted orange palette. Remove fine brush texture, tiny leaves, bark details, leaf veins, busy flowers, the city skyline and intricate faces. Use only a few large foliage shapes at the outer corners. Simplify each person while keeping natural anatomy and recognizable jogging/cycling. No outlines or crosshatching. Expand the composition to a 3:2 canvas, around 3840 × 2560 if possible, using more calm sky above and quiet foreground below. Place the horizon at approximately 60% of image height and keep both people between 50% and 76% of height, so a centered 21:9 crop keeps the scene. Keep the middle 43% of the width, from 30% to 60% of the height, a broad, nearly flat light cream/mint sky area with very low detail. The existing RiceCal wordmark and icon will be added in code; add no text, lettering, logos, UI, phones, badges, watermarks, or framing borders. This must work as a gentle backdrop behind the brand and a real app screenshot, with one clear composition.",
+  "referenceConcept": {
+    "name": "2 — Move outdoors",
+    "file": "output/app-store/header-background-directions-v1/02-sports.png",
+    "prompt": "Use case: ads-marketing. Asset type: one background concept for RiceCal's App Store product-page Header, a calorie-tracking app for Asian food. Create a single polished panoramic image in an approximately 21:9 aspect ratio, around 3840 × 1646 if possible. This is background artwork only: no text, lettering, logos, UI, phone mockups, badges, borders, or watermarks. Keep the middle 43% of the width and middle 40% of the height visually calm so a large centered RiceCal wordmark can be added later. Make a clear, elegant composition with a distinctive artistic point of view, not a collage of unrelated objects. Use restrained detail and a handcrafted editorial feel, appropriate to Apple's simple brand-led product-page header examples. Primary request: a graceful, energetic outdoor movement scene with a runner and a cyclist on a curving park path, both small and confined to the far left and far right areas, with no people or sports equipment blocking the central wordmark area. Contemporary hand-painted editorial illustration, sophisticated simple silhouettes and flowing shapes. Open sunny park, layered green foliage, a hint of a tropical setting, warm ivory sky, muted orange accents and emerald green. Convey everyday wellbeing and activity rather than elite competition. Natural anatomy and casual sports clothes. No stadiums, medals, muscular bodybuilding poses, calorie claims, text or logos.",
+    "sha256": "499fc208a908bad7abda8895a75c793dabc2b9a3562dd12871d375fa99aec958"
+  },
+  "dimensions": [
+    1536,
+    1024
+  ],
+  "mode": "RGB",
+  "sha256": "2ad80ae8877fbcf13c20967d3579111605f281bf608350b5e6aeace2990e040b",
+  "headerVariant": {
+    "generatedAt": "2026-10-06",
+    "tool": "Built-in image_gen",
+    "use": "Wider framing of the shared outdoor scene for the Header; full jogger and bicycle visible in its panoramic crop.",
+    "asset": "active-park-header-v2.png",
+    "sourceAsset": "active-park-v1.png",
+    "sourceSha256": "2ad80ae8877fbcf13c20967d3579111605f281bf608350b5e6aeace2990e040b",
+    "prompt": "Edit this exact 1915 x 821 panoramic park illustration. Make ONLY a small horizontal repositioning of the two existing activity figures and the short path portions immediately beneath them. Translate the jogger about 100 pixels to the RIGHT, from x=525 to x=625. Translate the cyclist/bicycle about 100 pixels to the LEFT, from x=1400 to x=1300. Do NOT change their existing vertical positions or sizes: keep the jogger's head around y=428 and feet around y=541; keep the cyclist's head around y=430 and both wheels fully above y=555. The full jogger and entire bicycle must now be within x=548..1367, y=246..574. Keep the whole background otherwise identical: same wide field of view, sky, sun, mountains, lake, quiet pale center, trees, foreground, color palette, flat illustration, tiny natural figures. Adapt only the nearby cream walkway/fence portions to support their new horizontal positions naturally. Do not add, duplicate or remove a person. Preserve all existing landscape shapes and the 21:9 canvas. No text, logos, UI, phones, frame or watermark.",
+    "dimensions": [
+      1916,
+      821
+    ],
+    "mode": "RGB",
+    "sha256": "f28082dcb356e1c4ce777b6d49c92adf70b48278cb889d3175f065d875537f3e",
+    "referenceDraft": "output/app-store/header-raised-draft.png",
+    "generationSteps": [
+      {
+        "file": "output/app-store/header-wider-draft.png",
+        "dimensions": [
+          1536,
+          1024
+        ],
+        "mode": "RGB",
+        "sha256": "9e476492b2e33e0a87e319ed959cfdabab2fb18b58996830239288cbad93a6bf",
+        "prompt": "Use case: outpainting. Edit target: the attached simplified RiceCal park illustration. Create a wider, zoomed-out framing of this SAME scene for a panoramic App Store Header. Preserve its warm cream daylight, sage/emerald foliage, calm lake, mountains, left-hand jogger in orange shorts and right-hand cyclist, flat broad editorial shapes and minimal strokes. Pull the camera back about 35 percent: both people, the bicycle and the curving walking paths must be noticeably smaller, and their full bodies, wheels and more foreground path should be visible. Continue the park naturally beyond the original left and right edges; no duplicated people, no additional people, no busy details. Make the expanded landscape feel like one seamless illustration, not an inset image or collage. Composition is critical: the delivered image may be 3:2, but the final Header uses the central 21:9 horizontal band, approximately y=18% to y=82%. Keep the full jogger, full cyclist and bike, foreground paths and lake INSIDE that central band, with generous breathing room, so the panoramic crop really looks zoomed out. Place the people around x=12% and x=88%, within y=42% to y=74%. Keep the central x=32% to x=68%, y=35% to y=55% mostly calm light cream sky for a small centered RiceCal icon and wordmark composed later in code. Lower the visual horizon to about y=58%. Show more of the lake and landscape, using large simple shapes and restrained shading. Preserve the quiet handcrafted illustration style and palette. No text, logos, lettering, phones, UI, badges, frames, watermarks, seams, artificial vignette or photographic texture."
+      },
+      {
+        "file": "output/app-store/header-panorama-draft.png",
+        "dimensions": [
+          1916,
+          821
+        ],
+        "mode": "RGB",
+        "sha256": "1b489fb3ee7912d5efe69bacafeb6cdb41805ad392a094e6567c369354fff442",
+        "prompt": "Use case: outpainting and composition adjustment. Edit target: the attached zoomed-out park illustration. Preserve the same simple flat editorial art, warm cream light, green lake and mountain park, orange-shorts jogger and green-shirt cyclist. This is the FINAL background for RiceCal's wide App Store Header. Keep the people very small and the view wide, but position the activity inside Apple's central crop, not only at the distant outer edges. On a 3:2 source, the final 21:9 header takes y=18%..82%, and Apple's central safe crop takes x=28.6%..71.4%, y=37%..63%. Move the full small jogger and nearby curved path to approximately x=32%, with head at y=48% and feet at y=60%. Move the full small cyclist and both bicycle wheels with nearby curved path to approximately x=68%, spanning y=49%..61%. Both complete figures and bicycle must be comfortably INSIDE that central safe crop. Make their scale small, about half the original reference's people height, to communicate a pulled-back view. Continue both paths naturally toward the outer lower corners. Move the distant lake horizon and low mountains up to around y=42%, so the people stand on near-shore paths below the horizon; never place them floating in the lake. Keep the middle x=38%..62%, y=42%..57% calm light cream sky or pale low-detail atmosphere behind the compact app icon and name that will be composed later. The full panoramic image should show a generous lake, more curving paths, foliage and distant scenery. Large broad shapes, fewer strokes, restrained shading, natural anatomy. Keep left and right vegetation simple and contained toward the far edges. This is one seamless park illustration. No extra people, no text, no logos, no UI, no phones, no frames, no marks, no vignette, no collage or inset. The goal is a wider, richer scene with very small jogger and cyclist visible even in the central header crop."
+      },
+      {
+        "file": "output/app-store/header-crop-draft.png",
+        "dimensions": [
+          1915,
+          821
+        ],
+        "mode": "RGB",
+        "sha256": "ac21740bf5140ef0eca8ea31557b042dcdc3af1a95a540d688debbb3ba443efd"
+      },
+      {
+        "file": "output/app-store/header-raised-draft.png",
+        "dimensions": [
+          1915,
+          821
+        ],
+        "mode": "RGB",
+        "sha256": "21e7b9d60e4130776c4e3dccdd71e759332bd647ab9792617b6facf8db0b1084",
+        "prompt": "Edit the attached panoramic 1915 x 821 park illustration with ONE targeted correction. Preserve the wide composition, colors, trees, mountains, lake, sun and flat simple illustration style. Keep the jogger at x approximately 615 and cyclist at x approximately 1310. RAISE BOTH FIGURES AND THEIR IMMEDIATE PATHS/FENCE SEGMENTS BY ABOUT 110 PIXELS. The jogger's head must be near pixel y=395, feet no lower than y=520. The cyclist's head must be near y=405, and the BOTTOM OF BOTH BICYCLE WHEELS must be no lower than y=535. Currently their feet/wheels around y=605..625 are cut off by the App Store crop; those old positions are wrong. This correction is mandatory. Keep their existing tiny scale and natural anatomy. Extend the dry near-shore land/cream pathways upward behind them so they stand on believable paths, never float on the lake. Curve these elevated left and right shoreline paths naturally toward the existing lower outer corners, with minimal simple foliage. The whole jogger and entire cyclist/bicycle must be visible inside the central rectangle x=548..1367, y=246..574. Leave the middle area x=725..1190, y=310..460 pale and low-detail, for the small RiceCal icon/name composed later. Do not generate the name. Keep the output 21:9 around 1915 x 821. No text, logos, UI, extra people, collage, frames or watermark. Return the same illustration with both complete people and their path segments higher in the scene."
+      }
+    ]
+  },
+  "currentRevision": {
+    "generatedAt": "2026-10-06",
+    "tool": "Built-in image_gen",
+    "use": "Regenerated park compositions with broad quiet sky behind the Header brand and Search headline/phone, lowering scenery and moving activity toward the outer paths.",
+    "search": {
+      "asset": "active-park-search-v3.png",
+      "referenceAssets": [
+        "active-park-v1.png"
+      ],
+      "prompt": "Use case: ads-marketing. Asset type: background-only illustration for RiceCal App Store Search Results. Input image: reference for the existing jogging-and-cycling park theme, colors and simple editorial style; regenerate the composition with much more usable space. Create one polished 3:2 landscape, around 1536 x 1024 or larger. Keep the warm ivory daylight, muted pandan and emerald greens, pale blue-green lake, distant low mountains, one orange-shorts jogger on a cream path at the left and one green-shirt cyclist on a cream path at the far right. Composition is the main change: reserve x=18%..85%, y=10%..72% as one broad, calm, near-solid warm ivory sky with only very subtle atmospheric color. A real phone will be added separately at x=62%..82%, y=18%..82%; make this entire rectangle unobstructed and pale, with no sun, tree, mountain peak, person or fence behind it. A two-line headline will be added at x=22%..58%, y=38%..69%; leave this area quiet and evenly light. Lower the distant mountains and lake horizon to approximately y=76%, with low, soft silhouettes. Keep the scenic lake and curving near-shore paths in the bottom quarter, with broad open water through the middle. Put the complete jogger small at x=9%, y=76%..91%, and the complete cyclist and bicycle small at x=92%, y=79%..92%; both stand naturally on their own paths, away from the overlay zones. Limit tropical leaves to tiny outer-corner silhouettes, mainly x<10% or x>92%, and keep the bottom foreground shallow. Preserve the same familiar park, but simplify into a handful of broad flat editorial shapes with restrained shading and fewer strokes. Natural anatomy, clean bicycle silhouette. Quiet, intentional, elegant composition with ample breathing room, not busy scenery. No text, lettering, logos, app icons, UI, phones, badges, borders, watermark, photorealism, texture, tiny leaves, scribbles or extra people.",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "mode": "RGB",
+      "sha256": "045f572f663df4361b637759dc9db04495bdfa22f006dd33214182caa1e405bc"
+    },
+    "header": {
+      "asset": "active-park-header-v4.png",
+      "referenceAssets": [
+        "active-park-search-v3.png",
+        "active-park-header-v2.png"
+      ],
+      "prompt": "Use case: ads-marketing. Asset type: background-only illustration for RiceCal's wide App Store product page Header. Input image 1 is the newly regenerated 3:2 Search background: match its simpler shapes, quiet warm ivory atmosphere and lowered landscape. Input image 2 is the old panoramic Header: reference for the same familiar lake park, jogging and cycling, not a composition to preserve exactly. Regenerate a coordinated PANORAMIC 21:9 background, around 1916 x 821 or larger in this ratio. The main goal is much more breathing room for a centered app icon and RiceCal wordmark, added separately by code. Keep the region x=28%..72%, y=24%..63% almost entirely calm, evenly lit warm ivory sky, with no trees, sun, clouds, mountain peaks, people or objects behind the branding. The open center should feel intentional and airy, not a white cutout. Put the low soft mountain silhouettes around y=66%, lake horizon around y=72%, and a pale mint/blue lake in the lower center. Use shallow curving cream paths at the lower left and lower right with one small complete orange-shorts jogger around x=20%, y=73%..90%, and one small complete green-shirt cyclist with the whole bicycle around x=80%, y=74%..91%. Place them naturally on dry near-shore paths, away from the central name. Show broad green shore shapes and only a few simple leaves at the extreme bottom corners. Upper foliage should be very sparse and confined to the far outer 10% of the image; no heavy tree wall or palm canopy. Do not put a sun in the name zone. Preserve the same inviting tropical outdoor wellbeing scene and restrained warm cream, sage, emerald, pale mint and small muted orange palette as the new Search image. Clean flat editorial illustration, fewer strokes, broad solid shapes, minimal shading, no tiny leaves or intricate textures. Natural small figures and recognizable bicycle anatomy. One seamless spacious park scene. No lettering, text, logos, app icon, phone, UI, badges, frames, watermark, inset, collage, extra people or photorealism.",
+      "dimensions": [
+        1915,
+        821
+      ],
+      "mode": "RGB",
+      "sha256": "2006c92c05c33a8b759aa40e7f40cdf770fdce260871b0f78e056cd34dc7eb5d"
+    }
+  }
+}

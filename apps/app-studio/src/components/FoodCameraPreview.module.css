@@ -1,0 +1,36 @@
+.scanline {
+  position: absolute;
+  left: 18px;
+  right: 18px;
+  top: 50%;
+  width: calc(100% - 36px);
+  animation: var(--scan-name) var(--scan-period) linear infinite;
+}
+
+.statusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #91f5b3;
+  animation: scanPulse 1.8s ease-in-out infinite;
+}
+
+[data-camera-animated='false'] .scanline,
+[data-camera-animated='false'] .statusDot,
+:global([data-capture-still='true']) .scanline,
+:global([data-capture-still='true']) .statusDot {
+  animation: none;
+}
+
+:global([data-capture-video='true']) .scanline {
+  visibility: hidden;
+}
+
+@keyframes scanPulse {
+  0%, 100% { opacity: .45; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scanline, .statusDot { animation: none; }
+}

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>RiceCal App Store asset design plan</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f6f8f7;color:#1b3a2b;font:16px/1.65 system-ui,sans-serif}
+    main{max-width:1000px;margin:auto;padding:70px 32px 90px}h1{font-size:clamp(32px,5vw,58px);line-height:1.08;letter-spacing:-2px;max-width:850px;margin:20px 0}
+    h2{font-size:26px;letter-spacing:-.6px;margin:50px 0 15px}h3{font-size:18px;margin:24px 0 8px}p{max-width:800px;color:#495450}a{color:#1b8a4e;text-underline-offset:3px}
+    .tag{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#1b8a4e;font-weight:750}.intro{font-size:20px;max-width:800px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{background:white;border:1px solid #e4e8e5;border-radius:20px;padding:25px}
+    .card h3{margin-top:0}.card p{margin-bottom:0}.note{background:#eaf9f0;border-left:4px solid #2fbf71;padding:16px 22px;border-radius:0 16px 16px 0}
+    table{border-collapse:collapse;width:100%;font-size:14px;background:white}th,td{text-align:left;vertical-align:top;padding:15px;border-bottom:1px solid #e4e8e5}th{color:#1b3a2b;background:#edf1ee}td{color:#495450}
+    .table{overflow-x:auto;border:1px solid #e4e8e5;border-radius:16px}li{color:#495450;margin:10px 0}footer{border-top:1px solid #d6dcd8;margin-top:50px;padding-top:20px;font-size:13px;color:#6e7b74}
+    .safe{display:grid;place-items:center;background:#eaf9f0;border-radius:12px;aspect-ratio:3840/1646;padding:0 28.57%;color:#1b3a2b;margin:20px 0}.safe div{border:1px dashed #1b8a4e;text-align:center;font-size:12px;line-height:1.4;width:100%;padding:22px 10px}
+    @media(max-width:650px){.grid{grid-template-columns:1fr}main{padding:35px 20px}th,td{padding:10px}.safe{padding:0 25%}.safe div{padding:8px 3px;font-size:10px}}
+  </style>
+</head>
+<body><main>
+  <div class="tag">RiceCal · Design and production plan · 11 October 2026</div>
+  <h1>App Store header, search creative and screenshot sequence</h1>
+  <p class="intro">Introduce RiceCal with a centered wordmark on a calm outdoor illustration. Show Asian-food calorie tracking in the separate search artwork and real app gallery. Keep the brand within Apple’s central safe area, and make the opening gallery a clear three-screen story.</p>
+  <p>This plan covers the static Header, animated Search creative and the existing iPhone screenshot gallery. The studio can regenerate the two creative placements and the gallery in all 26 marketing languages. Native app UI follows the existing 13-language capture set.</p>
+
+  <h2>What Apple’s new placements change</h2>
+  <p>Apple describes creative assets as optional artwork available from iOS 27 and iPadOS 27. They complement app screenshots and previews. A header introduces the brand; search artwork needs to communicate purpose and show the experience immediately. Dedicated assets or a shared universal asset can fill the two placements. <a href="https://developer.apple.com/help/app-store-connect/manage-app-information/manage-your-app-store-assets">Apple’s asset workflow</a></p>
+  <p>Apple’s design guidance favors one clear focal point, short localized text, readable central content and a cohesive visual language. Screenshots should depict the app in use and lead with its strongest features. Prices, unrelated platform logos and unverifiable recognition should stay out of creative artwork. <a href="https://developer.apple.com/app-store/asset-best-practices/">Apple’s design guidance</a></p>
+  <div class="table"><table><thead><tr><th>Placement</th><th>Asset specification</th><th>Production choice</th></tr></thead><tbody>
+    <tr><td>Product-page header</td><td>3840 × 1646, 21:9; JPEG or PNG</td><td>Dedicated RGB JPEG, quality 96%, centered RiceCal wordmark on a simplified jogging-and-cycling scene</td></tr>
+    <tr><td>Search results</td><td>3:2; MP4, 30 or 60 fps, 5–30 seconds</td><td>1920 × 1280 silent H.264 MP4, 30 fps, 7.2 seconds, localized meal and animated camera</td></tr>
+    <tr><td>Universal alternative</td><td>5244 × 2950, 16:9, PNG</td><td>Documented alternative; dedicated layouts are implemented</td></tr>
+    <tr><td>iPhone gallery</td><td>Current accepted project canvas: 1290 × 2796</td><td>Six PNG screenshots using existing 1320 × 2868 native captures</td></tr>
+  </tbody></table></div>
+  <p>Creative images cannot include an alpha channel. The shared outdoor background is opaque RGB artwork, Header exports as an opaque JPEG. Search exports as a silent looping MP4. <a href="https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications">Apple’s creative specifications</a></p>
+
+  <h2>Design diagnosis</h2>
+  <div class="grid">
+    <div class="card"><h3>Keep the useful foundation</h3><p>Real localized app screens, appetizing regional food, the RiceCal green palette, rounded typography and a consistent device crop already create a recognizable set. The meal-detail image and the Today diary provide the clearest evidence of what the product does.</p></div>
+    <div class="card"><h3>Make the opening work harder</h3><p>The old first headline is generic. The second panel carries five features and a community rating, so it becomes dense when reduced in search. The meal-detail screen appears too late. The new opening explicitly names Asian-food calorie tracking and gives each screenshot one job.</p></div>
+  </div>
+  <p>The previous rating panel is removed from the exported gallery. This keeps the opening focused on visible product behavior and avoids making the composition depend on a rating or user count that can become outdated. The existing translated feature labels remain available to the iPad and other graphics.</p>
+
+  <h2>Header composition</h2>
+  <p><strong>Focal point:</strong> the RiceCal name, centered at a readable size. The larger dark green wordmark sits on broad, quiet cream sky. The regenerated park composition lowers the mountains, lake and paths, with the small jogger and cyclist farther apart near the outer edges. This gives the brand its own clear space.</p>
+  <img src="assets/verification/app-store-header.jpg" alt="Centered RiceCal wordmark over a simple park illustration with jogging and cycling" style="width:100%;display:block;border-radius:16px;margin:22px 0">
+  <p>The background comes from the selected outdoor concept, regenerated with the built-in image-generation tool to create more space for the content. The Header uses a panoramic composition with both complete activity figures on the lower paths. The name uses 460-pixel type, calibrated in the live 393-pixel App Store phone preview. The added icon has been removed from the artwork. The brand sits slightly above the center of the guide, on clear sky above the horizon. Branding is composed separately, so the Header has no additional text.</p>
+  <div class="safe"><div>Central artwork safe area<br>RiceCal wordmark</div></div>
+  <p>The header template’s safe rectangle starts at <strong>x 1097, y 493</strong> and measures <strong>1646 × 661</strong>. The whole wordmark stays inside it, against quiet sky. The surrounding park provides detail in the full Header, while tighter crops prioritize the brand. These are template coordinates, not a guarantee for every future App Store layout. <a href="https://devimages-cdn.apple.com/design/resources/download/app-store/creative_assets-product_page_header_template-static.psd">Apple header template</a></p>
+
+  <h2>Search composition</h2>
+  <p><strong>Message:</strong> “Count calories the asian way” in English. Each other locale uses its representative country in the translated headline and one local favorite in the phone camera. English and Malay keep Nasi Lemak. The original park background remains. The camera has a shutter, scan brackets and a moving beam, with no RiceCal name in the artwork.</p>
+  <video src="assets/verification/app-store-search-camera.mp4" poster="assets/verification/app-store-search-camera.jpg" autoplay loop muted playsinline controls style="width:100%;display:block;border-radius:16px;margin:22px 0"></video>
+  <p>The canonical <a href="assets/app-store/food-camera/catalog.json">locale and food catalog</a> records every headline, camera label, food image and generation prompt. A language used in several countries uses one representative country; these are recognizable local favorites rather than a claimed consumption ranking. There is one creative per locale, without variation choices.</p>
+  <p>Search uses a 3840 × 2560 composition for capture and a 1920 × 1280 MP4 for export. The two-line headline starts at x 560; the phone starts at x 2500, y 208. The scan lasts 7.2 seconds at 30 fps and loops through two identical cycles. Downloads and uploads use the same encoder and camera geometry. Apple’s template safe rectangle remains x 836, y 765, 2168 × 1030; tighter crops can trim peripheral elements.</p>
+  <p>Dedicated artwork is preferable for this first version because a wide emotional header and a taller search composition need different balance. A universal design has a much smaller shared center: <strong>x 1921, y 660, 1402 × 962</strong> on a 5244 × 2950 canvas. It would force the app screen to be smaller. <a href="https://devimages-cdn.apple.com/design/resources/download/app-store/creative_assets-universal_asset_template-static.psd">Apple universal template</a></p>
+
+  <h2>Screenshot story</h2>
+  <div class="table"><table><thead><tr><th>Order</th><th>Message</th><th>Evidence</th><th>Reason for this position</th></tr></thead><tbody>
+    <tr><td>01</td><td>A calorie diary for Asian food</td><td>Today: calories remaining, macros, water and meals</td><td>Names the category and shows the daily benefit</td></tr>
+    <tr><td>02</td><td>Set the portion, see the count</td><td>Meal photograph, serving controls and nutrition</td><td>Makes food recognition and portion tracking concrete</td></tr>
+    <tr><td>03</td><td>Share your plate, find your people</td><td>Feed with followed cooks, food photos and nutrition</td><td>Brings sharing and discovering food into the first three pages</td></tr>
+    <tr><td>04</td><td>Just say what you ate</td><td>Real meal-entry screen with a natural-language example</td><td>Answers how much effort logging takes</td></tr>
+    <tr><td>05</td><td>Cook it once, log it in a tap</td><td>Saved foods and recipe photographs</td><td>Shows how repeated meals become easier</td></tr>
+    <tr><td>06</td><td>See where the week went</td><td>Calorie, macro and habit trends</td><td>Moves from daily action to longer-term insight</td></tr>
+  </tbody></table></div>
+  <p>The first three retain the continuous mint panorama, but each works by itself. All six keep the same phone scale and crop. Headlines move to a consistent left alignment with more margin, a small RiceCal signature and darker green emphasis for readability. No new nutritional values, controls or screens are invented.</p>
+  <img src="assets/verification/app-store-screenshots-creator.jpg" alt="The studio showing the revised Today, meal details and quick-entry screenshots" style="width:100%;display:block;border-radius:16px;margin:22px 0">
+
+  <h2>Localization and capture plan</h2>
+  <ol>
+    <li><strong>Translate the message by placement.</strong> Keep the RiceCal Header wordmark consistent across all 26 marketing languages. Localize the two-line search message and its native UI. Fit the search lines after local fonts load, and check long Latin and Cyrillic text along with Chinese, Thai, Hindi, Tamil and Bengali.</li>
+    <li><strong>Use native captures where available.</strong> Match the existing app language folders, including the separate simplified and traditional Chinese mappings. Other marketing languages retain English app UI according to the project’s existing fallback.</li>
+    <li><strong>Refresh native screens when the UI changes.</strong> The 17 October 2026 set captures app 1.1.0 in all 13 supported app languages: Today, the workout logger, meal details, saved foods, trends and Feed. The describe page and the retired activity page have been removed. All 26 marketing languages use these screens in six phone scenes and five wide iPad scenes.</li>
+    <li><strong>Preserve capture provenance.</strong> Record each native image’s checksum, app source revision, verified route and fixture date in capture.json. Keep the shared background’s generation and edit prompts, dimensions and checksum, and include its provenance in creative-asset locale ZIPs.</li>
+    <li><strong>Keep iPad honest.</strong> This revision adds iPad-compatible creative placements but does not create a new native iPad screenshot set. The current iPad gallery still uses phone screens on wide canvases.</li>
+  </ol>
+
+  <h2>Production and verification</h2>
+  <p>The studio follows <a href="https://github.com/NelsonGan/money2time-screenshots-creator/pull/29">Money2Time’s latest Studio and phone preview</a>. App Store preview is the default: Header sits above RiceCal’s icon, listing and first two localized screenshots; Search appears in a 353 × 235 result card beneath the listing. The 393 × 852 phone screen scales to the available Studio width. Full image remains available for both placements, with Safe area crop for Header and Search card for Search. Header’s Show Apple safe area checkbox sits below the full image and is disabled in crop mode. Store chrome and template guides stay outside the export surface. The canvas has its own line height to prevent inherited preview typography from shifting the artwork. Downloads and uploads always contain the full artwork without guides. This is an approximation of the supplied examples; App Store Connect Preview remains the final placement check.</p>
+  <img src="assets/verification/app-store-phone-previews.png" alt="Live RiceCal components inside the product page and search result phone frames, adapted from Money2Time" style="width:100%;display:block;border-radius:16px;margin:22px 0">
+  <p>Upload to Store sends Header as opaque PNG, or Search as the same animated MP4 produced by Export MP4. It validates the video, waits for Asset Library processing and assigns the correct image or video to the editable iOS version. Upload the current language or all 25 App Store languages, covering 31 store localizations. Existing placements remain unless Replace existing asset is selected. Failed replacements attempt to restore the previous image or video, and partial failures retain the uploaded asset ID. This requires asc 5.14.1 or later and FFmpeg. Review and release remain in App Store Connect.</p>
+  <img src="assets/verification/app-store-studio-header-phone.png" alt="RiceCal Studio with App Store preview, Full image and Safe area crop controls above the live product-page phone" style="width:100%;display:block;border-radius:16px;margin:22px 0">
+  <img src="assets/verification/app-store-upload.jpg" alt="RiceCal Studio upload window with the editable iOS destination, language choices and optional image replacement" style="width:100%;display:block;border-radius:16px;margin:22px 0">
+  <ol>
+    <li>Inspect both compositions at full-artwork and central safe-area sizes. Check the small search presentation, where the category message must remain readable.</li>
+    <li>Inspect all marketing languages for headline overflow, unexpected third lines and text touching the phone. Confirm the correct native screenshots load without missing images.</li>
+    <li>Export actual files through the studio. Check exact dimensions, format, RGB color mode, opaque background, complete locale coverage and absence of guides.</li>
+    <li>Run the project’s type, build, screenshot-integrity and upload-policy checks. Exercise Header JPEG and Search MP4 export, locale ZIP creation and the creative upload flow in the browser. Test upload/assignment failures and restoration against a simulated destination, and verify live destination access with read-only requests.</li>
+    <li>Before release, use App Store Connect Preview for iPhone and iPad in supported orientations and languages. Local template checks cannot establish Apple’s final placement behavior or review outcome.</li>
+  </ol>
+
+  <h2>Release and experiment plan</h2>
+  <p>Add the exported artwork in <strong>Product Page Information → Header and Search Results</strong>, or submit it separately through <strong>Asset Library</strong>. Creative assets receive their own review. Use the dedicated header and search files; do not put them into a device screenshot slot. <a href="https://developer.apple.com/help/app-store-connect/manage-app-information/manage-your-app-store-assets">Apple’s upload and review workflow</a></p>
+  <p>Publish the centered brand header after crop preview and approval. For a later product-page optimization test, compare it with an alternative background using the same wordmark, gallery, locales and release timing. Define the hypothesis before launch: a simple brand focal point should improve recognition and downloads from product-page views. <a href="https://developer.apple.com/help/app-store-connect/create-product-page-optimization-tests/configure-test-treatments">Apple’s treatment configuration</a></p>
+  <p>Measure App Store conversion alongside traffic source and territory. Run to adequate sample size rather than a fixed short deadline, avoid changing several design variables at once, and keep the existing treatment if the result is inconclusive. These are experiment recommendations, not a claimed conversion gain.</p>
+  <footer>Source specifications and Photoshop template bounds checked on 6 October 2026. Design direction and experiment choices are RiceCal-specific recommendations. Final App Store cropping and approval require App Store Connect review.</footer>
+</main></body></html>

@@ -1,0 +1,50 @@
+{
+  "device": "Apple Watch Series 12 (46mm) simulator, watchOS 27",
+  "pairedPhone": "iPhone 18 Pro simulator, iOS 27",
+  "backend": "local Supabase",
+  "date": "2026-10-16",
+  "appSourceCommit": "6841707262fd47431bedd9db69c3672356247034",
+  "heartRate": "Simulated: the watchOS simulator measures none, so simulator builds feed a made-up pulse",
+  "captures": [
+    {
+      "locale": "en",
+      "screen": "01-set",
+      "shows": "Set page: the set to do, ‹ ✓ › row",
+      "width": 416,
+      "height": 496,
+      "sha256": "b2f6d9e67e172a83653f64ad1d01afe8451d04f319c0decf9a2c4552e8df9d61"
+    },
+    {
+      "locale": "en",
+      "screen": "02-rest",
+      "shows": "Rest countdown with ±15 s and Skip",
+      "width": 416,
+      "height": 496,
+      "sha256": "f0f6af0b87104ea7aec43dbbc0ae02f353265ca47900876bf19909ecf85a3c0b"
+    },
+    {
+      "locale": "en",
+      "screen": "03-routine",
+      "shows": "A routine before starting it, with exercise drawings",
+      "width": 416,
+      "height": 496,
+      "sha256": "43481bd7a98c793f40f221f0ea1fee160133d3ee1c3a30f7fa9748145a0e1ac0"
+    },
+    {
+      "locale": "en",
+      "screen": "04-exercises",
+      "shows": "Exercises page during a workout",
+      "width": 416,
+      "height": 496,
+      "sha256": "6bb207a3afb965a076b5206f42d71528b8a943227b8d651ea43c54063c8bdd2c"
+    },
+    {
+      "locale": "en",
+      "screen": "05-routines",
+      "shows": "Routines list",
+      "width": 416,
+      "height": 496,
+      "sha256": "9bdfb87f5ed3b312efbe6145d6093cbb1ce4e542c2f35d010f66e68e8cc3a95d"
+    }
+  ]
+}

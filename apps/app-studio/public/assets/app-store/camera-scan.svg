@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="284" height="64" viewBox="0 0 284 64">
+  <defs>
+    <linearGradient id="trail" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#71ef9f" stop-opacity="0"/><stop offset="1" stop-color="#71ef9f" stop-opacity=".3"/></linearGradient>
+    <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#71ef9f" stop-opacity="0"/><stop offset="1" stop-color="#71ef9f" stop-opacity=".55"/></linearGradient>
+  </defs>
+  <rect width="284" height="61" fill="url(#trail)"/>
+  <rect y="51" width="284" height="10" fill="url(#glow)"/>
+  <rect y="61" width="284" height="3" rx="1.5" fill="#a5ffc7"/>
+</svg>
