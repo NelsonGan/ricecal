@@ -1,6 +1,5 @@
 import { useIsFocused } from 'expo-router'
 import { useEffect } from 'react'
-import { View } from 'react-native'
 import Animated, {
   Extrapolation,
   interpolate,
@@ -9,7 +8,7 @@ import Animated, {
   useReducedMotion,
   useSharedValue,
 } from 'react-native-reanimated'
-
+import { ReplayMask } from '@/lib/replay-mask'
 import { useThemeColors } from '@/theme/useTheme'
 import { Icon } from '@/ui'
 
@@ -58,8 +57,9 @@ export function LiveHeart({ bpm }: { bpm: number }) {
     transform: [{ scale: interpolate(phase.get(), [0, 0.7], [0.7, 1.9], Extrapolation.CLAMP) }],
   }))
 
+  // A live heart rate from the watch: kept out of replays.
   return (
-    <View style={{ width: SIZE, height: SIZE }}>
+    <ReplayMask style={{ width: SIZE, height: SIZE }}>
       {reduced ? null : (
         <Animated.View
           pointerEvents="none"
@@ -78,6 +78,6 @@ export function LiveHeart({ bpm }: { bpm: number }) {
       <Animated.View style={heart}>
         <Icon set="body" name="heart-rate" size={SIZE} />
       </Animated.View>
-    </View>
+    </ReplayMask>
   )
 }

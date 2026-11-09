@@ -41,6 +41,7 @@ import { openLogger, useHasActiveWorkout, WorkoutItem, WorkoutsTile } from '@/fe
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
 import { useOnline } from '@/lib/online'
+import { ReplayMask } from '@/lib/replay-mask'
 import { DEFAULT_WATER_ML } from '@/lib/water'
 import {
   Aside,
@@ -746,16 +747,20 @@ function TodayContent() {
                 // Only when a health store reported the day. Zero steps on an
                 // account with no store would be a claim about the user rather
                 // than about the phone.
+                // Kept out of replays: a step count is Apple Health or Health
+                // Connect data.
                 activity ? (
-                  <View className="flex-row items-center gap-1">
-                    <Icon set="scenes" name="sneakers" size={18} />
-                    <Text variant="caption" className="shrink">
-                      {t('logging:today.steps', {
-                        count: activity.steps,
-                        steps: count(activity.steps),
-                      })}
-                    </Text>
-                  </View>
+                  <ReplayMask style={{ flexShrink: 1, minWidth: 0 }}>
+                    <View className="flex-row items-center gap-1">
+                      <Icon set="scenes" name="sneakers" size={18} />
+                      <Text variant="caption" className="shrink">
+                        {t('logging:today.steps', {
+                          count: activity.steps,
+                          steps: count(activity.steps),
+                        })}
+                      </Text>
+                    </View>
+                  </ReplayMask>
                 ) : undefined
               }
               extras={[

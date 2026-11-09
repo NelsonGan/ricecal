@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { useWindowDimensions, View } from 'react-native'
 
 import { type HrZones, ZONE_KEY, ZONE_ORDER, type ZoneName } from '@/lib/health'
+import { ReplayMask } from '@/lib/replay-mask'
 import { Card, cn, Icon, Text } from '@/ui'
 import { clock } from './format'
 
@@ -35,78 +36,84 @@ export function HeartRateCard({
   const wideText = fontScale > 1.3
   const zoneTotal = zones ? ZONE_ORDER.reduce((sum, zone) => sum + zones[zone], 0) : 0
 
+  // Heart rate from Apple Health, Health Connect or the watch: kept out of replays.
   return (
-    <Card contentClassName="gap-4">
-      <View className="flex-row items-center gap-2">
-        <Icon set="body" name="heart-rate" size={24} />
-        <Text variant="subtitle" className="flex-1">
-          {t('activity:workout.heartRate')}
-        </Text>
-      </View>
-      {avgHr != null || maxHr != null ? (
-        <View className={wideText ? 'gap-3' : 'flex-row'}>
-          {avgHr != null ? (
-            <HeartMetric
-              label={t('activity:workout.avgHr')}
-              value={avgHr}
-              className={!wideText ? 'flex-1' : undefined}
-            />
-          ) : null}
-          {maxHr != null ? (
-            <HeartMetric
-              label={t('activity:workout.maxHr')}
-              value={maxHr}
-              className={cn(
-                !wideText && 'flex-1',
-                avgHr != null
-                  ? wideText
-                    ? 'border-line border-t pt-3'
-                    : 'ml-4 border-line border-l pl-4'
-                  : undefined,
-              )}
-            />
-          ) : null}
+    <ReplayMask>
+      <Card contentClassName="gap-4">
+        <View className="flex-row items-center gap-2">
+          <Icon set="body" name="heart-rate" size={24} />
+          <Text variant="subtitle" className="flex-1">
+            {t('activity:workout.heartRate')}
+          </Text>
         </View>
-      ) : null}
+        {avgHr != null || maxHr != null ? (
+          <View className={wideText ? 'gap-3' : 'flex-row'}>
+            {avgHr != null ? (
+              <HeartMetric
+                label={t('activity:workout.avgHr')}
+                value={avgHr}
+                className={!wideText ? 'flex-1' : undefined}
+              />
+            ) : null}
+            {maxHr != null ? (
+              <HeartMetric
+                label={t('activity:workout.maxHr')}
+                value={maxHr}
+                className={cn(
+                  !wideText && 'flex-1',
+                  avgHr != null
+                    ? wideText
+                      ? 'border-line border-t pt-3'
+                      : 'ml-4 border-line border-l pl-4'
+                    : undefined,
+                )}
+              />
+            ) : null}
+          </View>
+        ) : null}
 
-      {chart}
+        {chart}
 
-      {zones && zoneTotal > 0 ? (
-        <View className="gap-3 border-line border-t pt-4">
-          <Text variant="overlineSm">{t('activity:workout.zonesTitle')}</Text>
-          {ZONE_ORDER.map((zone) => (
-            <View
-              key={zone}
-              className={wideText ? 'gap-1.5' : 'flex-row items-center gap-3'}
-              accessible
-              accessibilityLabel={`${t(ZONE_KEY[zone])}, ${clock(zones[zone])}`}
-            >
+        {zones && zoneTotal > 0 ? (
+          <View className="gap-3 border-line border-t pt-4">
+            <Text variant="overlineSm">{t('activity:workout.zonesTitle')}</Text>
+            {ZONE_ORDER.map((zone) => (
               <View
-                className={wideText ? 'flex-row items-center justify-between gap-3' : 'w-[72px]'}
-              >
-                <Text variant="caption" className="shrink text-body">
-                  {t(ZONE_KEY[zone])}
-                </Text>
-                {wideText ? <Text variant="label">{clock(zones[zone])}</Text> : null}
-              </View>
-              <View
-                className={cn('h-2.5 overflow-hidden rounded-full bg-track', !wideText && 'flex-1')}
+                key={zone}
+                className={wideText ? 'gap-1.5' : 'flex-row items-center gap-3'}
+                accessible
+                accessibilityLabel={`${t(ZONE_KEY[zone])}, ${clock(zones[zone])}`}
               >
                 <View
-                  className={cn('h-full rounded-full', ZONE_FILL[zone])}
-                  style={{ width: `${(zones[zone] / zoneTotal) * 100}%` }}
-                />
+                  className={wideText ? 'flex-row items-center justify-between gap-3' : 'w-[72px]'}
+                >
+                  <Text variant="caption" className="shrink text-body">
+                    {t(ZONE_KEY[zone])}
+                  </Text>
+                  {wideText ? <Text variant="label">{clock(zones[zone])}</Text> : null}
+                </View>
+                <View
+                  className={cn(
+                    'h-2.5 overflow-hidden rounded-full bg-track',
+                    !wideText && 'flex-1',
+                  )}
+                >
+                  <View
+                    className={cn('h-full rounded-full', ZONE_FILL[zone])}
+                    style={{ width: `${(zones[zone] / zoneTotal) * 100}%` }}
+                  />
+                </View>
+                {!wideText ? (
+                  <Text variant="label" className="min-w-[60px] text-right">
+                    {clock(zones[zone])}
+                  </Text>
+                ) : null}
               </View>
-              {!wideText ? (
-                <Text variant="label" className="min-w-[60px] text-right">
-                  {clock(zones[zone])}
-                </Text>
-              ) : null}
-            </View>
-          ))}
-        </View>
-      ) : null}
-    </Card>
+            ))}
+          </View>
+        ) : null}
+      </Card>
+    </ReplayMask>
   )
 }
 
