@@ -411,6 +411,54 @@ export function useGroupBoard(groupId: string, day: string, enabled: boolean, li
   })
 }
 
+/** The viewer's own "liked" line for one food. */
+const ownLikeLine = (message: GroupMessage, entryId: string) =>
+  message.mine && message.event?.kind === 'liked' && message.event.food?.entry_id === entryId
+
+/**
+ * Messages taken out of a thread here (deleted, reported, hidden, or a like line
+ * whose like was taken back), each with the number of the last thread read sent
+ * before it went. Reads are numbered as they are sent, a counter so two in one
+ * millisecond keep their order. A read sent before a removal may still hold the
+ * message, and landing after it would lay it back (a poll, a catch-up or an
+ * older page already on its way); one sent after has the server's answer. Only
+ * the newest few hundred are kept: no read is on its way for that many.
+ */
+let threadReads = 0
+const removedAt = new Map<string, number>()
+const REMEMBERED = 500
+
+function remember(ids: Iterable<string>) {
+  for (const id of ids) {
+    removedAt.delete(id)
+    removedAt.set(id, threadReads)
+  }
+  for (const id of removedAt.keys()) {
+    if (removedAt.size <= REMEMBERED) break
+    removedAt.delete(id)
+  }
+}
+
+/**
+ * The thread with `page` laid in, less what was removed after the page's read
+ * was sent. Dropped after the merge, not before: the page's length is what says
+ * whether the thread goes further back.
+ */
+function withoutRemoved(thread: GroupThread, page: GroupMessage[], sentAt: number): GroupThread {
+  if (!removedAt.size) return thread
+  const stale = new Set(
+    page
+      .filter((message) => {
+        const at = removedAt.get(message.id)
+        return at !== undefined && sentAt <= at
+      })
+      .map((message) => message.id),
+  )
+  return stale.size
+    ? { ...thread, messages: thread.messages.filter((message) => !stale.has(message.id)) }
+    : thread
+}
+
 /** How many messages a page of the thread holds. */
 export const THREAD_PAGE = 50
 
@@ -501,6 +549,7 @@ export function useGroupThread(groupId: string, live: boolean) {
   const thread = useQuery({
     queryKey: key,
     queryFn: async ({ signal }) => {
+      const sentAt = ++threadReads
       const newest = (await rpc(
         'group_messages',
         { p_group_id: groupId, p_limit: THREAD_PAGE, p_events: true },
@@ -508,7 +557,11 @@ export function useGroupThread(groupId: string, live: boolean) {
       )) as unknown as GroupMessage[]
       // The thread as it is now, not as it was when the read started: an older
       // page or a removal may have landed meanwhile.
-      return mergeNewest(client.getQueryData<GroupThread>(key), newest)
+      return withoutRemoved(
+        mergeNewest(client.getQueryData<GroupThread>(key), newest),
+        newest,
+        sentAt,
+      )
     },
     // Joined, the poll is only a net (see above): catch-ups and rejoins keep
     // the thread current, and a minute's whole page was most of what it cost.
@@ -527,6 +580,7 @@ export function useGroupThread(groupId: string, live: boolean) {
     loading.current = true
     setLoadingOlder(true)
     try {
+      const sentAt = ++threadReads
       const page = (await rpc('group_messages', {
         p_group_id: groupId,
         p_before_at: oldest.created_at,
@@ -538,7 +592,11 @@ export function useGroupThread(groupId: string, live: boolean) {
       // thread again meanwhile has its own oldest message.
       client.setQueryData<GroupThread>(messagesKey(userId, groupId), (current) =>
         current?.messages[0]?.id === oldest.id
-          ? { messages: [...page, ...current.messages], more: page.length === THREAD_PAGE }
+          ? withoutRemoved(
+              { messages: [...page, ...current.messages], more: page.length === THREAD_PAGE },
+              page,
+              sentAt,
+            )
           : current,
       )
     } catch {
@@ -704,6 +762,7 @@ export function useGroupChatLive(groupId: string): boolean {
       catching = (async () => {
         try {
           await pendingRead()?.catch(() => undefined)
+          const sentAt = ++threadReads
           const recent = (await rpc('group_messages', {
             p_group_id: groupId,
             p_limit: CATCH_UP,
@@ -715,7 +774,7 @@ export function useGroupChatLive(groupId: string): boolean {
           client.setQueryData<GroupThread>(key, (held) => {
             const merged = mergeCatchUp(held, recent)
             if (!merged) whole = true
-            return merged ?? held
+            return merged ? withoutRemoved(merged, recent, sentAt) : held
           })
           if (whole) refetch()
         } catch {
@@ -756,6 +815,7 @@ export function useGroupChatLive(groupId: string): boolean {
         const ids = broadcastIds(payload)
         if (!ids.length) return
         if (event === 'removed') {
+          remember(ids)
           patchThread(client, userId, groupId, (messages) =>
             messages.some((message) => ids.includes(message.id))
               ? messages.filter((message) => !ids.includes(message.id))
@@ -1576,17 +1636,23 @@ export function useGroupAction() {
           // A like writes a line in each chat the two share, and anything else
           // takes it away. Taken away here at once; written, it is read by the
           // chat on screen now, and by any other when it next opens.
+          // A line not held yet is announced as removed to an open chat.
           if (!error && input.value !== 1) {
+            for (const [, thread] of client.getQueriesData<GroupThread>({
+              queryKey: root,
+              predicate: named('group_messages'),
+            })) {
+              remember(
+                (thread?.messages ?? [])
+                  .filter((message) => ownLikeLine(message, input.entryId))
+                  .map((message) => message.id),
+              )
+            }
             client.setQueriesData<GroupThread>(
               { queryKey: root, predicate: named('group_messages') },
               (thread) => {
                 const kept = thread?.messages.filter(
-                  (message) =>
-                    !(
-                      message.mine &&
-                      message.event?.kind === 'liked' &&
-                      message.event.food?.entry_id === input.entryId
-                    ),
+                  (message) => !ownLikeLine(message, input.entryId),
                 )
                 return thread && kept && kept.length < thread.messages.length
                   ? { ...thread, messages: kept }
@@ -1642,6 +1708,7 @@ export function useGroupAction() {
           // Deleted or reported, it leaves the thread here and needs no reread;
           // only the chat bar's preview may have been that message.
           if (!error) {
+            remember([input.messageId])
             patchThread(client, userId, input.groupId, (messages) =>
               messages.filter((message) => message.id !== input.messageId),
             )
