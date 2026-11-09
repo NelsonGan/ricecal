@@ -351,14 +351,10 @@ async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
  */
 const PUBLIC_ORIGINS = ['https://www.ricecal.app', 'https://ricecal.app']
 
-/** A Vercel preview of `ricecal-web`, whose hostname is generated per branch. */
-const PREVIEW_ORIGIN = /^https:\/\/ricecal-web-[a-z0-9-]+\.vercel\.app$/
-
 function allowedOrigin(request: Request): string | null {
   const origin = request.headers.get('origin')
   if (!origin) return null
   if (PUBLIC_ORIGINS.includes(origin)) return origin
-  if (PREVIEW_ORIGIN.test(origin)) return origin
   // `next dev`, on the machine of whoever is building the page.
   if (/^http:\/\/localhost:\d+$/.test(origin)) return origin
   return null

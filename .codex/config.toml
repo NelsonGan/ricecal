@@ -2,4 +2,6 @@
 url = "http://localhost:8085/mcp"
 
 [mcp_servers.supabase]
-url = "https://mcp.supabase.com/mcp?project_ref=wgybijmprafqkshmmxdl"
+# Read-only: AGENTS.md forbids applying SQL through the MCP server, and a
+# prompt-injected agent should not be able to write to production.
+url = "https://mcp.supabase.com/mcp?project_ref=wgybijmprafqkshmmxdl&read_only=true"
