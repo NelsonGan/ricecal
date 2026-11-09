@@ -6,6 +6,7 @@ import { View } from 'react-native'
 import type { Sex } from '@/data'
 import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
 import { AGE_RANGE, HEIGHT_RANGE, targetWeightRange, WEIGHT_RANGE } from '@/lib/nutrition'
+import { ReplayMask } from '@/lib/replay-mask'
 import {
   fromFeetInches,
   fromKg,
@@ -199,17 +200,20 @@ export default function AboutStep() {
             rightSlot={<Text variant="caption">{t('common:unit.cm')}</Text>}
           />
         )}
-        <TextField
-          containerClassName="flex-1"
-          label={t('about.weight')}
-          keyboardType="decimal-pad"
-          placeholder={inFeet ? t('about.weightPlaceholderLb') : t('about.weightPlaceholder')}
-          value={fields.weight}
-          onChangeText={(weight) => setFields((current) => ({ ...current, weight }))}
-          onBlur={settle('weight', bounds(WEIGHT_RANGE, weightUnit))}
-          inputClassName="font-display text-[26px]"
-          rightSlot={<Text variant="caption">{t(UNIT_KEY[weightUnit])}</Text>}
-        />
+        {/* The weight is kept out of replays; the mask takes the field's share. */}
+        <ReplayMask style={{ flex: 1 }}>
+          <TextField
+            containerClassName="flex-1"
+            label={t('about.weight')}
+            keyboardType="decimal-pad"
+            placeholder={inFeet ? t('about.weightPlaceholderLb') : t('about.weightPlaceholder')}
+            value={fields.weight}
+            onChangeText={(weight) => setFields((current) => ({ ...current, weight }))}
+            onBlur={settle('weight', bounds(WEIGHT_RANGE, weightUnit))}
+            inputClassName="font-display text-[26px]"
+            rightSlot={<Text variant="caption">{t(UNIT_KEY[weightUnit])}</Text>}
+          />
+        </ReplayMask>
       </View>
 
       {/* A field rather than the stepper it replaced. A stepper cannot be empty:
@@ -245,32 +249,36 @@ export default function AboutStep() {
       <Card
         title={t('about.targetWeight')}
         action={
-          <Text className="font-display text-[24px] leading-[29px] text-heading">
-            {targetWeightKg != null
-              ? `${fromKg(targetWeightKg, weightUnit).toFixed(1)} ${t(UNIT_KEY[weightUnit])}`
-              : t('about.targetWeightUnset')}
-          </Text>
+          <ReplayMask>
+            <Text className="font-display text-[24px] leading-[29px] text-heading">
+              {targetWeightKg != null
+                ? `${fromKg(targetWeightKg, weightUnit).toFixed(1)} ${t(UNIT_KEY[weightUnit])}`
+                : t('about.targetWeightUnset')}
+            </Text>
+          </ReplayMask>
         }
       >
-        <Slider
-          value={fromKg(targetPreview, weightUnit)}
-          // `Slider` reports every frame of a drag, which is why this writes to
-          // the draft and not to the network: the same handler against a profile
-          // update was a request, and a budget recompute, per frame.
-          onChange={(next) => patch({ targetWeightKg: toKg(next, weightUnit) })}
-          min={fromKg(targetRange.min, weightUnit)}
-          max={fromKg(targetRange.max, weightUnit)}
-          // Half a kilogram is a scale's precision; half a pound is finer than
-          // anybody aims a slider, so imperial steps a whole one.
-          step={weightUnit === 'lb' ? 1 : 0.5}
-          // Nothing to measure a target against until the weight above exists,
-          // and a thumb sitting at 40 kg is a suggestion rather than a blank.
-          disabled={weightKg == null}
-          // The card already says TARGET WEIGHT; a second label under it would
-          // be the same words twice.
-          accessibilityLabel={t('about.targetWeight')}
-          format={(value) => `${value.toFixed(1)} ${t(UNIT_KEY[weightUnit])}`}
-        />
+        <ReplayMask>
+          <Slider
+            value={fromKg(targetPreview, weightUnit)}
+            // `Slider` reports every frame of a drag, which is why this writes to
+            // the draft and not to the network: the same handler against a profile
+            // update was a request, and a budget recompute, per frame.
+            onChange={(next) => patch({ targetWeightKg: toKg(next, weightUnit) })}
+            min={fromKg(targetRange.min, weightUnit)}
+            max={fromKg(targetRange.max, weightUnit)}
+            // Half a kilogram is a scale's precision; half a pound is finer than
+            // anybody aims a slider, so imperial steps a whole one.
+            step={weightUnit === 'lb' ? 1 : 0.5}
+            // Nothing to measure a target against until the weight above exists,
+            // and a thumb sitting at 40 kg is a suggestion rather than a blank.
+            disabled={weightKg == null}
+            // The card already says TARGET WEIGHT; a second label under it would
+            // be the same words twice.
+            accessibilityLabel={t('about.targetWeight')}
+            format={(value) => `${value.toFixed(1)} ${t(UNIT_KEY[weightUnit])}`}
+          />
+        </ReplayMask>
 
         {targetWeightKg == null ? (
           <Text variant="meta">

@@ -25,6 +25,7 @@ import {
 } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { computeTargets, targetWeightRange, weeklyPace } from '@/lib/nutrition'
+import { ReplayMask } from '@/lib/replay-mask'
 import { fromKg, showWeight, UNIT_KEY, unitFor } from '@/lib/units'
 import {
   DEFAULT_WATER_ML,
@@ -293,35 +294,43 @@ export default function GoalsScreen() {
                 two weights or contradict them — asking the same question twice
                 and then having to decide which answer to believe. */}
             <Card title={t('profile:goals.goal')}>
-              <View className="flex-row items-center justify-between">
-                <Text variant="label" className="text-muted">
-                  {t('profile:goals.currentWeight')}
-                </Text>
-                <Text variant="label">
-                  {showWeight(weight, unit)} {unitLabel}
-                </Text>
-              </View>
+              {/* The weights here are kept out of replays, row by row so the
+                  card's spacing between them stays. */}
+              <ReplayMask>
+                <View className="flex-row items-center justify-between">
+                  <Text variant="label" className="text-muted">
+                    {t('profile:goals.currentWeight')}
+                  </Text>
+                  <Text variant="label">
+                    {showWeight(weight, unit)} {unitLabel}
+                  </Text>
+                </View>
+              </ReplayMask>
 
-              <View className="flex-row items-center justify-between">
-                <Text variant="label" className="text-muted">
-                  {t('profile:goals.targetWeight')}
-                </Text>
-                <Text variant="label">
-                  {showWeight(targetWeightPosition, unit)} {unitLabel}
-                </Text>
-              </View>
-              <Slider
-                value={targetWeightPosition}
-                onChange={changeTargetWeight}
-                min={targetRange.min}
-                max={targetRange.max}
-                step={0.5}
-                accessibilityLabel={t('profile:goals.targetWeight')}
-                // `format` draws the thumb's bubble AND the two bound labels under
-                // the track, so converting here is what turns "40.0 kg / 120.0 kg"
-                // into pounds as well. The value handed in is still kilograms.
-                format={(value) => `${showWeight(value, unit)} ${unitLabel}`}
-              />
+              <ReplayMask>
+                <View className="flex-row items-center justify-between">
+                  <Text variant="label" className="text-muted">
+                    {t('profile:goals.targetWeight')}
+                  </Text>
+                  <Text variant="label">
+                    {showWeight(targetWeightPosition, unit)} {unitLabel}
+                  </Text>
+                </View>
+              </ReplayMask>
+              <ReplayMask>
+                <Slider
+                  value={targetWeightPosition}
+                  onChange={changeTargetWeight}
+                  min={targetRange.min}
+                  max={targetRange.max}
+                  step={0.5}
+                  accessibilityLabel={t('profile:goals.targetWeight')}
+                  // `format` draws the thumb's bubble AND the two bound labels under
+                  // the track, so converting here is what turns "40.0 kg / 120.0 kg"
+                  // into pounds as well. The value handed in is still kilograms.
+                  format={(value) => `${showWeight(value, unit)} ${unitLabel}`}
+                />
+              </ReplayMask>
 
               {/* The pace is what the gap between those two actually buys, and
                   without it both the direction and the taper are invisible: a user

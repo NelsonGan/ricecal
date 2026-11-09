@@ -59,8 +59,11 @@ const nextConfig: NextConfig = {
          * guard the visitor rather than an account: no framing (nothing
          * legitimate embeds the site), no MIME sniffing, HTTPS only, and no
          * camera, microphone or location for any script that ends up here.
-         * There is no CSP yet: GA and PostHog load scripts from three hosts
-         * and vinext inlines its own, so one needs testing in a browser.
+         * The Content-Security-Policy below is `frame-ancestors` only. A
+         * script and style policy does not exist yet (GA and PostHog load
+         * scripts from three hosts, and vinext inlines its own), and when it
+         * does it goes into this same header: a second CSP header would be
+         * enforced alongside this one, not instead of it.
          */
         headers: [
           { key: "Strict-Transport-Security", value: "max-age=31536000" },

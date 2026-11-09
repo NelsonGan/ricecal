@@ -5,6 +5,7 @@ import { View } from 'react-native'
 
 import type { ReviewBucket, ReviewKind, ReviewSummary } from '@/data'
 import { TrendChip, TrendLine } from '@/features/progress'
+import { ReplayMask } from '@/lib/replay-mask'
 import { fromKg, showChange, showWeight, type WeightUnit } from '@/lib/units'
 import { volume } from '@/lib/water'
 import { Card, Divider, Text } from '@/ui'
@@ -46,66 +47,69 @@ export function BodyStep({ kind, summary, buckets, unit }: BodyStepProps) {
   return (
     <>
       {hasWeight ? (
-        <Shareable title={t('reviews:body.weight')}>
-          <Card contentClassName="gap-2 p-card">
-            {/* See `CaloriesStep`: sixteen points under every heading. */}
-            <Text variant="overline" className="mb-2">
-              {t('reviews:body.weight')}
-            </Text>
+        // Kept out of replays, like every weight.
+        <ReplayMask>
+          <Shareable title={t('reviews:body.weight')}>
+            <Card contentClassName="gap-2 p-card">
+              {/* See `CaloriesStep`: sixteen points under every heading. */}
+              <Text variant="overline" className="mb-2">
+                {t('reviews:body.weight')}
+              </Text>
 
-            <View className="flex-row items-end justify-between gap-md">
-              <View className="flex-row items-baseline gap-2">
-                <Text className="font-display text-[34px] leading-[42px] text-ink">
-                  {showWeight(summary.weightLast ?? 0, unit)}
-                </Text>
-                <Text variant="label" className="text-muted">
-                  {t(`common:unit.${unit}`)}
-                </Text>
+              <View className="flex-row items-end justify-between gap-md">
+                <View className="flex-row items-baseline gap-2">
+                  <Text className="font-display text-[34px] leading-[42px] text-ink">
+                    {showWeight(summary.weightLast ?? 0, unit)}
+                  </Text>
+                  <Text variant="label" className="text-muted">
+                    {t(`common:unit.${unit}`)}
+                  </Text>
+                </View>
+
+                {summary.weightChange === null ? null : (
+                  <TrendChip
+                    tone={summary.weightChange <= 0 ? 'pandan' : 'kaya'}
+                    direction={summary.weightChange <= 0 ? 'down' : 'up'}
+                    label={`${showChange(summary.weightChange, unit)} ${t(`common:unit.${unit}`)}`}
+                  />
+                )}
               </View>
 
-              {summary.weightChange === null ? null : (
-                <TrendChip
-                  tone={summary.weightChange <= 0 ? 'pandan' : 'kaya'}
-                  direction={summary.weightChange <= 0 ? 'down' : 'up'}
-                  label={`${showChange(summary.weightChange, unit)} ${t(`common:unit.${unit}`)}`}
-                />
-              )}
-            </View>
+              <TrendLine
+                height={104}
+                // The same scale the other lines in a review carry, in the
+                // reader's unit; a tap still shares the card.
+                formatValue={(value) => `${showWeight(value, unit)} ${t(`common:unit.${unit}`)}`}
+                unitFactor={fromKg(1, unit)}
+                interactive={false}
+                points={buckets.map((bucket) => ({
+                  key: bucket.start,
+                  label: '',
+                  value: bucket.weight,
+                }))}
+                // What the period opened at, so a line whose first weigh-in is on
+                // Wednesday still starts at the left edge rather than partway
+                // across. Recovered rather than fetched: the change is measured
+                // from exactly that reading, so the last weight less the change IS
+                // it — and where there was no earlier reading the change was
+                // measured from the first one inside the period, which puts the
+                // line's start on its own first point and draws the same shape.
+                //
+                // Null when the change is, which is now the single-weigh-in case:
+                // there is nothing to carry from, and one point drawn from itself
+                // and one point drawn from nothing are the same point.
+                carryFrom={
+                  summary.weightLast !== null && summary.weightChange !== null
+                    ? summary.weightLast - summary.weightChange
+                    : null
+                }
+                accessibilityLabel={t('reviews:body.weightChart')}
+              />
 
-            <TrendLine
-              height={104}
-              // The same scale the other lines in a review carry, in the
-              // reader's unit; a tap still shares the card.
-              formatValue={(value) => `${showWeight(value, unit)} ${t(`common:unit.${unit}`)}`}
-              unitFactor={fromKg(1, unit)}
-              interactive={false}
-              points={buckets.map((bucket) => ({
-                key: bucket.start,
-                label: '',
-                value: bucket.weight,
-              }))}
-              // What the period opened at, so a line whose first weigh-in is on
-              // Wednesday still starts at the left edge rather than partway
-              // across. Recovered rather than fetched: the change is measured
-              // from exactly that reading, so the last weight less the change IS
-              // it — and where there was no earlier reading the change was
-              // measured from the first one inside the period, which puts the
-              // line's start on its own first point and draws the same shape.
-              //
-              // Null when the change is, which is now the single-weigh-in case:
-              // there is nothing to carry from, and one point drawn from itself
-              // and one point drawn from nothing are the same point.
-              carryFrom={
-                summary.weightLast !== null && summary.weightChange !== null
-                  ? summary.weightLast - summary.weightChange
-                  : null
-              }
-              accessibilityLabel={t('reviews:body.weightChart')}
-            />
-
-            <Text variant="meta">{t('reviews:body.weighIns', { count: summary.weighIns })}</Text>
-          </Card>
-        </Shareable>
+              <Text variant="meta">{t('reviews:body.weighIns', { count: summary.weighIns })}</Text>
+            </Card>
+          </Shareable>
+        </ReplayMask>
       ) : null}
 
       {hasSteps ? (

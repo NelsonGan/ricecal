@@ -8,6 +8,7 @@ import { View } from 'react-native'
 import { useDeleteWeighIn, useLogWeight, useWeighIns } from '@/data'
 import { datePattern } from '@/lib/dates'
 import { WEIGHT_RANGE } from '@/lib/nutrition'
+import { ReplayMask } from '@/lib/replay-mask'
 import { fromKg, showWeight, toKg, UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { Button, ConfirmSheet, Icon, SegmentedControl, Sheet, Stepper, Text, useToast } from '@/ui'
 
@@ -172,24 +173,27 @@ export function WeighInSheet({ date, onClose, unit, onUnitChange }: WeighInSheet
           </View>
         }
       >
-        <View className="gap-md rounded-md bg-canvas p-3">
-          <Stepper
-            value={draft}
-            onChange={setDraft}
-            step={STEP}
-            min={Number(fromKg(MIN_KG, unit).toFixed(1))}
-            max={Number(fromKg(MAX_KG, unit).toFixed(1))}
-            unit={t(UNIT_KEY[unit])}
-            format={(value) => value.toFixed(1)}
-            // Typed as well as stepped: 0.1 at a time from 70.0 to 82.4 is a
-            // hundred and twenty taps.
-            editable
-            editLabel={t('progress:weight.sheetTitle')}
-            accessibilityLabel={t('progress:weight.sheetTitle')}
-            decrementLabel={t('common:a11y.decrease')}
-            incrementLabel={t('common:a11y.increase')}
-          />
-        </View>
+        {/* The weight being entered, and the change below, are kept out of replays. */}
+        <ReplayMask>
+          <View className="gap-md rounded-md bg-canvas p-3">
+            <Stepper
+              value={draft}
+              onChange={setDraft}
+              step={STEP}
+              min={Number(fromKg(MIN_KG, unit).toFixed(1))}
+              max={Number(fromKg(MAX_KG, unit).toFixed(1))}
+              unit={t(UNIT_KEY[unit])}
+              format={(value) => value.toFixed(1)}
+              // Typed as well as stepped: 0.1 at a time from 70.0 to 82.4 is a
+              // hundred and twenty taps.
+              editable
+              editLabel={t('progress:weight.sheetTitle')}
+              accessibilityLabel={t('progress:weight.sheetTitle')}
+              decrementLabel={t('common:a11y.decrease')}
+              incrementLabel={t('common:a11y.increase')}
+            />
+          </View>
+        </ReplayMask>
 
         <SegmentedControl
           options={[
@@ -202,18 +206,20 @@ export function WeighInSheet({ date, onClose, unit, onUnitChange }: WeighInSheet
         />
 
         {delta === null ? null : (
-          <View className="flex-row items-center gap-2.5 rounded-md bg-pandan-soft px-3.5 py-3">
-            <Icon set="body" name={delta > 0 ? 'trend-up' : 'trend-down'} size={20} />
-            <Text variant="label" className="min-w-0 flex-1 text-pandan-ink">
-              {Math.abs(delta) < 0.05
-                ? t('progress:weight.same', { day: dayName(previous?.date) })
-                : t(delta > 0 ? 'progress:weight.up' : 'progress:weight.down', {
-                    value: showWeight(Math.abs(delta), unit),
-                    unit: t(UNIT_KEY[unit]),
-                    day: dayName(previous?.date),
-                  })}
-            </Text>
-          </View>
+          <ReplayMask>
+            <View className="flex-row items-center gap-2.5 rounded-md bg-pandan-soft px-3.5 py-3">
+              <Icon set="body" name={delta > 0 ? 'trend-up' : 'trend-down'} size={20} />
+              <Text variant="label" className="min-w-0 flex-1 text-pandan-ink">
+                {Math.abs(delta) < 0.05
+                  ? t('progress:weight.same', { day: dayName(previous?.date) })
+                  : t(delta > 0 ? 'progress:weight.up' : 'progress:weight.down', {
+                      value: showWeight(Math.abs(delta), unit),
+                      unit: t(UNIT_KEY[unit]),
+                      day: dayName(previous?.date),
+                    })}
+              </Text>
+            </View>
+          </ReplayMask>
         )}
       </Sheet>
 

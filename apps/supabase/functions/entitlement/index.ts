@@ -15,7 +15,13 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
-import { entitledBy, reconcileEntitlement } from '../_shared/entitlement.ts'
+import {
+  entitledBy,
+  ROW,
+  reconcileEntitlement,
+  type SubscriptionRow,
+  stillEntitled,
+} from '../_shared/entitlement.ts'
 import { json } from '../_shared/http.ts'
 
 Deno.serve(async (req: Request) => {
@@ -35,11 +41,15 @@ Deno.serve(async (req: Request) => {
   // often resolved it — and answering from the row costs nothing.
   const { data: row } = await db
     .from('subscriptions')
-    .select('status, current_period_end')
+    .select(ROW)
     .eq('user_id', userId)
-    .maybeSingle()
+    .maybeSingle<SubscriptionRow>()
 
-  if (entitledBy(row)) return json({ ok: true, entitled: true, reconciled: false })
+  // A lifetime row due its weekly check is asked about here as well, so the
+  // app hears about a refund that never arrived as a webhook.
+  if (entitledBy(row) && row) {
+    return json({ ok: true, entitled: await stillEntitled(db, userId, row), reconciled: false })
+  }
 
   const reconciled = await reconcileEntitlement(db, userId)
   // 200 either way. "You are not entitled" is an ANSWER rather than a failure,

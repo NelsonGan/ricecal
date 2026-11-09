@@ -6072,10 +6072,16 @@ edge function's own logs had both events, received on time.
 expiry rule bounds a lost delivery to the period somebody paid for rather than
 for ever, which is a small enough exposure not to be worth a second source of
 truth and a schedule to forget about. **Lifetime is the exception**, because it
-has no period to bound anything: `isEntitled` re-checks a lifetime row with
-RevenueCat when it was last written more than a week ago
-(`lifetimeDueForCheck`), on the request path that needs the answer, and expires
-it only if RevenueCat says it is not entitled. If it ever comes back, the one thing it
+has no period to bound anything: a row with `plan = 'lifetime'` and no end
+date is re-checked with RevenueCat when it was last written more than a week
+ago (`lifetimeDueForCheck`, through `stillEntitled`). Every path that hands out
+Pro asks: `isEntitled`, `claimScan` (photographing a plate never reaches
+`isEntitled`) and the app's `entitlement` function. It expires the row only if
+RevenueCat says it is not entitled; RevenueCat unreachable leaves it standing
+and waits an hour before asking again, so an outage does not put RevenueCat's
+timeout on every request. Its writes land only over the row as it was read, so
+a webhook event applied in between is not overwritten. Keyed on the plan rather
+than the missing date, because a Pro row made by hand has no date either. If it ever comes back, the one thing it
 must keep is downgrading **only on a positive answer**: a job reading "RevenueCat
 did not answer" as "they have nothing" would cancel every paying customer the
 first time the API had a bad night.
@@ -7320,7 +7326,9 @@ what a replay is for. **Anything read from Apple Health or Health Connect, and
 any weight, is wrapped in `ReplayMask`** (`src/lib/replay-mask.tsx`), which
 blanks it in the recording: the step count on Today, health workout rows and
 their detail screen, the heart-rate card and the logger's live heart, the
-weight card, the Me tab's weight tile and the weigh-in history. Replays go to
+weight card, the Me tab's weight tile, the weigh-in history and sheet, the
+current and target weights in Goals and onboarding, and the weight in a
+review. Replays go to
 PostHog, a third party, and App Review 5.1.3 and Google's Health Connect policy
 forbid passing health data to one for analytics; the privacy policy says health
 data is used only to show the user their activity. A new screen or component
@@ -9805,6 +9813,10 @@ insert into public.subscriptions (user_id, status, plan)
 values ('<your uuid>', 'active', 'yearly')
 on conflict (user_id) do update set status = 'active';
 ```
+
+Keep the plan `yearly` (or any plan but `lifetime`) for a row made by hand: a
+`lifetime` row is re-checked with RevenueCat once a week, and RevenueCat has no
+purchase behind a hand-made one, so it would be expired.
 
 Testing the other direction is the same row with `status = 'none'`, or no row at
 all. `scan_usage` is where the day's count lives, and deleting the row is how you

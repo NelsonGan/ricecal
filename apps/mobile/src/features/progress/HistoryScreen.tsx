@@ -48,6 +48,11 @@ import { WeighInSheet } from './WeighInSheet'
 /** One card on the page: a heading, a figure beside it, and its rows. */
 type Group = { key: string; title: string; figure?: string; rows: ReactNode[] }
 
+/** `ReplayMask` around the children when `when` holds, and nothing otherwise. */
+function Masked({ when, children }: { when: boolean; children: ReactNode }) {
+  return when ? <ReplayMask>{children}</ReplayMask> : children
+}
+
 /** Each page's name, as a map so a renamed key is a compile error. */
 const TITLE_KEY = {
   calories: 'progress:history.caloriesTitle',
@@ -72,11 +77,6 @@ const TITLE_KEY = {
  * A list rather than the screen's usual scroll view: a year of meals is a
  * thousand rows, and only the cards on screen should be drawn.
  */
-/** `ReplayMask` around the children when `when` holds, and nothing otherwise. */
-function Masked({ when, children }: { when: boolean; children: ReactNode }) {
-  return when ? <ReplayMask>{children}</ReplayMask> : children
-}
-
 export function HistoryScreen({ metric }: { metric: HistoryMetric }) {
   const { t } = useTranslation(['progress', 'common'])
   const back = useBack('/(tabs)/trends')

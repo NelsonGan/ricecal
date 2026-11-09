@@ -1,4 +1,4 @@
-import { assertEquals } from 'jsr:@std/assert@^1'
+import { assertEquals, assertRejects } from 'jsr:@std/assert@^1'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
@@ -73,34 +73,78 @@ Deno.test('the boundary refuses rather than granting one last request', () => {
 Deno.test('a lifetime row is re-checked once a week, and nothing else is', () => {
   const fresh = new Date(NOW.getTime() - LIFETIME_RECHECK_MS + 60_000).toISOString()
   const stale = new Date(NOW.getTime() - LIFETIME_RECHECK_MS - 60_000).toISOString()
-  assertEquals(lifetimeDueForCheck({ current_period_end: null, updated_at: fresh }, NOW), false)
-  assertEquals(lifetimeDueForCheck({ current_period_end: null, updated_at: stale }, NOW), true)
+  const lifetime = { plan: 'lifetime', current_period_end: null }
+  assertEquals(lifetimeDueForCheck({ ...lifetime, updated_at: fresh }, NOW), false)
+  assertEquals(lifetimeDueForCheck({ ...lifetime, updated_at: stale }, NOW), true)
   // No timestamp is due rather than exempt.
-  assertEquals(lifetimeDueForCheck({ current_period_end: null }, NOW), true)
+  assertEquals(lifetimeDueForCheck(lifetime, NOW), true)
   // A row with an end date is bounded by it already.
-  assertEquals(lifetimeDueForCheck({ current_period_end: LATER, updated_at: stale }, NOW), false)
+  assertEquals(
+    lifetimeDueForCheck({ ...lifetime, current_period_end: LATER, updated_at: stale }, NOW),
+    false,
+  )
+  // A Pro row granted by hand has no end date and no RevenueCat purchase behind
+  // it. Asking RevenueCat would take it away, so it is never asked about.
+  assertEquals(
+    lifetimeDueForCheck({ plan: 'yearly', current_period_end: null, updated_at: stale }, NOW),
+    false,
+  )
+  assertEquals(lifetimeDueForCheck({ current_period_end: null, updated_at: stale }, NOW), false)
   assertEquals(lifetimeDueForCheck(null, NOW), false)
 })
 
 // --- syncFromStore, against a fake table and a stubbed RevenueCat ---------------
 
 type Row = Record<string, unknown>
-type Write = { kind: 'update' | 'upsert'; values: Row }
+type Write = { kind: 'update' | 'upsert' | 'insert'; values: Row }
 
-/** Just enough of the supabase-js builder for `syncFromStore`. */
-function fakeDb(row: Row | null) {
+/**
+ * Just enough of the supabase-js builder for `syncFromStore`, over one row.
+ * `clashes` writes are refused as if another writer had changed the row first.
+ */
+function fakeDb(initial: Row | null, clashes = 0) {
+  let row: Row | null = initial ? { updated_at: '2026-08-01T00:00:00.000Z', ...initial } : null
+  let refusals = clashes
   const writes: Write[] = []
+  const conditional = (values: Row) => {
+    let expected: unknown = Symbol('unset')
+    const query = {
+      eq: (column: string, value: unknown) => {
+        if (column === 'updated_at') expected = value
+        return query
+      },
+      is: (_column: string, value: unknown) => {
+        expected = value
+        return query
+      },
+      select: async () => {
+        if (!row || refusals > 0 || (expected !== row.updated_at && typeof expected !== 'symbol')) {
+          refusals = Math.max(0, refusals - 1)
+          return { data: [], error: null }
+        }
+        writes.push({ kind: 'update', values })
+        row = { ...row, ...values }
+        return { data: [{ user_id: 'x' }], error: null }
+      },
+    }
+    return query
+  }
   const db = {
     from: () => ({
       select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }) }),
-      update: (values: Row) => ({
-        eq: async () => {
-          writes.push({ kind: 'update', values })
-          return { error: null }
-        },
-      }),
+      update: (values: Row) => conditional(values),
+      insert: async (values: Row) => {
+        if (row || refusals > 0) {
+          refusals = Math.max(0, refusals - 1)
+          return { error: { code: '23505', message: 'duplicate key' } }
+        }
+        writes.push({ kind: 'insert', values })
+        row = values
+        return { error: null }
+      },
       upsert: async (values: Row) => {
         writes.push({ kind: 'upsert', values })
+        row = { ...row, ...values }
         return { error: null }
       },
     }),
@@ -134,9 +178,16 @@ const LIFETIME = {
   },
 }
 const REFUNDED = { subscriber: { entitlements: {}, non_subscriptions: {} } }
+const ACTIVE_LIFETIME_ROW = {
+  status: 'active',
+  plan: 'lifetime',
+  current_period_end: null,
+  store: 'app_store',
+  last_event_at: '2026-08-01T00:00:00.000Z',
+}
 
 Deno.test('a refunded lifetime purchase is expired, not left on Pro', async () => {
-  const { db, writes } = fakeDb({ last_event_at: '2026-08-01T00:00:00.000Z' })
+  const { db, writes } = fakeDb(ACTIVE_LIFETIME_ROW)
   const verdict = await withRevenueCat(REFUNDED, () =>
     syncFromStore(db, USER, '2026-08-17T00:00:00.000Z'),
   )
@@ -151,33 +202,52 @@ Deno.test('a refunded lifetime purchase is expired, not left on Pro', async () =
   )
 })
 
-Deno.test('a lifetime purchase RevenueCat still honours stays Pro', async () => {
-  const { db, writes } = fakeDb({ last_event_at: null })
+Deno.test('a lifetime purchase RevenueCat still honours stays Pro, and keeps its store', async () => {
+  const { db, writes } = fakeDb(ACTIVE_LIFETIME_ROW)
   const verdict = await withRevenueCat(LIFETIME, () => syncFromStore(db, USER))
   assertEquals(verdict, 'entitled')
   assertEquals(writes.length, 1)
-  assertEquals(writes[0].kind, 'upsert')
   assertEquals(writes[0].values.status, 'active')
   assertEquals(writes[0].values.current_period_end, null)
   assertEquals(writes[0].values.plan, 'lifetime')
+  // RevenueCat names no store for a one-off purchase; the recorded one stays.
+  assertEquals('store' in writes[0].values, false)
 })
 
 Deno.test('RevenueCat being unreachable changes nothing and says so', async () => {
-  const { db, writes } = fakeDb({ last_event_at: null })
+  const { db, writes } = fakeDb(ACTIVE_LIFETIME_ROW)
   const verdict = await withRevenueCat(null, () => syncFromStore(db, USER))
   assertEquals(verdict, null)
   assertEquals(writes.length, 0)
 })
 
-Deno.test('an account with no row is not given one to say it is not entitled', async () => {
-  const { db, writes } = fakeDb(null)
-  const verdict = await withRevenueCat(REFUNDED, () => syncFromStore(db, USER))
-  assertEquals(verdict, 'not_entitled')
-  assertEquals(writes.length, 0)
+Deno.test('a row that is not entitled is left with the period it really paid for', async () => {
+  // No row at all, and one already expired at its real period end: neither has
+  // anything to take away, and rewriting the end date would move the boundary
+  // retention reads.
+  for (const row of [null, { status: 'expired', plan: 'yearly', current_period_end: EARLIER }]) {
+    const { db, writes } = fakeDb(row)
+    const verdict = await withRevenueCat(REFUNDED, () => syncFromStore(db, USER))
+    assertEquals(verdict, 'not_entitled')
+    assertEquals(writes.length, 0)
+  }
 })
 
 Deno.test('an older event does not move the ordering backwards', async () => {
-  const { db, writes } = fakeDb({ last_event_at: '2026-08-17T00:00:00.000Z' })
+  const { db, writes } = fakeDb({
+    ...ACTIVE_LIFETIME_ROW,
+    last_event_at: '2026-08-17T00:00:00.000Z',
+  })
   await withRevenueCat(REFUNDED, () => syncFromStore(db, USER, '2026-08-01T00:00:00.000Z'))
   assertEquals(writes[0].values.last_event_at, '2026-08-17T00:00:00.000Z')
+})
+
+Deno.test('a write that loses to another writer asks again, and gives up after that', async () => {
+  const once = fakeDb(ACTIVE_LIFETIME_ROW, 1)
+  assertEquals(await withRevenueCat(REFUNDED, () => syncFromStore(once.db, USER)), 'not_entitled')
+  assertEquals(once.writes.length, 1)
+
+  const always = fakeDb(ACTIVE_LIFETIME_ROW, 5)
+  await assertRejects(() => withRevenueCat(REFUNDED, () => syncFromStore(always.db, USER)))
+  assertEquals(always.writes.length, 0)
 })
