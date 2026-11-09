@@ -48,11 +48,17 @@ export type V1Subscription = {
   store?: string | null
 }
 
+/** One purchase of a one-off product. RevenueCat lists them oldest first. */
+export type V1NonSubscription = {
+  is_sandbox?: boolean
+  store?: string | null
+}
+
 export type V1Response = {
   subscriber?: {
     entitlements?: Record<string, V1Entitlement | undefined>
     subscriptions?: Record<string, V1Subscription | undefined>
-    non_subscriptions?: Record<string, unknown>
+    non_subscriptions?: Record<string, V1NonSubscription[] | undefined>
   }
 }
 
@@ -134,16 +140,20 @@ export function subscriberFrom(payload: V1Response, now: number = Date.now()): S
 
   const productId = entitlement.product_identifier ?? null
   // `subscriptions` is keyed by product id, so the entitlement names its own
-  // row. A one-off purchase has no entry there at all, which is why every field
-  // read off it is optional rather than assumed.
+  // row. A one-off purchase (lifetime) has no entry there: it is listed under
+  // `non_subscriptions` instead, one entry per purchase, and the newest is the
+  // one granting. Reading only `subscriptions` made every sandbox lifetime
+  // purchase look like a production one, past the sandbox rule.
   const subscription = productId ? payload?.subscriber?.subscriptions?.[productId] : undefined
+  const purchases = productId ? payload?.subscriber?.non_subscriptions?.[productId] : undefined
+  const oneOff = Array.isArray(purchases) ? purchases[purchases.length - 1] : undefined
 
   return {
     active: true,
     expiresAt: expires,
     productId,
-    sandbox: subscription?.is_sandbox === true,
+    sandbox: (subscription?.is_sandbox ?? oneOff?.is_sandbox) === true,
     trial: (subscription?.period_type ?? '').toLowerCase() === 'trial',
-    store: subscription?.store ?? null,
+    store: subscription?.store ?? oneOff?.store ?? null,
   }
 }

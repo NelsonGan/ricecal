@@ -23,7 +23,16 @@ import { View, type ViewProps } from 'react-native'
  * It is a plain View, so it takes part in layout: give it the flex the wrapped
  * element had, as `style`, where that matters.
  */
-export function ReplayMask({ children, ...props }: ViewProps & { children: ReactNode }) {
+export function ReplayMask({
+  children,
+  enabled = true,
+  ...props
+}: ViewProps & {
+  children: ReactNode
+  /** Off renders the children as they are, with no wrapper: a mask that applies sometimes. */
+  enabled?: boolean
+}) {
+  if (!enabled) return children
   return (
     <View
       {...props}

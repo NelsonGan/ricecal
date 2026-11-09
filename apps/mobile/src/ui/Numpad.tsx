@@ -613,11 +613,6 @@ export function useNumpadZone() {
   }
 }
 
-/** The pass-through `Mask` is when the field is not masked. */
-function Unmasked({ children }: { children: ReactNode }) {
-  return children
-}
-
 function NumpadSurface({
   session,
   context,
@@ -633,7 +628,6 @@ function NumpadSurface({
   const colors = useThemeColors()
   const spec = session.field.current
   const tools = spec.tools
-  const Mask = spec.masked ? ReplayMask : Unmasked
   const [title, detail] = (spec.label ?? '').split('\n')
 
   const press = useCallback(
@@ -692,7 +686,7 @@ function NumpadSurface({
         slide,
       ]}
     >
-      <Mask>
+      <ReplayMask enabled={spec.masked === true}>
         {/* Says what is being edited, because the field itself is often under the
           pad by the time it opens, and carries the way out on the right — where
           the platform's own pill had taught everybody to reach. */}
@@ -827,7 +821,7 @@ function NumpadSurface({
             </View>
           ) : null}
         </View>
-      </Mask>
+      </ReplayMask>
     </Animated.View>
   )
 }

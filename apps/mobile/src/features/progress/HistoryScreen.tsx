@@ -48,11 +48,6 @@ import { WeighInSheet } from './WeighInSheet'
 /** One card on the page: a heading, a figure beside it, and its rows. */
 type Group = { key: string; title: string; figure?: string; rows: ReactNode[] }
 
-/** `ReplayMask` around the children when `when` holds, and nothing otherwise. */
-function Masked({ when, children }: { when: boolean; children: ReactNode }) {
-  return when ? <ReplayMask>{children}</ReplayMask> : children
-}
-
 /** Each page's name, as a map so a renamed key is a compile error. */
 const TITLE_KEY = {
   calories: 'progress:history.caloriesTitle',
@@ -136,7 +131,7 @@ export function HistoryScreen({ metric }: { metric: HistoryMetric }) {
         renderItem={({ item }) => (
           // Weigh-ins are kept out of replays: a weight may come from Apple Health
           // or Health Connect. The calorie and water histories stay visible.
-          <Masked when={metric === 'weight'}>
+          <ReplayMask enabled={metric === 'weight'}>
             <Card contentClassName="gap-0 px-4 pb-1 pt-4">
               <View className="flex-row items-center justify-between gap-3 border-track border-b-2 pb-3">
                 <Text variant="subtitle" className="min-w-0 shrink" numberOfLines={1}>
@@ -150,7 +145,7 @@ export function HistoryScreen({ metric }: { metric: HistoryMetric }) {
               </View>
               {item.rows}
             </Card>
-          </Masked>
+          </ReplayMask>
         )}
         ItemSeparatorComponent={Gap}
         ListEmptyComponent={

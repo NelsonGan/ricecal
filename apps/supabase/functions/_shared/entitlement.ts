@@ -211,8 +211,9 @@ export async function stillEntitled(
  * On "not entitled", a row that is entitled now is expired as of now; one at
  * billing retry, or past its end with an `active` status nobody corrected, is
  * expired with its end date left as it was, since retention reads that date; an
- * expired row or none is left alone. `last_event_at` moves forward in every
- * case, so an older event delivered later is still recognised as stale.
+ * expired row is left alone. With no row at all, an event still writes an
+ * `expired` row carrying its time. `last_event_at` moves forward in every case,
+ * so an older event delivered later is still recognised as stale.
  *
  * `upwardOnly` is the miss path (`reconcileEntitlement`): it writes on
  * "entitled" and on nothing else, so a timeout can never read as a refund.
@@ -260,7 +261,26 @@ export async function syncFromStore(
       continue
     }
 
-    if (!current) return 'not_entitled'
+    if (!current) {
+      // Nothing to take away, but the event still has to be remembered: a refund
+      // can arrive before the purchase it refunds, and with no `last_event_at`
+      // the late purchase would not look stale and would grant Pro.
+      if (!happenedAt) return 'not_entitled'
+      const { error } = await db.from('subscriptions').insert({
+        user_id: userId,
+        status: 'expired',
+        rc_app_user_id: userId,
+        last_event_at: happenedAt,
+      })
+      // Somebody wrote the row first: read it again and settle against that.
+      if (error?.code === '23505') continue
+      if (error) {
+        throw Object.assign(new Error(`could not record the event: ${error.message}`), {
+          code: error.code,
+        })
+      }
+      return 'not_entitled'
+    }
     const now = new Date().toISOString()
     const patch: Record<string, string | null> = entitledBy(current)
       ? // Ended now, as far as anyone can say: a refund has no period to run out.
@@ -460,29 +480,31 @@ export async function claimScan(db: SupabaseClient, userId: string): Promise<voi
   }
 }
 
-/** When each account's row was last looked at by `recheckLifetime`, per instance. */
-const lastLooked = new Map<string, number>()
+/** When `recheckLifetime` may next read each account's row, per instance. */
+const nextLook = new Map<string, number>()
 const LOOK_AGAIN_MS = 60 * 60 * 1000
+/** A row with an end date can never be due, so it is not read again for a day. */
+const NOT_LIFETIME_MS = 24 * 60 * 60 * 1000
 
 /**
  * The lifetime check for a scan: read the row and run `stillEntitled` if it is
- * due. At most once an hour per account per instance, so a Pro account's scans
- * do not each pay for a second read of `subscriptions` to learn what the first
- * scan of the hour already did.
+ * due. At most once an hour per account per instance, and once a day for a
+ * subscription, whose end date means it is never due: a Pro account's scans do
+ * not each pay for a second read of `subscriptions`.
  */
 async function recheckLifetime(db: SupabaseClient, userId: string): Promise<void> {
   const now = Date.now()
-  const looked = lastLooked.get(userId)
-  if (looked !== undefined && now - looked < LOOK_AGAIN_MS) return
-  if (lastLooked.size > 1000) {
-    for (const [id, at] of lastLooked) if (now - at > LOOK_AGAIN_MS) lastLooked.delete(id)
+  if ((nextLook.get(userId) ?? 0) > now) return
+  if (nextLook.size > 1000) {
+    for (const [id, at] of nextLook) if (at <= now) nextLook.delete(id)
   }
-  lastLooked.set(userId, now)
+  nextLook.set(userId, now + LOOK_AGAIN_MS)
   const { data: row } = await db
     .from('subscriptions')
     .select(ROW)
     .eq('user_id', userId)
     .maybeSingle<SubscriptionRow>()
+  if (row?.current_period_end) nextLook.set(userId, now + NOT_LIFETIME_MS)
   if (row && lifetimeDueForCheck(row)) await stillEntitled(db, userId, row)
 }
 

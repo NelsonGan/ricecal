@@ -6053,7 +6053,11 @@ transfer's old owner does not, and a row at billing retry is expired too, with
 the end date of its last paid period kept for retention. RevenueCat unreachable,
 or `REVENUECAT_API_KEY` missing, answers 500, so the event is delivered again
 rather than lost, and `last_event_at` only ever moves forward, including on a
-row that was already expired. This is the one place, with the lifetime re-check below, that downgrades
+row that was already expired. With no row at all, the event still writes an
+`expired` one carrying its time, since a refund can arrive before the purchase
+it refunds, which would otherwise not look stale. The sandbox rule applies to
+every grant here, lifetime included: a one-off purchase's sandbox flag is read
+from its `non_subscriptions` entry, since it has no `subscriptions` one. This is the one place, with the lifetime re-check below, that downgrades
 from RevenueCat's answer, and both downgrade only on a definite "not entitled".
 
 **Out-of-order delivery is ordered by when the event happened**
@@ -7336,7 +7340,8 @@ Replays are not masked, except for health data: the diary and food photos are
 what a replay is for. **Anything read from Apple Health or Health Connect, and
 any weight, is wrapped in `ReplayMask`** (`src/lib/replay-mask.tsx`), which
 blanks it in the recording: the step count on Today, health workout rows and
-their detail screen, the heart-rate card and the logger's live heart, the
+their detail screen, the heart-rate card, the logger's live heart rate and,
+when the watch supplies it, its live burn, the
 weight card, the Me tab's weight tile, the weigh-in history and sheet, the
 current and target weights in Goals and onboarding, and the weight in a
 review. Replays go to

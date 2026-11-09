@@ -349,3 +349,12 @@ Deno.test('an unreachable RevenueCat is asked about an account once an hour, not
   )
   assertEquals(revenueCatCalls, 2)
 })
+
+Deno.test('a refund that arrives before its purchase is remembered, so the purchase is stale', async () => {
+  const { db, writes } = fakeDb(null)
+  await withRevenueCat(REFUNDED, () => syncFromStore(db, USER, '2026-08-17T00:00:00.000Z'))
+  assertEquals(writes.length, 1)
+  assertEquals(writes[0].kind, 'insert')
+  assertEquals(writes[0].values.status, 'expired')
+  assertEquals(writes[0].values.last_event_at, '2026-08-17T00:00:00.000Z')
+})

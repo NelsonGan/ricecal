@@ -124,7 +124,7 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
           // Held to the card's own proportions rather than a fixed height: no
           // two cards on the page are the same shape, and a preview that
           // letterboxes one is a preview of something the share does not send.
-          <MaskedWhen when={shotMasked}>
+          <ReplayMask enabled={shotMasked}>
             <View
               ref={preview}
               collapsable={false}
@@ -150,7 +150,7 @@ export function ShareableCards({ message, onShared, children }: ShareableCardsPr
                 </View>
               )}
             </View>
-          </MaskedWhen>
+          </ReplayMask>
         ) : null}
       </Sheet>
     </CaptureContext.Provider>
@@ -196,11 +196,6 @@ export function Shareable({ title, children, className, masked = false }: Sharea
       {children}
     </Pressable>
   )
-}
-
-/** `ReplayMask` around the children when `when` holds, and nothing otherwise. */
-function MaskedWhen({ when, children }: { when: boolean; children: ReactNode }) {
-  return when ? <ReplayMask>{children}</ReplayMask> : children
 }
 
 /** The app icon, at the size a corner of a shared card wants it. */
