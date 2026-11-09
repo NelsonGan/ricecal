@@ -147,6 +147,9 @@ the release note in `src/data/appDescriptions.ts` and opens its PR here.
   `pnpm --filter @ricecal/app-studio check:screenshots`.
 - **Uploads change the live store listing.** Upload only when asked, and dry
   run first.
+- **The API answers this Mac's own page only.** Keep the `127.0.0.1` binding,
+  `src/middleware.ts` and `stageLocale`'s name checks: without them any web page
+  or LAN machine could delete files here or rewrite the listings.
 - **Keep large binaries out of history.** The studio's captures are most of this
   repo's size. Replace a capture set in one commit rather than iterating on it
   in several, and keep PR screenshots small JPEGs.

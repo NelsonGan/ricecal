@@ -8487,7 +8487,16 @@ pnpm --filter @ricecal/app-studio test
 ```
 
 Then open <http://localhost:3001>. It runs on 3001 so it can sit beside the
-website's dev server on 3000. Pick a view and a language on the left,
+website's dev server on 3000.
+
+**It answers this Mac only.** The upload routes write files and push to the
+live listings, so the server listens on `127.0.0.1`, and `src/middleware.ts`
+refuses any API request from another host (a LAN address, or a DNS-rebound
+name), another origin or site (any other page open in the browser), and any
+write that is not JSON (the only kind a cross-site page can send without a
+CORS preflight). `stageLocale` accepts only locale and PNG names of the shapes
+the studio sends, since both become a path it deletes and rewrites. Keep all
+three when adding a route. Pick a view and a language on the left,
 preview the scenes, and export one asset, the whole set, or every locale at
 once. Device and language controls stay locked while an export runs. Missing
 images or incomplete scene sets report an error instead of creating a partial ZIP.

@@ -26,7 +26,10 @@ pnpm --filter @ricecal/app-studio check:screenshots   # every capture against ca
 pnpm check                                            # the whole repo, studio included
 ```
 
-It runs on port 3001 so it can sit beside the website on 3000. Biome skips it,
+It runs on port 3001 so it can sit beside the website on 3000, and listens on
+`127.0.0.1` only. `src/middleware.ts` refuses API calls from any other host,
+origin or site, and non-JSON writes; `stageLocale` refuses locale and file
+names that could leave the staging folder. A new route keeps all of that. Biome skips it,
 and it has no linter of its own. Stop the server when you are done
 (`kill $(lsof -tnP -iTCP:3001 -sTCP:LISTEN)`).
 
