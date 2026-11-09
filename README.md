@@ -6034,9 +6034,25 @@ the only thing tying a purchase to a row, and it is whatever the app told
 RevenueCat, so `identifyPurchaser` has to run on sign-in or every purchase
 arrives as `$RCAnonymousID:...` with no account to credit.
 
-**`CANCELLATION` is deliberately not an ending.** In RevenueCat it means
-auto-renew was turned off and the user keeps what they paid for until
-`EXPIRATION` follows.
+**`CANCELLATION` and `TRANSFER` are settled by asking RevenueCat.** A
+`CANCELLATION` is either "auto-renew turned off", where the user keeps what they
+paid for until the period ends, or a refund (`cancel_reason: CUSTOMER_SUPPORT`).
+RevenueCat's docs promise no `EXPIRATION` after a refunded one-off purchase, and
+a lifetime row has no end date to run out, so while the webhook ignored the
+event every refunded lifetime purchase kept Pro for good. A `TRANSFER` moves a
+purchase between accounts and names them only in `transferred_from` and
+`transferred_to`; ignored, every account it left stayed Pro, so one lifetime
+purchase restored onto account after account made each of them Pro.
+
+The webhook therefore reads neither event. It calls `syncFromStore`
+(`_shared/entitlement.ts`) for the account, or for both ends of a transfer,
+which asks RevenueCat's v1 `/subscribers` and writes the answer: entitled keeps
+or grants the row, not entitled expires an existing one. An unsubscribed renewal
+is still live there until its period ends, so it keeps Pro; a refund or a
+transfer's old owner does not. RevenueCat unreachable answers 500, so the event
+is delivered again rather than lost, and `last_event_at` only ever moves
+forward. This is the one place, with the lifetime re-check below, that downgrades
+from RevenueCat's answer, and both downgrade only on a definite "not entitled".
 
 **Out-of-order delivery is ordered by when the event happened**
 (`subscriptions.last_event_at`). Comparing the event's expiry against the stored
@@ -6055,7 +6071,11 @@ edge function's own logs had both events, received on time.
 **Nothing pulls from RevenueCat on a schedule**, and that is a decision. The
 expiry rule bounds a lost delivery to the period somebody paid for rather than
 for ever, which is a small enough exposure not to be worth a second source of
-truth and a schedule to forget about. If it ever comes back, the one thing it
+truth and a schedule to forget about. **Lifetime is the exception**, because it
+has no period to bound anything: `isEntitled` re-checks a lifetime row with
+RevenueCat when it was last written more than a week ago
+(`lifetimeDueForCheck`), on the request path that needs the answer, and expires
+it only if RevenueCat says it is not entitled. If it ever comes back, the one thing it
 must keep is downgrading **only on a positive answer**: a job reading "RevenueCat
 did not answer" as "they have nothing" would cancel every paying customer the
 first time the API had a bad night.
@@ -6117,7 +6137,9 @@ writes the row if the answer is yes. Three things make that safe:
 - **Only on the miss.** An entitled account never pays for the extra call.
 - **It heals upward only.** RevenueCat saying active writes the row; RevenueCat
   saying nothing writes nothing. A reconcile that could downgrade would make
-  every timeout a cancellation.
+  every timeout a cancellation. (The webhook's `CANCELLATION` / `TRANSFER`
+  handling and the weekly lifetime re-check do downgrade, through
+  `syncFromStore`, and only on a definite "not entitled", never on silence.)
 - **`last_event_at` is not stamped.** A reconcile is a statement about *now*
   rather than an event with a place in the sequence, so leaving the column alone
   keeps the ordering guard able to judge the delivery that arrives a moment
@@ -7218,7 +7240,7 @@ PostHog keeps its own queue on disk and retries on the next flush or launch.
 | --- | --- |
 | Generic app screen views, tab/render/scroll/keystroke events | No active emitter; important surfaces have explicit decisions and session replay shows navigation. Automatic Firebase screen reporting is off |
 | Errors and stack traces | PostHog error tracking; only controlled product outcomes are sent as analytics events |
-| Raw mobile food names, search/describe text, calorie totals, weight values, photos or private recipe/report text | Database/domain flows, never custom product analytics or AI events. Session replay can show them on screen; that is its purpose, and the privacy policy says so. Email is the explicit exception above |
+| Raw mobile food names, search/describe text, calorie totals, weight values, photos or private recipe/report text | Database/domain flows, never custom product analytics or AI events. Session replay can show them on screen, except weights and anything from Apple Health or Health Connect, which `ReplayMask` blanks (see *Session replay*); that is its purpose, and the privacy policy says so. Email is the explicit exception above |
 | Scan pipeline quality and catalogue misses | Database scan-item/miss records and the model eval; distinct from user behavior tracking |
 | Session restoration and background health imports | Session/health state, not acquisitions or manual logging |
 | Proof of an external share, email, claim, installation or published rating | No completion confirmation in the listed handoff events |
@@ -7293,7 +7315,19 @@ day (the local day `First App Open` was sent, kept in the engagement store) (onb
 later launches, about 2,200 recordings a month against the free tier's 2,500
 mobile recordings (`posthog-config.ts`). Recordings under 5 seconds are dropped.
 
-Replays are not masked: the diary and food photos are what a replay is for.
+Replays are not masked, except for health data: the diary and food photos are
+what a replay is for. **Anything read from Apple Health or Health Connect, and
+any weight, is wrapped in `ReplayMask`** (`src/lib/replay-mask.tsx`), which
+blanks it in the recording: the step count on Today, health workout rows and
+their detail screen, the heart-rate card and the logger's live heart, the
+weight card, the Me tab's weight tile and the weigh-in history. Replays go to
+PostHog, a third party, and App Review 5.1.3 and Google's Health Connect policy
+forbid passing health data to one for analytics; the privacy policy says health
+data is used only to show the user their activity. A new screen or component
+that shows a health reading or a weight wraps it the same way, around the
+reading rather than the screen. The calorie ring stays visible: its goal
+includes the day's active energy, but only as part of a total.
+
 `maskAllTextInputs` is off because on iOS it masks every label as well as every
 field, which blacked out the whole app in the first test recording. Password
 fields are secure text entries, which both native SDKs always mask; an email
@@ -9561,8 +9595,9 @@ the last event before the app stops being able to see anything.
 **An entitled status is not enough; the period has to be running too.**
 `entitledBy` on the server and `isEntitledRow` on the client both read
 `current_period_end`, and null means no expiry rather than an expired one:
-lifetime renews never. Written on the status alone, every missed ending is
-permanent instead of temporary. It does not replace the webhook and cannot, since
+lifetime renews never, which is why a lifetime row is re-checked with
+RevenueCat once a week instead. Written on the status alone, every missed ending
+is permanent instead of temporary. It does not replace the webhook and cannot, since
 only RevenueCat knows a subscription ended early. It bounds the damage of never
 hearing to the period that was actually paid for. The two copies cannot import
 each other across the Deno / React Native line and have to be changed together.

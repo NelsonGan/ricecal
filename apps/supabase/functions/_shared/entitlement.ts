@@ -15,7 +15,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { type AiContext, captureGeneration, type Generation } from './posthog.ts'
 import { planOf, sandboxAllowed } from './revenuecat.ts'
-import { fetchSubscriber } from './revenuecat-api.ts'
+import { fetchSubscriber, type StoreSubscriber } from './revenuecat-api.ts'
 
 /** Statuses that may reach the model. Everything else is behind the paywall. */
 const ENTITLED = new Set(['trial', 'active'])
@@ -96,7 +96,7 @@ export class ScanLimitReached extends Error {
 export async function isEntitled(db: SupabaseClient, userId: string): Promise<boolean> {
   const { data, error } = await db
     .from('subscriptions')
-    .select('status, current_period_end')
+    .select('status, current_period_end, updated_at')
     .eq('user_id', userId)
     .maybeSingle()
 
@@ -106,9 +106,137 @@ export async function isEntitled(db: SupabaseClient, userId: string): Promise<bo
     // third party about it would only add a second way for the request to hang.
     return false
   }
-  if (entitledBy(data)) return true
+  if (entitledBy(data)) {
+    if (!lifetimeDueForCheck(data)) return true
+    // Only a definite "no" from RevenueCat takes it away. Could not ask, or the
+    // write failed: the row stands, as it did before this check existed.
+    const verdict = await syncFromStore(db, userId).catch((error) => {
+      console.error('[entitlement] lifetime re-check failed:', (error as Error).message)
+      return null
+    })
+    return verdict !== 'not_entitled'
+  }
 
   return await reconcileEntitlement(db, userId)
+}
+
+/**
+ * How long a lifetime row is believed without asking RevenueCat again.
+ *
+ * Every other row has an end date that bounds a missed ending. A lifetime row
+ * has none, so one lost refund or transfer delivery kept that account on Pro
+ * for good. A week of grace costs at most one extra request a week per lifetime
+ * account, on the request path, which is where the answer is needed.
+ */
+export const LIFETIME_RECHECK_MS = 7 * 24 * 60 * 60 * 1000
+
+/** An entitled row with no end date, last written over a week ago. */
+export function lifetimeDueForCheck(
+  row: { current_period_end?: string | null; updated_at?: string | null } | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!row || row.current_period_end) return false
+  const written = Date.parse(row.updated_at ?? '')
+  // No timestamp to go on is due rather than exempt.
+  return !Number.isFinite(written) || now.getTime() - written > LIFETIME_RECHECK_MS
+}
+
+/**
+ * Write what RevenueCat says now over the mirror, for one account.
+ *
+ * Answers `entitled` or `not_entitled` once the row matches RevenueCat, and
+ * null when RevenueCat could not be asked, which the caller must not read as
+ * "no". Throws when the write fails, so the webhook can ask for a retry.
+ *
+ * `not_entitled` only ever downgrades a row that exists: an account with no
+ * row has nothing to take away. `last_event_at` moves forward only, so an old
+ * delivery cannot make a newer event look stale or a stale one look new.
+ */
+export async function syncFromStore(
+  db: SupabaseClient,
+  userId: string,
+  happenedAt: string | null = null,
+): Promise<'entitled' | 'not_entitled' | null> {
+  const store = await fetchSubscriber(userId)
+  if (!store) return null
+
+  const sandboxRefused = store.active && store.sandbox && !sandboxAllowed(userId)
+  if (sandboxRefused) {
+    console.warn(
+      `[entitlement] ${userId} is entitled in RevenueCat but only in the SANDBOX;` +
+        ' REVENUECAT_SANDBOX_SUBSCRIBERS does not cover it',
+    )
+  }
+
+  const { data: current, error: readError } = await db
+    .from('subscriptions')
+    .select('last_event_at')
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (readError) throw new Error(`could not read the subscription: ${readError.message}`)
+  const lastEventAt = laterOf(current?.last_event_at ?? null, happenedAt)
+  const ordering: Record<string, string> = lastEventAt ? { last_event_at: lastEventAt } : {}
+
+  if (store.active && !sandboxRefused) {
+    await writeEntitled(db, userId, store, ordering)
+    return 'entitled'
+  }
+
+  if (current) {
+    const { error } = await db
+      .from('subscriptions')
+      .update({
+        status: 'expired',
+        trial_ends_at: null,
+        // Ended now, as far as anyone can say: a refund has no period to run out.
+        current_period_end: new Date().toISOString(),
+        ...ordering,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+    if (error) {
+      throw Object.assign(new Error(`could not expire the subscription: ${error.message}`), {
+        code: error.code,
+      })
+    }
+    console.warn(
+      `[entitlement] ${userId} is not entitled in RevenueCat; the mirror now says expired`,
+    )
+  }
+  return 'not_entitled'
+}
+
+/** The later of two ISO timestamps, either of which may be missing. */
+function laterOf(a: string | null, b: string | null): string | null {
+  if (!a) return b
+  if (!b) return a
+  return Date.parse(b) > Date.parse(a) ? b : a
+}
+
+/** The row RevenueCat's "entitled" answer becomes. Throws if it cannot be written. */
+async function writeEntitled(
+  db: SupabaseClient,
+  userId: string,
+  store: StoreSubscriber,
+  extra: Record<string, string> = {},
+): Promise<void> {
+  const { error } = await db.from('subscriptions').upsert(
+    {
+      user_id: userId,
+      status: store.trial ? 'trial' : 'active',
+      plan: planOf(store.productId ?? undefined),
+      trial_ends_at: store.trial ? store.expiresAt : null,
+      current_period_end: store.expiresAt,
+      store: store.store,
+      product_id: store.productId,
+      rc_app_user_id: userId,
+      ...extra,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id' },
+  )
+  // The code travels with it, so the webhook can tell a deleted account apart.
+  if (error) throw Object.assign(new Error(error.message), { code: error.code })
 }
 
 /**
@@ -133,26 +261,13 @@ export async function reconcileEntitlement(db: SupabaseClient, userId: string): 
     return false
   }
 
-  const { error } = await db.from('subscriptions').upsert(
-    {
-      user_id: userId,
-      status: store.trial ? 'trial' : 'active',
-      plan: planOf(store.productId ?? undefined),
-      trial_ends_at: store.trial ? store.expiresAt : null,
-      current_period_end: store.expiresAt,
-      store: store.store,
-      product_id: store.productId,
-      rc_app_user_id: userId,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id' },
-  )
-
-  if (error) {
+  try {
+    await writeEntitled(db, userId, store)
+  } catch (error) {
     // The account IS entitled — RevenueCat just said so — and failing to record
     // that is our problem rather than theirs. Let the request through and let
     // the next one try the write again.
-    console.error('[entitlement] reconciled but could not write:', error.message)
+    console.error('[entitlement] reconciled but could not write:', (error as Error).message)
     return true
   }
 
