@@ -75,6 +75,11 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      # The README's website events table against `EVENTS`. The checkout is
+      # sparse, but cone mode keeps the root files, README.md among them.
+      - name: Test
+        run: pnpm test
+
       # Generates the route and binding types first, so it needs no build.
       - name: Typecheck
         run: pnpm typecheck

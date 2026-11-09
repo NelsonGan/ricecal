@@ -7101,10 +7101,11 @@ retention and RevenueCat for finance; neither is the count of custom app events.
 
 The public acquisition site is `apps/web` (see [The website](#the-website)).
 Its emitter, `apps/web/src/lib/analytics.ts`, declares every event in `EVENTS`,
-and this section is its contract. The inventory test checks that every name in
-`EVENTS` has a row in the table below and that each row's source files exist in
-`apps/web`; the payloads, mappings and gates are still read by hand, so update
-this section in the same change as the code.
+and this section is its contract. `apps/web/scripts/analytics-inventory.test.mjs`
+checks that every name in `EVENTS` has a row in the table below and that each
+row's source files exist in `apps/web`; the Web workflow runs it, so a website
+pull request is checked without the app's. The payloads, mappings and gates are
+still read by hand, so update this section in the same change as the code.
 
 The website reports to the same PostHog project (`659954`) as the app. GA4
 shares RiceCal property `553863111` through web stream `15786444693`, public
@@ -7681,8 +7682,8 @@ free.
 6. Update every affected canonical table in the same change, including properties,
    vocabulary, sources, triggers/frequency, funnel interpretation, provider settings,
    dashboards and verification evidence. Apply the `maintain-analytics-tracking`
-   skill and run the inventory consistency test. Update the website reference when
-   that separate repository changes. A change without analytics impact needs no
+   skill and run the inventory consistency test; for a website event, also
+   `pnpm --filter @ricecal/web test`. A change without analytics impact needs no
    artificial table edit.
 
 Keep both copies of the analytics maintenance skill synchronized. Documentation
@@ -8125,12 +8126,13 @@ purpose, and run the checks when you do.
 
 GitHub Actions deploys the site: `.github/workflows/web.yml` (the **Web**
 workflow), which runs only when `apps/web/**`, the lockfile or the workflow
-itself changes. It checks out `apps/web` and `patches/` alone, shallow, and
-installs only the website's part of the workspace.
+itself changes. It checks out `apps/web` and `patches/` alone, shallow, plus
+the root files that cone mode always keeps (the test step reads `README.md`),
+and installs only the website's part of the workspace.
 
 | Event | Job | What it does |
 |---|---|---|
-| pull request | `Web · Check, build and upload` | lint, typecheck, build, then `pnpm run upload`: the build becomes a version of `ricecal-web` that gets no traffic, which proves it uploads and binds |
+| pull request | `Web · Check, build and upload` | lint, test (the website events table against the root `README.md`, which the sparse checkout keeps as a root file), typecheck, build, then `pnpm run upload`: the build becomes a version of `ricecal-web` that gets no traffic, which proves it uploads and binds |
 | push to `main` | `Web · Check, build and deploy` | the same checks and build, then `pnpm run deploy:prebuilt` |
 
 It authenticates with the `CLOUDFLARE_WEB_API_TOKEN` secret, the account token
@@ -9178,11 +9180,12 @@ required on `main`.
 
 ## Testing
 
-`pnpm check` is typecheck + jest + the website's ESLint + biome across the
-workspace, and CI runs it on every push that can reach the app.
+`pnpm check` is typecheck + tests (the app's jest, and the website's, studio's
+and Workers' node tests) + the website's ESLint + biome across the workspace,
+and CI runs it on every push that can reach the app.
 
 The website and the App Studio have their own workflows. **Web** (`web.yml`)
-lints, typechecks and builds the site and uploads it as an unused Worker
+lints, tests, typechecks and builds the site and uploads it as an unused Worker
 version on every PR, and deploys it from `main`. **App Studio**
 (`app-studio.yml`) runs the studio's tests (with ffmpeg, for the search
 creative's video), its screenshot check, its typecheck and a production build.

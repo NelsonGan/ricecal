@@ -27,7 +27,7 @@ even when an old note, memory or PR names them. The one sibling repo still in
 use is `ricecal-food-database`, which authors the catalogue data (see "The
 catalogue in D1").
 
-`pnpm check` is typecheck + jest + the website's ESLint + biome. Run it before
+`pnpm check` is typecheck + tests (jest and node) + the website's ESLint + biome. Run it before
 you say you are done. Biome skips `apps/web` and `apps/app-studio`; the website
 has its own ESLint rules and the studio has none.
 

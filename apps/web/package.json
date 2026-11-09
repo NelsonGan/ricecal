@@ -8,6 +8,7 @@
     "start": "vite preview --port 3000",
     "preview": "vite build && vite preview --port 3000",
     "lint": "eslint",
+    "test": "node --test scripts/*.test.mjs",
     "typecheck": "vinext typegen && cf workers types && tsc --noEmit",
     "deploy": "vinext-cloudflare deploy",
     "deploy:prebuilt": "vinext-cloudflare deploy --skip-build",

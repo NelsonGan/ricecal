@@ -89,8 +89,9 @@ attach them with `gh pr create/edit --attach`; never commit them (see `create-pr
   the same PR. Bump `LEGAL_LAST_UPDATED` whenever a legal page changes.
 - **Analytics** share the app's PostHog project and GA4 property. A tracking
   change follows `maintain-analytics-tracking`: update the README's *Website
-  product analytics* tables in the same change. The inventory test checks the
-  event names and source files.
+  product analytics* tables in the same change, and run
+  `pnpm --filter @ricecal/web test`, which checks the event names and source
+  files (`scripts/analytics-inventory.test.mjs`).
 - **SEO work** follows `seo-loop`. Dish pages stay `noindex, follow` and out of
   the sitemap.
 - **Prices** in `src/lib/pricing.ts` are a snapshot of App Store Connect's

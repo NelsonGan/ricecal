@@ -27,7 +27,16 @@
     "typecheck": {
       "dependsOn": ["^typecheck"]
     },
-    "test": {},
+    // Tests read files outside their package: the app's and the website's the
+    // analytics tables in the root README, the app's nutrition test the SQL
+    // schemas. Without them here an edit to one replays a cached pass.
+    "test": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/README.md",
+        "$TURBO_ROOT$/apps/supabase/schemas/**"
+      ]
+    },
     // Only the website has a `lint` script: its ESLint rules stand in for the
     // ones eslint-config-next would apply. Everything else is linted by the root
     // Biome pass, which skips apps/web and apps/app-studio.

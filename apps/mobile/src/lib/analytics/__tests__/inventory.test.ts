@@ -74,34 +74,5 @@ it('keeps GA4 event names unique and reserves settled revenue for RevenueCat', (
   }
 })
 
-// The website is apps/web in this repo, so its table can be checked too. Its
-// events are a plain object of display names rather than a typed plan, so this
-// reads the names and the source paths and leaves the payload prose to review.
-const web = resolve(__dirname, '../../../../../web')
-const webEvents = [
-  ...(readFileSync(resolve(web, 'src/lib/analytics.ts'), 'utf8')
-    .split('export const EVENTS = {')[1]
-    ?.split('} as const')[0]
-    ?.matchAll(/^\s+\w+: "([^"]+)",$/gm) ?? []),
-].map(([, name]) => name)
-const webTable = readme
-  .split('<!-- analytics-website-events:start -->')[1]
-  ?.split('<!-- analytics-website-events:end -->')[0]
-
-it('documents every website event with a source that exists in apps/web', () => {
-  expect(webEvents.length).toBeGreaterThan(0)
-  const rows =
-    webTable
-      ?.split('\n')
-      .filter((line) => /^\| [A-Z]/.test(line) && !line.startsWith('| Website decision')) ?? []
-  const posthogNames = rows.map((line) => line.split('|')[2].match(/`([^`]+)`/)?.[1])
-  // `Page Viewed` goes to PostHog as its own `$pageview`, which its web
-  // analytics and paths read.
-  const expected = webEvents.map((name) => (name === 'Page Viewed' ? '$pageview' : name))
-  expect([...posthogNames].sort()).toEqual([...expected].sort())
-  for (const row of rows) {
-    const sources = [...row.split('|')[4].matchAll(/`(src\/[^`]+)`/g)]
-    expect(sources.length).toBeGreaterThan(0)
-    for (const [, source] of sources) expect(existsSync(resolve(web, source))).toBe(true)
-  }
-})
+// The website table is checked by apps/web/scripts/analytics-inventory.test.mjs,
+// which the Web workflow runs on a pull request that touches only the website.
