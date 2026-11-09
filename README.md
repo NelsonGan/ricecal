@@ -39,6 +39,8 @@ project works is here.
 - [Periodic jobs](#periodic-jobs)
 - [Analytics](#analytics)
 - [The design system](#the-design-system)
+- [The website](#the-website)
+- [The App Studio](#the-app-studio)
 - [Deploying](#deploying)
 - [Testing](#testing)
 - [Rules you must not break](#rules-you-must-not-break)
@@ -53,8 +55,16 @@ project works is here.
 apps/mobile      Expo / React Native app (expo-router, NativeWind, react-query)
 apps/supabase    Postgres schema, RLS, pgTAP tests, Deno edge functions
 apps/cloudflare  workers/ and d1/, one directory per Worker and per database
+apps/web         ricecal.app, the website (vinext on Cloudflare Workers)
+apps/app-studio  the App Studio: store screenshots, creatives and listing copy
 packages/shared  the few constants both sides need
 ```
+
+`apps/web` and `apps/app-studio` were their own repositories,
+`NelsonGan/ricecal-web` and `NelsonGan/ricecal-screenshots-creator`, until
+November 2026. They came in as a copy of each repository's latest `main`,
+without their history, which stays in those two repositories. Archive them
+rather than delete them: that history, and the old PRs, are only there.
 
 Inside the mobile app:
 
@@ -82,15 +92,27 @@ Android Studio.
 pnpm install
 pnpm db:start            # local Supabase stack on ports 544xx
 pnpm ios                 # or: pnpm android
+pnpm web:dev             # the website, on http://localhost:3000
+pnpm studio:dev          # the App Studio, on http://localhost:3001
 ```
 
 `pnpm check` runs typecheck, tests and lint across the workspace. CI runs the
 same thing on every push.
 
 Agent skills live in `.agents/skills/`, with Claude's copies in `.claude/skills/`.
-Keep both copies in sync when changing a workflow. In Codex, use
-`$update-whats-new` to prepare the store release note and open its PR in
-`ricecal-screenshots-creator`. The skill does not upload to either store.
+Keep both copies in sync when changing a workflow.
+
+| Skill | Use it for |
+|---|---|
+| `work-on-website` | any change to ricecal.app (`apps/web`) |
+| `seo-loop` | SEO pages, keywords, titles, sitemap, ranking questions on the website |
+| `migrate-to-vinext` | reference for what vinext supports; the migration itself is done |
+| `work-on-app-studio` | store screenshots, headlines, listing text, creatives and uploads (`apps/app-studio`) |
+| `update-whats-new` | the store What's New note for a release; it does not upload |
+| `maintain-analytics-tracking` | any tracking change, in the app or on the website |
+| `create-pr` | opening a PR, including what its merge ships |
+| `animate-expo` | animation and gestures in the app |
+| `codex-imagegen` | generating raster art, and where each app keeps it |
 
 Useful commands:
 
@@ -6762,7 +6784,7 @@ count a second copy of RevenueCat purchases or renewals. The unused
 internal-traffic filter is inactive because preview builds never send to this
 property.
 
-The public privacy policy (ricecal-web) names PostHog and Google Analytics,
+The public privacy policy (`apps/web`, `/privacy`) names PostHog and Google Analytics,
 session replay and the AI request records, and states the 14-month retention
 period (30 days for recordings). The App Store privacy label and Google Play's
 Data safety form must cover the same linked identifiers, product interactions,
@@ -6781,7 +6803,7 @@ of leaving stale state behind.
 | --- | --- |
 | Organization / plan | RiceCal, free plan with no payment method: every product's billing limit is its free allowance, so spend is fixed at $0 and ingestion stops for the rest of the month if an allowance runs out. Adding a card removes those limits; set every product's limit to $0 first if that ever happens |
 | Project | RiceCal `659954`, US Cloud, timezone `Asia/Kuala_Lumpur`, week starts Monday |
-| Ingestion | Public project token `phc_oTQVxP…` checked into `src/lib/posthog-config.ts`, ricecal-web and `functions/_shared/posthog.ts`; host `https://us.i.posthog.com` |
+| Ingestion | Public project token `phc_oTQVxP…` checked into `src/lib/posthog-config.ts`, `apps/web/src/lib/analytics.ts` and `functions/_shared/posthog.ts`; host `https://us.i.posthog.com` |
 | Privacy | IPs discarded after GeoIP (`anonymize_ips`); web autocapture, heatmaps, console-log and performance capture off; exception autocapture on |
 | Replay | Recording on; web sample 100%, minimum 5 s, inputs masked, no network headers or bodies. The app samples itself (below) |
 | Authorized URLs | `https://ricecal.app`, `https://www.ricecal.app` |
@@ -7034,12 +7056,12 @@ retention and RevenueCat for finance; neither is the count of custom app events.
 
 ### Website product analytics
 
-The public acquisition site is maintained in
-[NelsonGan/ricecal-web](https://github.com/NelsonGan/ricecal-web). Its
-README Analytics contract and typed emitter (`src/lib/analytics.ts`) remain the
-authority for its implementation. Recheck that repository when its tracking
-changes and update this section; the mobile inventory test cannot inspect
-another repository in CI.
+The public acquisition site is `apps/web` (see [The website](#the-website)).
+Its emitter, `apps/web/src/lib/analytics.ts`, declares every event in `EVENTS`,
+and this section is its contract. The inventory test checks that every name in
+`EVENTS` has a row in the table below and that each row's source files exist in
+`apps/web`; the payloads, mappings and gates are still read by hand, so update
+this section in the same change as the code.
 
 The website reports to the same PostHog project (`659954`) as the app. GA4
 shares RiceCal property `553863111` through web stream `15786444693`, public
@@ -7049,7 +7071,9 @@ Supabase account or send RevenueCat attributes/charges, so its events are
 anonymous and create no PostHog person. Shared names (`Food Searched`) and GA4
 names require a platform or `$lib` filter in mobile reports.
 
-| Website decision / frequency | PostHog name and custom properties | GA4 name and custom mapping | Source in ricecal-web |
+<!-- analytics-website-events:start -->
+
+| Website decision / frequency | PostHog name and custom properties | GA4 name and custom mapping | Source in apps/web |
 | --- | --- | --- | --- |
 | Public page entry/client path change; explicitly managed page view | `$pageview`: query-free `$current_url`, `path`, `page_type` | `page_view`: `content_group`, query-free `page_location`, `page_title`, safe `page_referrer` | `src/components/analytics.tsx` |
 | Region selection changes | `Region Changed`: `from`, `to`, `fromLocalisedPage` | `ricecal_region_changed`: `region_from`, `region_to`, `from_localised_page` (`yes`/`no`) | `src/components/region-picker.tsx` |
@@ -7057,6 +7081,7 @@ names require a platform or `$lib` filter in mobile reports.
 | Search/seeded result is chosen | `Search Result Clicked`: `query`, `rank`, `results`, `seeded`, `slug`, `source` | `ricecal_food_picked`: public `content_id`, `content_type: food`, `position`, `results`, `source`; no query text or separate seeded boolean | `src/components/home/food-search.tsx` |
 | Download/store call to action is pressed, before navigation | `App Download Clicked`: `placement`, `target`, `live`, optional `plan` | `ricecal_app_download_clicked`: `placement`, `target`, `link_live` (`yes`/`no`), optional `plan`; configured website key event | `src/components/download-link.tsx`, `src/components/store-buttons.tsx` |
 | Valid contact form requests a mail handoff | `Contact Submitted`: `topic` only | `ricecal_contact_submitted`: `topic` only; no name, address or message | `src/app/contact/contact-form.tsx` |
+<!-- analytics-website-events:end -->
 
 | Website context / domain | Contract |
 | --- | --- |
@@ -7075,6 +7100,109 @@ names require a platform or `$lib` filter in mobile reports.
 | Automatic capture | PostHog autocapture, automatic page views, heatmaps and flags off; uncaught errors captured; replay at the project's sample rate with inputs masked, stopped on private recipe links. GA4 automatic pageview and Enhanced Measurement off; SDK session lifecycle remains separate |
 | Delivery | Dynamic PostHog load queues at most 20 calls while starting. Leaving-page calls use immediate sendBeacon; GA4 manages its own transport. Neither guarantees delivery or delays navigation |
 | Handoff success | Contact submission proves validation and a requested mail handoff, not delivered email; store click proves intent, not an installation |
+
+
+#### How the website's tracking is set up
+
+Both providers start only on `ricecal.app` and `www.ricecal.app`, and their
+public identifiers (PostHog's project token, GA4's measurement ID) live in
+`apps/web/src/lib/analytics.ts`. The site has no account and no cart; it has one
+job, and only the six decisions above are worth the weight of an event. Adding
+one means arguing it is worth that weight.
+
+PostHog, beyond the six events:
+
+- **Error tracking.** `capture_exceptions` sends uncaught errors and unhandled
+  rejections as `$exception`, against the free tier's separate exception
+  allowance.
+- **Session replay.** Recorded at the project's sample rate (100% while traffic
+  is a few hundred visits a week, inside the free 5,000 web recordings a month),
+  with every input masked and no network headers or bodies. A client navigation
+  into a private recipe link stops the recording.
+- **No feature flags here.** `advanced_disable_feature_flags` keeps page loads
+  from counting as flag requests; flags are an app feature.
+- **The URLs PostHog records itself** (`$current_url`, `$initial_current_url`,
+  `$session_entry_url`) are cut to origin + path, external referrers to their
+  origin, and ad click IDs (`gclid`, `fbclid`, …) dropped by
+  `sanitizePostHogEvent`, so PostHog keeps the same URL and campaign context GA4
+  does. Anything recorded on a private recipe link is dropped there too.
+- **Settings live in the project.** IPs are discarded after GeoIP; web
+  autocapture, heatmaps, console and performance capture are off; the
+  authorized URLs are the two production hosts.
+
+Analytics from before 12 October 2026 are in Mixpanel project `4054271`; they
+were not migrated, and nothing sends to Mixpanel now.
+
+The Google side belongs to the existing Firebase project and GA4 property,
+because the website is the acquisition surface for the same app rather than a
+second product:
+
+- Firebase project `ricecal`, linked to GA4 account `350740029` and property
+  **RiceCal** (`553863111`);
+- Firebase web app **RiceCal Web**
+  (`1:829952813471:web:3af4db99307026f954b5aa`), whose GA4 web stream is
+  `15786444693`, points to `https://ricecal.app`, and has public measurement ID
+  `G-5Q45RV0KMX`;
+- verified Search Console domain `ricecal.app` linked to that web stream;
+- Enhanced Measurement off. Page views are sent by this code, so history
+  changes are not counted twice and GA never starts watching scrolls, outbound
+  links or form interactions;
+- Google Signals and advertising personalisation off at property level and in
+  the tag; this is product measurement, not an advertising profile;
+- `ricecal_app_download_clicked` marked as a key event;
+- email redaction on, event and user-data retention at 14 months, and the
+  activity-based retention reset off so the stated limit really is a limit;
+- event-scoped custom dimensions for `site_region`, `placement`, `link_live`,
+  `search_failed`, `region_from`, `region_to`, `from_localised_page` and `topic`.
+  `search_failed` separates an unavailable catalogue from a valid zero-result
+  answer. A seeded result already has `source: seeded`, so it does not consume a
+  duplicate dimension. The website reuses the mobile plan's
+  existing `source`, `target` and `plan` dimensions and its `query_length`,
+  `results` and `position` metrics instead of consuming duplicate quota. GA's
+  built-in content and page dimensions need no duplicate.
+
+**One event for every download.** `placement` (`header`, `hero`, `pricing`,
+`final-cta`, `dish`, `country-dishes`) is what makes the site one funnel, and it
+is also why there is no scroll-depth tracking: the badges sit at the top of the
+page, at the bottom of it and beside a dish, so where somebody converted already
+says how far they read. `target` names the store either way, so a badge press
+and a header press from the same device are one row; `live` is false whenever a
+click reached no store, which today means a desktop or an iPad.
+
+- **Campaign attribution is built in.** PostHog records `utm_*`,
+  `$initial_referrer` and `$initial_referring_domain`. GA4 receives the six
+  conventional `utm_*` campaign fields separately. Its page location and
+  referrer omit every query string, so arbitrary URL parameters do not become
+  page dimensions.
+- **No production host, no analytics.** Local development and previews fetch
+  neither the Google tag nor PostHog.
+- **Both clients load after hydration.** PostHog is a dynamic import, keeping
+  it out of the first load. GA4 is a `next/script` fetch. Calls made
+  while either client is arriving are queued by its own loader.
+- **No interaction is autocaptured.** PostHog autocapture and GA4 Enhanced
+  Measurement are off. GA4 still produces its standard session lifecycle
+  events, but clicks, searches, scrolls and forms only become product events
+  when this code explicitly chooses them in `EVENTS`.
+- **Nothing typed into the contact form is sent.** Not the name, the address or
+  the message, only which of six fixed topics was chosen. The search box is the
+  one free-text field PostHog receives, capped at 80 characters. GA4 receives
+  its length, source and result count instead; a free-text box cannot
+  guarantee that somebody did not type identifying information.
+- **A search is one event per answer, not per keystroke.** It is sent where the
+  request resolves, so the three of four runs that `nasi` starts and aborts
+  never count.
+- **Clicks that leave the page use `trackLeaving`.** PostHog sends immediately
+  over `sendBeacon`; GA's tag manages its own delivery. Neither call delays the
+  store or mail-client navigation.
+- **No RiceCal identity.** The site never calls either provider's identify or
+  user-ID API. PostHog's project discards IPs after GeoIP; GA4 has its normal pseudonymous browser
+  client ID but receives no account identifier, name or email from this site.
+- **Do Not Track is honoured before loading.** A reader who has it set fetches
+  neither PostHog nor the Google tag and sends no event to either provider.
+- **The region is provider-level context, not a call-site argument.** It is a
+  PostHog super property and a GA4 global event parameter. It resolves a beat
+  after hydration, so page views wait one tick and are not double-counted while
+  that answer settles.
 
 ### Delivery limits and uninstrumented behavior
 
@@ -7725,6 +7853,1051 @@ what closes the most rows.
 
 ---
 
+## The website
+
+The marketing site and legal pages for **RiceCal: Asian Calorie Tracker**, at
+[ricecal.app](https://ricecal.app), in `apps/web` (package `@ricecal/web`).
+
+The code is written against the Next.js 16 App Router API and is built and
+served by [vinext](https://github.com/cloudflare/vinext), Cloudflare's
+reimplementation of that API on Vite. Tailwind v4, TypeScript. It runs as one
+Cloudflare Worker, `ricecal-web`. Almost every page is prerendered; the dish
+pages are a hybrid (about 3,100 built, the other ~49,000 rendered per request),
+and `/download` is a dynamic redirect. The site owns no database: the catalogue
+lives behind `catalogue.ricecal.app` (the catalogue Worker in
+`apps/cloudflare/workers/catalogue`) and is baked in at build time, and the
+contact form composes a `mailto:` rather than posting anywhere.
+
+Paths in this section are relative to `apps/web` unless they start with `apps/`
+or a dot folder. The site is linted with ESLint rather than Biome: the root
+Biome pass skips `apps/web`, and `eslint.config.mjs` assembles the rules
+`eslint-config-next` would apply.
+
+### Services and resources
+
+Everything the site depends on, by the name it has in that service. The
+Cloudflare resources are all in the owner's one Cloudflare account.
+
+| Service | Name / ID | What it does for the site |
+|---|---|---|
+| Cloudflare Worker | `ricecal-web` | Serves the whole site. Configured by `cloudflare.config.ts` |
+| Cloudflare custom domains | `ricecal.app`, `www.ricecal.app` | Attached to `ricecal-web`. `www` exists only to 308 to the apex |
+| Cloudflare zone | `ricecal.app` (Free plan) | DNS, the custom domains, Email Routing |
+| Cloudflare Workers Static Assets | part of `ricecal-web` | Build output, plus the ~3,130 prerendered pages under `/_vinext/static-cache/` |
+| Cloudflare KV namespace | `ricecal-web-data-cache` (`45328c0270bd48ee9ee81287acb84d3f`), binding `VINEXT_KV_CACHE` | vinext's data cache: catalogue responses for dishes rendered on demand |
+| Cloudflare API token | `ricecal-web-github-actions` (account token), stored as the repo secret `CLOUDFLARE_WEB_API_TOKEN` | Lets `web.yml` upload and deploy `ricecal-web`: Workers Scripts and Account Settings (read) on the account; Zone (read), Workers Routes, DNS and SSL and Certificates on `ricecal.app`. See *Deployment* |
+| Cloudflare Workers plan | Workers Paid, on the account | Sets the limits below: 100,000 asset files per version, and KV's included 10 million reads, 1 million writes and 1 GB a month |
+| Cloudflare Worker secret | `WEB_CATALOGUE_TOKEN` on `ricecal-web` | Optional. Exempts dish renders from the catalogue's per-IP rate limit. Currently not set |
+| Cloudflare Worker | `ricecal-catalogue`, on `catalogue.ricecal.app` | The catalogue API: dish lookups and the hero search. Lives at `apps/cloudflare/workers/catalogue` |
+| Cloudflare D1 database | `ricecal-d1-food-catalogue` | The catalogue itself, served by `ricecal-catalogue`. The site reads it directly only in `apps/web/scripts/catalogue.mjs`, at generation time |
+| Cloudflare Email Routing | `support@ricecal.app` on zone `ricecal.app` | The support address the site and legal pages name |
+| GitHub | `NelsonGan/ricecal`, `apps/web` | Source. `main` is production. Until November 2026 it was its own repository, `NelsonGan/ricecal-web` |
+| PostHog | project **RiceCal** (`659954`, US Cloud) | Product analytics, error tracking, session replay. Shared with the app |
+| Google Analytics 4 | property **RiceCal** (`553863111`), web stream `15786444693`, measurement ID `G-5Q45RV0KMX` | Acquisition analytics. Part of Firebase project `ricecal` |
+| Google Search Console | `sc-domain:ricecal.app` | Indexing and search data, read by the SEO loop through the `gsc` MCP server |
+| App Store | id `6795558595` | Where `/download` sends iPhones |
+| Google Play | `com.nelsongan.ricecal` | Where `/download` sends Android |
+
+### Commands
+
+From the repo root:
+
+```
+pnpm web:dev                              # http://localhost:3000, the server running in workerd
+pnpm web:build                            # prerender every page, including ~3,100 dish pages
+pnpm --filter @ricecal/web preview        # build, then serve that build locally as the real Worker
+pnpm --filter @ricecal/web start          # serve the last build without rebuilding
+pnpm --filter @ricecal/web lint           # ESLint; also part of pnpm check
+pnpm --filter @ricecal/web typecheck      # route types, binding types, then tsc; also part of pnpm check
+pnpm --filter @ricecal/web run deploy     # build and deploy from a laptop (see Deployment)
+```
+
+One check, run after any visible change, against a running `pnpm web:dev` by
+default, or a URL passed as the first argument:
+
+```
+node apps/web/scripts/links.mjs    # every internal link and #anchor, on every page
+```
+
+A markdown-only or comment-only change needs no check. See *Checks* for what it
+reports.
+
+### How a request is served
+
+`vite.config.ts` sets `prerender: { routes: "*" }`, so every page that can be
+rendered at build time is: the home page, the fifteen country pages and dish
+tables, the legal pages and the baked dishes from `generateStaticParams`: the
+3,000 most popular plus every dish a country table shows, 3,096 today. That is
+about 3,130 pages. `staticAssetsAdapter()` packages each as an HTML file
+and an RSC file in the Worker version's Static Assets, under
+`/_vinext/static-cache/`, and serves them read-only (`x-vinext-cache: HIT`).
+
+- **Prerendered pages are frozen until the next deploy.** `revalidate`,
+  `revalidatePath` and `revalidateTag` do not refresh them. Because they belong
+  to the Worker version, a deploy replaces every page at once, a rollback
+  restores the pages with the chunks they name, and nothing is left behind to
+  clean up.
+- **Dishes that were not prerendered** render on each request on the same
+  `/food/{slug}` route; `dynamicParams` allows that. Their rendered pages are
+  never stored. Their catalogue response is, for a day (`FOOD_REVALIDATE` in
+  `src/lib/food.ts`), in the KV data cache that `kvDataAdapter()` backs. KV is
+  eventually consistent, which is fine for data that changes only when a
+  catalogue import runs. A dish the catalogue does not have 404s and an
+  unreachable catalogue 500s; neither response is cached.
+- **Metadata routes render per request.** vinext does not prerender
+  `/sitemap.xml`, `/robots.txt`, `/manifest.webmanifest` or `/opengraph-image`.
+  The OG card loads its fonts and pictures with
+  `fetch(new URL(..., import.meta.url)).then((res) => res.arrayBuffer())`, a
+  shape vinext recognises and inlines into the bundle at build time, because a
+  Worker has no filesystem to read `public/` from.
+- **`/r/{slug}` and `/download` render per request** and are never stored.
+  `/r/{slug}` 404s unless the slug is 32 hex characters.
+- **What each response tells caches.** Prerendered pages send
+  `s-maxage=31536000, stale-while-revalidate`, which only shared caches read
+  and none sits in front of this Worker; on-demand dishes and 404s send
+  `no-store`; metadata routes send `max-age=0, must-revalidate`.
+- **Every request reaches the Worker first** except `/_next/static/*`,
+  `/fonts/*` and `/dishes/*` (`runWorkerFirst` in `cloudflare.config.ts`). So
+  the raw cache files under `/_vinext/static-cache/` 404, and `next.config.ts`'s
+  redirects and headers apply to cached pages as much as rendered ones. The
+  excluded paths come straight from Static Assets with `public/_headers`
+  applied, which gives the hashed build output and the fonts a year-long
+  immutable cache.
+
+**Deploy size bounds the baked dish count.** Each prerendered page is two asset
+files; the build makes about 6,700 files, ~600 MB. A Worker version holds at
+most 100,000 asset files on Workers Paid (20,000 on Free). The cache keys include the build ID, so every
+deploy uploads the pages afresh.
+`STATIC_LIMIT` in `scripts/catalogue.mjs` sets the count, and
+`src/lib/food.ts` explains why it stops there.
+
+### The Worker
+
+`cloudflare.config.ts` is the Worker's whole configuration; there is no
+`wrangler.jsonc`. `wrangler` is still installed, because `scripts/catalogue.mjs`
+reads D1 through it and it is the simplest way to set a secret.
+
+- **Runtime flags.** `nodejs_compat` gives the server the Node built-ins it
+  expects and `process.env`. `global_fetch_strictly_public` makes the `fetch()`
+  to `catalogue.ricecal.app` leave for the public internet and reach that
+  Worker as a real request, rather than short-circuiting inside the zone,
+  which is what lets the catalogue see the token header.
+- **One host serves the site.** The apex is the site; every canonical, the
+  sitemap and every hreflang alternate name it. `www` is attached only so the
+  Worker can 308 it to the apex (`redirects()` in `next.config.ts`).
+- **No `workers.dev` copy and no preview URLs.** Either would publish a second,
+  complete copy of the site under a name no canonical mentions, so
+  `workersDev` and `previewUrls` are both off. `headers()` in `next.config.ts`
+  also sends `X-Robots-Tag: noindex, nofollow` to every host but the apex, so a
+  host turned on later stays out of the index.
+- **One secret, optional.** `WEB_CATALOGUE_TOKEN` exempts on-demand dish renders
+  from the catalogue Worker's per-IP rate limit; without it they share the
+  anonymous limit, since they all leave from Cloudflare's network. It is not
+  declared in `cloudflare.config.ts`, because `cf` refuses to upload a version
+  while a declared secret has no value. The same value must be set on both
+  Workers:
+  `pnpm --filter @ricecal/web exec wrangler secret put WEB_CATALOGUE_TOKEN --name ricecal-web`, and the same
+  on `ricecal-catalogue`. If Wrangler refuses because a Worker's latest
+  uploaded version is not deployed, deploy or discard that version first. For
+  local runs, put the token in `.env.local` (see `.env.example`).
+- **The `DOQueueHandler` tombstone.** `exports.durableObject({ state:
+  "deleted" })` records that the Worker once exported a Durable Object of that
+  name. Its deletion is already applied; the entry stays because Cloudflare
+  keeps the Worker's migration history, and removing it would not bring the
+  class back.
+- **No image optimizer.** Every picture in `public/` is exported at the size it
+  is drawn, so `next.config.ts` sets `images.unoptimized` and there is no
+  Images binding.
+- **Logs.** `observability` is on, so the Worker's request logs and errors are
+  in the dashboard under Workers & Pages → `ricecal-web` → Observability.
+- **Fonts are checked in.** Baloo 2 and Nunito live in `public/fonts/` with their
+  SIL Open Font Licenses; the OG card's TTF copies are in `src/app/fonts/`. `src/app/fonts.css` holds the WOFF2 subsets and
+  fallback metrics, and the root layout preloads the two Latin files. Neither
+  the build nor a browser fetches fonts from Google, so a font CDN cannot fail
+  a release.
+
+The `typecheck` script runs `vinext typegen` and `cf workers types` first. The
+first writes the route types `next-env.d.ts` imports, which otherwise exist only
+after a dev or build run, so a clean checkout (CI) could not typecheck. The
+second writes the binding and runtime types to `.cloudflare/types`. Nothing in
+`src/` reads a binding directly; vinext's adapters do.
+
+#### The fonts
+
+The WOFF2 files in `public/fonts/` are the unmodified files emitted by the successful local Next.js
+16.3.1 build of the review release on 2 October 2026. Keeping these exact files
+preserves the existing glyphs while removing the Google-font loader that failed
+in Cloudflare's production build.
+
+- Baloo 2: [Google Fonts source](https://github.com/google/fonts/tree/main/ofl/baloo2),
+  copyright 2019 The Baloo 2 Project Authors. License: `public/fonts/baloo2-OFL.txt`.
+- Nunito: [Google Fonts source](https://github.com/google/fonts/tree/main/ofl/nunito),
+  copyright 2014 The Nunito Project Authors. License: `public/fonts/nunito-OFL.txt`.
+
+Both use the SIL Open Font License 1.1. The filename suffix is the content
+fingerprint from Next's original output; retain it when replacing files so a
+changed font gets a new URL.
+
+`src/app/fonts.css` defines their Unicode subsets and the existing Arial
+fallback metrics. The root layout preloads only Latin, as the Google-font
+configuration did. Baloo 2 covers Devanagari, Vietnamese, Latin extended and
+Latin; Nunito covers Cyrillic extended, Cyrillic, Vietnamese, Latin extended
+and Latin. The files are variable fonts; the CSS exposes the site's existing
+600–800 display and 400–800 body weight ranges.
+
+#### vinext, not Next.js
+
+The `next` package is not installed. vinext supplies every `next/*` import and
+writes the `PageProps` route types to `.next/types` and `next-env.d.ts` on every
+dev and build (both gitignored). It reads `next.config.ts` for redirects,
+headers and `images`; webpack and Turbopack settings do nothing. Before relying
+on a Next.js feature, check vinext's *API coverage* and *Known gaps* in
+`apps/web/node_modules/vinext/README.md`, or
+`.claude/skills/migrate-to-vinext/references/compatibility.md`.
+
+`eslint.config.mjs` assembles the rules `eslint-config-next` would apply (core
+web vitals and TypeScript) from the same plugins, because that package needs
+the `next` package's Babel parser.
+
+Two packages are betas and pinned exactly: `@cloudflare/vite-plugin` 2.0 and
+`cf` 1.0, the toolchain `vinext init` sets up for Cloudflare. Upgrade them on
+purpose, and run the checks when you do.
+
+### Deployment
+
+GitHub Actions deploys the site: `.github/workflows/web.yml` (the **Web**
+workflow), which runs only when `apps/web/**`, the lockfile or the workflow
+itself changes. It checks out `apps/web` and `patches/` alone, shallow, and
+installs only the website's part of the workspace.
+
+| Event | Job | What it does |
+|---|---|---|
+| pull request | `Web · Check, build and upload` | lint, typecheck, build, then `pnpm run upload`: the build becomes a version of `ricecal-web` that gets no traffic, which proves it uploads and binds |
+| push to `main` | `Web · Check, build and deploy` | the same checks and build, then `pnpm run deploy:prebuilt` |
+
+It authenticates with the `CLOUDFLARE_WEB_API_TOKEN` secret, the account token
+`ricecal-web-github-actions`, which can do nothing but deploy this Worker and
+its two domains (*Services and resources* lists its permissions), plus the
+`CLOUDFLARE_ACCOUNT_ID` secret the Workers share. A pull request from a fork
+gets no secrets, so it skips the upload; `main` without the token fails rather
+than skipping. Roll the token in the dashboard (Manage account → Account API
+tokens) and store the new value with `gh secret set CLOUDFLARE_WEB_API_TOKEN`.
+
+- `deploy:prebuilt` is `vinext-cloudflare deploy --skip-build`: it deploys the
+  build the job has just made, with `cf deploy`, and applies the custom domains.
+- `upload` is `cf workers versions create --prebuilt`. It calls `cf` directly
+  because `vinext-cloudflare deploy --no-promote` (in `@vinext/cloudflare`
+  1.2.1) looks for the version ID on `cf`'s stdout, and `cf` 1.0 beta prints it
+  to stderr, so that command fails after a successful upload.
+- Production deploys queue rather than cancel, so each merge deploys in order.
+
+Until November 2026 Cloudflare Workers Builds deployed the site from
+`NelsonGan/ricecal-web`. It is disconnected, so nothing deploys from that
+repository any more.
+
+Every change lands through a pull request, and merging to `main` is the deploy.
+`deploy.yml` ignores `apps/web/**`, so a website-only change neither runs the
+app's test job nor starts a store build. `pnpm --filter @ricecal/web run deploy`
+does the same as the production job from a laptop, for when Actions is
+unavailable; it uses your `cf` login (`pnpm --filter @ricecal/web exec cf auth
+login`) or `CLOUDFLARE_API_TOKEN`.
+
+### Routes
+
+| Route | What it is |
+|---|---|
+| `/` | the landing page, for a reader we have no country for |
+| `/{code}` | the same landing page, localised — `/my`, `/sg`, `/jp` … |
+| `/{code}/food` | that country's dish table, calorie figures and FAQ |
+| `/food/{slug}` | one dish, its calories and macros — 52,000 of them |
+| `/r/{slug}` | opens one private food share in the app, without exposing its contents on the web |
+| `/download` | redirects to the App Store or Play, by user agent |
+| `/privacy` | Privacy Policy |
+| `/terms` | Terms of Use |
+| `/data-deletion` | account and data deletion, the route Google Play asks for |
+| `/contact` | support routes, and a mailto composer |
+
+`{code}` is the ISO 3166-1 alpha-2 code, lowercased. Dish pages are hybrid: the
+first ~3,100 are prerendered and the rest render per request — see
+`src/lib/food.ts`. None of them is in the sitemap, and every one says `noindex,
+follow`: they are for readers, not for Google's index. See *Why the dish pages
+are not indexed*. The legal pages are
+deliberately *not* prefixed: their text is identical in every market, so
+fifteen copies of each would be near-duplicates rather than localisations.
+
+`/r/{slug}` is also deliberately absent from the sitemap. The slug is a bearer
+credential for one private food in the app, so the page does not fetch or render
+the food, does not start analytics, and tells crawlers not to index it. Its one
+job is to open `ricecal:///recipe/{slug}` after a person taps, with `/download`
+beside it when the app is not installed.
+
+`/opengraph-image`, `/sitemap.xml`, `/robots.txt` and `/manifest.webmanifest`
+are generated from `src/app`, per request.
+
+### Where the design comes from
+
+The home page is a port of **`RiceCal Landing Page.dc.html`** in the RiceCal
+Design System. Section order, copy, type scale, colours and the illustrative
+cards all come from that document; the tokens in `src/app/globals.css` come
+from *RiceCal Foundations* and the light-to-dark map in the design system's own
+`CLAUDE.md`. If the design changes, re-read it and change this, rather than
+improvising on top.
+
+Two rules from that document are load-bearing and easy to break by accident:
+
+- **Two backgrounds only** per mode, canvas and surface. Colour is for state and
+  data, never decoration.
+- **Cards lose their slab in dark mode** and take a line instead. Buttons keep
+  theirs. That is why `--card-slab` and `--card-border` are variables rather
+  than utility classes.
+
+The phone screens in the feature tour (`src/components/home/screens.tsx`, drawn
+with the furniture in `phone.tsx`) are HTML rather than pictures, so they stay
+sharp, follow the theme, show the reader's own country's food, and cost nothing
+to correct when a screen changes.
+
+#### Deliberate departures from the comp
+
+- **The hero's right half is a live search box**, not a phone. The comp draws a
+  Today screen; a picture of the app only repeats the claim the paragraph
+  beside it makes, and `FoodSearch` lets a reader check it in one keystroke.
+- **Pro is one card with a billing-period picker**, not three cards. Monthly,
+  yearly and lifetime are one product at three prices, and its button says "Get
+  RiceCal Pro". Monthly and yearly are billed from purchase; lifetime is a
+  one-off purchase.
+- **The footer carries Privacy, Terms, Data deletion and Support.** The comp has
+  Privacy, Support and Food database. Apple and Google want the legal pages
+  reachable from every page.
+- **Dark mode exists.** The comp is light only. The tokens carry the design
+  system's own dark values, and the weekly-review section stays inverted in
+  both schemes because the inversion is the point.
+- **The home page copy is pan-Asian, not Malaysian.** The comp's headline and
+  body name mamak, kopitiam and nasi lemak. One home page serves the whole
+  region, so it names the region's food and leaves each market's own words
+  to that market's page — and to the dish marquee, which localises itself.
+
+#### App Store reviews
+
+`src/components/home/reviews.tsx` draws the Money2Time-style laurel badges and
+review wall before "Counted across Asia" on `/` and every `/{code}`. The cards
+use RiceCal's existing surface, type and dark-mode tokens. The header links to
+`/#reviews`.
+
+The five selected reviews in `reviews-data.ts` were read from Apple's public
+Singapore and Malaysia customer-review feeds on 2 October 2026. Bodies are
+excerpts in the reviewers' own words, with light punctuation and grammar edits.
+Each card is labelled as an excerpt. Titles keep their original wording with
+capitalisation tidied; reviewer names, individual stars and dates are preserved.
+Each card links to its source storefront and shows that country's flag. Apple's
+review IDs stay in the data for checking the originals. The reviews are baked
+in, so a visit makes no new request to Apple.
+
+The **2K users** figure and **4.5 worldwide App Store rating** were supplied and
+confirmed by the owner on the same date. The worldwide rating is distinct from
+either storefront's average. Refresh these figures from App Store Connect when
+updating the snapshot; selected five-star reviews are not an overall rating.
+The section adds no `aggregateRating` structured data.
+
+### Country pages, and how the SEO is arranged
+
+Each market gets two pages, both generated from `src/lib/countries.ts`
+(editorial) plus `src/lib/catalogue.ts` (generated out of the catalogue's own D1
+by `scripts/catalogue.mjs`, so a figure printed here is the figure the app will
+give you):
+
+| | `/{code}` | `/{code}/food` |
+|---|---|---|
+| answers | what is this app | what does this dish cost me |
+| H1 | `country.title` | "{adjective} dishes and their calories" |
+| body | `country.intro`, the places-to-eat chips | the dish table, `dishNote`, the FAQ |
+| linked from | the footer picker, hreflang | "Counted across Asia" on every home page |
+
+The rules that shaped it:
+
+- **The URL is the ISO 3166-1 alpha-2 code, and it is derived, not stored.**
+  `countryCode()` reads it off `hreflang`, so `en-MY` and `/my` cannot drift
+  apart. `slug` stays the editorial key — `catalogue.ts` is generated and keyed
+  by it, and the region store persists it. The old full-name paths
+  (`/malaysia`) 308 to the codes from `RENAMED_COUNTRY_PATHS` in
+  `next.config.ts`; that table is a record of URLs that once existed, so it is
+  written out rather than derived from `COUNTRIES`. The same list redirects
+  `/food-render/{slug}`, a retired internal route, to `/food/{slug}`.
+- **The two pages per market must not answer the same question.** Two pages
+  about Malaysia competing for one result is worse than one page. That is why
+  the H1, the title and the opening paragraph are different on each, and why
+  `country.intro` appears on `/{code}` only — the food page opens on its table.
+- **Country pages must not be one template with the name swapped in.** Google
+  calls that a doorway page. Every page has its own dish table, its own places
+  to eat, its own keywords and its own FAQ. If you add a country, write those
+  four things rather than copying a neighbour's.
+- **hreflang is a cluster, and every page in it links to every other page AND
+  to itself.** A missing self-reference breaks the chain and Google drops the
+  whole cluster. There are *two* clusters in `src/lib/seo.ts` — `HREFLANG_HOME`
+  for `/` and the fifteen `/{code}`, `HREFLANG_FOOD` for the fifteen
+  `/{code}/food` — and they must not bleed into each other: `/my` and
+  `/my/food` are different pages about one market, not alternates of one
+  another. `cluster: "home" | "food"` picks; the legal pages pass neither,
+  because they have no regional variants and must not claim any.
+- **Only the home cluster has `x-default`.** `/` is what to serve somebody the
+  set has no country for; there is no country-less dish table, so the food
+  cluster nominates nothing.
+- **Prices are the store's own, per market.** `src/lib/pricing.ts` holds App
+  Store Connect's territory prices, so `/jp` quotes ¥800 and `/my` RM19.90 — a
+  page targeting Indonesia showing ringgit is worse than showing nothing. It
+  is a snapshot: the app reads the store's live `priceString` through
+  RevenueCat and is always right, this file goes stale the moment prices
+  change in App Store Connect. Re-read it there rather than editing a figure
+  on a hunch.
+- **Structured data matches what is actually on the page**: `MobileApplication`,
+  `BreadcrumbList`, `FAQPage` for the questions that are really rendered, and
+  `ItemList` of `MenuItem` + `NutritionInformation` for the dish table. No
+  `aggregateRating`: the reviews section's worldwide score is a snapshot the
+  owner confirmed, not data the page can back up, and invented or unsupported
+  ratings are the structured-data mistake that earns a manual action.
+- **The country pages are linked from the home page** (`Counted across Asia`),
+  not just from the sitemap. A page reachable only from a sitemap is an orphan.
+
+To regenerate the dish tables after the catalogue changes, run `node
+scripts/catalogue.mjs` from `apps/web`. It reads D1 through wrangler and rewrites both
+`src/lib/catalogue.ts` (the per-market tables) and `src/lib/catalogue-static.ts`
+(the prerendered dish pages). Which dishes appear is editorial and lives in
+`TERMS` in that script; every figure comes out of the database, and a name that
+no longer resolves stops the run rather than becoming a wrong calorie count. Do
+not hand-edit either file.
+
+### The catalogue on the site
+
+The site shows the catalogue in three places, and only one of them talks to the
+network:
+
+- **The dish tables and the seeded search rows** come from `src/lib/catalogue.ts`,
+  baked in at build time, so landing on a page costs no query. D1 bills rows
+  read and one search reads about 1,500 of them.
+- **The dish pages** at `/food/{slug}` are 52,000 pages. About 3,100 are
+  built from `src/lib/catalogue-static.ts` and stay cached for the build's life.
+  The rest render per request; `src/lib/food.ts` caches their catalogue response
+  for a day and, when `WEB_CATALOGUE_TOKEN` is set, sends it to exempt them
+  from the catalogue's per-IP cap. A missing dish returns `null` and 404s, but
+  an unreachable catalogue throws and 500s — a 404 would tell Google to drop a
+  page that is really there.
+- **The hero search box** queries the Worker live, debounced, once somebody
+  types. It is the one claim on the site a reader can check rather than take.
+
+Every dish page links on to eight others in its own `place`, as successors in a
+ring rather than as "most popular": that way every dish is linked to and a
+crawler starting anywhere reaches all of them.
+
+#### Why the dish pages are not indexed
+
+They were, until the September 2026 spam update. Each one is a name, a portion
+and four numbers in a shared template, and there are 52,000 of them. Google had
+already left 2,988 of the 3,096 in the sitemap as "discovered, not indexed".
+From 27 September the whole site stopped appearing in results, its own name
+included, while Search Console still showed every page indexed, crawled and
+canonical. No deploy, removal request or manual action lines up with that
+date; the update does. That is what an algorithmic scaled-content demotion
+looks like, and it scores the site, not the page.
+
+So the dish pages carry `noindex, follow` through `pageMetadata({ indexable:
+false })`, and the sitemap lists only the home page, the fifteen country pages,
+the fifteen dish tables and the legal pages. They are still crawlable — a
+robots.txt block would hide the `noindex` — and their links still count.
+`seo-check.mjs` fails a dish route on its `noindex`, which is the point: do not
+pass it one.
+
+Do not undo this to win back long-tail queries. If dish pages are ever indexed
+again, it should be a few hundred that each say something the template does not.
+
+### How a page decides whose food it shows
+
+`/` and every `/{code}` are the same component, `HomeMain`. What differs is who
+answers the question "which country", and there are exactly two answers, in
+`src/lib/use-region.tsx`:
+
+- **The URL, on `/my` and the rest.** `RegionLock` is context, not a
+  client-side swap, so `/my` is *prerendered* with Malaysian food in its HTML —
+  the marquee, the search query, both log rows, the scan card, the describe
+  card and all three of the foods somebody wrote. A crawler is served the page a reader in Kuala
+  Lumpur is served, which is the only thing that makes the URL worth having.
+- **The browser, on `/`.** `useSyncExternalStore` over `localStorage` plus the
+  time zone, with the server snapshot fixed at `asia` — so the HTML served from
+  `/` is the pan-Asian set no matter who asks, which is what `x-default`
+  requires. The swap happens on the next paint.
+
+Around that:
+
+- **Detection is by IANA time zone**, not IP or `navigator.language`. Language
+  says what someone reads, not where they eat, and an IP lookup would make a
+  static page dynamic for a guess we are happy to be wrong about.
+- **The footer picker navigates, and keeps the reader where they were.**
+  Malaysia is `/my`; from `/my/food` picking Japan is `/jp/food`, because the
+  path after the country code is carried across. "All of Asia" is always `/` —
+  there is no country-less dish table. From an unprefixed page like `/privacy`
+  nothing is carried, because there is no `/my/privacy` to carry it to.
+- **The picker shows `useRegion`'s answer**, which means the URL on a page that
+  has a country in it and the reader's own choice everywhere else, so the
+  control never disagrees with the page around it.
+- **Nine dishes have their own render** in `/public/dishes`; the rest borrow the
+  closest one through the stand-ins in `src/lib/dish-icons.ts`, which are named
+  for what they look like rather than what they are. At 26px an icon is a shape
+  and a colour. Drop a new render in and repoint the entry.
+- **Chip names are the short spoken forms**, not the catalogue rows in
+  `catalogue.ts` — "Ramen", not "Hakata Tonkotsu Ramen".
+- **The marquee carries no label above it.** The dishes name the region on
+  their own; the places people eat are still listed, as chips, in the
+  localised hero from that country's `contexts` in `src/lib/countries.ts`.
+
+The five phone screens in the feature tour follow the same region, from
+`src/lib/region-preview.ts`. Being HTML rather than screenshots is what makes
+that possible — a picture of the app logging nasi lemak would have to be reshot
+fifteen times. Two rules there:
+
+- **Finished dishes carry the catalogue's own kcal**, copied from
+  `catalogue.ts`. A screen that disagrees with the country page two scrolls down
+  is worse than one with no numbers on it.
+- **The describe card's per-serving figure is computed**, not written down, so
+  the arithmetic on screen is arithmetic that holds.
+
+### `/download`, and how it picks a store
+
+Every "get the app" call to action — the header button and the pricing buttons
+— points at `/download`, which reads the user agent and redirects: the App
+Store on iPhone, Play on Android, and `/#get` for everybody else — a desktop,
+an iPad, an unrecognised user agent — where both badges are and the reader
+decides.
+
+- **User-agent sniffing is right here and almost nowhere else.** The question
+  is literally "which store can this device install from", which is a property
+  of the device and has no feature to detect instead.
+- **iPadOS is deliberately not detected.** It reports itself as `Macintosh`, so
+  guessing would send every desktop Safari reader to the App Store. The
+  fallback costs an iPad reader one tap and costs a Mac reader nothing.
+- **307, not 308.** The right answer depends on who is asking, so it must never
+  be cached as permanent for everybody.
+- **`STORE_LIVE` gates it, one store at a time.** Both keys are on now, so
+  every device we can place reaches a store. A store switched off goes back to
+  a "Coming soon" badge, and that device goes to `/#get` instead. One key per store in `src/lib/site.ts` turns
+  the redirect, the badge, `operatingSystem` and the JSON-LD on together, so
+  launching or pulling a store is a one-line change.
+
+`/download` is the site's one route handler, and it is not in the sitemap: it
+is a redirector, not a page.
+
+### Analytics
+
+The website's plan is in [Website product analytics](#website-product-analytics),
+under *Analytics*, beside the app's: the two share one PostHog project and one
+GA4 property.
+
+### Base styles live in `@layer base`
+
+An unlayered CSS rule beats every layered one, so a bare `h2 { color: … }`
+silently wins against any Tailwind colour utility on a heading, and a heading
+in the dark section comes out dark green on dark. Keep element defaults inside
+`@layer base`.
+
+### Things that go stale on their own
+
+- `src/lib/pricing.ts` whenever either store reprices. It is a snapshot of App
+  Store Connect's territory prices, read through RevenueCat; the app never
+  hard-codes a price (it takes the store's own localised `priceString`), a
+  marketing page cannot, so the snapshot has to be re-read by hand.
+- The reviews snapshot in `src/components/home/reviews-data.ts`, and the user
+  count and worldwide rating beside it. Refresh them together from the App
+  Store feeds and App Store Connect.
+- `LEGAL_LAST_UPDATED`: bump it whenever a legal page changes.
+- `src/lib/catalogue.ts` and `src/lib/catalogue-static.ts` when the catalogue
+  changes: rerun `node scripts/catalogue.mjs` from `apps/web`.
+
+### Checks
+
+`scripts/links.mjs` takes its routes from the sitemap, plus every dish page a
+sitemap route links to, and checks that every internal link and `#anchor`
+resolves. It reads the HTML each route serves over plain `fetch` and runs none
+of its JavaScript, which is enough because every page is rendered on the
+server. Because no script runs, it sends nothing to analytics, even against
+production.
+
+The site has no browser automation. Look at visible changes, both themes and a
+phone width, in a real browser.
+
+### Copy
+
+The voice is the app's: warm, plain, and it never scolds. UI text is English;
+food names stay in their own language (nasi lemak, char kuey teow, teh tarik).
+No long dashes in site copy.
+
+Claims on this site are checked against how the app actually works. The legal
+pages describe the real data flow: photos in private object storage behind
+signed per-account links, meal photos and descriptions processed by a model
+with no account identifier attached, health readings only after you connect a
+store, RevenueCat for entitlement, PostHog and Google Analytics for
+diagnostics, session replay and product analytics, and no advertising SDK on either platform.
+
+---
+
+## The App Studio
+
+`apps/app-studio` (package `@ricecal/app-studio`) is a Next.js studio that
+builds RiceCal's localized App Store and Play Store assets and pushes them
+straight to App Store Connect and Google Play. It runs only on a laptop: nothing
+deploys it, and `deploy.yml` ignores `apps/app-studio/**`, so a studio-only
+merge starts no store build. Until November 2026 it was its own repository,
+`NelsonGan/ricecal-screenshots-creator`. Paths in this section are relative to
+`apps/app-studio` unless they start with `apps/`.
+
+Scenes are React components rasterized in the browser, so every asset is
+regenerated from source rather than hand-edited in a design tool. Change a
+sentence, re-export 26 languages.
+
+`pnpm check` runs its typecheck and its tests, which check the captures and
+creatives against their recorded checksums. Biome skips it. Every PNG it holds
+was recompressed losslessly with `oxipng` on 9 November 2026 when it moved into
+this repo (same pixels, channels and palette, about a fifth smaller), and the
+checksums in `capture.json`, `photo-provenance.json`, `catalog.json` and
+`artwork-provenance.json` were updated to match. Recompress a new capture the
+same way before recording its checksum: `oxipng -o 4 --nc --strip safe <file>`.
+
+### Assets it produces
+
+| View            | Dimensions  | Count      | Locales |
+| --------------- | ----------- | ---------- | ------- |
+| iPhone 6.9"     | 1290 × 2796 | 6 scenes   | all 26  |
+| iPhone Duo      | 2853 × 2007 | 6 scenes   | all 26  |
+| App Store Header | 3840 × 1646 | 1          | all 26  |
+| Search Results   | 1920 × 1280 MP4 | 1          | all 26  |
+| iPad 12.9"      | 2732 × 2048 | 5 scenes   | all 26  |
+| Apple Watch     | 416 × 496   | 5 captures | English |
+| Feature Graphic | 1024 × 500  | 1          | all 26  |
+| Landing Card    | 1200 × 1200 | 1          | all 26  |
+| App Icon        | 512 × 512   | 1          | Play    |
+| Descriptions    | —           | 1 per loc. | all 25  |
+
+Uploads pass `IPHONE_69`, which `asc` resolves to the API display type
+`APP_IPHONE_67` — Apple files 6.7" and 6.9" iPhones under one slot and accepts
+1290 × 2796 there. `asc screenshots validate` confirms the size before anything
+is sent. iPhone Duo uploads pass `IPHONE_DUO` (`APP_IPHONE_DUO`), App Store only.
+
+### Getting started
+
+```bash
+pnpm install         # once, from the repo root
+pnpm studio:dev      # http://localhost:3001
+pnpm --filter @ricecal/app-studio test
+```
+
+Then open <http://localhost:3001>. It runs on 3001 so it can sit beside the
+website's dev server on 3000. Pick a view and a language on the left,
+preview the scenes, and export one asset, the whole set, or every locale at
+once. Device and language controls stay locked while an export runs. Missing
+images or incomplete scene sets report an error instead of creating a partial ZIP.
+
+> Export needs a **visible, foreground tab**. Rasterization waits on
+> `requestAnimationFrame`, which a hidden or backgrounded tab never fires, so an
+> export in a background window sits there forever. Keep the tab in front.
+
+### Where the content lives
+
+| What | Where |
+| --- | --- |
+| Scene layout, screenshot order, corner planting | [`src/scenes/sceneData.tsx`](apps/app-studio/src/scenes/sceneData.tsx) |
+| iPad scenes | [`src/scenes/ipadSceneData.tsx`](apps/app-studio/src/scenes/ipadSceneData.tsx) |
+| iPhone Duo scenes | [`src/scenes/duoSceneData.tsx`](apps/app-studio/src/scenes/duoSceneData.tsx) |
+| Headlines and panel copy, 26 languages | [`src/scenes/locales/`](apps/app-studio/src/scenes/locales) |
+| Store descriptions and release notes | [`src/data/appDescriptions.ts`](apps/app-studio/src/data/appDescriptions.ts) |
+| Names, subtitles, keywords, URLs | [`src/components/DescriptionsView.tsx`](apps/app-studio/src/components/DescriptionsView.tsx) |
+| The palette, lifted from the app's own tokens | [`src/components/tokens.ts`](apps/app-studio/src/components/tokens.ts) |
+| The Play listing icon, copied from `apps/mobile` | [`public/assets/icons/play_store_512.png`](apps/app-studio/public/assets/icons/play_store_512.png) |
+
+English is the source. Existing gallery copy lives in `src/scenes/locales/en.ts`.
+Header and search messages have separate localized copy in
+`src/scenes/appStoreCopy.ts`. The first gallery frame now names the category:
+a calorie diary for Asian food. The opening sequence shows Today, the workout
+logger and portion details, followed by Feed, saved foods and trends. The iPad
+gallery puts the workout second too. Numbered export filenames preserve that
+order when the store uploader sorts the files. Neither gallery has a frame for
+describing a meal in words or for exercise added to the day.
+Every frame uses a real app screen; the old five-feature/rating panel is no
+longer included in the gallery.
+
+Price and trial length are absent: the store prints both on the same page,
+and a listing that repeats them is wrong the day either changes.
+
+### Design
+
+The frames follow the RiceCal design system, so a screenshot and the frame
+around it read as one picture:
+
+- **Palette** — canvas `#F6F8F7`, surface white, and colour only from pandan,
+  kaya, hibiscus, water and teh. No hue outside the app's own tokens.
+- **Type** — Baloo 2 (800) for headlines and figures, Nunito for body. Both are
+  self-hosted under `public/fonts`; scripts they do not cover (CJK, Thai,
+  Korean) fall back to the system face, which rasterizes correctly because the
+  capture happens in this browser.
+- **Shape** — radius 14 / 20 / 28 / 999, and cards carry a solid unblurred slab
+  rather than a blurred drop shadow.
+- **Copy** — plain sentences, no long dashes, no jargon, and never a telling
+  off.
+
+A phone scene is a headline and a phone, and nothing else. There is no
+supporting line: the gallery is read at a glance, and a second line was saying
+the headline again in more words.
+
+Every headline is authored as two lines split with a `\n`, and the scenes are
+laid out around that: the block ends where the phone begins. German and Russian
+do not fit in the space English does, so
+[`useFitText`](apps/app-studio/src/components/useFitText.ts) measures the widest authored line
+with wrapping switched off and scales the type by whatever ratio makes it fit,
+rather than letting a translation soft-wrap into a third line and run into the
+device. The iPad scenes and the landing card do keep a supporting line, and
+`useFitLines` caps those at two. All of it is checked across the 26 frame languages
+before a copy change ships.
+
+Every phone sits at the same crop, so the six read as one set.
+
+Scenes 01 to 03 share one continuous 3870 × 2796 panorama cut into three
+panels ([`src/components/triptych.tsx`](apps/app-studio/src/components/triptych.tsx)), so the
+wash and the pandan blades line up across the cuts when the three sit side by
+side in a store gallery. Each opening frame works independently: Today, the
+workout logger and meal details.
+
+### App Store header and search creative
+
+The new **App Store Header** and **App Store Search** views create dedicated
+creative assets using Apple's specifications checked on 6 October 2026.
+These optional placements are available from iOS 27 and iPadOS 27. They are
+separate from device screenshots and the Google Play feature graphic.
+
+- Header: opaque 3840 × 1646 RGB JPEG, 21:9.
+- Search: silent 1920 × 1280 H.264 MP4, 3:2, 30 fps, 7.2 seconds.
+  The scan completes two seamless cycles; Apple loops the video in Search.
+- **App Store preview** is the default, matching Money2Time's phone preview and
+  Studio controls. Header appears above RiceCal's listing and the first two
+  localized gallery scenes; Search appears beneath the listing in a 353 × 235
+  result card. The phone scales down to fit the available Studio width.
+- **Full image** shows the whole artwork. Header also offers **Safe area crop**
+  for an enlarged central crop; Search offers **Search card** at phone size.
+- **Show Apple safe area**, below Header's full-image preview, uses the rectangle
+  read from Apple's official Photoshop template. The overlay is a sibling of
+  the export surface and cannot appear in the exported image. The checkbox is
+  disabled in the crop and hidden in the phone preview.
+- **Export JPEG** saves Header; **Export MP4** saves the animated Search creative.
+  **Export All Locales** produces 26 files and generation provenance in one ZIP.
+  Preview framing and guides do not appear in the exported files.
+- Search has one canonical creative per locale, defined in
+  [`food-camera/catalog.json`](apps/app-studio/public/assets/app-store/food-camera/catalog.json).
+  It contains each locale’s country, headline, camera labels and food ID, plus
+  each generated food’s prompt, dimensions, checksum and authenticity review.
+  Food reviews check ingredients, geometry, texture, lighting and the actual
+  camera crop. Replacements favor ordinary portions and natural phone photography.
+  Each food has one active photo; earlier revisions are archived outside public assets.
+  English keeps
+  “Count calories / the asian way” and Nasi Lemak. Other languages use a local
+  favorite and their representative country’s way of counting calories.
+  English and Malay share Nasi Lemak; there is no variation picker.
+- The Search phone shows a simulated camera with the generated meal, scan
+  brackets and a moving beam. Search artwork has no RiceCal name or app icon.
+  The original park background is retained. The Header keeps its RiceCal wordmark.
+- Preview and video encoding share [`searchAnimation.json`](apps/app-studio/src/data/searchAnimation.json)
+  and the same scan graphic. The encoder uses the actual captured creative and
+  measured camera geometry, so preview layout changes also reach downloads and uploads.
+- **Upload to Store** sends Header as an opaque PNG with identical decoded pixels,
+  or Search as the same animated MP4 produced by Export MP4. It waits for Asset
+  Library processing, then assigns the correct image or video placement on the
+  editable iOS version. Choose the current language or all 25 App Store languages
+  (31 store localizations). Filipino remains exportable but has no App Store locale.
+- Upload needs **asc 5.14.1 or later**, **FFmpeg** (`ffmpeg` and `ffprobe`), existing
+  stored App Store credentials and `ASC_APP_ID`. Use `brew upgrade asc` and
+  `brew install ffmpeg` as needed. Read-only destination checks run before upload.
+- Existing placements stay in place unless **Replace existing asset** is selected.
+  Videos are checked for duration, frame rate, resolution, codec and audio before
+  any Store command. Failed assignment attempts to restore the previous image or
+  video; partial failures retain the uploaded asset ID. Review and release stay
+  in App Store Connect.
+- The live Studio phone previews use the selected language's artwork and native
+  app captures. Store chrome stays outside the export/upload canvas, and the
+  canvas has its own line height so preview typography cannot shift the artwork.
+  These previews approximate the supplied App Store Connect examples; use
+  Apple's Preview to confirm final placement.
+- The earlier [phone-size sizing reference](apps/app-studio/public/app-store-sizing-preview.html) shows the
+  Header at a 393-pixel phone width and Search at a 353-pixel card width,
+  calibrated to the supplied App Store previews.
+- The built-in image-generation tool created the outdoor backgrounds from
+  the selected concept. The current compositions, exact prompts, original
+  dimensions and checksums are recorded under `currentRevision` in
+  [`artwork-provenance.json`](apps/app-studio/public/assets/app-store/artwork-provenance.json).
+  Generated food provenance is recorded in the canonical food catalog. The Search
+  camera is simulated; the screenshot gallery continues to use native captures.
+
+Read the complete [design and production plan](apps/app-studio/public/app-store-design-plan.html)
+for the analysis, composition, safe-area bounds, localization, screenshot story
+and release experiment. It also opens from the studio's creative-asset views.
+
+Use **Upload to Store** from either creative view, or export the files and add
+them in **App Store Connect → Product Page Information → Header and Search
+Results**. Creative uploads use the Asset Library and placement commands,
+separately from the screenshot gallery uploader. They target an editable version;
+updating a live version with approved assets stays in App Store Connect.
+Check the final crops in App Store Connect Preview for iPhone and iPad
+before submission; local template previews do not establish final store
+placement or review approval.
+
+Sources: [Apple design guidance](https://developer.apple.com/app-store/asset-best-practices/),
+[creative specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/creative-assets-specifications),
+[asset workflow](https://developer.apple.com/help/app-store-connect/manage-app-information/manage-your-app-store-assets).
+
+Apple's published OpenAPI 4.5 does not yet list the new Asset Library and
+placement resources. The implementation uses the uploader's verified public-API
+[image upload](https://github.com/rorkai/App-Store-Connect-CLI/blob/main/docs/design/asset-library-image-upload.md)
+and [placement assignment](https://github.com/rorkai/App-Store-Connect-CLI/blob/main/docs/design/creative-placement-writes.md)
+contracts, authenticated with the existing API key.
+
+### Replacing the screenshots
+
+The phone captures live in `public/assets/screenshots-iphone/<app-code>/`.
+All 13 app languages have six native captures: `en`, `zh-Hans`, `zh-Hant`, `ms`,
+`id`, `th`, `vi`, `fil`, `ja`, `ko`, `hi`, `ta` and `bn`. English, Malay and
+both Chinese scripts show Malaysian dishes. Other supported languages show
+representative local food. Store locales without an app translation keep English
+app screens with translated marketing frames.
+
+Keep these filenames in each folder: `01-today.png`, `02-workout.png`,
+`03-dish.png`, `04-trends.png`, `05-feed.png`, `06-recipes.png`. Captures are
+1320 x 2868; `DeviceFrame` fits them to the store canvas. The creator's `zh`
+code maps to the app's `zh-Hans` folder. Traditional Chinese has its own frame
+copy, captures and store mappings. Tamil and Bengali also have separate frames
+and map to `ta-IN` and `bn-BD` for store uploads. Store descriptions and release
+notes include both languages in their 25-language set.
+
+Use the [RiceCal seeder branch](https://github.com/NelsonGan/ricecal/tree/screenshots/refresh-1-1-0)
+to refresh these screens against local Supabase on a dedicated iOS simulator.
+It carries the earlier [refresh branch](https://github.com/NelsonGan/ricecal/tree/codex/refresh-screenshot-fixtures)
+onto app 1.1.0 and adds eight weeks of workout history, which gives the logger
+its PREVIOUS column and record trophies. The workout capture starts a session
+part way through in the app's own store, with a heart rate reading as a paired
+Apple Watch would stream it, and clears it once captured. Its README contains
+setup and capture commands. The current set was captured on 17 October 2026. `capture.json` records the language, market, screen,
+date, app source revision, verified route and simulator for all 78 images,
+without account details. Run `pnpm check:screenshots` after replacing a capture set; it checks
+every file's dimensions, recorded checksum, duplicate captures, image provenance and store mappings.
+
+The 60 food photos were generated with OpenAI image generation in ten batches,
+then cropped into close food portraits. Each batch matches the Malaysian sheet's
+camera angle, plain ceramics, background and lighting. Exact prompts, batch
+references, crop coordinates and checksums live in
+[`photo-provenance.json`](apps/app-studio/public/assets/screenshots-iphone/photo-provenance.json).
+ZIP exports include this manifest. Original sheets and the crop command live on
+the seeder branch.
+
+
+### The iPhone Duo set
+
+The **iPhone Duo** view is the iPhone gallery for Apple's foldable: the same six
+headlines, order and palette, around native captures of the open inner display
+on its side, where RiceCal shows its side tab rail and two panes at the fold.
+
+- 2853 × 2007, the open landscape size of the `APP_IPHONE_DUO` slot. The
+  captures in `public/assets/screenshots-iphone-duo/<app-code>/` are that size
+  too, with the same filenames as the iPhone set.
+- App Store only. Play has no gallery for it, so Upload to Store offers iOS and
+  nothing else:
+  `pnpm upload:ios -- --dir ./ricecal-duo-all --device duo --dry-run`.
+- Captured on the dedicated `RiceCal iPhone Duo` simulator with the
+  [seeder branch](https://github.com/NelsonGan/ricecal/tree/screenshots/iphone-duo),
+  which carries the earlier seeder onto the app with its Duo layout. `simctl`
+  reads the Duo's display as black, so capture goes through Argent and turns the
+  open panel's portrait framebuffer upright. Feed shows Discover beside
+  Following there, so each language also has an unfollowed cook whose posts
+  lead Discover only while that language is captured.
+- `pnpm check:screenshots` checks both sets, and that they share one food
+  manifest.
+
+### The Apple Watch set
+
+The **Apple Watch** view holds five native captures from the watch simulator in
+[`public/assets/screenshots-watch/en/`](apps/app-studio/public/assets/screenshots-watch/en):
+the set page, rest, a routine, the exercises page and the routines list. They
+are uploaded as they are. A frame and a headline do not fit on a watch screen,
+and Apple shows watch screenshots bare.
+
+- 416 × 496, the Series 10 and later 46 mm slot, which `asc` calls
+  `WATCH_SERIES_10`. App Store Connect scales one watch set to the other sizes.
+- English only. App Store Connect shows the primary language's watch
+  screenshots in any localization without its own, so one upload covers every
+  listing. Upload sends them to the four English App Store locales; there is no
+  Play side, since RiceCal has no Wear OS app.
+- **Export ZIP** saves `ricecal-watch-all/en/`, the shape the CLI reads:
+  `pnpm upload:ios -- --dir ./ricecal-watch-all --device watch --dry-run`.
+- [`capture.json`](apps/app-studio/public/assets/screenshots-watch/capture.json) records the
+  simulator, the app commit and each file's checksum. It sits above `en/`
+  because `asc` uploads every file in that folder and refuses one that is not
+  an image. The heart rate on screen is the simulator's made-up pulse, since
+  the watchOS simulator measures none. `pnpm test` checks the files against the
+  record.
+- Upload them to the first version whose build contains the watch app. An
+  earlier version has no watch app to show them for.
+
+There are no native iPad captures yet, so the iPad scenes pair a headline with
+two phone screens on a wide canvas instead of faking a tablet layout. Its third
+frame introduces Feed. Swap in real iPad PNGs and point `shots` at them once
+there is a tablet build worth showing.
+
+### Store uploads
+
+Uploads run through two CLIs rather than through the store APIs directly, so
+**no credential lives in the studio**: no `.p8`, no service-account JSON, no
+issuer id.
+
+| | Holds | Set up with | Check with |
+| --- | --- | --- | --- |
+| [`asc`](https://github.com/rork-app/asc) | App Store Connect key, in the macOS keychain | `asc auth login` | `asc doctor` |
+| [`gplay`](https://github.com/rork-app/gplay) | Play service account, under `~/.gplay` | `gplay setup` | `gplay doctor` |
+
+All the studio needs is which app to write to:
+
+```bash
+cp apps/app-studio/.env.local.example apps/app-studio/.env.local
+```
+
+| Variable | Value |
+| --- | --- |
+| `ASC_APP_ID` | `6795558595`, the numeric App ID, not the bundle id |
+| `ANDROID_PACKAGE_NAME` | `com.nelsongan.ricecal` |
+
+`GET /api/status` reports whether each CLI is authenticated and names the
+profile it would use; the sidebar's status dot reads it.
+
+#### Store permissions
+
+**App Store Connect** — the API key needs the **App Manager** role (Admin also
+works). Developer can upload builds but cannot edit App Store metadata, which
+is what screenshots and descriptions are. If the key was created with limited
+app access, RiceCal has to be ticked.
+
+**Google Play** — the Google Play Android Developer API enabled in the service
+account's Cloud project, and in Play Console under Users and permissions, app
+access to the package with:
+
+- **View app information and download bulk reports**
+- **Manage store presence** — covers listing text and graphics
+- **Release to testing tracks**, or the production equivalent — only needed for
+  What's New, which on Play is a note on a release rather than on the listing
+
+Financial and order permissions are not needed.
+
+#### Running an upload
+
+Use **Upload to Store** in the sidebar, or the CLI, from `apps/app-studio`. Both share
+[`src/data/storeUpload.mjs`](apps/app-studio/src/data/storeUpload.mjs), so the button and the
+command line cannot drift.
+
+```bash
+pnpm upload:ios -- --dir ./ricecal-screenshots-all --device phone --dry-run
+```
+
+```bash
+pnpm upload:android -- --dir ./ricecal-screenshots-all --device phone --dry-run
+```
+
+The icon takes no `--dir`, because there is nothing per locale to walk:
+
+```bash
+pnpm upload:android -- --device icon --dry-run
+```
+
+Drop `--dry-run` to write for real. `--dir` holds one folder per locale, which
+is what **Export All Locales** unzips to — the zip unpacks to
+`ricecal-screenshots-all/en/`, `…/ms/`, so point `--dir` at that folder. The
+single-locale **Export ZIP** has a different shape and is for eyeballing a set,
+not for feeding the scripts.
+
+A dry run is genuinely read-only on both sides. On iOS it resolves the version
+and reports what would upload without creating anything, including the
+localizations a real run would add. On Play, where `gplay images` has no dry
+run of its own, it uploads into an edit and then discards it — an uncommitted
+edit never reaches the store.
+
+An iOS upload needs a version in an editable state (`PREPARE_FOR_SUBMISSION`,
+or one of the rejected states); create it in App Store Connect first. A Play
+upload puts every locale into one edit and commits once, so a failure part-way
+through discards the whole edit rather than leaving half a listing behind.
+
+Captured PNGs are staged under `.upload-staging/` before a CLI sees them, and
+left there afterwards, so when something goes wrong you can look at exactly
+what was sent. It is gitignored.
+
+One iPad set goes to two Play galleries. Play keeps 7-inch and 10-inch tablet
+screenshots separately and wants both before it treats an app as tablet-ready,
+so `--device tablet` writes the same images to `sevenInchScreenshots` and
+`tenInchScreenshots`. Each is cleared and rewritten on its own, so the 8 image
+cap applies per gallery rather than across them.
+
+Two limits are enforced rather than discovered mid-upload: Play accepts 8
+screenshots per gallery, and Filipino has no App Store Connect localization, so
+`fil` is skipped on that side and uploaded on Play.
+
+##### Play keeps the icon per listing
+
+Play's store icon is a listing asset, like a screenshot. Nothing derives it
+from the app: the launcher icon inside the AAB never becomes the store icon,
+and Play holds a separate copy of it against every locale.
+
+Which means changing it in Play Console changes the default listing and
+nothing else. RiceCal had drifted exactly that way — `en-US` on the current
+sketched bowl, all 28 other listings still serving the clay bowl in a
+viewfinder from two designs ago:
+
+```
+$ gplay images list --package com.nelsongan.ricecal --edit $EDIT --locale en-US --type icon
+  sha1 b97aa5fa…      # the sketched bowl
+$ ... --locale de-DE   # and ja-JP, fr-FR, en-GB, …
+  sha1 30f6f0fd…      # the old viewfinder icon
+```
+
+So **App Icon → Upload to Store** writes
+[`public/assets/icons/play_store_512.png`](apps/app-studio/public/assets/icons/play_store_512.png)
+to every listing Play holds, read from Play rather than from
+`ANDROID_LOCALE_MAP`: a locale opened once in Play Console is a listing the map
+has never written to, and those are precisely the ones stuck on old art.
+
+Two things about Play's API shape this. It keeps a single edit per app, and
+opening a second silently invalidates the first, so the listing locales are
+read from inside the edit the run already opened — which is also why this does
+not use `gplay listings locales`, a command that opens its own. And `icon` is a
+single slot, so each listing is cleared before it is written.
+
+There is no App Store half to this. Apple reads an app's icon out of the
+binary, so there is no listing asset to send and the view is Android only.
+
+```bash
+pnpm upload:android -- --device icon --dry-run
+```
+
+**What's New** goes to both, but they keep it in different places. On the App
+Store it is a field on the version. On Play it is a release note on a release
+inside a track, so the Descriptions view asks which track first, and lists only
+the tracks that actually have a release — an empty track has nothing to write a
+note on. The note is written to every release in the chosen track, in every
+locale, and Play truncates past 500 characters so the text is cut there.
+
+Writing to a track uses `gplay tracks patch` rather than `update`: a release
+carries its version codes and rollout state, and a PUT assembled from release
+notes alone would drop them.
+
+The 25 source languages map to 31 locales on each store, including English
+variants and the shared Chinese translation. Filipino goes to Play only.
+App Store Connect requires What's New in every localization on an update:
+leaving Tamil or Bangla blank prevents adding the version for review. Keep the
+listing copy, language picker and metadata maps together; `pnpm test` checks
+that every supported language has an upload mapping and a complete release note.
+
+### Stack
+
+Next.js 15 · React 19 · TypeScript · Tailwind v4 · `html-to-image` for
+rasterization · the `asc` and `gplay` CLIs for the stores.
+
+---
+
 ## Deploying
 
 ### Deploy the schema first, then the code that reads it
@@ -7917,10 +9090,32 @@ test traffic to PostHog and GA4 as production.
 
 ---
 
+### What a merge to main deploys
+
+| Path changed | What runs | Where it is described |
+|---|---|---|
+| `apps/mobile`, `apps/supabase`, `packages/` or anything else not listed below | `deploy.yml`: `pnpm check`, then a store build and submit | this section |
+| `apps/supabase/**` | the Supabase GitHub integration: migrations, then every edge function | this section |
+| `apps/cloudflare/**` | `cloudflare.yml`: D1 schema, then the Workers | [The food catalogue](#the-food-catalogue) |
+| `apps/web/**` | `web.yml` (**Web**): checks, builds and deploys `ricecal-web`; no store build | [The website, Deployment](#the-website) |
+| `apps/app-studio/**` | `app-studio.yml` (**App Studio**) tests and builds it; nothing deploys | [The App Studio](#the-app-studio) |
+
+Pull requests run the same split. **CI / CD** (`deploy.yml`) runs its Test job
+(`pnpm check`, which covers every package, the website and the studio included)
+unless the PR touches only `apps/web` or `apps/app-studio`. **Web**, **App
+Studio** and **Cloudflare** run when their own folder changes. No check is
+required on `main`.
+
 ## Testing
 
-`pnpm check` is typecheck + jest + biome across the workspace, and CI runs it on
-every push.
+`pnpm check` is typecheck + jest + the website's ESLint + biome across the
+workspace, and CI runs it on every push that can reach the app.
+
+The website and the App Studio have their own workflows. **Web** (`web.yml`)
+lints, typechecks and builds the site and uploads it as an unused Worker
+version on every PR, and deploys it from `main`. **App Studio**
+(`app-studio.yml`) runs the studio's tests (with ffmpeg, for the search
+creative's video), its screenshot check, its typecheck and a production build.
 
 Two more workflows guard the database. `supabase-migrations` rebuilds a throwaway
 Postgres from every migration, runs the pgTAP suite in `apps/supabase/tests`, and

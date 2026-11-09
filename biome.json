@@ -13,7 +13,9 @@
       "!**/dist",
       "!**/*.d.ts",
       "!**/expo-env.d.ts",
-      "!apps/supabase/templates"
+      "!apps/supabase/templates",
+      "!apps/web",
+      "!apps/app-studio"
     ]
   },
   "formatter": {

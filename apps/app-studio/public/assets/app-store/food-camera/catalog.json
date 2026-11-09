@@ -1,0 +1,763 @@
+{
+  "description": "One canonical Search creative per Studio locale. Countries are representative defaults for language locales, not a definitive consumption ranking. English retains the selected Nasi Lemak and the asian way headline. Preview, downloads and uploads all resolve this catalog.",
+  "locales": {
+    "en": {
+      "country": "Asia",
+      "foodId": "nasi-lemak",
+      "search": "Count calories\nthe asian way",
+      "camera": "PHOTO SCAN",
+      "scanning": "Scanning your meal…"
+    },
+    "ms": {
+      "country": "Malaysia",
+      "foodId": "nasi-lemak",
+      "search": "Kira kalori\ncara Malaysia",
+      "camera": "IMBAS FOTO",
+      "scanning": "Mengimbas makanan…"
+    },
+    "zh": {
+      "country": "China",
+      "foodId": "dumplings",
+      "search": "用中国方式\n计算热量",
+      "camera": "拍照识别",
+      "scanning": "正在识别美食…"
+    },
+    "zh-Hant": {
+      "country": "Taiwan",
+      "foodId": "beef-noodle-soup",
+      "search": "用台灣方式\n計算熱量",
+      "camera": "拍照辨識",
+      "scanning": "正在辨識美食…"
+    },
+    "id": {
+      "country": "Indonesia",
+      "foodId": "nasi-goreng",
+      "search": "Hitung kalori\ncara Indonesia",
+      "camera": "PINDAI FOTO",
+      "scanning": "Memindai makanan…"
+    },
+    "th": {
+      "country": "Thailand",
+      "foodId": "pad-thai",
+      "search": "นับแคลอรี\nแบบไทย",
+      "camera": "สแกนภาพ",
+      "scanning": "กำลังสแกนอาหาร…"
+    },
+    "vi": {
+      "country": "Vietnam",
+      "foodId": "pho",
+      "search": "Đếm calo\ntheo cách Việt",
+      "camera": "QUÉT ẢNH",
+      "scanning": "Đang quét món ăn…"
+    },
+    "ja": {
+      "country": "Japan",
+      "foodId": "sushi",
+      "search": "日本流で\nカロリー計算",
+      "camera": "写真スキャン",
+      "scanning": "食事をスキャン中…"
+    },
+    "ko": {
+      "country": "South Korea",
+      "foodId": "bibimbap",
+      "search": "한국식으로\n칼로리 계산",
+      "camera": "사진 스캔",
+      "scanning": "음식 스캔 중…"
+    },
+    "hi": {
+      "country": "India",
+      "foodId": "butter-chicken",
+      "search": "कैलोरी गिनें\nभारतीय अंदाज़ में",
+      "camera": "फ़ोटो स्कैन",
+      "scanning": "खाना स्कैन हो रहा है…"
+    },
+    "ta": {
+      "country": "India",
+      "foodId": "masala-dosa",
+      "search": "இந்திய முறையில்\nகலோரிகளை எண்ணுங்கள்",
+      "camera": "புகைப்பட ஸ்கேன்",
+      "scanning": "உணவு ஸ்கேன் ஆகிறது…"
+    },
+    "bn": {
+      "country": "Bangladesh",
+      "foodId": "biryani",
+      "search": "বাংলাদেশি কায়দায়\nক্যালোরি গুনুন",
+      "camera": "ছবি স্ক্যান",
+      "scanning": "খাবার স্ক্যান হচ্ছে…"
+    },
+    "fil": {
+      "country": "Philippines",
+      "foodId": "chicken-adobo",
+      "search": "Bilangin ang calories\nsa paraang Pinoy",
+      "camera": "PHOTO SCAN",
+      "scanning": "Ini-scan ang pagkain…"
+    },
+    "es": {
+      "country": "Spain",
+      "foodId": "paella",
+      "search": "Cuenta calorías\na la española",
+      "camera": "ESCANEAR FOTO",
+      "scanning": "Escaneando tu comida…"
+    },
+    "fr": {
+      "country": "France",
+      "foodId": "steak-frites",
+      "search": "Comptez les calories\nà la française",
+      "camera": "SCAN PHOTO",
+      "scanning": "Analyse du repas…"
+    },
+    "de": {
+      "country": "Germany",
+      "foodId": "schnitzel",
+      "search": "Kalorien zählen\nauf deutsche Art",
+      "camera": "FOTO-SCAN",
+      "scanning": "Essen wird gescannt…"
+    },
+    "pt": {
+      "country": "Brazil",
+      "foodId": "feijoada",
+      "search": "Conte calorias\ndo jeito brasileiro",
+      "camera": "LEITURA POR FOTO",
+      "scanning": "Analisando a refeição…"
+    },
+    "it": {
+      "country": "Italy",
+      "foodId": "spaghetti",
+      "search": "Conta le calorie\nall’italiana",
+      "camera": "SCANSIONE FOTO",
+      "scanning": "Scansione del pasto…"
+    },
+    "nl": {
+      "country": "Netherlands",
+      "foodId": "stamppot",
+      "search": "Tel calorieën\nop z’n Nederlands",
+      "camera": "FOTOSCAN",
+      "scanning": "Je maaltijd scannen…"
+    },
+    "ru": {
+      "country": "Russia",
+      "foodId": "pelmeni",
+      "search": "Считайте калории\nпо-русски",
+      "camera": "ФОТОСКАН",
+      "scanning": "Сканируем еду…"
+    },
+    "tr": {
+      "country": "Türkiye",
+      "foodId": "doner",
+      "search": "Kalorileri say\nTürk usulü",
+      "camera": "FOTOĞRAF TARAMA",
+      "scanning": "Yemek taranıyor…"
+    },
+    "pl": {
+      "country": "Poland",
+      "foodId": "pierogi",
+      "search": "Licz kalorie\npo polsku",
+      "camera": "SKAN ZDJĘCIA",
+      "scanning": "Skanowanie posiłku…"
+    },
+    "uk": {
+      "country": "Ukraine",
+      "foodId": "borscht",
+      "search": "Рахуйте калорії\nпо-українськи",
+      "camera": "ФОТОСКАН",
+      "scanning": "Скануємо їжу…"
+    },
+    "sv": {
+      "country": "Sweden",
+      "foodId": "meatballs",
+      "search": "Räkna kalorier\npå svenskt vis",
+      "camera": "FOTOSKANNING",
+      "scanning": "Skannar din måltid…"
+    },
+    "nb": {
+      "country": "Norway",
+      "foodId": "salmon",
+      "search": "Tell kalorier\npå norsk vis",
+      "camera": "FOTOSKANNING",
+      "scanning": "Skanner maten…"
+    },
+    "da": {
+      "country": "Denmark",
+      "foodId": "smorrebrod",
+      "search": "Tæl kalorier\npå dansk manér",
+      "camera": "FOTOSCANNING",
+      "scanning": "Scanner maden…"
+    }
+  },
+  "foods": {
+    "nasi-lemak": {
+      "name": "Nasi lemak",
+      "image": "/assets/app-store/food-camera/nasi-lemak-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nCreate one new portrait 1024 × 1536 food photograph for a meal scanning camera view. The subject is authentic Malaysian nasi lemak ayam goreng, photographed by a diner with an ordinary smartphone at a Malaysian warung just before eating.\nScene: a clean pale grey laminate cafe tabletop, an ordinary white porcelain dinner plate with a small banana-leaf liner. A modest mound of coconut rice with fine naturally irregular cooked long-grain rice, one realistic fried chicken thigh and drumstick portion with dark golden craggy crust, half a hard-boiled egg with a matte yellow yolk, three uneven cucumber slices, a small spoonful of deep brick-red sambal, a small loose mixture of fried tiny ikan bilis and roasted peanuts. Real everyday proportions. Each anchovy is a small recognizable thin fish, rice is slender soft grain rather than round beads. Ingredients sit naturally, with a few stray rice grains; no decorative fried shallot tower.\nFraming: handheld near-overhead view, about 75 degrees, normal 1x smartphone lens with almost everything in focus, slight natural perspective. Whole plate centered in the middle of the portrait, about 82 percent of image width and 56 percent of image height, with clear tabletop above and below. Food stays inside the plate. This image will be cropped slightly at top and bottom inside a phone camera.\nLighting: ordinary soft window daylight mixed with room light, neutral white balance, restrained color and contrast, honest soft shadows. It should look like a believable meal photo in a camera roll, appetizing but unstaged.\nAvoid: catalog/studio lighting, cream seamless backdrop, CGI/plastic rice, orange color cast, excessive sharpening, HDR, perfect ingredient geometry, glossy varnished chicken, giant fish, dramatic bokeh, fabricated steam, extra dishes, hands, phones, text, logos, UI or scan overlays.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "sha256": "51c725261d15a2f4a087959b4b83c17c1afa5ebface346f8153f99ced4ffc810",
+      "mode": "RGB",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Rice resembles polished beads; anchovies have repeated enlarged forms, and the chicken is orange and varnished. Keep nasi lemak, reduce the artificial material finish.",
+        "after": "Accepted: neutral warung lighting, slender uneven rice, hard-boiled egg and natural dark fried chicken. Peanut and small anchovy mix has believable variation.",
+        "cameraCropVerified": true
+      }
+    },
+    "dumplings": {
+      "name": "Jiaozi",
+      "image": "/assets/app-store/food-camera/dumplings-v1.png",
+      "prompt": "Use case: ads-marketing. Asset type: food photograph inside a simulated phone camera for a localized RiceCal App Store Search creative. Primary request: Chinese jiaozi dumplings, plump pleated boiled dumplings arranged on an ivory ceramic plate, a small dipping dish of dark soy sauce and a few scallions. Style: appetizing realistic professional food photography, accurate cuisine, fresh ingredients and natural textures. Composition: portrait 1024 by 1536, overhead with a slight natural angle, the entire main plate or bowl centered in the middle 65 percent of frame with ample warm ivory tabletop visible above and below for camera controls; plate fully visible and safely inside frame. Lighting: soft warm daylight, gentle shadows. Background: plain warm ivory tabletop matching the selected Nasi Lemak photo. Constraints: food only, one meal, no phone, no hands, no UI, no scanning marks, no corner brackets, no words, no logo, no watermark. Keep the food clear and attractive when cropped to a tall phone camera view.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "66c3a42e754cd8a7f409fc9de0a0a31fa7882ca886cf922591926fdb0fdb5f5d",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "retained",
+        "observations": "Hand-folded pleats vary, wrappers sag around filling, and the plate and sauce bowl have consistent perspective. The glossy cooked dough is plausible. No severe structural artifact.",
+        "after": "Hand-folded pleats vary, wrappers sag around filling, and the plate and sauce bowl have consistent perspective. The glossy cooked dough is plausible. No severe structural artifact.",
+        "cameraCropVerified": true
+      }
+    },
+    "beef-noodle-soup": {
+      "name": "Taiwanese beef noodle soup",
+      "image": "/assets/app-store/food-camera/beef-noodle-soup-v1.png",
+      "prompt": "Use case: ads-marketing. Asset type: food photograph inside a simulated phone camera for a localized RiceCal App Store Search creative. Primary request: Taiwanese beef noodle soup in an ivory ceramic bowl, thick wheat noodles, tender braised beef chunks, rich reddish brown broth, green bok choy and pickled mustard greens. Style: appetizing realistic professional food photography, accurate cuisine, fresh ingredients and natural textures. Composition: portrait 1024 by 1536, overhead with a slight natural angle, the entire main plate or bowl centered in the middle 65 percent of frame with ample warm ivory tabletop visible above and below for camera controls; plate fully visible and safely inside frame. Lighting: soft warm daylight, gentle shadows. Background: plain warm ivory tabletop matching the selected Nasi Lemak photo. Constraints: food only, one meal, no phone, no hands, no UI, no scanning marks, no corner brackets, no words, no logo, no watermark. Keep the food clear and attractive when cropped to a tall phone camera view.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "07a13f30edb120c1bba6c7c68f9a0032c40265600def4fbd0d5778b0a2761de7",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "retained",
+        "observations": "Braised beef shows varied fibers and fat, noodles overlap plausibly, and broth, greens and pickles are recognizable. The composition is styled, but the food is physically coherent.",
+        "after": "Braised beef shows varied fibers and fat, noodles overlap plausibly, and broth, greens and pickles are recognizable. The composition is styled, but the food is physically coherent.",
+        "cameraCropVerified": true
+      }
+    },
+    "nasi-goreng": {
+      "name": "Nasi goreng",
+      "image": "/assets/app-store/food-camera/nasi-goreng-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nIndonesian nasi goreng ayam on an ordinary white ceramic dinner plate on a lightly worn light oak warung table. A loosely served low mound of fine cooked rice browned naturally with kecap manis, small uneven shredded chicken pieces, a few chopped scallions and cooked egg mixed in, topped slightly off-center with one fried egg with a wavy crisp edge and a normal matte yellow-orange yolk. Two cucumber slices, one tomato wedge and two modest irregular pale kerupuk at the side. No peas, colorful bell-pepper confetti or satay skewers. Rice grains are slender cooked rice, not giant barley or round pellets, naturally clumped in a few places. Everyday Indonesian lunch proportions.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "9a7a2b31f127c95fde2d0e4b765664ebd4ac386d04d97366d400904f66b8bcd4",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Rice is unusually round and oversized, vegetables look like generic mixed fried rice, and satay and egg are overly uniform. Use kecap-manis-brown rice and a normal warung serving.",
+        "after": "Accepted: kecap-colored fine rice, irregular cooked chicken, a wavy fried egg and modest kerupuk. Removed the generic bright mixed-vegetable fried-rice presentation.",
+        "references": [
+          {
+            "url": "https://www.indonesia.travel/id/id/travel-ideas/gastronomy/hobi-wisata-kuliner-10-makanan-khas-indonesia-ini-wajib-kamu-coba",
+            "reason": "Indonesia's tourism board confirms regional variation rather than a single national recipe."
+          }
+        ],
+        "cameraCropVerified": true
+      }
+    },
+    "pad-thai": {
+      "name": "Pad Thai",
+      "image": "/assets/app-store/food-camera/pad-thai-v1.png",
+      "prompt": "Use case: ads-marketing. Asset type: food photograph inside a simulated phone camera for a localized RiceCal App Store Search creative. Primary request: Thai pad thai on an ivory plate, glossy stir fried flat rice noodles with shrimp, bean sprouts, egg, chopped peanuts, lime wedge and garlic chives. Style: appetizing realistic professional food photography, accurate cuisine, fresh ingredients and natural textures. Composition: portrait 1024 by 1536, overhead with a slight natural angle, the entire main plate or bowl centered in the middle 65 percent of frame with ample warm ivory tabletop visible above and below for camera controls; plate fully visible and safely inside frame. Lighting: soft warm daylight, gentle shadows. Background: plain warm ivory tabletop matching the selected Nasi Lemak photo. Constraints: food only, one meal, no phone, no hands, no UI, no scanning marks, no corner brackets, no words, no logo, no watermark. Keep the food clear and attractive when cropped to a tall phone camera view.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "b510c17e2919507350633b280b190620da9289b9251500a4b85d0bdf5d6499a0",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "retained",
+        "observations": "Flat rice noodles, bean sprouts, chives, peanuts and prawns are consistent with the dish. Uneven egg curds and noodle folds give sufficient variation; no clear fused or repeated anatomy.",
+        "after": "Flat rice noodles, bean sprouts, chives, peanuts and prawns are consistent with the dish. Uneven egg curds and noodle folds give sufficient variation; no clear fused or repeated anatomy.",
+        "references": [
+          {
+            "url": "https://hot-thai-kitchen.com/best-pad-thai/",
+            "reason": "Thai cook's recipe validates rice noodles, egg, chives, sprouts and peanuts."
+          }
+        ],
+        "cameraCropVerified": true
+      }
+    },
+    "pho": {
+      "name": "Phở bò",
+      "image": "/assets/app-store/food-camera/pho-v1.png",
+      "prompt": "Use case: ads-marketing. Asset type: food photograph inside a simulated phone camera for a localized RiceCal App Store Search creative. Primary request: Vietnamese pho bo in an ivory ceramic bowl, clear beef broth, rice noodles, thin beef slices, fresh basil, scallions and a lime wedge beside the bowl. Style: appetizing realistic professional food photography, accurate cuisine, fresh ingredients and natural textures. Composition: portrait 1024 by 1536, overhead with a slight natural angle, the entire main plate or bowl centered in the middle 65 percent of frame with ample warm ivory tabletop visible above and below for camera controls; plate fully visible and safely inside frame. Lighting: soft warm daylight, gentle shadows. Background: plain warm ivory tabletop matching the selected Nasi Lemak photo. Constraints: food only, one meal, no phone, no hands, no UI, no scanning marks, no corner brackets, no words, no logo, no watermark. Keep the food clear and attractive when cropped to a tall phone camera view.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "1ed5f3b230efae8386a8792b55aae52e3ea02e28041e5fb8ec01af16e6a8fc1e",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "retained",
+        "observations": "Thin beef, flat noodles, onion and clear broth are legible, with plausible overlaps. Basil is generous and styling is polished, but there is no strong geometry or texture defect.",
+        "after": "Thin beef, flat noodles, onion and clear broth are legible, with plausible overlaps. Basil is generous and styling is polished, but there is no strong geometry or texture defect.",
+        "cameraCropVerified": true
+      }
+    },
+    "sushi": {
+      "name": "Sushi",
+      "image": "/assets/app-store/food-camera/sushi-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nA small ordinary Japanese sushi lunch on a pale blue-grey ceramic oval plate on a clean light wooden restaurant counter. Four small hand-formed nigiri, two tuna and two salmon, with irregular soft rice bases made from small cooked short-grain rice and gently draped fish cut with slight variation in thickness. Salmon has subtle uneven fat lines, tuna a restrained deep red with actual muscle texture and no plastic shine. Three small cucumber hosomaki with a thin nori wrapping and naturally packed rice; cucumber is a small cut strip rather than identical tiled cubes. A little folded pale pickled ginger and a small unpiped dab of wasabi. Natural sushi-chef presentation, no giant sashimi slabs, rounded rice beads, identical cloned rolls or ornamental plate styling.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "1e152fa8dd4d047e1e4ab5c836af908d6a8b4511c8cd91bc0aa37185f4341390",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Fish has plastic smoothness and repeated curves; rice looks like inflated pellets and maki filling is tiled into identical blocks. Use small hand-shaped nigiri and naturally cut fish.",
+        "after": "Accepted: smaller varied nigiri, softer naturally packed rice, less saturated fish and ordinary counter lighting. Ginger, nori and fish lie coherently on the plate.",
+        "cameraCropVerified": true
+      }
+    },
+    "bibimbap": {
+      "name": "Bibimbap",
+      "image": "/assets/app-store/food-camera/bibimbap-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nOrdinary Korean bibimbap in a plain shallow stainless-steel bowl at a local lunch restaurant, on a clean light grey laminated table. A normal serving of steamed rice underneath small loose sections of cooked spinach, uneven julienned carrot, zucchini, soybean sprouts and thin strips of cooked beef. One fried egg with irregular edges near the center, a modest spoonful of dark red gochujang beside it, a light sparse scatter of sesame. Toppings overlap naturally rather than rigid symmetrical sectors. Normal fine rice, not inflated pearls. Beef is recognizable thin sliced beef, not extruded minced clusters. The metal has subtle real reflections and light utensil marks, not a mirrored chrome render.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "4ecaef1578471fc4b1e417aee9139f84120bc0a32b8548b6f8c7f76e208660e7",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Rice is bead-like, meat resembles repeated molded clusters, and the egg is an exact circle. Replace with ordinary steel-bowl bibimbap with thin beef strips and irregular vegetables.",
+        "after": "Accepted: believable steel bowl, thin beef strips, irregular egg edge and varied cooked vegetables. Neutral restaurant lighting reduces the plastic finish.",
+        "references": [
+          {
+            "url": "https://www.koreanbapsang.com/bibimbap/",
+            "reason": "Korean cook's bibimbap recipe and ingredient preparation."
+          }
+        ],
+        "cameraCropVerified": true
+      }
+    },
+    "butter-chicken": {
+      "name": "Butter chicken",
+      "image": "/assets/app-store/food-camera/butter-chicken-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nAn ordinary north Indian butter chicken lunch at a neighborhood restaurant. A shallow round stainless-steel thali centered on a clean grey tabletop, with a modest low steel katori of murgh makhani, a small loose serving of fine slender basmati rice and one folded irregular tandoori roti. Curry is muted orange-brown tomato butter sauce, smooth but not shiny varnish, with several uneven bite-size cooked chicken pieces mostly partly submerged, a faint small cream streak and a few dried kasuri methi flakes. Rice is slender and fluffy rather than thick pellets. Roti has uneven lightly charred blisters and a soft folded edge. All elements fit neatly inside the single thali, no tower of identical chicken cubes.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "9ee6bf4d0e2ce8ce00749a9e4513f45134f815e9bada2e3a7df2590a4bb77e6a",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Uniform chicken knobs rise at equal height through extremely orange sauce, and the rice is thick and waxy. Use a small steel curry bowl, fine basmati and naturally blistered roti.",
+        "after": "Accepted: restrained orange-brown curry, fine basmati grains, naturally blistered folded roti and ordinary steel thali. No oversaturated uniform chicken tower.",
+        "cameraCropVerified": true
+      }
+    },
+    "masala-dosa": {
+      "name": "Masala dosa",
+      "image": "/assets/app-store/food-camera/masala-dosa-v1.png",
+      "prompt": "Use case: ads-marketing. Asset type: food photograph inside a simulated phone camera for a localized RiceCal App Store Search creative. Primary request: South Indian masala dosa, one crisp golden rolled dosa with a small visible potato filling, ivory plate, small bowls of coconut chutney and sambar alongside. Style: appetizing realistic professional food photography, accurate cuisine, fresh ingredients and natural textures. Composition: portrait 1024 by 1536, overhead with a slight natural angle, the entire main plate or bowl centered in the middle 65 percent of frame with ample warm ivory tabletop visible above and below for camera controls; plate fully visible and safely inside frame. Lighting: soft warm daylight, gentle shadows. Background: plain warm ivory tabletop matching the selected Nasi Lemak photo. Constraints: food only, one meal, no phone, no hands, no UI, no scanning marks, no corner brackets, no words, no logo, no watermark. Keep the food clear and attractive when cropped to a tall phone camera view.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "be0e95001edbdc70deaeb1586dacdc91d090831d9069c6d7b42387bb51c9f835",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "retained",
+        "observations": "The thin crepe has uneven browning and pores, with a plausible potato filling, sambar and coconut chutney. The rolled restaurant presentation is credible.",
+        "after": "The thin crepe has uneven browning and pores, with a plausible potato filling, sambar and coconut chutney. The rolled restaurant presentation is credible.",
+        "cameraCropVerified": true
+      }
+    },
+    "biryani": {
+      "name": "Kacchi biryani",
+      "image": "/assets/app-store/food-camera/biryani-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nBangladeshi Dhakaiya kacchi biryani, an ordinary serving at a Dhaka lunch restaurant, on a white ceramic plate on a clean grey stone tabletop. A loose mound of fluffy fine long-grain basmati, predominantly off-white with some lightly golden saffron-colored grains; two natural irregular bone-in mutton pieces partly nestled under the rice and one medium golden potato. A modest scattering of dark thin irregular fried onion strands, not complete onion rings, and a few rice grains naturally scattered on the plate. Mutton shows slow-cooked fibers and believable small bone structure; no giant stylized bones or perfectly cubic meat. Meal-sized portion, no decorative cucumber salad mountain.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "fbb5b1e4bed3f6480ed084fb3141597e369b7d12e6acec1641772ba5f21255e7",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Fried onions become identical complete rings, rice is oversized, and the giant meat and bone shapes compete unnaturally. Show fluffy fine basmati, bone-in mutton and one potato.",
+        "after": "Accepted: fine irregular basmati with restrained golden patches, two bone-in mutton pieces, one potato and thin fried onion strands. The bright onion-ring garnish is gone.",
+        "references": [
+          {
+            "url": "https://horecabd.com/product/mutton-kacchi-basmati/",
+            "reason": "Bangladeshi caterer's kacchi serving uses basmati rice, marinated mutton and potato."
+          }
+        ],
+        "cameraCropVerified": true
+      }
+    },
+    "chicken-adobo": {
+      "name": "Chicken adobo",
+      "image": "/assets/app-store/food-camera/chicken-adobo-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nFilipino chicken adobo with rice, served at home on a simple white plate on a clean pale wooden dining table. One braised chicken thigh and one small drumstick with natural wrinkled brown skin, in a modest shallow pool of thin dark soy-vinegar braising sauce with a bay leaf, a few peppercorns and two softened garlic cloves. A loosely spooned serving of steamed long-grain rice at the side, fine grains with a few real clumps. Chicken is savory brown, not lacquered amber or barbecue glaze. The food is slightly casually arranged and portions are ordinary. No exact rice dome, identical glossy garlic pattern or extra garnish.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "52d1d744c3f65f8980d3097959bdfaa62914c95b1914a4a0be49b2edfc888a64",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Chicken and sauce have a lacquered plastic finish, garlic cloves repeat, and rice looks like swollen beads. Use braised skin, a thinner soy-vinegar sauce and ordinary portions.",
+        "after": "Accepted: braised wrinkled chicken skin, thin sauce pooling naturally into the rice, restrained garlic and peppercorns, soft natural daylight.",
+        "cameraCropVerified": true
+      }
+    },
+    "paella": {
+      "name": "Paella",
+      "image": "/assets/app-store/food-camera/paella-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nSpanish seafood paella in a small shallow well-used steel paellera with two restrained handles, on a clean light stone cafe tabletop. A thin settled layer of cooked short-grain yellow-gold rice with a little toasted edge, not a deep mound. Three medium shell-on prawns with coherent heads and tails, three opened dark mussels with the two hinged shells anatomically intact and modest visible meat, a few small irregular squid pieces, one lemon wedge at the pan edge. Rice is the main component and seafood modest, naturally placed rather than a symmetrical display. No peas, colorful confetti, giant identical shellfish or bright orange sauce. Entire pan and handles fit within the portrait width.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "30ceef67f91d4e9e8476c9bf19396bd1b20d886a9431b8d2e3cb22d0296133c8",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Shrimp heads, tails and bodies are inconsistently joined, seafood is oversized against bead-like rice, and garnishes form a staged repeated pattern. Use a shallow layer of rice and less seafood.",
+        "after": "Accepted: modest coherent shell-on prawns and hinged mussels, a thin settled layer of rice, natural pan wear and restrained seafood portions. The glossy oversized shellfish arrangement is removed.",
+        "references": [
+          {
+            "url": "https://www.spain.info/en/recipe/paella/",
+            "reason": "Spanish tourism recipe supports a shallow pan of cooked rice; seafood and mixed variations exist."
+          }
+        ],
+        "cameraCropVerified": true
+      }
+    },
+    "steak-frites": {
+      "name": "Steak frites",
+      "image": "/assets/app-store/food-camera/steak-frites-v1.png",
+      "prompt": "Use case: ads-marketing. Asset type: food photograph inside a simulated phone camera for a localized RiceCal App Store Search creative. Primary request: French steak frites on an ivory plate, sliced medium cooked steak with herb butter, golden thin fries and a small fresh green salad. Style: appetizing realistic professional food photography, accurate cuisine, fresh ingredients and natural textures. Composition: portrait 1024 by 1536, overhead with a slight natural angle, the entire main plate or bowl centered in the middle 65 percent of frame with ample warm ivory tabletop visible above and below for camera controls; plate fully visible and safely inside frame. Lighting: soft warm daylight, gentle shadows. Background: plain warm ivory tabletop matching the selected Nasi Lemak photo. Constraints: food only, one meal, no phone, no hands, no UI, no scanning marks, no corner brackets, no words, no logo, no watermark. Keep the food clear and attractive when cropped to a tall phone camera view.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "0d025c96318accf4bb60a774a6813e84ce4a1f86ab2beab413db7e797e133b81",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "retained",
+        "observations": "Cut steak shows credible interior fibers, fries vary in length and browning, and butter melts into a coherent sauce. Fine for the small camera crop.",
+        "after": "Cut steak shows credible interior fibers, fries vary in length and browning, and butter melts into a coherent sauce. Fine for the small camera crop.",
+        "cameraCropVerified": true
+      }
+    },
+    "schnitzel": {
+      "name": "Schnitzel",
+      "image": "/assets/app-store/food-camera/schnitzel-v1.png",
+      "prompt": "Use case: ads-marketing. Asset type: food photograph inside a simulated phone camera for a localized RiceCal App Store Search creative. Primary request: German schnitzel on an ivory plate, one crisp golden breaded cutlet, warm potato salad, lemon wedge and a small green garnish. Style: appetizing realistic professional food photography, accurate cuisine, fresh ingredients and natural textures. Composition: portrait 1024 by 1536, overhead with a slight natural angle, the entire main plate or bowl centered in the middle 65 percent of frame with ample warm ivory tabletop visible above and below for camera controls; plate fully visible and safely inside frame. Lighting: soft warm daylight, gentle shadows. Background: plain warm ivory tabletop matching the selected Nasi Lemak photo. Constraints: food only, one meal, no phone, no hands, no UI, no scanning marks, no corner brackets, no words, no logo, no watermark. Keep the food clear and attractive when cropped to a tall phone camera view.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "a87ab248ce84af8bc031a9165815ab5a67cac70a2cc7f2ce6fbef8ec5ca68548",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "retained",
+        "observations": "Cutlet outline and breading are irregular, potato slices vary and overlap plausibly, and lemon and plate perspective are intact. No severe AI artifact.",
+        "after": "Cutlet outline and breading are irregular, potato slices vary and overlap plausibly, and lemon and plate perspective are intact. No severe AI artifact.",
+        "cameraCropVerified": true
+      }
+    },
+    "spaghetti": {
+      "name": "Spaghetti al pomodoro",
+      "image": "/assets/app-store/food-camera/spaghetti-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nItalian spaghetti al pomodoro on a simple white ceramic shallow pasta plate at a small trattoria, light oak tabletop. An ordinary loose serving of slender genuinely round spaghetti strands coated lightly with modest tomato sauce, warm natural red rather than saturated orange. Pasta tangles in varied irregular loops, several strands partly buried in the sauce rather than a perfect ornamental nest. One or two small basil leaves and a very sparse light dusting of finely grated Parmigiano. Soft natural highlights, sauce is not lacquer. No broad flat linguine, thick rubber tubes, repeated concentric loops, giant basil bouquet or large cheese shards.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "96ac76729c466e6d03c4ecf84d22a0f6ffa381488efb9765b3e176e4efea7a67",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "The spaghetti label is paired with broad, flat linguine-like strands. Pasta forms repeated perfect loops and the sauce is hyper-glossy. Use genuine round spaghetti with modest tomato sauce.",
+        "after": "Accepted: round slender spaghetti, casual irregular tangles, modest tomato sauce and finely grated cheese. The broad flat pasta and decorative basil bouquet are removed.",
+        "cameraCropVerified": true
+      }
+    },
+    "stamppot": {
+      "name": "Stamppot",
+      "image": "/assets/app-store/food-camera/stamppot-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nAn ordinary Dutch winter dinner: boerenkool stamppot with rookworst on a plain white ceramic dinner plate on a lightly worn oak kitchen table. A modest spooned portion of cohesive hand-mashed potato with finely chopped cooked kale incorporated throughout, a few small potato lumps and natural spoon marks. One short portion of curved smoked rookworst with three uneven slices leaning beside it, realistic taut reddish-brown casing and matte pink finely ground interior. A small shallow well of brown gravy in the mash. No cauliflower-like crumble, bright emerald raw kale chunks, huge shiny sausage arc, perfect staircase slices or glossy varnish.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "b220faa0a44682aa2c2cfe9f0a272fa4ac96f8d9b74c415c667467f3d76e6948",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Potato looks like a repeated cauliflower crumble rather than a cohesive mash, and sausage and gravy are heavily varnished. Use hand-mashed potato with finely incorporated kale.",
+        "after": "Accepted: hand-mashed potato with chopped kale, casual gravy well and a short rookworst portion with uneven slices. Natural home-table light and softer texture replace the staged polish.",
+        "references": [
+          {
+            "url": "https://www.lekkerensimpel.com/boerenkool-stamppot-met-worst/",
+            "reason": "Dutch recipe and presentation of kale mashed into potato, served with rookworst."
+          }
+        ],
+        "cameraCropVerified": true
+      }
+    },
+    "pelmeni": {
+      "name": "Pelmeni",
+      "image": "/assets/app-store/food-camera/pelmeni-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nA home-cooked Russian pelmeni lunch in a simple white enamel bowl with a thin dark blue rim, centered on a pale wooden kitchen table. About fifteen small boiled meat dumplings, with soft off-white dough, closed seams and ends joined into recognizable little ear/ring shapes. Each has subtle natural differences and a few folds from boiling; the filling is enclosed, not exposed. A small spoonful of sour cream off-center, a little melted butter and a few chopped dill pieces. Cooked dough has restrained moisture, not reflective plastic. No big Chinese pleated crescents, triangular ravioli, open wrapper flaps, patterned whole dill fronds or overflowing garnish.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "6998d823e37a44cefd0d031e6fbe1b81a18659368702d7744de24cdc40650e79",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Several wrappers have pointed, open ravioli-like edges and ambiguous seams. Use closed ear-shaped dumplings with joined ends, soft cooked dough and a modest spoon of smetana.",
+        "after": "Accepted: smaller closed ear-shaped dumplings with joined ends, soft cooked dough, an enamel bowl and modest sour cream. No open triangular wrapper flaps.",
+        "references": [
+          {
+            "url": "https://www.thekitchn.com/pelmeni-recipe-23058710",
+            "reason": "Published cook's shaping instructions join the ends of the closed half-moon."
+          }
+        ],
+        "cameraCropVerified": true
+      }
+    },
+    "doner": {
+      "name": "Döner kebab",
+      "image": "/assets/app-store/food-camera/doner-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nAuthentic Turkish pilav üstü et döner in a simple white oval plate at a small Istanbul lokanta on a clean pale grey tabletop. A modest pile of very thin irregular spit-shaved beef döner slices, some gently curled, with browned edges and naturally layered meat and fat, mostly resting beside and slightly over a low loose spoonful of fine rice pilaf with a few toasted orzo. Two tomato wedges and a little sliced white onion with parsley and sumac at the side, plus one small flat piece of plain pide. Thin shaved meat, not thick steak strips or shredded roast beef, no repetitive serrated edges. Natural lunch-size portion and unglossy surface.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "6bd7f3a04c7df74f4218f7f5fd8fd6c8bc943d188031955aea04cfdc18e8660d",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Meat resembles a stack of shredded steaks with repeated ridged edges rather than thin spit-shaved slices. Replace with varied thin döner shavings and a plausible Turkish plate.",
+        "after": "Accepted: thin varied spit-shaved meat with believable browned edges and fat layers, fine rice pilaf, pide and sumac onions. The repeated shredded-steak ridges are removed.",
+        "cameraCropVerified": true
+      }
+    },
+    "pierogi": {
+      "name": "Pierogi",
+      "image": "/assets/app-store/food-camera/pierogi-v1.png",
+      "prompt": "Use case: ads-marketing. Asset type: food photograph inside a simulated phone camera for a localized RiceCal App Store Search creative. Primary request: Polish pierogi on an ivory plate, tender crescent dumplings lightly golden at edges, caramelized onions, small dollop of sour cream and chives. Style: appetizing realistic professional food photography, accurate cuisine, fresh ingredients and natural textures. Composition: portrait 1024 by 1536, overhead with a slight natural angle, the entire main plate or bowl centered in the middle 65 percent of frame with ample warm ivory tabletop visible above and below for camera controls; plate fully visible and safely inside frame. Lighting: soft warm daylight, gentle shadows. Background: plain warm ivory tabletop matching the selected Nasi Lemak photo. Constraints: food only, one meal, no phone, no hands, no UI, no scanning marks, no corner brackets, no words, no logo, no watermark. Keep the food clear and attractive when cropped to a tall phone camera view.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "ad1ac90fba8f501e98dcee3bf67939c7358dd171c3a6120a0fa27a4f8e9e7982",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "retained",
+        "observations": "Closed half-moon shapes, compressed seams and uneven pan browning are plausible. Cooked onion varies naturally and the sour cream sits on the plate without a geometry issue.",
+        "after": "Closed half-moon shapes, compressed seams and uneven pan browning are plausible. Cooked onion varies naturally and the sour cream sits on the plate without a geometry issue.",
+        "cameraCropVerified": true
+      }
+    },
+    "borscht": {
+      "name": "Borscht",
+      "image": "/assets/app-store/food-camera/borscht-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nA normal bowl of Ukrainian borshch in a plain white ceramic soup bowl on a pale wooden kitchen table. Natural muted deep beet-red broth with a loose mixture of thin beet strips, shredded soft cabbage, small irregular potato and carrot pieces, and a few modest tender beef pieces partly submerged. A small off-center spoonful of sour cream beginning to melt into the surface, a little chopped dill. Vegetables are cooked and softly textured, not bright polished ruby cubes. Small realistic oil droplets, readable depth in the broth, no candy-red saturation or giant geometric vegetable shapes. No extra bread that gets cropped at the frame edge.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "589476ef7ba13b27b4f78297f0e65f9f5fb32aa06f0c6b9bd4220c875565ad51",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Vegetables have oversized uniform cubes and candy-red gloss; the broth is heavily saturated. Use natural beet-red broth with shredded vegetables and a modest sour cream dollop.",
+        "after": "Accepted: natural beet-red broth, thin cooked vegetable strips and irregular tender beef, with sour cream beginning to melt. Removed polished ruby cubes and candy-red saturation.",
+        "references": [
+          {
+            "url": "https://www.youtube.com/watch?v=qkTlcfCw7jQ",
+            "reason": "Ukrainian chef Yevhen Klopotenko demonstrates borshch with vegetables and shredded cabbage."
+          }
+        ],
+        "cameraCropVerified": true
+      }
+    },
+    "meatballs": {
+      "name": "Swedish meatballs",
+      "image": "/assets/app-store/food-camera/meatballs-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nTraditional Swedish köttbullar lunch on a simple white dinner plate in an ordinary home or neighborhood cafe, light natural oak table. Eight small hand-rolled meatballs with slightly uneven shapes, varied browned sides and a soft minced-meat texture. A modest spooned serving of mashed potato with natural spoon marks, a small amount of pale brown cream gravy partly pooling under the meatballs, one small spoon of lingonberry preserves and several thin uneven pressed cucumber slices. Gravy has a natural low sheen and does not coat every meatball identically. No oversized perfect spheres, identical caramelized patterns, sculpted mash ridges, cranberry-sized glossy berries or scattered decorative parsley.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "b1c437086f43eb0a0df70a828f6a380f02a091e015801556aa67b24fdde48f11",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Nearly spherical meatballs repeat the same coating and sear, with excessive gloss and a sculpted mash. Use small uneven hand-rolled köttbullar with modest cream gravy.",
+        "after": "Accepted: smaller uneven hand-rolled meatballs with varied searing, restrained cream gravy, spooned mash and a small amount of preserves. Materials look like a normal lunch photograph.",
+        "cameraCropVerified": true
+      }
+    },
+    "salmon": {
+      "name": "Norwegian salmon",
+      "image": "/assets/app-store/food-camera/salmon-v1.png",
+      "prompt": "Use case: ads-marketing. Asset type: food photograph inside a simulated phone camera for a localized RiceCal App Store Search creative. Primary request: Norwegian salmon dinner on an ivory plate, roasted salmon fillet with small boiled potatoes, dill, cucumber salad and a lemon wedge. Style: appetizing realistic professional food photography, accurate cuisine, fresh ingredients and natural textures. Composition: portrait 1024 by 1536, overhead with a slight natural angle, the entire main plate or bowl centered in the middle 65 percent of frame with ample warm ivory tabletop visible above and below for camera controls; plate fully visible and safely inside frame. Lighting: soft warm daylight, gentle shadows. Background: plain warm ivory tabletop matching the selected Nasi Lemak photo. Constraints: food only, one meal, no phone, no hands, no UI, no scanning marks, no corner brackets, no words, no logo, no watermark. Keep the food clear and attractive when cropped to a tall phone camera view.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "d249a1b394de4119a2d8155a7ab0894a87ce9102ff7391af931cada10a9876e2",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "retained",
+        "observations": "Fillet has recognizable muscle flakes and varied searing, with plausible potatoes and cucumber salad. The presentation is styled but materially coherent.",
+        "after": "Fillet has recognizable muscle flakes and varied searing, with plausible potatoes and cucumber salad. The presentation is styled but materially coherent.",
+        "cameraCropVerified": true
+      }
+    },
+    "smorrebrod": {
+      "name": "Smørrebrød",
+      "image": "/assets/app-store/food-camera/smorrebrod-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nAn everyday Danish smørrebrød lunch with two open-faced sandwiches on a simple white oval plate at a Copenhagen lunch cafe, light wooden tabletop. Two irregular rectangular slices of dense dark rugbrød, buttered thinly, with tight moist rye crumb and a few naturally embedded seeds. First sandwich has sliced hard-boiled egg, a small modest mound of tiny naturally curled peeled cold-water shrimp, a little mayonnaise, a small lemon wedge and a little dill. Second has thin uneven folds of roast beef, a spoon of pale yellow remoulade, a few pickle slices and some fine fried onion strands. Realistic small shrimp, opaque pale pink flesh with varied sizes and clearly separate bodies, no rubber rings or patterned seafood. Bread is real dense rye, not fluffy seeded toast or identical canapés. Casual clean lunch plating.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "4702c0547dad606a3b5b8514e6abff13d6ec713f05cdebe37bd3e6c569e6a20e",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Shrimp look like repeated rubber rings, salmon is silk-smooth and bread slices repeat. Use dense rugbrød with realistic small shrimp, sliced egg and roast beef.",
+        "after": "Accepted: two dense rye open sandwiches with sliced egg, smaller varied shrimp, natural roast-beef folds, remoulade and fried onion. Removed the silky salmon and cloned seafood appearance.",
+        "references": [
+          {
+            "url": "https://www.visitdenmark.com/denmark/things-to-do/eat-drink/traditional-danish-food",
+            "reason": "Danish rye bread lunch toppings: eggs, mayonnaise, shrimp and roast beef."
+          }
+        ],
+        "cameraCropVerified": true
+      }
+    },
+    "feijoada": {
+      "name": "Feijoada",
+      "image": "/assets/app-store/food-camera/feijoada-v2.png",
+      "prompt": "Use case: photorealistic-natural.\nGenerate a new portrait 1024 × 1536 photograph of an authentic everyday meal, as a diner would take with a normal smartphone just before eating. This must feel like a real camera-roll food photo with recognizable ingredients and honest materials.\nFraming: handheld near-overhead at about 75–80 degrees, normal 1x phone lens, nearly everything in focus. The entire main plate or bowl centered in the middle of the portrait, occupying roughly 80 percent of image width and 55 percent of height. Leave real tabletop visible above and below. Keep all food within the central 85 percent of the width and middle 65 percent of the height so the camera view can crop the top and bottom safely.\nPhotography: soft ordinary window daylight mixed with room lighting, neutral realistic white balance, restrained saturation, believable highlights and soft shadows. Varied natural ingredient sizes, restrained portions, casual clean plating. Subtle phone-camera texture, a few natural crumbs or rice grains, no stylized film grain.\nAvoid catalog/studio styling, seamless beige backdrops, dramatic bokeh, hyper-sharp microtexture, HDR, orange casts, CGI, plastic or waxy food, repeated identical ingredients, symmetrical garnish patterns, excessive glaze, fake steam, extra dishes, hands, phones, text, logos, watermarks, UI and scan overlays.\nDish and scene:\nA normal Brazilian feijoada lunch on a single simple white porcelain plate at a neighborhood lunch restaurant, pale grey laminated tabletop. A serving of soft black beans in natural dark bean broth with a few modest irregular pork pieces and three thin smoked sausage slices, beside loosely served long-grain white rice, a small portion of finely shredded sautéed couve, a small dry spoonful of crumbly tan farofa and one orange wedge. Beans are small varied black cooked beans, some slightly broken or submerged, not shiny oversized plastic ovals. Meat is tender irregular stew pieces, not polished cubes. Broth spreads a little naturally toward the rice. No bowl stacked on a dinner plate.",
+      "tool": "Built-in image_gen",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "mode": "RGB",
+      "sha256": "67eadfa66ff86985ee1d3dd2870e5ab0ecb9ff265caf8de46bece66c5a55a86b",
+      "generatedAt": "2026-10-11",
+      "authenticityReview": {
+        "reviewedAt": "2026-10-11",
+        "decision": "regenerated",
+        "observations": "Pork is cut into polished blocks, beans look like uniformly inflated plastic ovals, and white rice is bead-like. Use a normal plate of stewed black beans and smaller meats.",
+        "after": "Accepted: smaller varied stewed black beans in natural broth, irregular pork and sausage, finely shredded couve, dry farofa and rice served together on an ordinary plate.",
+        "cameraCropVerified": true
+      }
+    }
+  },
+  "authenticityReview": {
+    "reviewedAt": "2026-10-11",
+    "distinctImageCount": 25,
+    "localeCount": 26,
+    "regeneratedCount": 16,
+    "retainedCount": 9,
+    "criteria": [
+      "dish identity and ingredients",
+      "food geometry and anatomy",
+      "texture repetition and material plausibility",
+      "natural lighting and color",
+      "phone-camera crop"
+    ],
+    "approach": "Natural everyday smartphone meal photography; culturally recognizable ingredients and ordinary portions. Dish variations are valid; these scenes are representative examples.",
+    "validation": {
+      "imageIntegrity": "All 25 image dimensions, RGB encoding, opacity and SHA-256 checksums verified.",
+      "preview": "All 26 locale images decoded in the actual Studio camera viewport; crops visually reviewed.",
+      "typeCheck": "npx tsc --noEmit passed."
+    }
+  }
+}

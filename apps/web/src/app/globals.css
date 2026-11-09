@@ -1,0 +1,568 @@
+@import "tailwindcss";
+@import "./fonts.css";
+
+/*
+ * Tokens are the RiceCal design system's, one for one.
+ * Light values come from "RiceCal Foundations", dark from the conversion map
+ * in the design system's CLAUDE.md. Colour is for state and data, never
+ * decoration: two backgrounds only, canvas and surface.
+ */
+:root {
+  color-scheme: light;
+  --font-baloo: "Baloo 2", "Baloo 2 Fallback";
+  --font-nunito: "Nunito", "Nunito Fallback";
+
+  --canvas: #f6f8f7;
+  --surface: #ffffff;
+  --surface-sunk: #edf1ee;
+
+  --line: #e4e8e5;
+  --line-strong: #d6dcd8;
+
+  --ink: #1c2321;
+  --body: #495450;
+  --muted: #6e7b74;
+  --faint: #9aa5a0;
+  --heading: #1b3a2b;
+
+  --pandan: #2fbf71;
+  --pandan-deep: #1b8a4e;
+  --pandan-soft: #eaf9f0;
+  --pandan-soft-line: #cfebda;
+
+  --hibiscus: #ff4d6d;
+  --hibiscus-deep: #d62f4e;
+  --hibiscus-soft: #ffeef1;
+  --hibiscus-soft-line: #f7d2da;
+
+  --kaya: #ffc145;
+  --kaya-deep: #d99a1f;
+  --kaya-soft: #fff6e3;
+  --kaya-soft-line: #f0ddae;
+  --kaya-ink: #3d2b14;
+
+  --water: #4cc9f0;
+  --water-deep: #1b87a8;
+  --water-soft: #eaf7fc;
+  --water-soft-line: #bee6f5;
+
+  --teh: #c98b5e;
+
+  --on-fill: #ffffff;
+
+  /* A card is a pillow with a slab under it in light mode. */
+  --card-slab: 0 5px 0 var(--line);
+  --card-border: 0 solid transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --canvas: #111716;
+    --surface: #1a2220;
+    --surface-sunk: #2e3936;
+
+    --line: #2e3936;
+    --line-strong: #3c4844;
+
+    --ink: #f2f5f3;
+    --body: #b9c4bf;
+    --muted: #8b9a94;
+    --faint: #6e7b74;
+    --heading: #f2f5f3;
+
+    --pandan: #38d07e;
+    --pandan-deep: #1c6e44;
+    --pandan-soft: #14291f;
+    --pandan-soft-line: #2e4a3c;
+
+    --hibiscus: #ff6b87;
+    --hibiscus-deep: #b23a52;
+    --hibiscus-soft: #33161c;
+    --hibiscus-soft-line: #5e2a35;
+
+    --kaya: #ffce5e;
+    --kaya-deep: #b27c1c;
+    --kaya-soft: #3a3115;
+    --kaya-soft-line: #6b5a2a;
+    --kaya-ink: #241c05;
+
+    --water: #63d3f2;
+    --water-deep: #1e6e86;
+    --water-soft: #12262e;
+    --water-soft-line: #2e5a6b;
+
+    --teh: #d6a277;
+
+    --on-fill: #0c1310;
+
+    /* Cards lose their slab in dark mode and take a line instead. */
+    --card-slab: none;
+    --card-border: 1px solid var(--line);
+  }
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-sunk: var(--surface-sunk);
+
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+
+  --color-ink: var(--ink);
+  --color-body: var(--body);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-heading: var(--heading);
+
+  --color-pandan: var(--pandan);
+  --color-pandan-deep: var(--pandan-deep);
+  --color-pandan-soft: var(--pandan-soft);
+  --color-pandan-soft-line: var(--pandan-soft-line);
+
+  --color-hibiscus: var(--hibiscus);
+  --color-hibiscus-deep: var(--hibiscus-deep);
+  --color-hibiscus-soft: var(--hibiscus-soft);
+  --color-hibiscus-soft-line: var(--hibiscus-soft-line);
+
+  --color-kaya: var(--kaya);
+  --color-kaya-deep: var(--kaya-deep);
+  --color-kaya-soft: var(--kaya-soft);
+  --color-kaya-soft-line: var(--kaya-soft-line);
+  --color-kaya-ink: var(--kaya-ink);
+
+  --color-water: var(--water);
+  --color-water-deep: var(--water-deep);
+  --color-water-soft: var(--water-soft);
+  --color-water-soft-line: var(--water-soft-line);
+
+  --color-teh: var(--teh);
+
+  --color-on-fill: var(--on-fill);
+
+  --font-display: var(--font-baloo), ui-rounded, system-ui, sans-serif;
+  --font-sans: var(--font-nunito), system-ui, -apple-system, sans-serif;
+
+  /* 14 / 20 / 28 / 999 — nothing in this system has a sharp corner. */
+  --radius-pill: 999px;
+}
+
+/*
+ * These belong in `base`, not at the top level. An unlayered rule beats every
+ * layered one, so a bare `h2 { color: … }` would win against `text-[#F2F5F3]`
+ * on the dark section's heading and quietly ignore any colour utility put on a
+ * heading anywhere else.
+ */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--canvas);
+    color: var(--body);
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    color: var(--heading);
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.01em;
+  }
+
+  ::selection {
+    background: var(--pandan-soft);
+    color: var(--heading);
+  }
+}
+
+/*
+ * Squishy buttons: a solid slab, not a blur. Press drops the control onto it
+ * in 80ms and the release springs back.
+ */
+.squish {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 56px;
+  padding: 0 1.75rem;
+  border-radius: 20px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+  text-align: center;
+  box-shadow: 0 6px 0 var(--squish-slab, var(--pandan-deep));
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: transform;
+}
+
+.squish:active {
+  transform: translateY(6px);
+  box-shadow: 0 0 0 var(--squish-slab, var(--pandan-deep));
+  transition:
+    transform 80ms ease-out,
+    box-shadow 80ms ease-out;
+}
+
+.squish-sm {
+  min-height: 44px;
+  padding: 0 1.125rem;
+  border-radius: 14px;
+  font-size: 15px;
+  box-shadow: 0 4px 0 var(--squish-slab, var(--pandan-deep));
+}
+
+.squish-sm:active {
+  transform: translateY(4px);
+}
+
+/*
+ * The header's copy of the primary button, on a small phone. `.squish` at full
+ * size does not fit beside the wordmark, and the call site cannot shrink it
+ * with a utility class, because everything in this file is unlayered and
+ * outranks every Tailwind utility.
+ *
+ * The slab stays 6px deep: the box gives, and the depth is what makes it the
+ * same button as the one at the bottom of the page.
+ */
+@media (max-width: 639px) {
+  .squish-nav {
+    min-height: 46px;
+    padding: 0 0.875rem;
+    border-radius: 14px;
+    font-size: 14px;
+  }
+}
+
+/* A card: pillow in light mode, lined surface in dark. */
+.card {
+  background: var(--surface);
+  border: var(--card-border);
+  border-radius: 28px;
+  box-shadow: var(--card-slab);
+}
+
+.card-sm {
+  border-radius: 20px;
+}
+
+/* The dish strip loops by translating a doubled row exactly half its width. */
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9px);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(2deg);
+  }
+}
+
+/* The tick a counter makes when it stops: one bright beat, then the resting
+   colour. Scale rather than a colour change alone, so it reads on a screen the
+   reader is not staring at. */
+@keyframes flash {
+  0% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+  35% {
+    transform: scale(1.09);
+    filter: brightness(1.35);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+
+/* The catalogue total settles with a small lift whenever another search lands. */
+@keyframes search-count-pop {
+  0% {
+    color: var(--pandan-deep);
+    transform: translateY(2px) scale(0.97);
+  }
+  55% {
+    transform: translateY(-1px) scale(1.025);
+  }
+  100% {
+    color: var(--muted);
+    transform: translateY(0) scale(1);
+  }
+}
+
+.search-count-pop {
+  animation: search-count-pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes ring-fill {
+  from {
+    stroke-dashoffset: 534;
+  }
+}
+
+.rise {
+  animation: rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.bob {
+  animation: bob 3.6s ease-in-out infinite;
+  transform-origin: center bottom;
+}
+
+.float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.marquee {
+  animation: marquee 42s linear infinite;
+}
+
+/* A chip carries a shallower slab than a card. */
+.chip {
+  background: var(--surface);
+  border-radius: 999px;
+  box-shadow: 0 4px 0 var(--line);
+}
+
+.ring-fill {
+  stroke-dasharray: 534;
+  animation: ring-fill 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.flash {
+  animation: flash 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: left center;
+}
+
+/*
+ * The tour — the phone in the features section, and the way its screens arrive.
+ *
+ * Each of these is a one-shot enter animation with `both`. The active screen is
+ * remounted when it is picked, so they replay from the top rather than being
+ * something the reader has to catch on first paint. The only loops are the two
+ * things genuinely still happening: the scan line and the caret.
+ *
+ * They are transforms rather than widths or heights, so a bar growing beside a
+ * dish name cannot reflow its row.
+ */
+@keyframes tour-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+@keyframes tour-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes tour-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* The arc is drawn from empty. `--ring-length` is the circumference, which the
+   ring itself sets — the same figure its `stroke-dasharray` carries. */
+@keyframes tour-ring {
+  from {
+    stroke-dashoffset: var(--ring-length);
+  }
+}
+
+@keyframes tour-rise {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+/* The viewfinder's scan line, which is the one thing on that screen that is
+   still working while the reader looks at it. */
+@keyframes tour-sweep {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+  12%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(var(--sweep-to, 150px));
+  }
+}
+
+@keyframes tour-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* How long the current screen has left, drawn under its tab. */
+@keyframes tour-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.tour-in {
+  animation: tour-in 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.tour-grow {
+  animation: tour-grow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: bottom;
+}
+
+.tour-fill {
+  animation: tour-fill 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  transform-origin: left;
+}
+
+.tour-ring {
+  animation: tour-ring 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.tour-rise {
+  animation: tour-rise 1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.tour-sweep {
+  animation: tour-sweep 2.3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.tour-caret {
+  animation: tour-caret 1.1s steps(1) infinite;
+}
+
+.tour-progress {
+  animation: tour-progress var(--tour-dwell, 6s) linear both;
+  transform-origin: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise,
+  .bob,
+  .float,
+  .marquee,
+  .ring-fill,
+  .flash,
+  /* The tour, which stops moving and shows every screen already arrived: the
+     enter animations all run `from` a hidden state, so removing them leaves
+     the finished frame rather than an empty one. */
+  .tour-in,
+  .tour-grow,
+  .tour-fill,
+  .tour-ring,
+  .tour-rise,
+  .tour-sweep,
+  .tour-caret,
+  .tour-progress,
+  .search-count-pop,
+  /* The search skeleton. It still holds the row's space, it just stops
+     breathing — which is the whole of what this preference asks for. */
+  .animate-ping,
+  .animate-pulse {
+    animation: none;
+  }
+
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Long-form legal copy. */
+.prose-rice h2 {
+  font-size: 22px;
+  margin-bottom: 0.75rem;
+}
+
+.prose-rice h3 {
+  font-family: var(--font-sans);
+  font-weight: 800;
+  color: var(--ink);
+  font-size: 17px;
+  margin-bottom: 0.5rem;
+}
+
+.prose-rice ul {
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.prose-rice li {
+  position: relative;
+  padding-left: 1.5rem;
+}
+
+.prose-rice li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.65em;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--pandan);
+}
+
+.prose-rice a {
+  color: var(--pandan-deep);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

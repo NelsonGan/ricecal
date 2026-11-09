@@ -1,21 +1,27 @@
 ---
 name: update-whats-new
-description: Write the store What's New note for a RiceCal release and open a PR on ricecal-screenshots-creator. Reads the note that is live, finds the ricecal commits it does not cover, and rewrites the note in all 23 listing locales. Use when asked to update the What's New / release notes / store note, or to say what changed in the new version.
+description: Write the store What's New note for a RiceCal release in apps/app-studio and open a PR. Reads the note that is live, finds the ricecal commits it does not cover, and rewrites the note in all 23 listing locales. Use when asked to update the What's New / release notes / store note, or to say what changed in the new version.
 ---
 
 # What's New
 
 The App Store and Play both show a short note beside a release. Both copies come
-from one place: `src/data/appDescriptions.ts` in the sibling repo
-`~/Projects/ricecal-screenshots-creator`, where every locale carries a
-`whatsNew` string. The Descriptions view uploads it; nothing else writes it.
+from one place: `apps/app-studio/src/data/appDescriptions.ts`, in the App
+Studio, where every locale carries a `whatsNew` string. The studio's
+Descriptions view uploads it; nothing else writes it.
+
+For anything else in the studio (screenshots, headlines, descriptions,
+uploads), use the `work-on-app-studio` skill.
 
 This skill goes: find where the last note stopped, read the ricecal PRs merged
 since, write the note, translate it, verify it, open a PR. It never uploads to
 a store. Someone presses that button.
 
-Both repos are on `main` and both are pushed to `NelsonGan/*`. The work happens
-in `ricecal-screenshots-creator`; only the reading happens in `ricecal`.
+The studio is part of this repo, so the reading and the writing happen in one
+checkout. Run the commands below from `apps/app-studio` unless a step says
+otherwise. Until November 2026 the studio was its own repository,
+`NelsonGan/ricecal-screenshots-creator`, which is why the older notes' PR
+numbers point there (step 1).
 
 ## 1. Find where the last note stopped
 
@@ -29,7 +35,7 @@ though that commit's branch had a full body. Step 7 writes the line into both
 and only the PR copy is expected to survive.
 
 ```sh
-cd ~/Projects/ricecal-screenshots-creator
+cd apps/app-studio
 git checkout main && git pull --ff-only
 git log -3 --format='%h %s' -- src/data/appDescriptions.ts
 ```
@@ -41,6 +47,17 @@ gh pr view <N> --json body -q .body | grep '^Covers: ricecal#'
 ```
 
 The highest `ricecal#N` on that line is the last thing the live note describes.
+
+**The studio's history did not come with it.** It was copied in without its
+git history (the move is the commit "Move the website and the App Studio into
+apps/web and apps/app-studio"), so `git log` here starts there. If that move is
+the newest commit on `src/data/appDescriptions.ts`, the live note is the one
+written in the old repository: its last PR, ricecal-screenshots-creator#31 (the
+1.2.0 note), ends with
+`Covers: ricecal#274, ricecal#275, ricecal#276, ricecal#277, ricecal#278, ricecal#279`,
+so the live note stops at ricecal#279. Older notes are PRs in the archived
+`NelsonGan/ricecal-screenshots-creator`; read one with
+`gh pr view <N> --repo NelsonGan/ricecal-screenshots-creator`.
 
 Two fallbacks, in order:
 
@@ -55,8 +72,6 @@ Two fallbacks, in order:
 ## 2. Read what has happened since
 
 ```sh
-cd ~/Projects/ricecal
-git pull --ff-only
 git log --format='%h %ad %s' --date=short $(git log --format=%h --grep='(#<N>)' -1)..HEAD
 ```
 
@@ -170,9 +185,8 @@ The closing line is one short **unattributed** line about food or eating, and it
 at once. Pull every one already spent first:
 
 ```sh
-cd ~/Projects/ricecal-screenshots-creator
 for c in $(git log --format=%h -- src/data/appDescriptions.ts); do
-  git show "${c}:src/data/appDescriptions.ts" 2>/dev/null | python3 -c "
+  git show "${c}:./src/data/appDescriptions.ts" 2>/dev/null | python3 -c "
 import sys, re
 m = re.search(r'whatsNew: \`(.*?)\`,', sys.stdin.read(), re.S)
 print(m.group(1).rsplit(chr(10), 1)[-1] if m else '')
@@ -180,10 +194,23 @@ print(m.group(1).rsplit(chr(10), 1)[-1] if m else '')
 done | sort -u
 ```
 
-The **braces** matter: in zsh `$c:src/...` parses as a substitution modifier, so
-you get a diff against the wrong text instead of the file. Spent so far: "Jom
-makan", "Eat well, live well", "You are what you eat", "We eat first with our
-eyes". Reach for one that fits the release rather than the most famous one left.
+The **braces** matter: in zsh `$c:./src/...` parses as a substitution modifier, so
+you get a diff against the wrong text instead of the file.
+
+The loop only sees notes written since the move. Every English closing line
+spent before it, read out of the old repository's history:
+
+> A good meal makes a good day. · A little joy with every bite. · A shared
+> table brings us closer. · Eat well and keep moving. · Eat well, live well. ·
+> Every meal is a fresh start. · Every plate has a story. · Food brings us
+> together. · Food tastes better shared. · Good company makes every meal
+> better. · Good food fuels good days. · Good food is worth sharing. · Good
+> food makes every day better. · Good food starts a conversation. · Good meals
+> keep you going. · Good meals make good memories. · Happiness is a shared
+> meal. · Jom makan. · Make room at the table. · The best meals come with good
+> company. · We eat first with our eyes. · You are what you eat.
+
+Reach for one that fits the release rather than the most famous one left.
 
 ## 5. Translate into all 23 locales
 
@@ -214,8 +241,7 @@ where it does not, translate plainly. Keep **RiceCal** untranslated.
 ## 6. Verify before opening anything
 
 ```sh
-cd ~/Projects/ricecal-screenshots-creator
-npx tsc --noEmit                       # there is no typecheck script
+pnpm typecheck
 git diff --stat                        # appDescriptions.ts and nothing else
 grep -c 'whatsNew:' src/data/appDescriptions.ts   # still 23
 ```
@@ -248,7 +274,7 @@ const read = (t) => {
   while ((m = r.exec(t))) o[m[1]] = m[2];
   return o;
 };
-const was = read(execSync('git show main:src/data/appDescriptions.ts', { encoding: 'utf8' }));
+const was = read(execSync('git show main:./src/data/appDescriptions.ts', { encoding: 'utf8' }));
 const now = read(require('fs').readFileSync('src/data/appDescriptions.ts', 'utf8'));
 const moved = Object.keys({ ...was, ...now }).filter((k) => was[k] !== now[k]);
 console.log(moved.length ? 'DESCRIPTION CHANGED: ' + moved.join(', ') : Object.keys(now).length + ' descriptions unchanged');
@@ -312,9 +338,12 @@ Attribution footers are whatever the session was told to use.
 
 ## Traps
 
-- **The two repos are separate checkouts.** Nothing in ricecal-screenshots-creator
-  is a submodule of ricecal, and a `cd` in one shell does not carry. Use
-  `git -C` or full paths.
+- **`git show <rev>:<path>` reads the path from the repo root**, not from the
+  directory you are in. From `apps/app-studio`, write `<rev>:./src/...`, or the
+  file is not found and the loop above prints nothing.
+- **A note-only PR ships no build.** `deploy.yml` ignores `apps/app-studio/**`,
+  so merging the note does not cut a store release; the note waits in the file
+  until someone uploads it.
 - **`git log --grep='(#135)'` matches the squash subject**, which is how a PR
   number becomes a sha. A merge commit that is not a squash (there are a few
   early ones) has no `(#N)`, so a subject without one is normal and needs

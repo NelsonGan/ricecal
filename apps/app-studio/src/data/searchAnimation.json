@@ -1,0 +1,12 @@
+{
+  "period": 3.6,
+  "cycles": 2,
+  "fps": 30,
+  "minTop": 0.24,
+  "maxTop": 0.76,
+  "beamHeight": 64,
+  "beamLineY": 61,
+  "beamImage": "/assets/app-store/camera-scan.svg",
+  "videoWidth": 1920,
+  "videoHeight": 1280
+}

@@ -36,9 +36,24 @@ on:
     # Push only, deliberately. A pull_request filtered the same way would let a
     # Cloudflare-only PR merge without `pnpm check` ever running on it, and that
     # job also covers the Worker's own lint and the scripts that import from it.
+    #
+    # The website and the App Studio are the same case: neither is in the
+    # app's bundle. `web.yml` deploys the website, and the studio deploys
+    # nothing.
     paths-ignore:
       - 'apps/cloudflare/**'
+      - 'apps/web/**'
+      - 'apps/app-studio/**'
+  # Unlike a Worker, the website and the App Studio are checked by their own
+  # workflows (`web.yml`, `app-studio.yml`), so a pull request that touches
+  # only them skips this one. A pull request that touches anything else as
+  # well still runs it, and `pnpm check` covers both apps then too. No check
+  # is required on main; if one ever is, this filter would leave it pending on
+  # those pull requests, and it would have to become an `if:` on the job.
   pull_request:
+    paths-ignore:
+      - 'apps/web/**'
+      - 'apps/app-studio/**'
   workflow_dispatch:
     inputs:
       platform:

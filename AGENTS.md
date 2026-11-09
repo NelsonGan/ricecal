@@ -14,18 +14,36 @@ anything reading `AGENTS.md` by convention gets the same thing.
 apps/mobile      Expo / React Native app (expo-router, NativeWind, react-query)
 apps/supabase    Postgres schema, RLS, pgTAP tests, Deno edge functions
 apps/cloudflare  workers/ and d1/, one directory per Worker and per database
+apps/web         ricecal.app: Next.js App Router code built by vinext, one Worker
+apps/app-studio  the App Studio: store screenshots, creatives and listing copy
 packages/shared  the few constants both sides need
+.github          CI workflows (pr-assets/ is an ignored scratch folder for PR captures)
 ```
 
-`pnpm check` is typecheck + jest + biome. Run it before you say you are done.
+This one checkout holds all of RiceCal: the app, the backend, the website and
+the App Studio. The website and the studio used to be the sibling repos
+`ricecal-web` and `ricecal-screenshots-creator`; those are retired, so work here
+even when an old note, memory or PR names them. The one sibling repo still in
+use is `ricecal-food-database`, which authors the catalogue data (see "The
+catalogue in D1").
+
+`pnpm check` is typecheck + jest + the website's ESLint + biome. Run it before
+you say you are done. Biome skips `apps/web` and `apps/app-studio`; the website
+has its own ESLint rules and the studio has none.
 
 **Always include screenshots in PR descriptions after UI testing.** Capture the
-final UI and embed the screenshots in the PR description using URLs reviewers
-can access. Local file paths and a text-only report are not enough. Keep private
-account details out of the images. Include before/after screenshots only when
-both were actually captured. Commit the images to `.github/pr-assets/` and embed
-them with a `raw.githubusercontent.com` URL pinned to the commit SHA, so they
-still render after the branch is deleted.
+final UI and save it, with any recording, in `.github/pr-assets/<topic>/` (one
+kebab-case folder per PR, ignored by git) and upload it as a GitHub attachment:
+reference it in the description by that path (`![alt](.github/pr-assets/<topic>/after.png)`)
+and pass the same path to `--attach` on `gh pr create`, `gh pr edit` or
+`gh pr comment`, which uploads it and rewrites the reference. **Never commit
+screenshots, recordings or other evidence**: committed evidence once made every
+clone 101 MB bigger. Non-image evidence goes in the description as text. Then
+read the description back and check every image is a
+`github.com/user-attachments` URL. Local file paths and a text-only report are
+not enough. Keep private account details out of the images. Include
+before/after screenshots only when both were actually captured. The `create-pr`
+skill covers the rest of the description.
 
 **Expo has changed.** Read the versioned docs at
 <https://docs.expo.dev/versions/v58.0.0/> before writing any Expo code. Do not
@@ -66,6 +84,73 @@ PostHog, GA4, RevenueCat revenue, identity, provider gates or dashboard settings
 Update the canonical Analytics tables in README.md in the same change. Keep the
 `.agents` and `.claude` skill copies synchronized and run the inventory test.
 
+
+## The website (`apps/web`)
+
+**This is Next.js code that does not run on Next.js.** It is built and served by
+[vinext](https://github.com/cloudflare/vinext), Cloudflare's reimplementation of
+the App Router API on Vite. The `next` package is not installed: every `next/*`
+import resolves to a vinext shim. Where the Next.js docs and vinext disagree,
+vinext wins. Before relying on a Next.js feature, check
+`apps/web/node_modules/vinext/README.md` (its API coverage and *Known gaps*) and
+`.claude/skills/migrate-to-vinext/references/compatibility.md`. Webpack and
+Turbopack configuration do nothing here.
+
+README: *The website*. Load the `work-on-website` skill before changing it. Run
+`pnpm web:dev`, then `node apps/web/scripts/links.mjs` after a visible change,
+and look at it in a browser, both themes and a phone width. For SEO work load
+`seo-loop` first.
+
+- **`src/lib/catalogue.ts` and `src/lib/catalogue-static.ts` are generated.**
+  Never hand-edit them; run `node scripts/catalogue.mjs` from `apps/web`.
+- **hreflang is a cluster**, and every page links to every other page and to
+  itself. `HREFLANG_HOME` and `HREFLANG_FOOD` in `src/lib/seo.ts` must not bleed
+  into each other, and only the home cluster has `x-default`.
+- **The two pages per market answer different questions**, and a country page
+  is never one template with the name swapped in. That is a doorway page.
+- **Structured data matches what is rendered.** No `aggregateRating`, ever.
+- **Element defaults belong in `@layer base`.** An unlayered rule beats every
+  Tailwind utility.
+- **A missing dish 404s, an unreachable catalogue 500s.** A 404 would tell
+  Google to drop a page that is really there.
+- **Dish pages are `noindex, follow` and not in the sitemap.** The September
+  2026 spam update took the whole site out of results for 52,000 templated
+  pages. Do not re-index them in bulk.
+- **Prerendered pages are frozen until the next deploy**, and a Worker version
+  holds at most 100,000 asset files. Do not raise `STATIC_LIMIT` without that sum.
+- **`cloudflare.config.ts` is the Worker's config; there is no `wrangler.jsonc`.**
+  Keep the `DOQueueHandler` tombstone. Do not declare `WEB_CATALOGUE_TOKEN`
+  there. `cf` and `@cloudflare/vite-plugin` are betas pinned exactly.
+- **`src/lib/pricing.ts` is a snapshot** of App Store Connect's prices. Re-read
+  it there rather than editing a figure on a hunch.
+- **Bump `LEGAL_LAST_UPDATED` whenever a legal page changes**, and keep the
+  legal pages describing the app's real data flow.
+- **Its analytics contract is the README's *Website product analytics*.** Six
+  events, all in `EVENTS`; adding one means arguing it is worth the weight.
+- **A merge to `main` is the website's deploy**, through the **Web** workflow
+  (`web.yml`), which also uploads every PR's build as an unused Worker version.
+  It deploys with the `CLOUDFLARE_WEB_API_TOKEN` secret, a token that can only
+  deploy this Worker.
+
+## The App Studio (`apps/app-studio`)
+
+README: *The App Studio*. Load the `work-on-app-studio` skill before changing it.
+`pnpm studio:dev` serves it on port 3001. Store uploads
+go through the `asc` and `gplay` CLIs, which hold their own credentials; the
+studio's `.env.local` names only the app to write to. `$update-whats-new` writes
+the release note in `src/data/appDescriptions.ts` and opens its PR here.
+
+- **Exports need a visible, foreground tab.** Rasterization waits on
+  `requestAnimationFrame`, which a background tab never fires.
+- **Captures carry recorded checksums.** After replacing one, recompress it with
+  `oxipng -o 4 --nc --strip safe`, then record its checksum, and run
+  `pnpm --filter @ricecal/app-studio check:screenshots`.
+- **Uploads change the live store listing.** Upload only when asked, and dry
+  run first.
+- **Keep large binaries out of history.** The studio's captures are most of this
+  repo's size. Replace a capture set in one commit rather than iterating on it
+  in several, and keep PR screenshots small JPEGs.
+
 ## Writing
 
 **Comments explain why, in plain English.** Worth the space when the reason is
@@ -87,6 +172,14 @@ conventional-commits prefix.
 ## Things that waste the most time
 
 These are the ones an agent hits first. The README has the rest.
+
+**The history was rewritten on 2026-11-09.** Every branch was force-pushed
+without `.github/pr-assets/` (159 MB of committed PR screenshots), so every
+commit before that date has a new SHA. A branch, worktree or clone made before
+then still carries the old history: move only its own commits onto the new
+`main` (`git rebase --onto origin/main <the old main commit it started from>`)
+and never push it as it is, or the screenshots come back. Old PR descriptions
+still show their images, because GitHub keeps each PR's commits.
 
 **Devices come from a small pool.** Every simulator and emulator is leased
 from the Simlock pool on this machine (see "Driving the iOS app"), which runs two
