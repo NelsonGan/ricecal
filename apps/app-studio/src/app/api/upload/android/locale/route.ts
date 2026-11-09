@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { androidSessions, stageLocale, stagingDir, uploadAndroidLocale } from '../../_lib';
+import { androidSessions, readUpload, stageLocale, stagingDir, UNREADABLE_UPLOAD, uploadAndroidLocale } from '../../_lib';
 
 /** Stage one locale's images, then push them into the open edit via `gplay`. */
 export async function POST(req: NextRequest) {
-  const { sessionId, locale, screenshots } = await req.json() as {
+  const body = await readUpload<{
     sessionId: string;
     locale: string;
     screenshots: Array<{ filename: string; data: string }>;
-  };
+  }>(req);
+  if (!body) return NextResponse.json({ error: UNREADABLE_UPLOAD }, { status: 400 });
+  const { sessionId, locale, screenshots } = body;
 
   const session = androidSessions.get(sessionId);
   if (!session) {
