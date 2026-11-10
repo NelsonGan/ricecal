@@ -117,13 +117,19 @@ export function WeekPicker({ className }: { className?: string }) {
    *
    * Read once at mount, which is all `initialScrollIndex` is for: picking a day
    * inside the visible week must not scroll the pager.
+   *
+   * Kept as a position, not a date. The list always holds the same number of
+   * weeks, so when the app comes back in a new week every week slides one place
+   * and the position on screen now holds the new week. Worked out again from the
+   * date, it named last week instead, and the week on screen stopped refreshing
+   * its dots until the next swipe.
    */
-  const initial = useRef(selectedDate).current
-  const page = useMemo(() => {
-    const start = dateKey(startOfWeek(parseISO(initial), { weekStartsOn: WEEK_STARTS_ON }))
+  const page = useRef<number | null>(null)
+  if (page.current === null) {
+    const start = dateKey(startOfWeek(parseISO(selectedDate), { weekStartsOn: WEEK_STARTS_ON }))
     const found = weeks.indexOf(start)
-    return found === -1 ? weeks.length - 1 : found
-  }, [weeks, initial])
+    page.current = found === -1 ? weeks.length - 1 : found
+  }
 
   /**
    * The page on screen, kept for when the strip changes width. Pages are as wide
@@ -136,7 +142,7 @@ export function WeekPicker({ className }: { className?: string }) {
   // The same page as state, for the one thing that renders off it: which week
   // keeps its dots current. See `useDayMarks`.
   const [shown, setShown] = useState<number | null>(null)
-  const onScreen = weeks[shown ?? page]
+  const onScreen = weeks[shown ?? page.current]
 
   return (
     <View className={className} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
@@ -156,7 +162,7 @@ export function WeekPicker({ className }: { className?: string }) {
           // the offset is arithmetic and the list never has to measure to find
           // it — which is what `initialScrollIndex` needs to land first try.
           key={width}
-          initialScrollIndex={showing.current ?? page}
+          initialScrollIndex={showing.current ?? page.current}
           onMomentumScrollEnd={(event) => {
             showing.current = Math.round(event.nativeEvent.contentOffset.x / width)
             setShown(showing.current)
