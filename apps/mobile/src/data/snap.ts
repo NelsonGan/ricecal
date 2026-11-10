@@ -14,7 +14,7 @@ import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
 import { today } from './client'
-import { invalidateEatenTotals, keys } from './keys'
+import { invalidateEatenTotals, invalidateEntryPosts, keys } from './keys'
 import { usePendingSnaps } from './pending-snaps'
 import { uploadMealPhoto } from './photos'
 import { announceRefusal, refusalFrom, ScanLimitError } from './refusals'
@@ -277,7 +277,7 @@ function useRecogniseMeal() {
           pending.remove(id)
           queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
           // The deferred auto post trigger may have published this scan.
-          queryClient.invalidateQueries({ queryKey: keys.social(userId) })
+          invalidateEntryPosts(queryClient, userId)
           // And the search panel's "My foods" tab: a scan is the third write
           // that changes what this account has recently eaten, and the newest
           // meal is the one most likely to be wanted again.

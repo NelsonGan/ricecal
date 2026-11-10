@@ -221,6 +221,15 @@ invalidating "the day" could spell it differently from the query that reads it.
 The failure mode is a screen that silently does not refresh, which looks like a
 caching bug and is really a typo.
 
+**A read that feeds a mapper names the columns the mapper reads.** The diary is
+the case that matters: `food_log_details` has 44 columns and `toEntry` reads
+37, so every select that feeds it asks for `ENTRY_COLUMNS` (`data/mappers.ts`)
+rather than `*`. `EntryRow` is exactly those columns, so reading an eighth one
+in the mapper without adding it to the list does not compile. It took a sixth
+off the diary's most frequent read and off the two hundred rows behind Past
+foods (184 KB to 154 KB). The view itself still answers every column, for the
+apps already in a store.
+
 ### Edge functions own the model
 
 The client never talks to OpenRouter and never sees the key. It uploads a photo
@@ -368,6 +377,74 @@ once and then less. The profile went first, being the one query whose screen
 redirects away while it is still in flight: losing its last observer cancels the
 retry that would have paused, and it settles as an error over data that was
 perfectly good.
+
+### What a refetch costs, and who pays it
+
+A query is stale after thirty seconds, and a stale query refetches when the app
+comes back to the front and when a screen reading it mounts. That default is
+right for the diary and wrong in three places, each of which was most of the
+traffic it touched. Production's request log is the evidence: `day_marks` was
+the single most frequent request the app made, 29 a day per account, ahead of
+the diary itself. One return to the app was 29 requests, and 16 after these:
+
+- **Rows only this app writes are fresh for five minutes**
+  (`OWN_WRITES_STALE_MS`): the profile, the settings, the meal times, the
+  targets, the weigh-ins and the health connection. Every write to them goes
+  through a mutation that updates or invalidates the cache, so the only thing
+  thirty seconds bought was hearing about another device sooner.
+- **A write refetches what it changed, not what is mounted.** Tabs stay mounted
+  once visited, so "active" includes screens nobody is looking at. A meal
+  marks the Feed tab's reads stale (`invalidateEntryPosts`) and the tab
+  refetches them when it is next shown; it used to refetch every loaded page
+  of the feed on every log and every portion change. A feed that is the tab
+  in front still refetches at once, since a scan can finish after its sheet
+  has closed over it. A meal does not touch
+  movement, and a glass of water does not refetch the day's meals: `add_water`
+  answers with the day's total, which is written back.
+- **The week beside the one showing is not subscribed.** The strip renders the
+  neighbouring week so a swipe has its dots, and that page asks once and then
+  only goes stale (`useDayMarks` with `onScreen: false`). Subscribed, it
+  doubled every refetch of the dots.
+- **A tab behind another reads nothing.** With all five tabs visited, a return
+  to the app on Today also refetched the Trends charts and every loaded page
+  of the feed: nine more requests and 27 KB nobody was looking at. Trends is
+  wrapped in `ReadsWhileShown` (`data/while-shown.tsx`), which unsubscribes
+  every query under it while the tab is hidden or covered, so a meal or a
+  glass of water marks the charts stale instead of redrawing them unseen, and
+  they refetch when the tab is shown. The feed cannot use it, because its
+  reads are collected a minute after their last subscriber leaves, so
+  `useSocialFeed` turns off its own refetch on focus while its tab is hidden
+  and the tab refetches a stale feed when it is shown.
+
+The health sync is the other half, in [Syncing](#syncing): it invalidates by
+the part of a reading that changed.
+
+To see what an action costs, `docker logs supabase_kong_ricecal --since <UTC
+time>` lists every request the app made to the local stack. Nothing fails when
+a refetch is added back, so `data/__tests__/refetch-scope.test.tsx` counts
+them.
+
+### What is written to disk
+
+`shouldPersistQuery` in `lib/query.ts` decides. The snapshot is serialised
+whole each time any query changes, at most once a second, and parsed whole
+before the first query runs at launch, so its size is paid on the JS thread at
+both ends. Left out:
+
+- signed photo URLs, social reads, and other people's meals and messages in a
+  group, for the reasons beside each in the code
+- **what was typed into a search box.** Each pause in typing is its own query,
+  so "nasi lemak" is ten of them at fifty dishes each. Six searches wrote
+  1.2 MB into a snapshot that was 39 KB without them, and nothing took it back
+  out. Search results also leave memory five minutes after the sheet closes.
+- **anything fetched more than a week before the newest answer in the cache.**
+  `gcTime` is infinite so the persister can write a query at all, and `maxAge`
+  only discards the whole snapshot after a week without opening the app, so
+  for a daily user every day ever looked at was written back at every launch.
+  Measured from the newest answer rather than from now, so a phone with no
+  connection for a fortnight still opens on the diary it last had, and never
+  from later than now, so an answer stamped while the clock was set ahead
+  does not age out everything after it.
 
 ---
 
@@ -1100,6 +1177,16 @@ written in, whatever the interface is set to: the catalogue, the recipes people
 type and everything a model writes back. Nothing in `src/i18n` names a food, and
 the preferences card says so out loud, where somebody changing the setting can
 act on it.
+
+**Every bundle ships, and only the one in use runs.** `src/i18n/index.ts`
+reaches each locale through a `require` inside a function, and hands i18next a
+backend that answers from it in the same call (`initAsync: false`), so `t` is
+as synchronous as it was when all thirteen were passed in `resources`. As
+thirteen imports, every launch built twelve languages of strings it would not
+draw before the first frame: about 110 ms of the dev build's launch, 40 ms
+now. The date-fns locales in `languages.ts` load the same way. A test that
+reads another language's words has to load it first
+(`i18n.loadLanguages`), or `getFixedT` answers in English and proves nothing.
 
 ### English is the source, and the type system enforces the rest
 
@@ -3799,7 +3886,9 @@ the signer a HEAD on R2. The viewer's own photos are signed as their own.
 ## The diary screen
 
 A week strip above the ring, Monday to Sunday, paged back a year, one page per
-calendar week, each fetching only its own seven days. Picking a day moves
+calendar week, each fetching only its own seven days. Only the page showing
+keeps its dots current; the one rendered beside it for the swipe asks once and
+catches up when it is swiped to. Picking a day moves
 `selectedDate` (`data/selected-date.tsx`, the one piece of genuinely
 client-owned state) and everything below follows it: the ring, the water, the
 entry list, and anything logged while it is selected.
@@ -3892,6 +3981,15 @@ people drum on, and a read here plus a write here loses one of two taps that
 overlap. A negative amount is the undo, which is also why the total is clamped at
 both ends rather than checked: somebody pressing undo has already made their only
 mistake.
+
+The tank moves before the request leaves, and the total a tap comes back with
+is written over it, so a drink costs one request. It refetched the whole day,
+meals and all, to learn that number. Two cases ask for the day instead
+(`useAddWater`): taps that overlapped, whose answers can arrive out of order,
+and a tap that cancelled a read of the day already under way, which is still
+owed. The day travels with the drink rather than being read when the answer
+comes back, so a drink answered after another day was picked, or undone from
+its toast by then, still lands on the day it was added to.
 
 **Millilitres where a figure is chosen, litres where one is summarised.** The card
 on Today, the quick-add sheet and the goal stepper are all ml; a trend tile, a
@@ -4549,6 +4647,33 @@ arrives late and arrives edited: a watch out of range writes Tuesday on
 Wednesday, Strava back-dates an upload, Apple recomputes a day when a second
 source appears. "Everything since the last sync" misses all three permanently.
 Every key in the schema exists to make that repetition free.
+
+**A pass says which part of its reading changed, and only that refetches.**
+`syncRange` fingerprints three parts against the last pass on this phone
+(hashes, so no health data is kept for it): the days and their hours, the
+workouts, and the weigh-ins. A phone in a pocket reads new steps on nearly
+every foreground and a new weigh-in about once a day, and one fingerprint for
+the lot called both changed, so one more step refetched the weigh-ins, the
+targets and the charts. `invalidateAfterSync` is the list:
+
+| part that changed | refetched |
+| --- | --- |
+| days and hours | the day's movement, the week strip's dots |
+| workouts | the session lists, the group boards |
+| weigh-ins | the weigh-ins, the targets, the charts, the dots |
+
+Weigh-ins have a second witness: `sync_weight_readings` answers with how many
+readings changed a row, and any at all counts as changed. The same reading can
+do that when the typed weigh-in that was keeping it out has been deleted.
+
+The diary is on none of them: a day's meals and water are not the health
+store's, though every pass used to refetch them. The connection row, whose
+last-sync time moves on every pass, comes back with the write that moved it
+and goes into the cache as it is. Every pass still writes, whatever changed,
+because the database is the record; its four writes (days, sessions, hours,
+weigh-ins) go out together, since they share no table, and one that fails
+still fails the pass so the next one sends all four again. The pass waits for
+all four either way, so the next cannot start with one still on the wire.
 
 Providers: `apple.ts`, `androidHealth.ts`, and `demo.ts`, which is generated,
 deterministic, dev-only, and a `health_provider` enum value rather than a flag,
@@ -7874,9 +7999,13 @@ the icon set. It turns softly shaded artwork into palette PNGs and can make the
 output larger.
 
 To re-import them after the source set changes: `node scripts/sync-icons.mjs`.
-That script downscales and quantises (38 MB → 8.4 MB) and needs the design system
-checked out at `.secrets/RiceCal Design System`. The processed PNGs are
-committed, so CI and EAS never run it.
+That script downscales, quantises and then repacks with `oxipng` (38 MB → 7.6 MB
+→ 6.3 MB) and needs the design system checked out at
+`.secrets/RiceCal Design System`, and `oxipng` on the PATH
+(`brew install oxipng`). The last step is lossless, so it changes no pixel and
+is safe to run over the committed files again; `slice-icon-sheet.py` runs it
+with the same flags. The processed PNGs are committed, so CI and EAS never run
+either script.
 
 **Adding one is three steps, and the third is the one people forget.** Slice the
 sheet (`slice-icon-sheet.py`, or `sync-icons.mjs` for a single file), then
@@ -9531,7 +9660,11 @@ correction undo itself and blame the text field.
 can change somebody's target with the app closed. Two consequences: anything that
 writes weight has to invalidate `keys.goals` as well as `keys.weighIns`, and a
 reading a health store rejects must be dropped rather than raised, because this
-runs inside the same pass that writes activity.
+runs inside the same pass that writes activity. A reading that is already
+stored is not written again: the window is re-sent on every foreground, and an
+update that changes nothing still made a new row version and still fired the
+budget trigger, once per reading. `sync_weight_readings` returns the number of
+readings that changed something.
 
 **Burned calories extend the budget; they never shrink what was eaten.** The
 arithmetic is `goal + active - eaten`, written as an addition on screen. Every

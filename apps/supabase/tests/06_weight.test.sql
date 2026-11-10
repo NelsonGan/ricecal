@@ -31,7 +31,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(19);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -191,6 +191,34 @@ select is(
   (select weight_kg from public.weight_logs where measured_on = '2026-03-15'),
   72.9::numeric,
   'and the last reading of that day is the one kept'
+);
+
+-- The same reading again, which is what nearly every pass sends: the window is
+-- the last seven days, re-read on each foreground. It used to be written again
+-- each time, and an update that changes nothing still makes a new row version
+-- and still fires the budget trigger. `ctid` moves when a row is rewritten, so
+-- it is how a write that left every value alone is told from no write at all.
+select ctid as weight_before from public.weight_logs where measured_on = '2026-03-15' \gset
+select ctid as goals_before from public.daily_goals
+  where user_id = :'user_a' order by effective_from desc limit 1 \gset
+
+select public.sync_weight_readings('apple_health', jsonb_build_array(
+  jsonb_build_object('measured_on', '2026-03-15', 'weight_kg', 72.9)
+)) as repeated \gset
+
+select is(:repeated, 0, 'a reading that is already stored is not counted as written');
+
+select is(
+  (select ctid from public.weight_logs where measured_on = '2026-03-15'),
+  :'weight_before'::tid,
+  'and its row is not rewritten'
+);
+
+select is(
+  (select ctid from public.daily_goals
+    where user_id = :'user_a' order by effective_from desc limit 1),
+  :'goals_before'::tid,
+  'so the budget is not recomputed for a weigh-in that did not move'
 );
 
 -- The user comes from the token, so there is no argument to forge.

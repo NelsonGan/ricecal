@@ -449,6 +449,9 @@ def main() -> None:
                     [quant, "--quality", "65-88", "--speed", "3", "-f", "-o", str(dest), str(dest)],
                     check=True,
                 )
+                # Lossless, with the flags `sync-icons.mjs` uses, so an icon
+                # is the same size whichever script brought it in.
+                subprocess.run(["oxipng", "-o", "4", "--strip", "safe", "-q", str(dest)], check=True)
         print(f"wrote {len(names)} icons to {args.out}")
 
     if problems:

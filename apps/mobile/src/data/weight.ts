@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
-import { today, unwrap, unwrapOne } from './client'
+import { OWN_WRITES_STALE_MS, today, unwrap, unwrapOne } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
 import type { WeighIn } from './types'
@@ -36,6 +36,7 @@ export function useWeighIns() {
   return useQuery({
     queryKey: keys.weighIns(userId),
     queryFn: () => fetchWeighIns(userId),
+    staleTime: OWN_WRITES_STALE_MS,
   })
 }
 

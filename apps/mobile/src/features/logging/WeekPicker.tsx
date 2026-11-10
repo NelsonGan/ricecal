@@ -22,6 +22,8 @@ type WeekProps = {
   width: number
   selected: string
   today: string
+  /** Whether this is the page showing, as against the one rendered beside it. */
+  onScreen: boolean
   onSelect: (date: string) => void
 }
 
@@ -39,10 +41,10 @@ type WeekProps = {
  * Clamped at today: the cells ahead are disabled, and seeding them would claim to
  * know something about a day nobody has had yet.
  */
-function Week({ start, width, selected, today, onSelect }: WeekProps) {
+function Week({ start, width, selected, today, onScreen, onSelect }: WeekProps) {
   const { t } = useTranslation('logging')
   const days = useMemo(() => weekDays(start), [start])
-  const { data: marks, isSuccess } = useDayMarks(start, days[6])
+  const { data: marks, isSuccess } = useDayMarks(start, days[6], { onScreen })
   const { data: settings } = useSettings()
 
   const reachable = days[6] > today ? today : days[6]
@@ -131,6 +133,10 @@ export function WeekPicker({ className }: { className?: string }) {
    * phone's strip never changes width, so there it is only ever `page`.
    */
   const showing = useRef<number | null>(null)
+  // The same page as state, for the one thing that renders off it: which week
+  // keeps its dots current. See `useDayMarks`.
+  const [shown, setShown] = useState<number | null>(null)
+  const onScreen = weeks[shown ?? page]
 
   return (
     <View className={className} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
@@ -153,6 +159,7 @@ export function WeekPicker({ className }: { className?: string }) {
           initialScrollIndex={showing.current ?? page}
           onMomentumScrollEnd={(event) => {
             showing.current = Math.round(event.nativeEvent.contentOffset.x / width)
+            setShown(showing.current)
           }}
           getItemLayout={(_data, index) => ({ length: width, offset: width * index, index })}
           onScrollToIndexFailed={({ index }) =>
@@ -168,6 +175,7 @@ export function WeekPicker({ className }: { className?: string }) {
               width={width}
               selected={selectedDate}
               today={todayKey}
+              onScreen={item === onScreen}
               onSelect={setSelectedDate}
             />
           )}

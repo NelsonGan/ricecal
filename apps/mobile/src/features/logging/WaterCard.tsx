@@ -20,9 +20,9 @@ import {
 import { TankFigure } from './TankFigure'
 
 /**
- * The tank's height on Today. Shorter than Trends' `TANK_HEIGHT`: the readout and
- * its add button take about 48 points, which leaves a band of water under them
- * without the card standing as tall as the ring card above it.
+ * The tank's height on Today. The readout and its add button take about 48
+ * points, which leaves a band of water under them without the card standing as
+ * tall as the ring card above it.
  */
 const TODAY_TANK_HEIGHT = 60
 

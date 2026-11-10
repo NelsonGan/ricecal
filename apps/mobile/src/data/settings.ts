@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { setPersonProps, track } from '@/lib/analytics'
 import type { TablesUpdate } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
-import { unwrap, unwrapMaybe, unwrapOne } from './client'
+import { OWN_WRITES_STALE_MS, unwrap, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
 import type { Meal, MealTime, Settings } from './types'
@@ -22,6 +22,7 @@ export function useSettings() {
       unwrapMaybe(
         await supabase.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
       ),
+    staleTime: OWN_WRITES_STALE_MS,
   })
 }
 
@@ -67,6 +68,7 @@ export function useMealTimes() {
       unwrap(
         await supabase.from('meal_times').select('*').eq('user_id', userId).order('at'),
       ) as MealTime[],
+    staleTime: OWN_WRITES_STALE_MS,
   })
 }
 

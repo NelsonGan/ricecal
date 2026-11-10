@@ -171,12 +171,68 @@ export function toRecipeIngredient(row: RecipeIngredientRow): RecipeIngredient {
   }
 }
 
-export function toEntry(row: FoodLogRow): Entry {
+/**
+ * The columns of `food_log_details` that `toEntry` reads, for every select
+ * that feeds it.
+ *
+ * Named rather than `*`. The view has seven more that no screen draws (the
+ * owner, the fibre, sugar, sodium and gram totals, and the snapshot's name and
+ * brand, which `food_name` and `food_brand` already are), about a sixth of
+ * each row, and it is the diary's most frequent read and the two hundred rows
+ * behind Past foods. A column `toEntry` starts reading goes on this list, and
+ * it will not compile until it does: `EntryRow` is these and no others.
+ */
+const ENTRY_COLUMN_NAMES = [
+  'id',
+  'log_date',
+  'quantity',
+  'logged_at',
+  'note',
+  'source',
+  'photo_path',
+  'food_id',
+  'scan_id',
+  'suggested_edits',
+  'food_name',
+  'food_brand',
+  'icon_set',
+  'icon_name',
+  'place',
+  'serving_id',
+  'serving_label',
+  'serving_factor',
+  'override_kcal',
+  'override_carbs_g',
+  'override_protein_g',
+  'override_fat_g',
+  'kcal',
+  'carbs_g',
+  'protein_g',
+  'fat_g',
+  'recipe_id',
+  'base_kcal',
+  'base_carbs_g',
+  'base_protein_g',
+  'base_fat_g',
+  'base_fibre_g',
+  'base_sugar_g',
+  'base_sodium_mg',
+  'base_serving_grams',
+  'ingredient_count',
+  'plate_quantity',
+] as const satisfies readonly (keyof FoodLogRow)[]
+
+export const ENTRY_COLUMNS = ENTRY_COLUMN_NAMES.join(',')
+
+/** A row of `food_log_details`, as far as `ENTRY_COLUMNS` asks for it. */
+export type EntryRow = Pick<FoodLogRow, (typeof ENTRY_COLUMN_NAMES)[number]>
+
+export function toEntry(row: EntryRow): Entry {
   return {
     id: row.id ?? '',
     quantity: Number(row.quantity ?? 1),
-    // Defaulted rather than trusted: a database without the migration that
-    // added these answers without them, and this build still has to read it.
+    // Defaulted like every other column here: a view's columns are typed
+    // nullable. Both are on `ENTRY_COLUMNS`, so the database has to have them.
     plateQuantity: Number(row.plate_quantity ?? 1),
     ingredientCount: row.ingredient_count ?? 0,
     loggedAt: row.logged_at ?? new Date(0).toISOString(),

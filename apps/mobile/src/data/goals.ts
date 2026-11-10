@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { supabase } from '@/lib/supabase'
 import { DEFAULT_WATER_ML } from '@/lib/water'
-import { today, unwrapMaybe, unwrapOne } from './client'
+import { OWN_WRITES_STALE_MS, today, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
 import type { CurrentGoalsRow, Targets } from './types'
@@ -39,6 +39,7 @@ export function useTargets() {
         isCustom: row.is_custom ?? false,
       }
     },
+    staleTime: OWN_WRITES_STALE_MS,
   })
 }
 

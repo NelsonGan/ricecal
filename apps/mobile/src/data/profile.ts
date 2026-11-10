@@ -4,7 +4,7 @@ import type { TablesUpdate } from '@/lib/database.types'
 import type { BodyInput } from '@/lib/nutrition'
 import { ageFrom } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
-import { today, unwrapMaybe, unwrapOne } from './client'
+import { OWN_WRITES_STALE_MS, today, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { useSession, useUserId } from './session'
 import type { ActivityLevel, Profile, Sex, Units } from './types'
@@ -29,6 +29,7 @@ export function useProfile() {
     queryKey: keys.profile(userId ?? 'anonymous'),
     enabled: Boolean(userId),
     queryFn: () => fetchProfile(userId as string),
+    staleTime: OWN_WRITES_STALE_MS,
   })
 }
 
@@ -344,6 +345,10 @@ export function useFinishOnboarding() {
       // cache has ever seen them.
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
       queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
+      // And the units, written above. The settings were read at sign-in, some
+      // steps before this, and stay fresh for minutes: without this, somebody
+      // who chose pounds opened Today in kilograms.
+      queryClient.invalidateQueries({ queryKey: keys.settings(userId) })
     },
   })
 }

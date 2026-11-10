@@ -220,7 +220,7 @@ function FeedColumn({
 }) {
   const { t } = useTranslation('social')
   const viewer = useUserId()
-  const feed = useSocialFeed(mode, show)
+  const feed = useSocialFeed(mode, show, useIsFocused())
   const queryClient = useQueryClient()
   useFocusEffect(
     useCallback(() => {

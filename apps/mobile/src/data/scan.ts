@@ -4,7 +4,7 @@ import { useCallback } from 'react'
 import { track } from '@/lib/analytics'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
-import { invalidateEatenTotals, keys } from './keys'
+import { invalidateEatenTotals, invalidateEntryPosts, keys } from './keys'
 import { scalePart } from './part-scale'
 import { useRefiningEntries } from './refining'
 import { announceRefusal, refusalFrom, ScanLimitError } from './refusals'
@@ -101,7 +101,7 @@ function restoreParts(queryClient: QueryClient, entryId: string, context?: Plate
  */
 function afterPlateWrite(queryClient: QueryClient, userId: string, input: PlateTarget) {
   queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) })
-  queryClient.invalidateQueries({ queryKey: keys.social(userId) })
+  invalidateEntryPosts(queryClient, userId)
   queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
   invalidateEatenTotals(queryClient, userId)
 }
@@ -332,8 +332,9 @@ export function useRefineEntry() {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) }),
           queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) }),
-          queryClient.invalidateQueries({ queryKey: keys.social(userId) }),
         ])
+        // Not awaited: the row on screen does not read the feed.
+        void invalidateEntryPosts(queryClient, userId)
         invalidateEatenTotals(queryClient, userId)
         // A correction spends a scan like a plate does. Invisible today — the
         // count is only drawn for a free account and only Pro can refine — and
