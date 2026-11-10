@@ -74,11 +74,10 @@ shrinks a headline rather than letting it wrap into the phone.
 
 Captures are native screenshots of the app, 1320 × 2868 for iPhone and
 2853 × 2007 for iPhone Duo, with fixed filenames (`01-today.png` …
-`06-recipes.png`). They come from the seeder branches in this repo
-(`screenshots/refresh-1-1-0`, `screenshots/iphone-duo`), which seed local
-Supabase with each language's account and food. Those branches' instructions
-were written for dedicated simulators. Lease devices through the Simlock pool
-instead (`simlock-devices`, `device_open`), as AGENTS.md requires.
+`06-recipes.png`). The [update-app-studio-screenshots](../update-app-studio-screenshots/SKILL.md)
+skill recaptures them: it seeds local Supabase with each language's account and
+food from the `app-studio-seed-data` branch (never merged) and captures them on
+Simlock pool devices.
 
 Then, for every replaced file:
 
