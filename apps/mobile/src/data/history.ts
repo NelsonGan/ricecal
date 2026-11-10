@@ -13,9 +13,9 @@ import { supabase } from '@/lib/supabase'
 import { DEFAULT_WATER_ML } from '@/lib/water'
 import { dateKey, unwrap } from './client'
 import { keys } from './keys'
-import { toEntry } from './mappers'
+import { ENTRY_COLUMNS, type EntryRow, toEntry } from './mappers'
 import { useUserId } from './session'
-import type { Entry, FoodLogRow } from './types'
+import type { Entry } from './types'
 
 type HealthProvider = Database['public']['Enums']['health_provider']
 
@@ -135,14 +135,14 @@ export function mealPage(rows: readonly Entry[], limit = MEAL_ROWS): Page<MealDa
 async function fetchMealPage(userId: string, through: string | null): Promise<Page<MealDay>> {
   let request = supabase
     .from('food_log_details')
-    .select('*')
+    .select(ENTRY_COLUMNS)
     .eq('user_id', userId)
     .order('log_date', { ascending: false })
     .order('logged_at', { ascending: false })
     .limit(MEAL_ROWS)
   if (through) request = request.lte('log_date', through)
 
-  return mealPage((unwrap(await request) as FoodLogRow[]).map(toEntry))
+  return mealPage(unwrap(await request.overrideTypes<EntryRow[], { merge: false }>()).map(toEntry))
 }
 
 /**

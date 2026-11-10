@@ -4,7 +4,7 @@ import { dateOffset, type LogMethod, track } from '@/lib/analytics'
 import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { today, unwrap, unwrapOne } from './client'
-import { invalidateEatenTotals, keys } from './keys'
+import { invalidateEatenTotals, invalidateEntryPosts, keys } from './keys'
 import { removeMealPhoto } from './photos'
 import { useUserId } from './session'
 import { type LogSnapshot, snapshotColumns } from './snapshot'
@@ -96,7 +96,7 @@ export function useLogFood() {
       recordMealLogged(userId)
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       // Auto post may have published this entry in the same transaction.
-      queryClient.invalidateQueries({ queryKey: keys.social(userId) })
+      invalidateEntryPosts(queryClient, userId)
       // And the search panel's "My foods" tab, whose whole content is the
       // newest of these. Invalidated on the write rather than left to go stale,
       // because the common way back into that list is straight after using it:
@@ -304,7 +304,7 @@ export function useUpdateEntry() {
           .cancelQueries({ queryKey: keys.social(userId) })
           .then(() => queryClient.resetQueries({ queryKey: keys.social(userId) }))
       } else {
-        queryClient.invalidateQueries({ queryKey: keys.social(userId) })
+        invalidateEntryPosts(queryClient, userId)
       }
       track('Entry Updated', { changed: changedFields(patch) })
       queryClient.invalidateQueries({ queryKey: keys.day(userId, patch.logDate) })

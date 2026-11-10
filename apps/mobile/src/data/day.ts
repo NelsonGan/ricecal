@@ -1,11 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { supabase } from '@/lib/supabase'
 import { WATER_MAX_ML } from '@/lib/water'
 import { datesBetween, seedMissing, unwrap, unwrapMaybe } from './client'
 import { keys } from './keys'
-import { toEntry, toIcon } from './mappers'
+import { ENTRY_COLUMNS, type EntryRow, toEntry, toIcon } from './mappers'
 import { pendingAsEntry, usePendingSnaps } from './pending-snaps'
 import { useUserId } from './session'
 import type {
@@ -16,7 +16,6 @@ import type {
   DayPlateRow,
   EntrySource,
   EntryStatus,
-  FoodLogRow,
 } from './types'
 
 /**
@@ -28,10 +27,11 @@ async function fetchDay(userId: string, date: string): Promise<DayLog> {
   const [entries, water] = await Promise.all([
     supabase
       .from('food_log_details')
-      .select('*')
+      .select(ENTRY_COLUMNS)
       .eq('user_id', userId)
       .eq('log_date', date)
-      .order('logged_at'),
+      .order('logged_at')
+      .overrideTypes<EntryRow[], { merge: false }>(),
     supabase
       .from('daily_logs')
       .select('water_ml')
@@ -42,7 +42,7 @@ async function fetchDay(userId: string, date: string): Promise<DayLog> {
 
   return {
     date,
-    entries: (unwrap(entries) as FoodLogRow[]).map(toEntry),
+    entries: unwrap(entries).map(toEntry),
     // No row means no water logged, not an error: `daily_logs` is written
     // the first time somebody records a drink.
     waterMl: unwrapMaybe(water)?.water_ml ?? 0,
@@ -202,11 +202,12 @@ async function fetchDays(userId: string, from: string, to: string): Promise<DayL
   const [entries, water] = await Promise.all([
     supabase
       .from('food_log_details')
-      .select('*')
+      .select(ENTRY_COLUMNS)
       .eq('user_id', userId)
       .gte('log_date', from)
       .lte('log_date', to)
-      .order('logged_at'),
+      .order('logged_at')
+      .overrideTypes<EntryRow[], { merge: false }>(),
     supabase
       .from('daily_logs')
       .select('log_date, water_ml')
@@ -232,7 +233,7 @@ async function fetchDays(userId: string, from: string, to: string): Promise<DayL
   // Bucketed on the MAPPED entry rather than on the row. Every column of a view
   // is typed nullable — see the data README — so `row.log_date` is `string |
   // null` here, and `toEntry` is the one place allowed to coalesce it.
-  for (const entry of (unwrap(entries) as FoodLogRow[]).map(toEntry)) {
+  for (const entry of unwrap(entries).map(toEntry)) {
     days.get(entry.logDate)?.entries.push(entry)
   }
 
@@ -295,13 +296,22 @@ export function useAddWater(date: string) {
   const userId = useUserId()
   const queryClient = useQueryClient()
 
+  // Per day, so taps on another day's tank do not count as in flight here.
+  const tank = `${userId}.${date}`
+
   return useMutation({
     mutationFn: (ml: number) => addWater(ml, date),
     // The tank has to move under the finger, so the day is patched before the
     // request leaves, clamped exactly where the server clamps. `add_water`
-    // returns the new total and writing it back would be a race: two taps in
-    // flight resolve in whatever order the network hands them back.
+    // returns the new total, and writing each one back would be a race: two
+    // taps in flight resolve in whatever order the network hands them back.
+    // See `onSettled` for the one that is written.
     onMutate: async (ml) => {
+      // Counted before anything is awaited, so two taps in one frame both see it.
+      const taps = waterInFlight.get(tank) ?? { out: 0, overlapped: false }
+      taps.out += 1
+      if (taps.out > 1) taps.overlapped = true
+      waterInFlight.set(tank, taps)
       await queryClient.cancelQueries({ queryKey: keys.day(userId, date) })
       const previous = queryClient.getQueryData<DayLog>(keys.day(userId, date))
       if (previous) {
@@ -315,8 +325,25 @@ export function useAddWater(date: string) {
     onError: (_error, _ml, context) => {
       if (context?.previous) queryClient.setQueryData(keys.day(userId, date), context.previous)
     },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: keys.day(userId, date) })
+    onSettled: (total, error) => {
+      // Another tap is still out, and it settles the day when it lands.
+      const taps = waterInFlight.get(tank)
+      if (taps && taps.out > 1) {
+        taps.out -= 1
+        return
+      }
+      waterInFlight.delete(tank)
+      const day = queryClient.getQueryData<DayLog>(keys.day(userId, date))
+      if (!error && !taps?.overlapped && typeof total === 'number' && day) {
+        // One tap on its own, which is the ordinary case: its answer is the
+        // day's total, so it is written back. The day was refetched here
+        // instead, meals and all, to learn a number this answer carries.
+        queryClient.setQueryData(keys.day(userId, date), { ...day, waterMl: total })
+      } else {
+        // Taps that overlapped are asked for instead: the last answer to
+        // arrive is not always the last the server added.
+        queryClient.invalidateQueries({ queryKey: keys.day(userId, date) })
+      }
       // The water card counts this drink in its line, its average and its goal
       // days. Not optimistic, unlike the tank itself: nothing on Trends is
       // under the finger, so it can wait for the row.
@@ -324,6 +351,15 @@ export function useAddWater(date: string) {
     },
   })
 }
+
+/**
+ * Drinks in flight per day, and whether any two of them were out at once.
+ * Counted here rather than asked of react-query, whose own count still
+ * includes a tap whose answer has arrived but not yet been recorded: two
+ * answers in one tick each saw the other as outstanding, and neither settled
+ * the day. See `useAddWater`.
+ */
+const waterInFlight = new Map<string, { out: number; overlapped: boolean }>()
 
 /** The one call. Shared so the two hooks around it cannot pass different arguments. */
 async function addWater(ml: number, date: string) {
@@ -364,33 +400,64 @@ export function useAddQueuedWater() {
  * or over is decided where the ring decides it, since the two are on the same
  * screen about the same day.
  */
-export function useDayMarks(from: string, to: string) {
+async function fetchDayMarks(from: string, to: string): Promise<Record<string, DayMark>> {
+  const rows = unwrap(await supabase.rpc('day_marks', { p_from: from, p_to: to })) as DayMarkRow[]
+
+  return Object.fromEntries(
+    rows.map((row) => [
+      row.at,
+      {
+        date: row.at,
+        entryCount: row.entry_count ?? 0,
+        kcal: row.kcal ?? 0,
+        // Null where the account had no budget yet — before onboarding ran,
+        // or on a day earlier than its first `daily_goals` row. A day with
+        // no goal cannot be over or under one, and the strip draws it as a
+        // day with nothing logged rather than as a failure.
+        goalKcal: row.goal_kcal,
+        activeKcal: row.active_kcal ?? 0,
+      },
+    ]),
+  )
+}
+
+/**
+ * `onScreen: false` is for a page of the week strip that is rendered beside
+ * the one showing. It draws what is cached and asks for the range once, if it
+ * has never been fetched, so the dots are there on the swipe; after that it
+ * only goes stale. It is not a subscriber, so the refetches every meal and
+ * every return to the app set off are for the week on screen alone, and the
+ * week beside it catches up when it is swiped to. Subscribed, the neighbour
+ * doubled what was already the app's most frequent request.
+ */
+export function useDayMarks(from: string, to: string, { onScreen = true } = {}) {
   const userId = useUserId()
+  const queryClient = useQueryClient()
+  // A page that is not subscribed is not told when its first answer lands, so
+  // it is drawn again by hand.
+  const [, redraw] = useState(0)
+
+  useEffect(() => {
+    const queryKey = keys.dayMarks(userId, from, to)
+    if (onScreen || queryClient.getQueryData(queryKey) !== undefined) return
+
+    let cancelled = false
+    // Silent, like the days warmed beside it: `prefetchQuery` never throws,
+    // and the page asks for itself when it is swiped to.
+    void queryClient
+      .prefetchQuery({ queryKey, queryFn: () => fetchDayMarks(from, to) })
+      .then(() => {
+        if (!cancelled) redraw((count) => count + 1)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [onScreen, queryClient, userId, from, to])
 
   return useQuery({
     queryKey: keys.dayMarks(userId, from, to),
-    queryFn: async (): Promise<Record<string, DayMark>> => {
-      const rows = unwrap(
-        await supabase.rpc('day_marks', { p_from: from, p_to: to }),
-      ) as DayMarkRow[]
-
-      return Object.fromEntries(
-        rows.map((row) => [
-          row.at,
-          {
-            date: row.at,
-            entryCount: row.entry_count ?? 0,
-            kcal: row.kcal ?? 0,
-            // Null where the account had no budget yet — before onboarding ran,
-            // or on a day earlier than its first `daily_goals` row. A day with
-            // no goal cannot be over or under one, and the strip draws it as a
-            // day with nothing logged rather than as a failure.
-            goalKcal: row.goal_kcal,
-            activeKcal: row.active_kcal ?? 0,
-          },
-        ]),
-      )
-    },
+    queryFn: () => fetchDayMarks(from, to),
+    subscribed: onScreen,
   })
 }
 

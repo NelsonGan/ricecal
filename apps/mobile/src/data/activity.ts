@@ -5,7 +5,14 @@ import { setPersonProps, track } from '@/lib/analytics'
 import type { Tables } from '@/lib/database.types'
 import { type ProviderId, parseHrZones, providerFor, sourceLabel } from '@/lib/health'
 import { supabase } from '@/lib/supabase'
-import { dateKey, datesBetween, seedMissing, unwrap, unwrapMaybe } from './client'
+import {
+  dateKey,
+  datesBetween,
+  OWN_WRITES_STALE_MS,
+  seedMissing,
+  unwrap,
+  unwrapMaybe,
+} from './client'
 import { keys } from './keys'
 import { useUserId } from './session'
 
@@ -124,7 +131,7 @@ export function toSession(row: Tables<'activity_sessions'>): ActivitySession {
   }
 }
 
-function toConnection(row: Tables<'health_connections'>): HealthConnection {
+export function toConnection(row: Tables<'health_connections'>): HealthConnection {
   return {
     provider: row.provider,
     connected: row.connected,
@@ -282,6 +289,7 @@ export function useHealthConnection() {
       const row = rows[0]
       return row ? toConnection(row) : null
     },
+    staleTime: OWN_WRITES_STALE_MS,
   })
 }
 
@@ -373,8 +381,8 @@ export function useClearDemoActivity() {
       queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
       // Generated movement was extending the budget, and a fortnight of days
-      // just lost it. Both the ring and the week strip's dots read that budget.
-      queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
+      // just lost it. The ring reads that from the day's movement, above; the
+      // week strip's dots have their own read.
       queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
     },
   })

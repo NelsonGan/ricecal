@@ -18,7 +18,7 @@ import type {
 import { providerFor } from '@/lib/health'
 import { ageFrom, basalRate } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
-import { daysAgo } from './activity'
+import { daysAgo, type HealthConnection, toConnection } from './activity'
 import { dateKey } from './client'
 import { invalidateGroupBoards, keys } from './keys'
 import { fetchProfile } from './profile'
@@ -254,28 +254,33 @@ async function persist(
   reading: HealthReading,
   window: { from: string; to: string; withHours: boolean },
 ): Promise<void> {
-  // One request per row shape, as for sessions below.
-  for (const batch of dayBatches(userId, provider, reading.days)) {
-    const { error } = await supabase
-      .from('activity_days')
-      .upsert(batch, { onConflict: 'user_id,log_date' })
-    if (error) throw error
+  const days = async () => {
+    // One request per row shape, as for sessions below.
+    for (const batch of dayBatches(userId, provider, reading.days)) {
+      const { error } = await supabase
+        .from('activity_days')
+        .upsert(batch, { onConflict: 'user_id,log_date' })
+      if (error) throw error
+    }
   }
 
-  // One request per row shape. See `sessionBatches` for why there can be more
-  // than one, and for the rule that makes the difference.
-  for (const batch of sessionBatches(userId, provider, reading.workouts)) {
-    const { error } = await supabase
-      .from('activity_sessions')
-      .upsert(batch, { onConflict: 'user_id,provider,external_id' })
-    if (error) throw error
+  const sessions = async () => {
+    // One request per row shape. See `sessionBatches` for why there can be more
+    // than one, and for the rule that makes the difference.
+    for (const batch of sessionBatches(userId, provider, reading.workouts)) {
+      const { error } = await supabase
+        .from('activity_sessions')
+        .upsert(batch, { onConflict: 'user_id,provider,external_id' })
+      if (error) throw error
+    }
   }
 
-  // A duplicate source removed in Health can make an hour disappear. Replace
-  // atomically, keeping identical rows rather than rewriting them each time.
-  // An unavailable store or revoked access returns no readings. That is not
-  // a measured empty window and must not clear the last good hourly shape.
-  if (window.withHours && (reading.days.length > 0 || reading.hours.length > 0)) {
+  const hours = async () => {
+    // A duplicate source removed in Health can make an hour disappear. Replace
+    // atomically, keeping identical rows rather than rewriting them each time.
+    // An unavailable store or revoked access returns no readings. That is not
+    // a measured empty window and must not clear the last good hourly shape.
+    if (!window.withHours || (reading.days.length === 0 && reading.hours.length === 0)) return
     const { error } = await supabase.rpc('replace_activity_hours', {
       p_user_id: userId,
       p_from: window.from,
@@ -294,7 +299,8 @@ async function persist(
    * A reading the user typed always wins, which is a WHERE on the DO UPDATE that
    * PostgREST's `.upsert()` cannot express.
    */
-  if (reading.weights.length > 0) {
+  const weights = async () => {
+    if (reading.weights.length === 0) return
     const { error } = await supabase.rpc('sync_weight_readings', {
       p_provider: provider,
       p_readings: reading.weights.map((weigh) => ({
@@ -305,6 +311,13 @@ async function persist(
     })
     if (error) throw error
   }
+
+  // Together rather than in turn. The four touch different tables with nothing
+  // between them, and in turn a pass was four round trips long before Today
+  // heard about any of it. One that fails still fails the pass, so its
+  // fingerprint is not stored and the next pass sends all four again; the
+  // others land meanwhile, where they used to be skipped.
+  await Promise.all([days(), sessions(), hours(), weights()])
 }
 
 /**
@@ -376,17 +389,51 @@ async function personOf(
 }
 
 /**
- * A fingerprint of what the last pass on this device read, per account and
- * provider.
+ * Fingerprints of what the last pass on this device read, per account and
+ * provider, one for each part of a reading.
  *
  * Every pass still writes, because the database is the record and a late edit
  * has to land. But a pass that read exactly what the one before it read moved
  * nothing, and refetching the day, the goals, the weigh-ins and the charts on
  * every launch and foreground for it doubled the requests a launch made.
  *
+ * In parts, because a phone in a pocket reads new steps on nearly every
+ * foreground and a new weigh-in about once a day. One fingerprint for the lot
+ * called both changed, so the steps refetched the weigh-ins, the targets and
+ * the charts that only a weigh-in moves.
+ *
  * A hash rather than the reading, so no health data is left on the device by it.
  */
 const lastRead = createMMKV({ id: 'ricecal-health-read' })
+
+/**
+ * Which parts of a pass differ from the last one over the same range: the days
+ * and their hours, the workouts, and the weigh-ins. Each moves different
+ * screens; see `invalidateAfterSync`.
+ */
+export type SyncChange = { movement: boolean; workouts: boolean; weights: boolean }
+
+const EVERYTHING: SyncChange = { movement: true, workouts: true, weights: true }
+const NOTHING: SyncChange = { movement: false, workouts: false, weights: false }
+const SYNC_PARTS = ['movement', 'workouts', 'weights'] as const
+
+/**
+ * The fingerprint of each part of a pass. The range is in every one, so the
+ * window sliding forward a day reads as a change even when the days in both
+ * are the same.
+ */
+export function readingFingerprints(
+  from: string,
+  to: string,
+  readings: readonly HealthReading[],
+): Record<keyof SyncChange, string> {
+  const print = (part: unknown) => fingerprintOf(JSON.stringify([from, to, part]))
+  return {
+    movement: print(readings.map((reading) => [reading.days, reading.hours])),
+    workouts: print(readings.map((reading) => reading.workouts)),
+    weights: print(readings.map((reading) => reading.weights)),
+  }
+}
 
 /** cyrb53: 53 bits, plenty to tell one week of readings from the next. */
 function fingerprintOf(text: string): string {
@@ -409,7 +456,8 @@ function fingerprintOf(text: string): string {
  * granted-looking permission produced anything: on iOS that is the only way,
  * since HealthKit will not say whether a read was denied. It also returns
  * whatever hardware named itself, so every sync keeps the device name current,
- * and whether the reading differed from the last pass over the same range.
+ * and which parts of the reading differed from the last pass over the same
+ * range.
  */
 export async function syncRange(
   queryClient: QueryClient,
@@ -418,7 +466,7 @@ export async function syncRange(
   from: string,
   to: string,
   onProgress?: (progress: SyncProgress) => void,
-): Promise<{ days: number; deviceName: string | null; changed: boolean }> {
+): Promise<{ days: number; deviceName: string | null; changed: SyncChange }> {
   // Once for the whole range rather than once per chunk. Neither can change
   // between two chunks of the same sync, and it is a round trip either way.
   const person = await personOf(queryClient, userId)
@@ -449,9 +497,14 @@ export async function syncRange(
   // Stored only once every chunk is written, so a pass that failed halfway is
   // never mistaken for one that landed.
   const key = `${userId}.${provider.id}`
-  const seen = fingerprintOf(JSON.stringify([from, to, readings]))
-  const changed = lastRead.getString(key) !== seen
-  if (changed) lastRead.set(key, seen)
+  const seen = readingFingerprints(from, to, readings)
+  const changed = { ...EVERYTHING }
+  for (const part of SYNC_PARTS) {
+    changed[part] = lastRead.getString(`${key}.${part}`) !== seen[part]
+    if (changed[part]) lastRead.set(`${key}.${part}`, seen[part])
+  }
+  // The one fingerprint an earlier version kept for the whole reading.
+  if (lastRead.contains(key)) lastRead.remove(key)
 
   return { days: written, deviceName, changed }
 }
@@ -539,47 +592,68 @@ async function noteSync(
     deviceName?: string | null
     backfilledFrom?: string
   },
-): Promise<void> {
-  const { error } = await supabase.from('health_connections').upsert(
-    {
-      user_id: userId,
-      provider,
-      connected: true,
-      last_synced_at: new Date().toISOString(),
-      ...(patch.permissions ? { permissions: patch.permissions } : {}),
-      ...(patch.deviceName ? { device_name: patch.deviceName } : {}),
-      ...(patch.backfilledFrom ? { backfilled_from: patch.backfilledFrom } : {}),
-    },
-    { onConflict: 'user_id,provider' },
-  )
+): Promise<HealthConnection> {
+  // The row comes back with the write, so the pass that moved the last sync
+  // time can put it in the cache rather than asking for it again.
+  const { data, error } = await supabase
+    .from('health_connections')
+    .upsert(
+      {
+        user_id: userId,
+        provider,
+        connected: true,
+        last_synced_at: new Date().toISOString(),
+        ...(patch.permissions ? { permissions: patch.permissions } : {}),
+        ...(patch.deviceName ? { device_name: patch.deviceName } : {}),
+        ...(patch.backfilledFrom ? { backfilled_from: patch.backfilledFrom } : {}),
+      },
+      { onConflict: 'user_id,provider' },
+    )
+    .select()
+    .single()
   if (error) throw error
+  return toConnection(data)
 }
 
 /**
- * What a sync can have moved. Shared by the connect and the incremental pass,
- * because a list that drifted between the two would refresh a screen after one
- * kind of sync and not the other.
+ * What a sync can have moved, by the part of the reading that changed. Shared
+ * by the connect and the incremental pass, because a list that drifted between
+ * the two would refresh a screen after one kind of sync and not the other.
  *
- * The weight three are easy to miss: a synced weigh-in fires
- * `weight_logs_sync_daily_goals`, so a sync can change the calorie target
- * without anything in the app asking it to.
+ * - Days and hours: the day's movement, and the week strip's dots, since
+ *   movement extends the budget. The budget on Today is the target plus what
+ *   was burned, and reads both from here.
+ * - Workouts: the session lists, and the group boards that show them.
+ * - Weigh-ins: easy to miss. A synced weigh-in fires
+ *   `weight_logs_sync_daily_goals`, so a sync can change the calorie target
+ *   without anything in the app asking it to. It is a new point on the chart, a
+ *   new "current weight" on Me and the goals screen, and a recomputed target
+ *   under the dots.
+ *
+ * The diary is on neither list: a day's meals and water are not the health
+ * store's, though every pass that read one more step used to refetch them.
+ * Nor are the charts on the first two, which draw food, water and weight.
  */
-function invalidateAfterSync(queryClient: QueryClient, userId: string, changed = true): void {
-  // The connection row carries the last sync time, which moves on every pass.
-  queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
-  if (!changed) return
-  queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
-  invalidateGroupBoards(queryClient, userId)
-  // The budget on Today is goal plus burned, so a connect that did not move it
-  // would look like it had not worked.
-  queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
-  // Movement extends the budget, so it moves the week strip's dots too.
-  queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-  // And a weigh-in that arrived from a scale is a new point on the chart, a new
-  // "current weight" on Me and the goals screen, and a recomputed target.
-  queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
-  queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
-  queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+export function invalidateAfterSync(
+  queryClient: QueryClient,
+  userId: string,
+  changed: SyncChange = EVERYTHING,
+): void {
+  if (changed.movement) {
+    queryClient.invalidateQueries({ queryKey: keys.activityDays(userId) })
+  }
+  if (changed.workouts) {
+    queryClient.invalidateQueries({ queryKey: keys.activitySessionsAll(userId) })
+    invalidateGroupBoards(queryClient, userId)
+  }
+  if (changed.weights) {
+    queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
+    queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
+    queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
+  }
+  if (changed.movement || changed.weights) {
+    queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
+  }
 }
 
 /**
@@ -698,6 +772,7 @@ export function useConnectHealth() {
         days: result.days,
       })
       if (result.granted) setPersonProps({ health_provider: provider })
+      queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
       invalidateAfterSync(queryClient, userId)
     },
   })
@@ -713,11 +788,13 @@ export function useSyncHealth() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async (id: ProviderId): Promise<{ days: number; changed: boolean }> => {
+    mutationFn: async (
+      id: ProviderId,
+    ): Promise<{ days: number; changed: SyncChange; connection?: HealthConnection }> => {
       const provider = providerFor(id)
 
       const availability = await provider.isAvailable()
-      if (!availability.ok) return { days: 0, changed: false }
+      if (!availability.ok) return { days: 0, changed: NOTHING }
 
       // Before the read, because a type this device has never been asked about returns
       // nothing rather than failing. Almost always a no-op: it touches the platform
@@ -731,11 +808,18 @@ export function useSyncHealth() {
       // that connected before a watch was paired would otherwise never learn its name,
       // so the settings screen would say "Apple Health" and never "Apple Watch".
       const { days, deviceName, changed } = await syncRange(queryClient, userId, provider, from, to)
-      await noteSync(userId, id, { deviceName })
-      return { days, changed }
+      const connection = await noteSync(userId, id, { deviceName })
+      return { days, changed, connection }
     },
 
-    onSuccess: ({ changed }) => invalidateAfterSync(queryClient, userId, changed),
+    onSuccess: ({ changed, connection }) => {
+      // The row carries the last sync time, which moves on every pass. It came
+      // back with the write, so it goes into the cache as it is: invalidating
+      // it instead was a request per foreground for a timestamp one settings
+      // screen shows.
+      if (connection) queryClient.setQueryData(keys.healthConnection(userId), connection)
+      invalidateAfterSync(queryClient, userId, changed)
+    },
   })
 }
 

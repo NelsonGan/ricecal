@@ -4,7 +4,7 @@ import type { TablesUpdate } from '@/lib/database.types'
 import type { BodyInput } from '@/lib/nutrition'
 import { ageFrom } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
-import { today, unwrapMaybe, unwrapOne } from './client'
+import { OWN_WRITES_STALE_MS, today, unwrapMaybe, unwrapOne } from './client'
 import { keys } from './keys'
 import { useSession, useUserId } from './session'
 import type { ActivityLevel, Profile, Sex, Units } from './types'
@@ -29,6 +29,7 @@ export function useProfile() {
     queryKey: keys.profile(userId ?? 'anonymous'),
     enabled: Boolean(userId),
     queryFn: () => fetchProfile(userId as string),
+    staleTime: OWN_WRITES_STALE_MS,
   })
 }
 

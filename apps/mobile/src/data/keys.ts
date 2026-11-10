@@ -54,11 +54,8 @@ export const keys = {
 
   day: (userId: string, date: string) => ['day', userId, date] as const,
   /**
-   * Every day of this account.
-   *
-   * The prefix exists for the health sync, the one writer that changes a figure
-   * on a day it cannot name: a watch backfilling Tuesday moves Tuesday's
-   * budget, and the pass that wrote it has a window rather than a date.
+   * Every day of this account, for the one writer that changes a figure on days
+   * it cannot name: a recipe repriced moves every meal logged from it.
    */
   dayAll: (userId: string) => ['day', userId] as const,
   /**
@@ -176,10 +173,14 @@ export const keys = {
   activitySessions: (userId: string, date: string | null) =>
     ['activity', userId, 'sessions', date ?? 'all'] as const,
   /**
-   * The prefix of all of the above, and what the sync invalidates. One pass
-   * moves a day, a chart column, a summary tile and possibly a session list,
-   * and it does not know which range or date is on screen.
+   * Every day's movement, and every session list. What the sync invalidates:
+   * a pass moves a week of days or a list of sessions, and it does not know
+   * which date is on screen. Two prefixes because a phone reads new steps on
+   * most foregrounds and a new workout on few.
    */
+  activityDays: (userId: string) => ['activity', userId, 'day'] as const,
+  activitySessionsAll: (userId: string) => ['activity', userId, 'sessions'] as const,
+  /** The prefix of both. */
   activityAll: (userId: string) => ['activity', userId] as const,
   /** Keyed by session, since it is only asked for by id. */
   activitySession: (id: string) => ['activity-session', id] as const,
@@ -239,17 +240,48 @@ export const keys = {
 
 /**
  * Everything worked out from what was eaten, after a write that changed it: the
- * trend charts on all three ranges, the dots under the week strip, and the
- * activity balance, which reads `daily_nutrition` through `activity_summary`.
- * Without that last one a meal logged today left Activity saying "Not enough
- * logged". The day itself is the caller's, since only it knows which days moved.
+ * trend charts on all three ranges and the dots under the week strip. The day
+ * itself is the caller's, since only it knows which days moved.
+ *
+ * Movement is not on the list. It was, for the Activity tab's balance, which
+ * read what was eaten; that tab is retired, and what is left under `activity`
+ * is the health store's days and sessions, which a meal cannot move. Every
+ * log, edit and delete refetched both for Today.
  */
 export function invalidateEatenTotals(queryClient: QueryClient, userId: string): void {
   queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
   queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-  queryClient.invalidateQueries({ queryKey: keys.activityAll(userId) })
   // Food also moves the lists' "logged today" count.
   invalidateGroupBoards(queryClient, userId, { lists: true })
+}
+
+/**
+ * The social reads the Feed tab keeps mounted behind the diary: its feeds and
+ * the viewer's own profile at their head.
+ */
+const FEED_TAB_READS = new Set(['social_feed', 'social_profile'])
+/** The reads a meal's own post is drawn from on the screens pushed over the tabs. */
+const ENTRY_POST_READS = new Set(['social_profile_posts', 'social_post', 'entry'])
+
+/**
+ * A meal was logged or changed, and its post on the feed, if it has one, with
+ * it. The screens showing that post refetch; the Feed tab's reads are only
+ * marked stale, and the tab refetches them when it is next shown.
+ *
+ * This was every social read: the tab stays mounted once visited, so each meal
+ * logged and each portion changed on Today refetched every loaded page of the
+ * feed behind it, as each workout saved once did.
+ */
+export function invalidateEntryPosts(queryClient: QueryClient, userId: string): Promise<void> {
+  queryClient.invalidateQueries({
+    queryKey: keys.social(userId),
+    predicate: (query) => FEED_TAB_READS.has(String(query.queryKey[2])),
+    refetchType: 'none',
+  })
+  return queryClient.invalidateQueries({
+    queryKey: keys.social(userId),
+    predicate: (query) => ENTRY_POST_READS.has(String(query.queryKey[2])),
+  })
 }
 
 /**

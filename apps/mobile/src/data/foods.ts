@@ -5,10 +5,10 @@ import { lookupPacket } from './barcodes'
 import { catalogueGet } from './catalogue'
 import { unwrap } from './client'
 import { keys } from './keys'
-import { type FoodStats, toEntry, toFood } from './mappers'
+import { ENTRY_COLUMNS, type EntryRow, type FoodStats, toEntry, toFood } from './mappers'
 import { useUserId } from './session'
 import { packetCode } from './snapshot'
-import type { Entry, Food, FoodDetailsRow, FoodLogRow } from './types'
+import type { Entry, Food, FoodDetailsRow } from './types'
 
 /**
  * The catalogue, which is no longer in this database. The row shape is unchanged
@@ -171,11 +171,12 @@ export function useRecentFoods() {
       const rows = unwrap(
         await supabase
           .from('food_log_details')
-          .select('*')
+          .select(ENTRY_COLUMNS)
           .eq('user_id', userId)
           .order('logged_at', { ascending: false })
-          .limit(HISTORY_ROWS),
-      ) as FoodLogRow[]
+          .limit(HISTORY_ROWS)
+          .overrideTypes<EntryRow[], { merge: false }>(),
+      )
 
       return foldToDishes(rows.map(toEntry), KEPT)
     },

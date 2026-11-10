@@ -109,10 +109,15 @@ export function useRecipeQuota(): RecipeQuota {
       if (error) throw error
       return rows ?? 0
     },
+    // Only an account with a cap is counted against it. The log sheet asks
+    // this on every open, and for Pro it was a request whose answer nothing
+    // reads.
+    enabled: !entitlementLoading && !entitled,
   })
 
   const owned = count.data ?? 0
-  const loading = count.isPending || entitlementLoading
+  // A disabled query stays pending for ever, so Pro is not waiting on it.
+  const loading = entitlementLoading || (!entitled && count.isPending)
 
   return {
     count: owned,

@@ -52,6 +52,18 @@ export function unwrapOne<T>(result: PostgrestSingleResponse<T>): NonNullable<T>
   return result.data as NonNullable<T>
 }
 
+/**
+ * How long a row stays fresh when every write to it goes through a mutation
+ * here that updates or invalidates the cache itself: the profile, the settings,
+ * the meal times, the targets, the weigh-ins and the health connection.
+ *
+ * The default thirty seconds refetched all six on every return to the app and
+ * again whenever a screen reading one was opened, for an answer that could
+ * only differ if another device had changed it. That case now waits up to this
+ * long; a write on this phone is seen at once, as before.
+ */
+export const OWN_WRITES_STALE_MS = 5 * 60_000
+
 /** `yyyy-MM-dd` for a date, in local time. `toISOString` shifts the day east of UTC. */
 export function dateKey(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')

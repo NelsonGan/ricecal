@@ -182,17 +182,45 @@ it('folds the repeated hour of a daylight-saving night into one row', async () =
   ])
 })
 
-it('says whether a pass read anything the last one did not', async () => {
+it('says which parts of a pass read anything the last one did not', async () => {
   const read = jest.fn().mockResolvedValue(measured('2026-10-02'))
   const pass = () =>
     syncRange(new QueryClient(), 'account-b', { ...demoHealth, read }, '2026-10-01', '2026-10-03')
-  expect((await pass()).changed).toBe(true)
+  // A first pass has nothing to compare with, so everything is new.
+  expect((await pass()).changed).toEqual({ movement: true, workouts: true, weights: true })
   // Still written: a late edit has to land even when nothing on screen moves.
   supabase.rpc.mockClear()
-  expect((await pass()).changed).toBe(false)
+  expect((await pass()).changed).toEqual({ movement: false, workouts: false, weights: false })
   expect(supabase.rpc).toHaveBeenCalledWith('replace_activity_hours', expect.anything())
+  // A different day's movement is movement alone: the weigh-ins and the
+  // workouts read as they did, so nothing they feed is refetched.
   read.mockResolvedValue(measured('2026-10-03'))
-  expect((await pass()).changed).toBe(true)
+  expect((await pass()).changed).toEqual({ movement: true, workouts: false, weights: false })
+  read.mockResolvedValue({
+    ...measured('2026-10-03'),
+    weights: [{ date: '2026-10-03', kg: 71.4, bodyFatPct: null }],
+  })
+  expect((await pass()).changed).toEqual({ movement: false, workouts: false, weights: true })
+})
+
+it('writes the four tables together, and a failure in one does not skip the others', async () => {
+  const read = jest.fn().mockResolvedValue({
+    ...measured('2026-10-02'),
+    weights: [{ date: '2026-10-02', kg: 71.4, bodyFatPct: null }],
+  })
+  // The hours are refused. In turn, the weigh-ins behind them were never sent.
+  supabase.rpc.mockImplementation(async (name: string) =>
+    name === 'replace_activity_hours'
+      ? { data: null, error: new Error('hours refused') }
+      : { data: 1, error: null },
+  )
+  const pass = () =>
+    syncRange(new QueryClient(), 'account-d', { ...demoHealth, read }, '2026-10-01', '2026-10-03')
+  await expect(pass()).rejects.toThrow('hours refused')
+  expect(supabase.rpc).toHaveBeenCalledWith('sync_weight_readings', expect.anything())
+  // And the pass still counts as not landed, so the next one sends it all again.
+  supabase.rpc.mockResolvedValue({ data: 1, error: null })
+  expect((await pass()).changed).toEqual({ movement: true, workouts: true, weights: true })
 })
 
 it('syncs without the person when their profile cannot be read', async () => {
