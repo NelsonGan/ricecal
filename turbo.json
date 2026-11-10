@@ -23,9 +23,9 @@
     // with, the same one the edge functions read them with.
     "POSTHOG_PROMPTS_API_KEY"
   ],
-  // Not in Turbo's own hash, and both change what a task sees: the workspace
-  // file sets how Babel's plugins are hoisted, the other the Node that runs it.
-  "globalDependencies": ["pnpm-workspace.yaml", ".node-version"],
+  // Not in Turbo's own hash, and it changes what a task sees: it sets how
+  // Babel's plugins are hoisted.
+  "globalDependencies": ["pnpm-workspace.yaml"],
   "tasks": {
     "typecheck": {
       "dependsOn": ["^typecheck"]

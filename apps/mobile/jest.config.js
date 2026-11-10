@@ -37,11 +37,16 @@ module.exports = {
   // `maxWorkers: 1` whenever Turbo is the caller (`TURBO_HASH`), so that a
   // monorepo of many jest packages does not start a worker pool in each. This
   // repo has one jest package, so under `pnpm check` that meant every suite on
-  // one core, in the main process. It also meant a hang: with no workers to
-  // kill, the timers tests leave behind (react-query keeps an unused query for
-  // five minutes) held jest open after the last suite. CI spent 5m25s on a
-  // 2m09s run. With workers, jest ends them and exits.
-  maxWorkers: '75%',
+  // one core, in the main process, and then a five minute wait on the timers
+  // the tests had left behind (see the end of jest.setup.js). CI spent 5m25s
+  // on a 2m09s run.
+  //
+  // Three of a runner's four cores in CI, where the tests are what the job is
+  // waiting for. Half the cores anywhere else: `pnpm check` runs the
+  // typechecks beside this, usually with a simulator and Metro running too,
+  // and on this project a machine short of memory fails tests on their
+  // timeouts rather than slowing down.
+  maxWorkers: process.env.CI ? '75%' : '50%',
   // Inside node_modules so it is ignored everywhere already, and at a fixed
   // path so CI can keep it between runs (`deploy.yml`). Jest keys each entry on
   // the file's content, so a kept cache cannot replay a stale transform.

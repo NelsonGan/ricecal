@@ -107,14 +107,9 @@ jobs:
         working-directory: apps/supabase/functions
     steps:
       - uses: actions/checkout@v4
-      # `cache` keeps the modules the functions import between runs. Its name
-      # normally comes from `deno.lock`, and the functions have none on purpose
-      # (see `--no-lock` below), so it is named after the import maps instead.
       - uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2
         with:
           deno-version: v2.x
-          cache: true
-          cache-hash: ${{ hashFiles('apps/supabase/functions/**/deno.json') }}
 
       # One entrypoint per function, each with its own import map — which is
       # what teaches Deno that `@supabase/supabase-js` is a dependency rather

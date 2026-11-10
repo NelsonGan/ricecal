@@ -196,3 +196,23 @@ jest.mock('react-native-mmkv', () => {
 jest.mock('react-native-keyboard-controller', () =>
   require('react-native-keyboard-controller/jest'),
 )
+
+// react-query starts a timer for every query it builds, to collect it once
+// nothing has used it for `gcTime` (five minutes unless a client says
+// otherwise). A test that seeds a client with `setQueryData` and ends leaves
+// that timer running, and a pending timer keeps Node alive: with the suites
+// in one process (`jest -i`, or one file) jest printed "did not exit" and sat
+// there for the five minutes. `unref` tells Node not to wait for a timer. It
+// still fires if the process is running for some other reason, so no test sees
+// a difference. The globals are looked up on each call, so fake timers work.
+const { timeoutManager } = require('@tanstack/react-query')
+const unwaited = (timer) => {
+  timer?.unref?.()
+  return timer
+}
+timeoutManager.setTimeoutProvider({
+  setTimeout: (callback, delay) => unwaited(setTimeout(callback, delay)),
+  clearTimeout: (timer) => clearTimeout(timer),
+  setInterval: (callback, delay) => unwaited(setInterval(callback, delay)),
+  clearInterval: (timer) => clearInterval(timer),
+})

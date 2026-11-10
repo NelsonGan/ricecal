@@ -101,33 +101,39 @@ jobs:
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
       # `cache-dependency-path` is what names the pnpm store cache, and every
       # job that installs the whole workspace names it the same way: the
-      # lockfile and the root manifest. The jobs that install one package
-      # (`web.yml`, `app-studio.yml`, `cloudflare.yml`) add that package's
-      # manifest, so theirs is a different cache. They all used to share one
-      # name, and a cache is written once: whichever job finished first on a
-      # new lockfile saved its store, usually a 285 MB filtered one, and this
-      # job then downloaded the other thousand packages on every run.
+      # lockfile and the workspace file. The jobs that install one package
+      # (`web.yml`, `app-studio.yml`, `cloudflare.yml`) name theirs after the
+      # lockfile and that package's manifest, so it is a different cache. They
+      # all used to share one name, and a cache is written once: whichever job
+      # finished first on a new lockfile saved its store, usually a 285 MB
+      # filtered one, and this job then downloaded the other thousand packages
+      # on every run. The workspace file rather than the root manifest, which
+      # is mostly scripts and would rename the cache for each one added.
       - uses: actions/setup-node@v4
+        id: node
         with:
           node-version: 24
           cache: pnpm
           cache-dependency-path: |
             pnpm-lock.yaml
-            package.json
+            pnpm-workspace.yaml
       - run: pnpm install --frozen-lockfile
 
       # Turbo's record of the tasks that already passed, so a package this
       # commit did not touch replays its typecheck and tests instead of running
       # them. A new name per commit, because a cache is never rewritten, with
-      # the newest earlier one restored first. It is only as right as the
-      # inputs in `turbo.json`: see the note on `test` there before adding a
-      # task that reads outside its own package.
+      # the newest earlier one restored first. The exact Node version is in the
+      # name because it is not in Turbo's hash: `node-version: 24` moves with
+      # the runner image, and a pass recorded under one Node says nothing about
+      # the next. It is only as right as the inputs in `turbo.json`: see the
+      # note on `test` there before adding a task that reads outside its own
+      # package.
       - name: Restore the Turbo cache
         uses: actions/cache@v4
         with:
           path: .turbo/cache
-          key: turbo-${{ runner.os }}-${{ github.sha }}
-          restore-keys: turbo-${{ runner.os }}-
+          key: turbo-${{ runner.os }}-node-${{ steps.node.outputs.node-version }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-node-${{ steps.node.outputs.node-version }}-
 
       # Jest's transform cache (`cacheDirectory` in jest.config.js). Most of it
       # is React Native and Expo compiled by Babel, which is most of a cold run.
@@ -143,7 +149,15 @@ jobs:
       # already turbo typecheck + test followed by a root Biome pass. Lint is a
       # root-level pass rather than a turbo task so it also covers
       # apps/supabase/functions, which is not a workspace package.
+      #
+      # Only a pull request replays cached tasks. On main this job is the last
+      # thing between a commit and both stores, so `TURBO_FORCE` runs every
+      # task there for real, and still writes the results pull requests replay.
+      # A pull request that went green on a replay it should not have had is
+      # then caught here, before anything is built.
       - run: pnpm check
+        env:
+          TURBO_FORCE: ${{ github.event_name != 'pull_request' }}
 
       # Every run adds its entries to the ones it restored, so drop what no run
       # has written for two weeks before the cache is saved again.
@@ -157,14 +171,18 @@ jobs:
 
   # `pnpm check` never runs Metro, so without this a PR that breaks the bundle
   # (an import or asset only Metro resolves, or the `platforms` trap in the
-  # README) would first fail in the store build after merge. PRs only: on main
-  # the store build bundles right after Test anyway.
+  # README) would first fail in the store build after merge.
   #
   # Its own job, beside Test rather than after it. It was the last step of
   # Test, where it added its minute and a half to every pull request's wait.
+  #
+  # It runs on main too, where nothing waits on it and the store build bundles
+  # anyway, for the cache: a pull request can read a cache saved on main but
+  # not one saved by another pull request, so a Metro cache only pull requests
+  # wrote would be cold on every new one.
   bundle:
     name: Bundle
-    if: github.event_name == 'pull_request'
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -183,7 +201,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: |
             pnpm-lock.yaml
-            package.json
+            pnpm-workspace.yaml
       - run: pnpm install --frozen-lockfile
 
       # Metro keys a transform on the file's content and the transformer's
@@ -334,7 +352,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: |
             pnpm-lock.yaml
-            package.json
+            pnpm-workspace.yaml
 
       - name: Set up Java
         if: matrix.platform == 'android'
@@ -353,37 +371,44 @@ jobs:
           eas-version: 27.5.0
           token: ${{ secrets.EXPO_TOKEN }}
 
-      # The two caches below are named after the app's manifest, and nothing
-      # under `ios/` or `android/`. Those folders are prebuild output: they are
-      # not in the repository, and `eas build --local` prebuilds in a temp
-      # directory, so they are never in this checkout either. The caches that
-      # were here hashed files in them and got the empty string back. Gradle's
-      # was therefore named `Linux-gradle-` for good, saved once in August 2026
-      # and restored unchanged ever since (2.2 GB and 44 seconds a build, of
+      # The two caches below are named after the lockfile, and nothing under
+      # `ios/` or `android/`. Those folders are prebuild output: they are not in
+      # the repository, and `eas build --local` prebuilds in a temp directory,
+      # so they are never in this checkout either. The caches that were here
+      # hashed files in them and got the empty string back. Gradle's was
+      # therefore named `Linux-gradle-` for good, saved once in August 2026 and
+      # restored unchanged ever since (2.2 GB and 44 seconds a build, of
       # dependencies the app had long moved past). CocoaPods' pointed at
       # `ios/Pods`, which never existed, so it saved nothing at all.
       #
       # No `restore-keys` on either. Neither tool deletes what it has cached, so
-      # a cache carried from one dependency set to the next only grows; a change
-      # to the manifest costs one cold build and starts a clean one instead.
+      # a cache carried from one lockfile to the next only grows; a new lockfile
+      # costs one cold build and starts a clean one instead.
+      #
+      # Restored here and saved straight after the build rather than by one
+      # step's post-run, for the reason given at the React Native artifacts
+      # below: a cache saved at the end of a job is not saved when the submit
+      # fails, and the retry would then download everything again.
 
       # What `pod install` downloads: every pod's source, Hermes included. It
       # checks each entry against the pod's version and checksum before using it.
-      - name: Cache CocoaPods downloads
+      - name: Restore CocoaPods downloads
         if: matrix.platform == 'ios'
-        uses: actions/cache@v4
+        id: pods-cache
+        uses: actions/cache/restore@v4
         with:
           path: ~/Library/Caches/CocoaPods
-          key: ${{ runner.os }}-cocoapods-${{ hashFiles('apps/mobile/package.json') }}
+          key: ${{ runner.os }}-cocoapods-${{ hashFiles('pnpm-lock.yaml') }}
 
-      - name: Cache Gradle
+      - name: Restore Gradle
         if: matrix.platform == 'android'
-        uses: actions/cache@v4
+        id: gradle-cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/mobile/package.json') }}
+          key: ${{ runner.os }}-gradle-${{ hashFiles('pnpm-lock.yaml') }}
 
       - run: pnpm install --frozen-lockfile
 
@@ -471,6 +496,24 @@ jobs:
             --local \
             --non-interactive \
             --output=${{ steps.output.outputs.file }}
+
+      - name: Save CocoaPods downloads
+        if: matrix.platform == 'ios' && steps.pods-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ~/Library/Caches/CocoaPods
+          key: ${{ steps.pods-cache.outputs.cache-primary-key }}
+
+      - name: Save Gradle
+        if: matrix.platform == 'android' && steps.gradle-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ steps.gradle-cache.outputs.cache-primary-key }}
 
       # A failed archive prints "Refer to Xcode Logs below" and then does not
       # include them: what the job log carries is xcpretty's summary, one line
@@ -573,7 +616,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: |
             pnpm-lock.yaml
-            package.json
+            pnpm-workspace.yaml
       - run: pnpm install --frozen-lockfile
 
       - name: Set up EAS CLI

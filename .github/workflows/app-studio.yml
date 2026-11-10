@@ -61,15 +61,9 @@ jobs:
             apps/app-studio/package.json
 
       # The Search creative tests encode and decode real video.
-      #
-      # The runner image already carries package lists, so the install is tried
-      # with those first and `apt-get update` only runs if they have gone stale
-      # (a package version the mirror no longer has).
       - name: Install ffmpeg
         working-directory: .
-        run: |
-          install() { sudo apt-get install -y -qq --no-install-recommends ffmpeg > /dev/null; }
-          install || { sudo apt-get update -qq && install; }
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg > /dev/null
 
       - name: Install dependencies
         working-directory: .
