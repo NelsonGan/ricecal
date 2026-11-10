@@ -394,6 +394,16 @@ the diary itself. One return to the app was 29 requests, and 16 after these:
   neighbouring week so a swipe has its dots, and that page asks once and then
   only goes stale (`useDayMarks` with `onScreen: false`). Subscribed, it
   doubled every refetch of the dots.
+- **A tab behind another reads nothing.** With all five tabs visited, a return
+  to the app on Today also refetched the Trends charts and every loaded page
+  of the feed: nine more requests and 27 KB nobody was looking at. Trends is
+  wrapped in `ReadsWhileShown` (`data/while-shown.tsx`), which unsubscribes
+  every query under it while the tab is hidden or covered, so a meal or a
+  glass of water marks the charts stale instead of redrawing them unseen, and
+  they refetch when the tab is shown. The feed cannot use it, because its
+  reads are collected a minute after their last subscriber leaves, so
+  `useSocialFeed` turns off its own refetch on focus while its tab is hidden
+  and the tab refetches a stale feed when it is shown.
 
 The health sync is the other half, in [Syncing](#syncing): it invalidates by
 the part of a reading that changed.
@@ -3863,7 +3873,9 @@ the signer a HEAD on R2. The viewer's own photos are signed as their own.
 ## The diary screen
 
 A week strip above the ring, Monday to Sunday, paged back a year, one page per
-calendar week, each fetching only its own seven days. Picking a day moves
+calendar week, each fetching only its own seven days. Only the page showing
+keeps its dots current; the one rendered beside it for the swipe asks once and
+catches up when it is swiped to. Picking a day moves
 `selectedDate` (`data/selected-date.tsx`, the one piece of genuinely
 client-owned state) and everything below follows it: the ring, the water, the
 entry list, and anything logged while it is selected.
@@ -3956,6 +3968,12 @@ people drum on, and a read here plus a write here loses one of two taps that
 overlap. A negative amount is the undo, which is also why the total is clamped at
 both ends rather than checked: somebody pressing undo has already made their only
 mistake.
+
+The tank moves before the request leaves, and the total a tap comes back with
+is written over it, so a drink costs one request. It refetched the whole day,
+meals and all, to learn that number. Taps that overlapped are the exception:
+their answers can arrive out of order, so the last one to land asks for the day
+instead of trusting its own total (`useAddWater`).
 
 **Millilitres where a figure is chosen, litres where one is summarised.** The card
 on Today, the quick-add sheet and the goal stepper are all ml; a trend tile, a

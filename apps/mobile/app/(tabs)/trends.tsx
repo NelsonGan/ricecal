@@ -1,8 +1,9 @@
-import { router } from 'expo-router'
+import { router, useIsFocused } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { TREND_RANGES, type TrendRange, useSettings, useTrendSeries, useTrendSummary } from '@/data'
+import { ReadsWhileShown } from '@/data/while-shown'
 import { useRequirePro } from '@/features/paywall'
 import { IntakeCard, problemOf, WaterCard, WeightCard, WorkoutsCard } from '@/features/progress'
 import { ScreenTitle } from '@/features/shared'
@@ -25,8 +26,19 @@ import { Aside, Card, Icon, ListRow, Screen, SegmentedControl } from '@/ui'
  * The diary's two queries live here rather than in the cards, so the calorie,
  * weight and water cards never disagree about a range. Workouts read their own
  * (see `WorkoutsCard`).
+ *
+ * None of it reads while the tab is hidden, or while a page is open over it:
+ * see `ReadsWhileShown`. The charts catch up when the tab is next shown.
  */
 export default function TrendsScreen() {
+  return (
+    <ReadsWhileShown shown={useIsFocused()}>
+      <Trends />
+    </ReadsWhileShown>
+  )
+}
+
+function Trends() {
   const { t } = useTranslation(['progress', 'common', 'reviews'])
 
   const [range, setRange] = useState<TrendRange>('7d')

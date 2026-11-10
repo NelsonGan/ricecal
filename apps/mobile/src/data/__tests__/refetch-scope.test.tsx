@@ -1,4 +1,10 @@
-import { QueryClient, QueryClientProvider, QueryObserver } from '@tanstack/react-query'
+import {
+  focusManager,
+  QueryClient,
+  QueryClientProvider,
+  QueryObserver,
+  useQuery,
+} from '@tanstack/react-query'
 import { act, renderHook } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 
@@ -7,7 +13,9 @@ import { useAddWater, useDayMarks } from '../day'
 import { invalidateAfterSync, readingFingerprints } from '../health-sync'
 import { invalidateEatenTotals, invalidateEntryPosts, keys } from '../keys'
 import { useRecipeQuota } from '../recipes'
+import { useSocialFeed } from '../social'
 import type { DayLog } from '../types'
+import { ReadsWhileShown } from '../while-shown'
 
 /**
  * What a write refetches, and what it leaves alone.
@@ -377,5 +385,131 @@ describe('the recipe count', () => {
     expect(mockCount).not.toHaveBeenCalled()
     expect(result.current).toMatchObject({ limit: null, loading: false, atLimit: false })
     await unmount()
+  })
+})
+
+describe('a tab that is mounted but not showing', () => {
+  /** The app going to the back and coming to the front again. */
+  const returnToApp = async () => {
+    await act(async () => {
+      focusManager.setFocused(false)
+      focusManager.setFocused(true)
+    })
+    await settle()
+  }
+
+  afterEach(() => focusManager.setFocused(undefined))
+
+  function trends(client: QueryClient, shown: boolean) {
+    const fetches = { count: 0 }
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>
+        <ReadsWhileShown shown={shown}>{children}</ReadsWhileShown>
+      </QueryClientProvider>
+    )
+    const useChart = () =>
+      useQuery({
+        queryKey: keys.trendSummary(USER, '7d'),
+        queryFn: async () => {
+          fetches.count += 1
+          return `answer ${fetches.count}`
+        },
+        // Always stale, so any refetch that is allowed to happen does.
+        staleTime: 0,
+      })
+    return { fetches, wrapper, useChart }
+  }
+
+  it('reads nothing while hidden: not on a write, not on a return to the app', async () => {
+    const { client } = setup()
+    client.setQueryData(keys.trendSummary(USER, '7d'), 'cached')
+    const { fetches, wrapper, useChart } = trends(client, false)
+
+    const { result, unmount } = await renderHook(useChart, { wrapper })
+    await settle()
+    // What is cached is still drawn.
+    expect(result.current.data).toBe('cached')
+
+    invalidateEatenTotals(client, USER)
+    await settle()
+    await returnToApp()
+
+    expect(fetches.count).toBe(0)
+    await unmount()
+  })
+
+  it('catches up when it is shown again', async () => {
+    const { client } = setup()
+    client.setQueryData(keys.trendSummary(USER, '7d'), 'cached')
+    let shown = false
+    const fetches = { count: 0 }
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>
+        <ReadsWhileShown shown={shown}>{children}</ReadsWhileShown>
+      </QueryClientProvider>
+    )
+    const { result, rerender, unmount } = await renderHook(
+      () =>
+        useQuery({
+          queryKey: keys.trendSummary(USER, '7d'),
+          queryFn: async () => {
+            fetches.count += 1
+            return 'fresh'
+          },
+        }),
+      { wrapper },
+    )
+    invalidateEatenTotals(client, USER)
+    await settle()
+    expect(fetches.count).toBe(0)
+
+    shown = true
+    await rerender(undefined)
+    await settle()
+
+    expect(fetches.count).toBe(1)
+    expect(result.current.data).toBe('fresh')
+    await unmount()
+  })
+
+  it('reads as usual while it is the one showing', async () => {
+    const { client } = setup()
+    client.setQueryData(keys.trendSummary(USER, '7d'), 'cached')
+    const { fetches, wrapper, useChart } = trends(client, true)
+
+    const { unmount } = await renderHook(useChart, { wrapper })
+    await settle()
+    const mounted = fetches.count
+    await returnToApp()
+
+    expect(fetches.count).toBe(mounted + 1)
+    await unmount()
+  })
+
+  it('does not reload the feed behind another tab on a return to the app', async () => {
+    const { client, wrapper } = setup()
+    // `abortSignal` is how the social reads send theirs.
+    mockRpc.mockImplementation(() => ({
+      abortSignal: async () => ({ data: [], error: null }),
+    }))
+
+    const hidden = await renderHook(() => useSocialFeed('following', 'all', false), { wrapper })
+    await settle()
+    const first = mockRpc.mock.calls.length
+    expect(first).toBe(1)
+
+    // Stale by the time the app comes back.
+    client.invalidateQueries({ queryKey: keys.social(USER), refetchType: 'none' })
+    await returnToApp()
+    expect(mockRpc.mock.calls.length).toBe(first)
+    await hidden.unmount()
+
+    const showing = await renderHook(() => useSocialFeed('following', 'all', true), { wrapper })
+    await settle()
+    const mounted = mockRpc.mock.calls.length
+    client.invalidateQueries({ queryKey: keys.social(USER), refetchType: 'none' })
+    await returnToApp()
+    expect(mockRpc.mock.calls.length).toBe(mounted + 1)
+    await showing.unmount()
   })
 })

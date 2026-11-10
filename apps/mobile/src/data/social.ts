@@ -192,7 +192,11 @@ export function useSocialOnline() {
   return useSyncExternalStore(subscribeOnline, onlineSnapshot, onlineSnapshot)
 }
 
-function useSocialPages<T>(request: ListRequest, cursor: (row: T) => SocialCursor, enabled = true) {
+function useSocialPages<T>(
+  request: ListRequest,
+  cursor: (row: T) => SocialCursor,
+  { enabled = true, shown = true }: { enabled?: boolean; shown?: boolean } = {},
+) {
   const { name, params } = request
   const userId = useUserId()
   const client = useQueryClient()
@@ -220,6 +224,11 @@ function useSocialPages<T>(request: ListRequest, cursor: (row: T) => SocialCurso
     maxPages: 5,
     ...MEMORY_OPTIONS,
     enabled,
+    // A list behind another tab is not refetched because the app came back
+    // to the front: the Feed tab stays mounted, and every return to the app
+    // on Today reloaded every page it held. Its screen refetches a stale list
+    // when it is shown.
+    refetchOnWindowFocus: shown,
   })
   return {
     ...query,
@@ -254,10 +263,16 @@ export const socialFeedParams = (mode: 'following' | 'discover', show: SocialFee
   p_mode: mode,
   p_kinds: show === 'all' ? ALL_KINDS : [show],
 })
-export const useSocialFeed = (mode: 'following' | 'discover', show: SocialFeedShow = 'all') =>
+/** `shown` is whether the feed's screen is the one in front. See `useSocialPages`. */
+export const useSocialFeed = (
+  mode: 'following' | 'discover',
+  show: SocialFeedShow = 'all',
+  shown = true,
+) =>
   useSocialPages<SocialPost>(
     { name: 'social_feed', params: socialFeedParams(mode, show) },
     timeCursor,
+    { shown },
   )
 /** One profile's posts, meals and workouts together, newest first. */
 export const useSocialPosts = (userId: string) =>
@@ -283,7 +298,7 @@ export const useSocialSearch = (query: string) =>
   useSocialPages<SocialProfile>(
     { name: 'social_search_profiles', params: { p_query: query } },
     (row) => ({ handle: row.handle }),
-    query.trim().length > 0,
+    { enabled: query.trim().length > 0 },
   )
 
 export function useSocialProfile(profileId?: string) {
