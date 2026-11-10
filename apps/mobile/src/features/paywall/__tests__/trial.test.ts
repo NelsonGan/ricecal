@@ -9,8 +9,12 @@ it('translates day and month trial periods without a seven-day assumption', () =
   expect(trialDurationText(t, { unit: 'month', count: 1 })).toBe('1 month')
 })
 
-it('provides each store period in every bundled language', () => {
+it('provides each store period in every bundled language', async () => {
+  // A bundle is loaded when its language is asked for. Unloaded, `getFixedT`
+  // would answer every one of these in English and prove nothing.
+  await i18n.loadLanguages(SUPPORTED_LANGUAGES)
   for (const language of SUPPORTED_LANGUAGES) {
+    expect(i18n.hasResourceBundle(language, 'paywall')).toBe(true)
     const t = i18n.getFixedT(language, 'paywall')
     for (const unit of ['day', 'week', 'month', 'year'] as const) {
       const phrase = trialDurationText(t, { unit, count: 2 })

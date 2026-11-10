@@ -1,16 +1,5 @@
 import type { Locale } from 'date-fns'
-import { bn } from 'date-fns/locale/bn'
 import { enGB } from 'date-fns/locale/en-GB'
-import { hi } from 'date-fns/locale/hi'
-import { id } from 'date-fns/locale/id'
-import { ja } from 'date-fns/locale/ja'
-import { ko } from 'date-fns/locale/ko'
-import { ms } from 'date-fns/locale/ms'
-import { ta } from 'date-fns/locale/ta'
-import { th } from 'date-fns/locale/th'
-import { vi } from 'date-fns/locale/vi'
-import { zhCN } from 'date-fns/locale/zh-CN'
-import { zhTW } from 'date-fns/locale/zh-TW'
 import { getLocales } from 'expo-localization'
 
 import type { TextScript } from '@/ui'
@@ -41,29 +30,59 @@ import type { TextScript } from '@/ui'
  * it is for.
  */
 export const LANGUAGES = [
-  { code: 'en', label: 'English', script: 'latin', dateFns: enGB },
-  { code: 'zh-Hans', label: '简体中文', script: 'cjk', dateFns: zhCN },
-  { code: 'zh-Hant', label: '繁體中文', script: 'cjk', dateFns: zhTW },
-  { code: 'ms', label: 'Bahasa Melayu', script: 'latin', dateFns: ms },
-  { code: 'id', label: 'Bahasa Indonesia', script: 'latin', dateFns: id },
-  { code: 'th', label: 'ไทย', script: 'tall', dateFns: th },
-  { code: 'vi', label: 'Tiếng Việt', script: 'latin', dateFns: vi },
+  { code: 'en', label: 'English', script: 'latin', dateFns: () => enGB },
+  {
+    code: 'zh-Hans',
+    label: '简体中文',
+    script: 'cjk',
+    dateFns: () => require('date-fns/locale/zh-CN').zhCN,
+  },
+  {
+    code: 'zh-Hant',
+    label: '繁體中文',
+    script: 'cjk',
+    dateFns: () => require('date-fns/locale/zh-TW').zhTW,
+  },
+  {
+    code: 'ms',
+    label: 'Bahasa Melayu',
+    script: 'latin',
+    dateFns: () => require('date-fns/locale/ms').ms,
+  },
+  {
+    code: 'id',
+    label: 'Bahasa Indonesia',
+    script: 'latin',
+    dateFns: () => require('date-fns/locale/id').id,
+  },
+  { code: 'th', label: 'ไทย', script: 'tall', dateFns: () => require('date-fns/locale/th').th },
+  {
+    code: 'vi',
+    label: 'Tiếng Việt',
+    script: 'latin',
+    dateFns: () => require('date-fns/locale/vi').vi,
+  },
   // date-fns ships no Filipino locale, so dates in a Filipino interface are
   // formatted in English. Every word around them is translated; a month name is
   // the one thing this bundle cannot reach, and an English "October" beside
   // Filipino copy is a smaller fault than no Filipino at all.
-  { code: 'fil', label: 'Filipino', script: 'latin', dateFns: enGB },
-  { code: 'ja', label: '日本語', script: 'cjk', dateFns: ja },
-  { code: 'ko', label: '한국어', script: 'cjk', dateFns: ko },
-  { code: 'hi', label: 'हिन्दी', script: 'tall', dateFns: hi },
-  { code: 'ta', label: 'தமிழ்', script: 'tall', dateFns: ta },
-  { code: 'bn', label: 'বাংলা', script: 'tall', dateFns: bn },
+  { code: 'fil', label: 'Filipino', script: 'latin', dateFns: () => enGB },
+  { code: 'ja', label: '日本語', script: 'cjk', dateFns: () => require('date-fns/locale/ja').ja },
+  { code: 'ko', label: '한국어', script: 'cjk', dateFns: () => require('date-fns/locale/ko').ko },
+  { code: 'hi', label: 'हिन्दी', script: 'tall', dateFns: () => require('date-fns/locale/hi').hi },
+  { code: 'ta', label: 'தமிழ்', script: 'tall', dateFns: () => require('date-fns/locale/ta').ta },
+  { code: 'bn', label: 'বাংলা', script: 'tall', dateFns: () => require('date-fns/locale/bn').bn },
 ] as const satisfies readonly {
   code: string
   label: string
   /** How much vertical room a line of it needs. See `src/ui/TextScript.tsx`. */
   script: TextScript
-  dateFns: Locale
+  /**
+   * The date-fns locale, loaded when it is asked for. Only the active
+   * language's is: as thirteen imports, every launch evaluated twelve tables of
+   * month and weekday names it would not print.
+   */
+  dateFns: () => Locale
 }[]
 
 export type Language = (typeof LANGUAGES)[number]['code']
@@ -83,7 +102,7 @@ export function scriptFor(language: Language): TextScript {
 
 /** The date-fns locale that goes with a language. See `applyDateLocale`. */
 export function dateLocaleFor(language: Language): Locale {
-  return LANGUAGES.find((entry) => entry.code === language)?.dateFns ?? enGB
+  return LANGUAGES.find((entry) => entry.code === language)?.dateFns() ?? enGB
 }
 
 /**

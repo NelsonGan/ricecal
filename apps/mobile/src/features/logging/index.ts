@@ -32,7 +32,7 @@ export { PlateEditor, type PlateEditorProps } from './PlateEditor'
 export { type PartEdits, partChanges, stagedParts } from './parts'
 export { QuickAction, type QuickActionProps } from './QuickAction'
 export { ScannedPacket, type ScannedPacketProps } from './ScannedPacket'
-export { TANK_HEIGHT, TankFigure, type TankFigureProps, TankLabel } from './TankFigure'
+export { TankFigure, type TankFigureProps } from './TankFigure'
 export { WaterCard, type WaterCardProps } from './WaterCard'
 export { WeekPicker } from './WeekPicker'
 export {

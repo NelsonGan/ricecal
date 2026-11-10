@@ -29,25 +29,25 @@ export const SOCIAL_PLATFORMS: readonly SocialPlatform[] = [
   {
     key: 'instagram',
     label: 'Instagram',
-    logo: require('../../../assets/brand/social/instagram.png'),
+    logo: require('../../../assets/brands/social/instagram.png'),
     urls: ['instagram://app', 'https://www.instagram.com'],
   },
   {
     key: 'tiktok',
     label: 'TikTok',
-    logo: require('../../../assets/brand/social/tiktok.jpg'),
+    logo: require('../../../assets/brands/social/tiktok.jpg'),
     urls: ['snssdk1128://', 'https://www.tiktok.com'],
   },
   {
     key: 'xiaohongshu',
     label: '小红书',
-    logo: require('../../../assets/brand/social/xiaohongshu.png'),
+    logo: require('../../../assets/brands/social/xiaohongshu.png'),
     urls: ['xhsdiscover://home', 'https://www.xiaohongshu.com'],
   },
   {
     key: 'facebook',
     label: 'Facebook',
-    logo: require('../../../assets/brand/social/facebook.png'),
+    logo: require('../../../assets/brands/social/facebook.png'),
     urls: ['fb://', 'https://www.facebook.com'],
   },
   {
@@ -55,13 +55,13 @@ export const SOCIAL_PLATFORMS: readonly SocialPlatform[] = [
     label: 'Threads',
     // "barcelona" is the Threads app's own scheme, from when it was a project
     // name rather than a product.
-    logo: require('../../../assets/brand/social/threads.jpg'),
+    logo: require('../../../assets/brands/social/threads.jpg'),
     urls: ['barcelona://', 'https://www.threads.com'],
   },
   {
     key: 'x',
     label: 'X',
-    logo: require('../../../assets/brand/social/x.jpg'),
+    logo: require('../../../assets/brands/social/x.jpg'),
     // The site's front door, not `/compose/post`: a composer is a login wall to
     // anybody not signed in on the web, and the last rung of every ladder here
     // is the one that has to work for everybody.

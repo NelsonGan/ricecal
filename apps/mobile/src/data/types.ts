@@ -23,8 +23,6 @@ export type IconSet = Enums<'icon_set'>
 export type SubscriptionStatus = Enums<'subscription_status'>
 export type Plan = Enums<'subscription_plan'>
 
-export const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack']
-
 /**
  * The two enums whose spelling differs across the wire. Both spellings are
  * load-bearing: the i18n bundle keys off `onFeet` and the column is `on_feet`.

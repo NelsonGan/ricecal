@@ -3,7 +3,7 @@ import { View } from 'react-native'
 
 import { millilitres } from '@/lib/water'
 import { useTheme } from '@/theme/useTheme'
-import { cn, Icon, Text } from '@/ui'
+import { Icon, Text } from '@/ui'
 
 export type TankFigureProps = {
   /** Millilitres so far. */
@@ -63,23 +63,5 @@ export function TankFigure({ ml, goalMl, onWater }: TankFigureProps) {
         {t('logging:water.count', { filled: millilitres(ml), goal: millilitres(goalMl) })}
       </Text>
     </View>
-  )
-}
-
-/** What a tank drawn as a card is tall, on Trends. */
-export const TANK_HEIGHT = 88
-
-/** The overline a tank card wears when it needs to say which day it is about. */
-export function TankLabel({ children, onWater }: { children: string; onWater: boolean }) {
-  return (
-    // `opacity-*` rather than the `/60` colour shorthand: every colour in this
-    // app is a CSS variable holding a hex, and the shorthand needs raw channels
-    // to build an alpha from. The utility is what the rest of the app uses.
-    <Text
-      variant="overline"
-      className={cn('opacity-60', onWater ? 'text-on-water' : 'text-water-ink')}
-    >
-      {children}
-    </Text>
   )
 }

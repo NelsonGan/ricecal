@@ -152,7 +152,15 @@ begin
         provider     = excluded.provider
     -- The whole point. A row the user typed has `provider` null and is left
     -- exactly as it is; a row a previous sync wrote is refreshed.
-    where w.provider is not null;
+    where w.provider is not null
+      -- And only when the reading differs. The app sends its last seven days
+      -- on every foreground, nearly always the figures already here, and an
+      -- update that changes nothing still writes a new row version and still
+      -- fires `weight_logs_sync_daily_goals`, which recomputes the budget and
+      -- rewrites today's `daily_goals` row once per reading. So the count this
+      -- returns is of readings that changed something, not of readings sent.
+      and (w.weight_kg, w.body_fat_pct, w.provider)
+        is distinct from (excluded.weight_kg, excluded.body_fat_pct, excluded.provider);
 
   get diagnostics v_written = row_count;
   return v_written;

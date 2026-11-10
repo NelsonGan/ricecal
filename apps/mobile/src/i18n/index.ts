@@ -1,14 +1,9 @@
 import { setDefaultOptions } from 'date-fns/setDefaultOptions'
-import i18n from 'i18next'
+import i18n, { type ReadCallback } from 'i18next'
 import { initReactI18next } from 'react-i18next'
 
-import { bn } from './bn'
+import type { Bundle } from './bundle'
 import { en } from './en'
-import { fil } from './fil'
-import { hi } from './hi'
-import { id } from './id'
-import { ja } from './ja'
-import { ko } from './ko'
 import {
   DEFAULT_LANGUAGE,
   dateLocaleFor,
@@ -19,13 +14,7 @@ import {
   SUPPORTED_LANGUAGES,
   scriptFor,
 } from './languages'
-import { ms } from './ms'
 import { storedLanguage, storeLanguage } from './preference'
-import { ta } from './ta'
-import { th } from './th'
-import { vi } from './vi'
-import { zhHans } from './zh-Hans'
-import { zhHant } from './zh-Hant'
 
 export { storedLanguage } from './preference'
 export {
@@ -46,22 +35,46 @@ export {
  * can render its own keys. Thirteen bundles of copy is a few hundred kilobytes
  * of strings against an app that ships typefaces and several hundred
  * illustrations.
+ *
+ * Bundled, but not all run. Each is a `require` inside a function, so Metro
+ * ships the module and nothing evaluates it until its language is asked for,
+ * and `require` answers in the same tick. As thirteen imports at the top of
+ * this file, every launch built twelve languages of strings it would not draw,
+ * before the first frame. English is the exception: it is the fallback under
+ * every other language, so it is always wanted.
  */
-const resources = {
-  en,
-  'zh-Hans': zhHans,
-  'zh-Hant': zhHant,
-  ms,
-  id,
-  th,
-  vi,
-  fil,
-  ja,
-  ko,
-  hi,
-  ta,
-  bn,
-} satisfies Record<Language, unknown>
+const bundles: Record<Language, () => Bundle> = {
+  en: () => en,
+  'zh-Hans': () => require('./zh-Hans').zhHans,
+  'zh-Hant': () => require('./zh-Hant').zhHant,
+  ms: () => require('./ms').ms,
+  id: () => require('./id').id,
+  th: () => require('./th').th,
+  vi: () => require('./vi').vi,
+  fil: () => require('./fil').fil,
+  ja: () => require('./ja').ja,
+  ko: () => require('./ko').ko,
+  hi: () => require('./hi').hi,
+  ta: () => require('./ta').ta,
+  bn: () => require('./bn').bn,
+}
+
+/**
+ * How i18next gets a language it has not been given: it asks here, and is
+ * answered before the call returns. With `initAsync: false` that makes a
+ * bundle's first use as synchronous as having passed it in `resources`.
+ */
+const bundled = {
+  type: 'backend' as const,
+  read(language: string, namespace: string, callback: ReadCallback): void {
+    if (!isLanguage(language)) {
+      callback(new Error(`no bundle for ${language}`), null)
+      return
+    }
+    const bundle = bundles[language]() as Record<string, object | undefined>
+    callback(null, bundle[namespace] ?? {})
+  },
+}
 
 /**
  * What the app opens in: the choice if there is one, the phone's language if it
@@ -89,25 +102,30 @@ function applyDateLocale(language: Language): void {
 
 applyDateLocale(initialLanguage)
 
-i18n.use(initReactI18next).init({
-  resources,
-  lng: initialLanguage,
-  fallbackLng: DEFAULT_LANGUAGE,
-  // Only ever given an exact code. `deviceLanguage()` resolves the phone's
-  // locale down to one of ours — including the zh-Hans / zh-Hant split, which a
-  // bare `zh` cannot decide — so i18next never has to guess from a region tag.
-  supportedLngs: SUPPORTED_LANGUAGES,
-  defaultNS: 'common',
-  // Every namespace is bundled, so nothing is fetched and nothing can arrive
-  // late. Loading them all up front keeps `t` synchronous everywhere.
-  ns: Object.keys(en),
-  interpolation: {
-    // React escapes for us. Leaving i18next's escaping on would turn an
-    // apostrophe in a food name into `&#39;` on screen.
-    escapeValue: false,
-  },
-  returnNull: false,
-})
+i18n
+  .use(bundled)
+  .use(initReactI18next)
+  .init({
+    // Loads the opening language and English inside this call, through
+    // `bundled`, rather than on a later tick: the first render reads `t`.
+    initAsync: false,
+    lng: initialLanguage,
+    fallbackLng: DEFAULT_LANGUAGE,
+    // Only ever given an exact code. `deviceLanguage()` resolves the phone's
+    // locale down to one of ours — including the zh-Hans / zh-Hant split, which a
+    // bare `zh` cannot decide — so i18next never has to guess from a region tag.
+    supportedLngs: SUPPORTED_LANGUAGES,
+    defaultNS: 'common',
+    // Every namespace is bundled, so nothing is fetched and nothing can arrive
+    // late. Loading them all up front keeps `t` synchronous everywhere.
+    ns: Object.keys(en),
+    interpolation: {
+      // React escapes for us. Leaving i18next's escaping on would turn an
+      // apostrophe in a food name into `&#39;` on screen.
+      escapeValue: false,
+    },
+    returnNull: false,
+  })
 
 /**
  * Switch language, everywhere, in one call.

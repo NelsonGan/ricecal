@@ -69,6 +69,12 @@ export function useFoodSearch(query: string) {
 
       return rows.map((row) => toFood(row, row.id ? stats.get(row.id) : undefined))
     },
+    // Each pause in typing is a key of its own, so one search leaves a result
+    // set behind for every prefix on the way to it. Kept while the sheet is
+    // likely to be reopened on the same words, then let go; the default keeps
+    // every one for the life of the app. They are not written to disk either:
+    // see `shouldPersistQuery`.
+    gcTime: 5 * 60_000,
   })
 }
 

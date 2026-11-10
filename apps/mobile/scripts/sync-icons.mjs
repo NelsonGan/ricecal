@@ -7,12 +7,15 @@
  *
  * A developer tool, not a build step: the processed PNGs are committed, so CI and
  * EAS never run it, which is why it may depend on the design system living at
- * `.secrets/RiceCal Design System` (gitignored) and on pngquant through npx.
+ * `.secrets/RiceCal Design System` (gitignored), on pngquant through npx and on
+ * oxipng (`brew install oxipng`).
  *
- * Two transforms matter. Downscale 256 -> 192px, since nothing renders an icon
- * above 64pt, so 192px is @3x for the largest usage. And quantise to a palette:
+ * Three transforms matter. Downscale 256 -> 192px, since nothing renders an icon
+ * above 64pt, so 192px is @3x for the largest usage. Quantise to a palette:
  * these are flat illustrations, pngquant cuts them ~70% with no visible
- * difference, and skipping it triples the bundle.
+ * difference, and skipping it triples the bundle. Then oxipng, which repacks
+ * what pngquant wrote without changing a pixel and takes another sixth off:
+ * 1.3 MB across the set, in every install.
  *
  * Metro only bundles what the generated map requires, so an icon deleted from
  * `assets/` and from the map leaves the app entirely.
@@ -125,6 +128,9 @@ for (const set of sets.sort()) {
       // post-check that the file still exists.
       run(pngquant, ['--quality', QUALITY, '--speed', '3', '-f', '-o', to, to])
       if (!existsSync(to)) throw new Error(`pngquant dropped ${set}/${name}`)
+      // Lossless, and the same flags every time, so an icon that has not
+      // changed comes out byte for byte as it is committed.
+      run('oxipng', ['-o', '4', '--strip', 'safe', '-q', to])
     }
     bytes += statSync(to).size
   }

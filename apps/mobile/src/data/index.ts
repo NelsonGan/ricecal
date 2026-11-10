@@ -74,7 +74,6 @@ export {
 } from './pending-snaps'
 export { type PhotoRemoval, usePhotoRemovals } from './photoRemovals'
 export {
-  removeAvatar,
   removeMealPhoto,
   type StoredImageSource,
   storedImageSource,
