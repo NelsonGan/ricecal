@@ -138,7 +138,9 @@ README: *The App Studio*. Load the `work-on-app-studio` skill before changing it
 `pnpm studio:dev` serves it on port 3001. Store uploads
 go through the `asc` and `gplay` CLIs, which hold their own credentials; the
 studio's `.env.local` names only the app to write to. `$update-whats-new` writes
-the release note in `src/data/appDescriptions.ts` and opens its PR here.
+the release note in `src/data/appDescriptions.ts` and opens its PR here, and
+`$update-app-studio-screenshots` recaptures the app screens in every language
+from the `app-studio-seed-data` branch.
 
 - **Exports need a visible, foreground tab.** Rasterization waits on
   `requestAnimationFrame`, which a background tab never fires.

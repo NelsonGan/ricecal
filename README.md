@@ -108,6 +108,7 @@ Keep both copies in sync when changing a workflow.
 | `seo-loop` | SEO pages, keywords, titles, sitemap, ranking questions on the website |
 | `migrate-to-vinext` | reference for what vinext supports; the migration itself is done |
 | `work-on-app-studio` | store screenshots, headlines, listing text, creatives and uploads (`apps/app-studio`) |
+| `update-app-studio-screenshots` | recapturing the app screens in every language from the `app-studio-seed-data` branch |
 | `update-whats-new` | the store What's New note for a release; it does not upload |
 | `maintain-analytics-tracking` | any tracking change, in the app or on the website |
 | `create-pr` | opening a PR, including what its merge ships |
@@ -8748,14 +8749,16 @@ copy, captures and store mappings. Tamil and Bengali also have separate frames
 and map to `ta-IN` and `bn-BD` for store uploads. Store descriptions and release
 notes include both languages in their 25-language set.
 
-Use the [RiceCal seeder branch](https://github.com/NelsonGan/ricecal/tree/screenshots/refresh-1-1-0)
-to refresh these screens against local Supabase on a dedicated iOS simulator.
-It carries the earlier [refresh branch](https://github.com/NelsonGan/ricecal/tree/codex/refresh-screenshot-fixtures)
-onto app 1.1.0 and adds eight weeks of workout history, which gives the logger
-its PREVIOUS column and record trophies. The workout capture starts a session
-part way through in the app's own store, with a heart rate reading as a paired
-Apple Watch would stream it, and clears it once captured. Its README contains
-setup and capture commands. The current set was captured on 17 October 2026. `capture.json` records the language, market, screen,
+Refresh these screens with the `update-app-studio-screenshots` skill. It runs
+the [`app-studio-seed-data`](https://github.com/NelsonGan/ricecal/tree/app-studio-seed-data)
+branch (`main` plus the screenshot tooling, never merged), which seeds one
+fictional account per app language on the local Supabase stack, with eight
+weeks of workout history for the logger's PREVIOUS column and record trophies,
+and captures the six screens on Simlock pool devices (`iPhone 18 Pro Max` for
+the iPhone set). The workout capture starts a session part way through in the
+app's own store, with a heart rate reading as a paired Apple Watch would stream
+it, and clears it once captured. That branch's README section "Localized
+screenshot fixtures" covers the scripts. The current set was captured on 17 October 2026. `capture.json` records the language, market, screen,
 date, app source revision, verified route and simulator for all 78 images,
 without account details. Run `pnpm check:screenshots` after replacing a capture set; it checks
 every file's dimensions, recorded checksum, duplicate captures, image provenance and store mappings.
@@ -8781,13 +8784,13 @@ on its side, where RiceCal shows its side tab rail and two panes at the fold.
 - App Store only. Play has no gallery for it, so Upload to Store offers iOS and
   nothing else:
   `pnpm upload:ios -- --dir ./ricecal-duo-all --device duo --dry-run`.
-- Captured on the dedicated `RiceCal iPhone Duo` simulator with the
-  [seeder branch](https://github.com/NelsonGan/ricecal/tree/screenshots/iphone-duo),
-  which carries the earlier seeder onto the app with its Duo layout. `simctl`
-  reads the Duo's display as black, so capture goes through Argent and turns the
-  open panel's portrait framebuffer upright. Feed shows Discover beside
-  Following there, so each language also has an unfollowed cook whose posts
-  lead Discover only while that language is captured.
+- Captured on a leased `iPhone Duo` with the same skill and branch. On a pool
+  device `agent-device` can neither fold nor capture the Duo (Simlock's device
+  set is invisible to CoreDevice), so the capture script unfolds it with
+  `agent-device`'s fold helper through `simctl spawn` and takes the open inner
+  display with `simctl io --display=3`, already upright. Feed shows Discover
+  beside Following there, so each language also has an unfollowed cook whose
+  posts lead Discover only while that language is captured.
 - `pnpm check:screenshots` checks both sets, and that they share one food
   manifest.
 
