@@ -23,6 +23,9 @@
     // with, the same one the edge functions read them with.
     "POSTHOG_PROMPTS_API_KEY"
   ],
+  // Not in Turbo's own hash, and both change what a task sees: the workspace
+  // file sets how Babel's plugins are hoisted, the other the Node that runs it.
+  "globalDependencies": ["pnpm-workspace.yaml", ".node-version"],
   "tasks": {
     "typecheck": {
       "dependsOn": ["^typecheck"]
@@ -30,7 +33,16 @@
     // Tests read files outside their package: the app's and the website's the
     // analytics tables in the root README, the app's nutrition test the SQL
     // schemas. Without them here an edit to one replays a cached pass.
+    //
+    // `^test` is there for the same reason rather than for the order: a task's
+    // hash covers its own package and the tasks it depends on, nothing else, so
+    // without it an edit to `packages/shared` replayed the app's cached pass.
+    // CI keeps this cache between runs (`deploy.yml`), so a file a task reads
+    // and this does not name is a check that silently stops running. A package
+    // that reaches outside itself says so in its own `turbo.json`, as the jobs
+    // Worker does.
     "test": {
+      "dependsOn": ["^test"],
       "inputs": [
         "$TURBO_DEFAULT$",
         "$TURBO_ROOT$/README.md",

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    // This Worker imports edge-function source (`groups/copy.ts` and
+    // `_shared/icon-match.ts`, and whatever those import), so an edit there
+    // has to re-run its typecheck and tests rather than replay a cached pass.
+    "typecheck": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/supabase/functions/**/*.ts"]
+    },
+    "test": {
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/apps/supabase/functions/**/*.ts"]
+    }
+  }
+}

@@ -99,27 +99,104 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      # `cache-dependency-path` is what names the pnpm store cache, and every
+      # job that installs the whole workspace names it the same way: the
+      # lockfile and the root manifest. The jobs that install one package
+      # (`web.yml`, `app-studio.yml`, `cloudflare.yml`) add that package's
+      # manifest, so theirs is a different cache. They all used to share one
+      # name, and a cache is written once: whichever job finished first on a
+      # new lockfile saved its store, usually a 285 MB filtered one, and this
+      # job then downloaded the other thousand packages on every run.
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            package.json
       - run: pnpm install --frozen-lockfile
+
+      # Turbo's record of the tasks that already passed, so a package this
+      # commit did not touch replays its typecheck and tests instead of running
+      # them. A new name per commit, because a cache is never rewritten, with
+      # the newest earlier one restored first. It is only as right as the
+      # inputs in `turbo.json`: see the note on `test` there before adding a
+      # task that reads outside its own package.
+      - name: Restore the Turbo cache
+        uses: actions/cache@v4
+        with:
+          path: .turbo/cache
+          key: turbo-${{ runner.os }}-${{ github.sha }}
+          restore-keys: turbo-${{ runner.os }}-
+
+      # Jest's transform cache (`cacheDirectory` in jest.config.js). Most of it
+      # is React Native and Expo compiled by Babel, which is most of a cold run.
+      # No `restore-keys`: jest never deletes an entry, so carrying a cache
+      # across lockfiles would only grow it.
+      - name: Restore the jest cache
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/node_modules/.cache/jest
+          key: jest-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       # One command, unlike money2time's check-then-test: `pnpm check` here is
       # already turbo typecheck + test followed by a root Biome pass. Lint is a
       # root-level pass rather than a turbo task so it also covers
       # apps/supabase/functions, which is not a workspace package.
       - run: pnpm check
+
+      # Every run adds its entries to the ones it restored, so drop what no run
+      # has written for two weeks before the cache is saved again.
+      - name: Trim the Turbo cache
+        run: find .turbo/cache -type f -mtime +14 -delete
       # The auth emails are built from one layout into `templates/build/`, and
       # those built files are what the local stack reads and what `email:push`
       # sends. Committed and stale, the mail a reviewer reads here is not the
       # mail anybody receives.
       - run: pnpm email:check
-      # `pnpm check` never runs Metro, so without this a PR that breaks the
-      # bundle (an import or asset only Metro resolves, or the `platforms` trap
-      # in the README) would first fail in the store build after merge. PRs
-      # only: on main the store build bundles right after this anyway.
+
+  # `pnpm check` never runs Metro, so without this a PR that breaks the bundle
+  # (an import or asset only Metro resolves, or the `platforms` trap in the
+  # README) would first fail in the store build after merge. PRs only: on main
+  # the store build bundles right after Test anyway.
+  #
+  # Its own job, beside Test rather than after it. It was the last step of
+  # Test, where it added its minute and a half to every pull request's wait.
+  bundle:
+    name: Bundle
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    env:
+      # Where Expo's Metro config keeps its transform cache when told to, rather
+      # than the runner's temp directory. Inside node_modules for the same
+      # reason as jest's.
+      EXPO_METRO_CACHE_OUTPUT_DIR: ${{ github.workspace }}/apps/mobile/node_modules/.cache/metro
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            package.json
+      - run: pnpm install --frozen-lockfile
+
+      # Metro keys a transform on the file's content and the transformer's
+      # options, and resolves every import again on each run, so a kept cache
+      # skips the Babel work without hiding the failures this job is here for.
+      # No `restore-keys`, as for jest: nothing ever deletes an entry.
+      - name: Restore the Metro cache
+        uses: actions/cache@v4
+        with:
+          path: apps/mobile/node_modules/.cache/metro
+          key: metro-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - name: Bundle app
-        if: github.event_name == 'pull_request'
         working-directory: apps/mobile
         run: pnpm exec expo export --platform ios --platform android --output-dir "$RUNNER_TEMP/expo-export"
 
@@ -255,6 +332,9 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            package.json
 
       - name: Set up Java
         if: matrix.platform == 'android'
@@ -263,26 +343,38 @@ jobs:
           distribution: temurin
           java-version: 17
 
+      # 9.x, because 8.x cannot cache: it talks to the cache service GitHub
+      # retired in 2025, so its restore answered "Cache service responded with
+      # 400" and every build job installed the CLI and its 329 dependencies
+      # again, 25 to 58 seconds each time.
       - name: Set up EAS CLI
-        uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8
+        uses: expo/expo-github-action@9da89d3617bb88139671bad31b09c65714c2ee06 # 9.0.1
         with:
           eas-version: 27.5.0
           token: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Cache eas-build-local
-        uses: actions/cache@v4
-        with:
-          path: ~/.eas-build-local
-          key: ${{ runner.os }}-eas-build-local-${{ hashFiles('pnpm-lock.yaml') }}
-          restore-keys: ${{ runner.os }}-eas-build-local-
+      # The two caches below are named after the app's manifest, and nothing
+      # under `ios/` or `android/`. Those folders are prebuild output: they are
+      # not in the repository, and `eas build --local` prebuilds in a temp
+      # directory, so they are never in this checkout either. The caches that
+      # were here hashed files in them and got the empty string back. Gradle's
+      # was therefore named `Linux-gradle-` for good, saved once in August 2026
+      # and restored unchanged ever since (2.2 GB and 44 seconds a build, of
+      # dependencies the app had long moved past). CocoaPods' pointed at
+      # `ios/Pods`, which never existed, so it saved nothing at all.
+      #
+      # No `restore-keys` on either. Neither tool deletes what it has cached, so
+      # a cache carried from one dependency set to the next only grows; a change
+      # to the manifest costs one cold build and starts a clean one instead.
 
-      - name: Cache CocoaPods
+      # What `pod install` downloads: every pod's source, Hermes included. It
+      # checks each entry against the pod's version and checksum before using it.
+      - name: Cache CocoaPods downloads
         if: matrix.platform == 'ios'
         uses: actions/cache@v4
         with:
-          path: apps/mobile/ios/Pods
-          key: ${{ runner.os }}-pods-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
-          restore-keys: ${{ runner.os }}-pods-
+          path: ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-cocoapods-${{ hashFiles('apps/mobile/package.json') }}
 
       - name: Cache Gradle
         if: matrix.platform == 'android'
@@ -291,8 +383,7 @@ jobs:
           path: |
             ~/.gradle/caches
             ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/mobile/android/**/*.gradle*', 'apps/mobile/android/**/gradle-wrapper.properties') }}
-          restore-keys: ${{ runner.os }}-gradle-
+          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/mobile/package.json') }}
 
       - run: pnpm install --frozen-lockfile
 
@@ -480,10 +571,13 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            package.json
       - run: pnpm install --frozen-lockfile
 
       - name: Set up EAS CLI
-        uses: expo/expo-github-action@c7b66a9c327a43a8fa7c0158e7f30d6040d2481e # v8
+        uses: expo/expo-github-action@9da89d3617bb88139671bad31b09c65714c2ee06 # 9.0.1
         with:
           eas-version: 27.5.0
           token: ${{ secrets.EXPO_TOKEN }}

@@ -33,6 +33,19 @@ const PACKAGES_NEEDING_TRANSFORM = [
 /** @type {import('jest').Config} */
 module.exports = {
   preset: 'jest-expo',
+  // Stated because the preset states it for us otherwise: jest-expo sets
+  // `maxWorkers: 1` whenever Turbo is the caller (`TURBO_HASH`), so that a
+  // monorepo of many jest packages does not start a worker pool in each. This
+  // repo has one jest package, so under `pnpm check` that meant every suite on
+  // one core, in the main process. It also meant a hang: with no workers to
+  // kill, the timers tests leave behind (react-query keeps an unused query for
+  // five minutes) held jest open after the last suite. CI spent 5m25s on a
+  // 2m09s run. With workers, jest ends them and exits.
+  maxWorkers: '75%',
+  // Inside node_modules so it is ignored everywhere already, and at a fixed
+  // path so CI can keep it between runs (`deploy.yml`). Jest keys each entry on
+  // the file's content, so a kept cache cannot replay a stale transform.
+  cacheDirectory: '<rootDir>/node_modules/.cache/jest',
   // Skia's own setup, first: the module installs JSI bindings at import time and
   // throws "Native Skia Module failed to correctly install JSI Bindings" without
   // it. Anything reaching `src/ui`'s barrel pulls in BrandMark, and therefore
