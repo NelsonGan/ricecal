@@ -21,11 +21,21 @@ beforeEach(() => {
 
 const DAY = 24 * 60 * 60_000
 
-/** The cache as it stands after each key was answered `daysAgo` days ago. */
-function cached(entries: Array<[key: readonly unknown[], daysAgo?: number]>) {
+/**
+ * The cache as it stands after each key was answered `daysAgo` days ago.
+ *
+ * `networkMode` stands in for how the query is declared: the app's default is
+ * `online`, and the few that can answer with no connection say otherwise.
+ */
+function cached(
+  entries: Array<
+    [key: readonly unknown[], daysAgo?: number, networkMode?: 'online' | 'always' | 'offlineFirst']
+  >,
+) {
   const client = new QueryClient()
   const now = Date.now()
-  for (const [key, daysAgo = 0] of entries) {
+  for (const [key, daysAgo = 0, networkMode] of entries) {
+    if (networkMode) client.setQueryDefaults(key, { networkMode })
     client.setQueryData(key, { some: 'answer' }, { updatedAt: now - daysAgo * DAY })
   }
   const kept = () =>
@@ -100,6 +110,30 @@ it('measures the week from the newest answer, so a fortnight offline keeps the l
       [['day', 'user', '2026-10-10'], 31],
     ]),
   ).toEqual(['profile/user', 'day/user/2026-10-27', 'day/user/2026-10-24'])
+})
+
+it('keeps the last diary through a week offline, though the store still answers', () => {
+  // The store's entitlement comes out of RevenueCat's own cache, so it is
+  // answered afresh at every launch with no connection. It says nothing about
+  // how old the diary is, and must not push the diary off the disk.
+  expect(
+    cached([
+      [['profile', 'user'], 9],
+      [['day', 'user', '2026-11-01'], 9],
+      [['store-entitlement', 'user'], 0, 'always'],
+    ]),
+  ).toEqual(['profile/user', 'day/user/2026-11-01', 'store-entitlement/user'])
+})
+
+it('keeps the last diary through a week offline, though a photo was read from disk', () => {
+  // A photo is never saved here, and is answered from the phone's own disk.
+  expect(
+    cached([
+      [['profile', 'user'], 9],
+      [['day', 'user', '2026-11-01'], 9],
+      [['photo', 'meals/a.jpg', 'visible'], 0, 'offlineFirst'],
+    ]),
+  ).toEqual(['profile/user', 'day/user/2026-11-01'])
 })
 
 it('is not thrown by an answer stamped while the clock was set ahead', () => {
