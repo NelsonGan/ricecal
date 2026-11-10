@@ -407,6 +407,48 @@ describe('a drink recorded', () => {
     await unmount()
   })
 
+  it('does not let a read that started during the tap put the drink back', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(keys.day(USER, DATE), day(500))
+    // The server's row: the drink is in it once the tap has been answered, and
+    // a read sees the row as it was when the read began.
+    let committed = false
+    const observer = new QueryObserver(client, {
+      queryKey: keys.day(USER, DATE),
+      staleTime: Number.POSITIVE_INFINITY,
+      queryFn: () => {
+        const seen = committed ? 750 : 500
+        return new Promise<DayLog>((resolve) => setTimeout(() => resolve(day(seen)), 30))
+      },
+    })
+    const stop = observer.subscribe(() => {})
+    let answer: (reply: { data: number; error: null }) => void = () => {}
+    mockRpc.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve
+        }),
+    )
+
+    const { result, unmount } = await renderHook(() => useAddWater(DATE), { wrapper })
+    await act(async () => {
+      result.current.mutate(250)
+    })
+    // A meal finishes saving while the drink is out, and the day is read again.
+    await act(async () => {
+      client.invalidateQueries({ queryKey: keys.day(USER, DATE) })
+    })
+    await act(async () => {
+      committed = true
+      answer({ data: 750, error: null })
+    })
+    await act(async () => new Promise<void>((resolve) => setTimeout(resolve, 80)))
+
+    expect(client.getQueryData<DayLog>(keys.day(USER, DATE))?.waterMl).toBe(750)
+    stop()
+    await unmount()
+  })
+
   it('asks for the day when the drink failed', async () => {
     const { client, wrapper } = setup()
     const diary = watched(client, keys.day(USER, DATE))

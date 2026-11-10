@@ -335,7 +335,11 @@ export function useAddWater(date: string) {
       }
       waterInFlight.delete(key.join())
       const day = queryClient.getQueryData<DayLog>(key)
-      if (!error && !taps?.unsure && typeof total === 'number' && day) {
+      // A read of the day that began after the tap left, when a meal finished
+      // saving, say. It may have read the row before this drink was in it, and
+      // landing after the total it would put the drink back out of the tank.
+      const reading = queryClient.isFetching({ queryKey: key }) > 0
+      if (!error && !taps?.unsure && !reading && typeof total === 'number' && day) {
         // One tap on its own, which is the ordinary case: its answer is the
         // day's total, so it is written back. The day was refetched here
         // instead, meals and all, to learn a number this answer carries.
@@ -343,8 +347,9 @@ export function useAddWater(date: string) {
       } else {
         // Asked for instead. Taps that overlapped can be answered out of
         // order, so the last to arrive is not always the last the server
-        // added; and a read of the day that a tap cancelled is still owed,
-        // or a meal that landed meanwhile would wait for the next foreground.
+        // added; a read of the day that a tap cancelled is still owed, or a
+        // meal that landed meanwhile would wait for the next foreground; and
+        // one still out is replaced by a read that sees the drink.
         queryClient.invalidateQueries({ queryKey: key })
       }
       // The water card counts this drink in its line, its average and its goal
