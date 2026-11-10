@@ -69,7 +69,11 @@ function setup() {
  * A query somebody is looking at: cached, with a subscriber, counting every
  * fetch after the one that filled it.
  */
-function watched(client: QueryClient, queryKey: readonly unknown[]) {
+function watched(
+  client: QueryClient,
+  queryKey: readonly unknown[],
+  meta?: Record<string, unknown>,
+) {
   const fetches = { count: 0 }
   client.setQueryData(queryKey, 'cached')
   const observer = new QueryObserver(client, {
@@ -79,6 +83,7 @@ function watched(client: QueryClient, queryKey: readonly unknown[]) {
       return 'fresh'
     },
     staleTime: Number.POSITIVE_INFINITY,
+    meta,
   })
   const stop = observer.subscribe(() => {})
   return { fetches, stop, stale: () => client.getQueryState(queryKey)?.isInvalidated === true }
@@ -116,7 +121,10 @@ describe('a meal written', () => {
 
   it('marks the mounted Feed tab stale instead of refetching it', async () => {
     const { client } = setup()
-    const feed = watched(client, keys.socialRead(USER, 'social_feed', { p_mode: 'following' }))
+    // As `useSocialFeed` marks a feed whose tab is behind another.
+    const feed = watched(client, keys.socialRead(USER, 'social_feed', { p_mode: 'following' }), {
+      shown: false,
+    })
     const profile = watched(client, keys.socialRead(USER, 'social_profile', { p_user_id: USER }))
     const post = watched(client, keys.socialRead(USER, 'social_post', { id: 'post-1' }))
     const entry = watched(client, keys.socialRead(USER, 'entry', { entryId: 'entry-1' }))
@@ -137,6 +145,31 @@ describe('a meal written', () => {
     expect(notifications.fetches.count).toBe(0)
     expect(notifications.stale()).toBe(false)
     for (const query of [feed, profile, post, entry, notifications]) query.stop()
+  })
+
+  it('refetches the feed when it is the tab in front', async () => {
+    const { client, wrapper } = setup()
+    // `abortSignal` is how the social reads send theirs.
+    mockRpc.mockImplementation(() => ({ abortSignal: async () => ({ data: [], error: null }) }))
+
+    // A scan can finish after its sheet has closed over the Feed tab.
+    const inFront = await renderHook(() => useSocialFeed('following', 'all', true), { wrapper })
+    await settle()
+    const mounted = mockRpc.mock.calls.length
+
+    await invalidateEntryPosts(client, USER)
+    await settle()
+    expect(mockRpc.mock.calls.length).toBe(mounted + 1)
+    await inFront.unmount()
+
+    const behind = await renderHook(() => useSocialFeed('discover', 'all', false), { wrapper })
+    await settle()
+    const hidden = mockRpc.mock.calls.length
+
+    await invalidateEntryPosts(client, USER)
+    await settle()
+    expect(mockRpc.mock.calls.length).toBe(hidden)
+    await behind.unmount()
   })
 })
 
@@ -298,6 +331,79 @@ describe('a drink recorded', () => {
     // Neither total is trusted over the other, so the day is read again.
     expect(diary.fetches.count).toBe(1)
     diary.stop()
+    await unmount()
+  })
+
+  it('settles the day the drink was added to, not the one selected by then', async () => {
+    const { client, wrapper } = setup()
+    const TUESDAY = '2026-11-11'
+    client.setQueryData(keys.day(USER, DATE), day(500))
+    client.setQueryData(keys.day(USER, TUESDAY), { date: TUESDAY, entries: [], waterMl: 0 })
+    let answer: (reply: { data: number; error: null }) => void = () => {}
+    mockRpc.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve
+        }),
+    )
+
+    const { result, rerender, unmount } = await renderHook(
+      ({ date }: { date: string }) => useAddWater(date),
+      { wrapper, initialProps: { date: DATE } },
+    )
+    await act(async () => {
+      result.current.mutate(250)
+    })
+    // The week strip is tapped before the answer is back.
+    await rerender({ date: TUESDAY })
+    await act(async () => {
+      answer({ data: 750, error: null })
+    })
+    await settle()
+
+    expect(mockRpc).toHaveBeenCalledWith('add_water', { p_ml: 250, p_date: DATE })
+    expect(client.getQueryData<DayLog>(keys.day(USER, DATE))?.waterMl).toBe(750)
+    expect(client.getQueryData<DayLog>(keys.day(USER, TUESDAY))?.waterMl).toBe(0)
+
+    // And the next drink on the first day is not left waiting on that one.
+    mockRpc.mockResolvedValue({ data: 1000, error: null })
+    await rerender({ date: DATE })
+    await act(async () => {
+      await result.current.mutateAsync(250)
+    })
+    await settle()
+    expect(client.getQueryData<DayLog>(keys.day(USER, DATE))?.waterMl).toBe(1000)
+    await unmount()
+  })
+
+  it('still reads the day when the tap cancelled a read of it', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(keys.day(USER, DATE), day(500))
+    const reads = { count: 0 }
+    // A read of the day that is out when the tap lands, as after a return to
+    // the app: a meal may be on its way in it.
+    const observer = new QueryObserver(client, {
+      queryKey: keys.day(USER, DATE),
+      queryFn: () => {
+        reads.count += 1
+        return new Promise<DayLog>((resolve) => setTimeout(() => resolve(day(500)), 20))
+      },
+    })
+    // Subscribing to a stale day starts the read.
+    const stop = observer.subscribe(() => {})
+    await settle()
+    expect(reads.count).toBe(1)
+    mockRpc.mockResolvedValue({ data: 750, error: null })
+
+    const { result, unmount } = await renderHook(() => useAddWater(DATE), { wrapper })
+    await act(async () => {
+      await result.current.mutateAsync(250)
+    })
+    await act(async () => new Promise<void>((resolve) => setTimeout(resolve, 40)))
+
+    // The read the tap cancelled is asked again rather than dropped.
+    expect(reads.count).toBe(2)
+    stop()
     await unmount()
   })
 

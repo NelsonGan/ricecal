@@ -130,7 +130,10 @@ export function shouldPersistQuery(query: Query): boolean {
   // A recipe shelf with something in its search field. The shelves themselves
   // have an empty one, and the count has none.
   if (area === 'recipes' && typeof fourth === 'string' && fourth !== '') return false
-  if (newestAnswer - query.state.dataUpdatedAt > PERSIST_MAX_AGE_MS) return false
+  // Never later than now: an answer stamped while the phone's clock was set
+  // ahead would otherwise age out everything fetched since it was put back.
+  const newest = Math.min(newestAnswer, Date.now())
+  if (newest - query.state.dataUpdatedAt > PERSIST_MAX_AGE_MS) return false
   return defaultShouldDehydrateQuery(query)
 }
 

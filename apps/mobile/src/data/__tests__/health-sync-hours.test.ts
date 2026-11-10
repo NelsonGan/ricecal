@@ -203,6 +203,56 @@ it('says which parts of a pass read anything the last one did not', async () => 
   expect((await pass()).changed).toEqual({ movement: false, workouts: false, weights: true })
 })
 
+it("takes the server's word that a weigh-in was written, even when nothing new was read", async () => {
+  const read = jest.fn().mockResolvedValue({
+    ...measured('2026-10-02'),
+    weights: [{ date: '2026-10-02', kg: 71.4, bodyFatPct: null }],
+  })
+  const pass = () =>
+    syncRange(new QueryClient(), 'account-e', { ...demoHealth, read }, '2026-10-01', '2026-10-03')
+  await pass()
+  expect((await pass()).changed.weights).toBe(false)
+
+  // The same reading, but this time it changed a row: the typed weigh-in that
+  // was keeping it out has been deleted. The budget moved with it.
+  supabase.rpc.mockImplementation(async (name: string) => ({
+    data: name === 'sync_weight_readings' ? 1 : 0,
+    error: null,
+  }))
+  expect((await pass()).changed).toEqual({ movement: false, workouts: false, weights: true })
+})
+
+it('does not call a pass over while one of its writes is still out', async () => {
+  const read = jest.fn().mockResolvedValue({
+    ...measured('2026-10-02'),
+    weights: [{ date: '2026-10-02', kg: 71.4, bodyFatPct: null }],
+  })
+  let hoursLanded = false
+  supabase.rpc.mockImplementation((name: string) =>
+    name === 'replace_activity_hours'
+      ? new Promise((resolve) =>
+          setTimeout(() => {
+            hoursLanded = true
+            resolve({ data: 0, error: null })
+          }, 50),
+        )
+      : Promise.resolve({ data: null, error: new Error('weigh-ins refused') }),
+  )
+  const pass = syncRange(
+    new QueryClient(),
+    'account-f',
+    { ...demoHealth, read },
+    '2026-10-01',
+    '2026-10-03',
+  )
+  const failed = expect(pass).rejects.toThrow('weigh-ins refused')
+  await jest.advanceTimersByTimeAsync(60)
+  await failed
+  // Had it rejected at the first failure, the next pass could start with the
+  // hours of this one still on the wire.
+  expect(hoursLanded).toBe(true)
+})
+
 it('writes the four tables together, and a failure in one does not skip the others', async () => {
   const read = jest.fn().mockResolvedValue({
     ...measured('2026-10-02'),

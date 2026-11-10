@@ -102,6 +102,19 @@ it('measures the week from the newest answer, so a fortnight offline keeps the l
   ).toEqual(['profile/user', 'day/user/2026-10-27', 'day/user/2026-10-24'])
 })
 
+it('is not thrown by an answer stamped while the clock was set ahead', () => {
+  // A month ahead, then put back. Measured from that answer, everything
+  // fetched at the real time would look a month old and stop being saved.
+  expect(
+    cached([
+      [['streak', 'user'], -30],
+      [['profile', 'user'], 0],
+      [['day', 'user', '2026-11-10'], 2],
+      [['day', 'user', '2026-10-20'], 21],
+    ]),
+  ).toEqual(['streak/user', 'profile/user', 'day/user/2026-11-10'])
+})
+
 it('never saves a query that failed', async () => {
   const client = new QueryClient()
   const key = ['day', 'user', '2026-11-10']

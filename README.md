@@ -396,7 +396,9 @@ the diary itself. One return to the app was 29 requests, and 16 after these:
   once visited, so "active" includes screens nobody is looking at. A meal
   marks the Feed tab's reads stale (`invalidateEntryPosts`) and the tab
   refetches them when it is next shown; it used to refetch every loaded page
-  of the feed on every log and every portion change. A meal does not touch
+  of the feed on every log and every portion change. A feed that is the tab
+  in front still refetches at once, since a scan can finish after its sheet
+  has closed over it. A meal does not touch
   movement, and a glass of water does not refetch the day's meals: `add_water`
   answers with the day's total, which is written back.
 - **The week beside the one showing is not subscribed.** The strip renders the
@@ -440,7 +442,9 @@ both ends. Left out:
   only discards the whole snapshot after a week without opening the app, so
   for a daily user every day ever looked at was written back at every launch.
   Measured from the newest answer rather than from now, so a phone with no
-  connection for a fortnight still opens on the diary it last had.
+  connection for a fortnight still opens on the diary it last had, and never
+  from later than now, so an answer stamped while the clock was set ahead
+  does not age out everything after it.
 
 ---
 
@@ -3980,9 +3984,12 @@ mistake.
 
 The tank moves before the request leaves, and the total a tap comes back with
 is written over it, so a drink costs one request. It refetched the whole day,
-meals and all, to learn that number. Taps that overlapped are the exception:
-their answers can arrive out of order, so the last one to land asks for the day
-instead of trusting its own total (`useAddWater`).
+meals and all, to learn that number. Two cases ask for the day instead
+(`useAddWater`): taps that overlapped, whose answers can arrive out of order,
+and a tap that cancelled a read of the day already under way, which is still
+owed. The day travels with the drink rather than being read when the answer
+comes back, so a drink answered after another day was picked, or undone from
+its toast by then, still lands on the day it was added to.
 
 **Millilitres where a figure is chosen, litres where one is summarised.** The card
 on Today, the quick-add sheet and the goal stepper are all ml; a trend tile, a
@@ -4655,13 +4662,18 @@ targets and the charts. `invalidateAfterSync` is the list:
 | workouts | the session lists, the group boards |
 | weigh-ins | the weigh-ins, the targets, the charts, the dots |
 
+Weigh-ins have a second witness: `sync_weight_readings` answers with how many
+readings changed a row, and any at all counts as changed. The same reading can
+do that when the typed weigh-in that was keeping it out has been deleted.
+
 The diary is on none of them: a day's meals and water are not the health
 store's, though every pass used to refetch them. The connection row, whose
 last-sync time moves on every pass, comes back with the write that moved it
 and goes into the cache as it is. Every pass still writes, whatever changed,
 because the database is the record; its four writes (days, sessions, hours,
 weigh-ins) go out together, since they share no table, and one that fails
-still fails the pass so the next one sends all four again.
+still fails the pass so the next one sends all four again. The pass waits for
+all four either way, so the next cannot start with one still on the wire.
 
 Providers: `apple.ts`, `androidHealth.ts`, and `demo.ts`, which is generated,
 deterministic, dev-only, and a `health_provider` enum value rather than a flag,

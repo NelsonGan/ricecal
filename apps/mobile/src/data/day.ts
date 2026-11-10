@@ -296,53 +296,56 @@ export function useAddWater(date: string) {
   const userId = useUserId()
   const queryClient = useQueryClient()
 
-  // Per day, so taps on another day's tank do not count as in flight here.
-  const tank = `${userId}.${date}`
-
-  return useMutation({
-    mutationFn: (ml: number) => addWater(ml, date),
+  const drink = useMutation({
+    mutationFn: ({ ml, date: on }: Drink) => addWater(ml, on),
     // The tank has to move under the finger, so the day is patched before the
     // request leaves, clamped exactly where the server clamps. `add_water`
     // returns the new total, and writing each one back would be a race: two
     // taps in flight resolve in whatever order the network hands them back.
     // See `onSettled` for the one that is written.
-    onMutate: async (ml) => {
+    onMutate: async ({ ml, date: on }) => {
+      const key = keys.day(userId, on)
       // Counted before anything is awaited, so two taps in one frame both see it.
-      const taps = waterInFlight.get(tank) ?? { out: 0, overlapped: false }
+      const taps = waterInFlight.get(key.join()) ?? { out: 0, unsure: false }
       taps.out += 1
-      if (taps.out > 1) taps.overlapped = true
-      waterInFlight.set(tank, taps)
-      await queryClient.cancelQueries({ queryKey: keys.day(userId, date) })
-      const previous = queryClient.getQueryData<DayLog>(keys.day(userId, date))
+      // Two at once, or a read of the day that the next line is about to
+      // cancel: either way this tap's answer is not the whole day.
+      if (taps.out > 1 || queryClient.isFetching({ queryKey: key }) > 0) taps.unsure = true
+      waterInFlight.set(key.join(), taps)
+      await queryClient.cancelQueries({ queryKey: key })
+      const previous = queryClient.getQueryData<DayLog>(key)
       if (previous) {
-        queryClient.setQueryData(keys.day(userId, date), {
+        queryClient.setQueryData(key, {
           ...previous,
           waterMl: Math.min(WATER_MAX_ML, Math.max(0, previous.waterMl + ml)),
         })
       }
       return { previous }
     },
-    onError: (_error, _ml, context) => {
-      if (context?.previous) queryClient.setQueryData(keys.day(userId, date), context.previous)
+    onError: (_error, { date: on }, context) => {
+      if (context?.previous) queryClient.setQueryData(keys.day(userId, on), context.previous)
     },
-    onSettled: (total, error) => {
+    onSettled: (total, error, { date: on }) => {
+      const key = keys.day(userId, on)
       // Another tap is still out, and it settles the day when it lands.
-      const taps = waterInFlight.get(tank)
+      const taps = waterInFlight.get(key.join())
       if (taps && taps.out > 1) {
         taps.out -= 1
         return
       }
-      waterInFlight.delete(tank)
-      const day = queryClient.getQueryData<DayLog>(keys.day(userId, date))
-      if (!error && !taps?.overlapped && typeof total === 'number' && day) {
+      waterInFlight.delete(key.join())
+      const day = queryClient.getQueryData<DayLog>(key)
+      if (!error && !taps?.unsure && typeof total === 'number' && day) {
         // One tap on its own, which is the ordinary case: its answer is the
         // day's total, so it is written back. The day was refetched here
         // instead, meals and all, to learn a number this answer carries.
-        queryClient.setQueryData(keys.day(userId, date), { ...day, waterMl: total })
+        queryClient.setQueryData(key, { ...day, waterMl: total })
       } else {
-        // Taps that overlapped are asked for instead: the last answer to
-        // arrive is not always the last the server added.
-        queryClient.invalidateQueries({ queryKey: keys.day(userId, date) })
+        // Asked for instead. Taps that overlapped can be answered out of
+        // order, so the last to arrive is not always the last the server
+        // added; and a read of the day that a tap cancelled is still owed,
+        // or a meal that landed meanwhile would wait for the next foreground.
+        queryClient.invalidateQueries({ queryKey: key })
       }
       // The water card counts this drink in its line, its average and its goal
       // days. Not optimistic, unlike the tank itself: nothing on Trends is
@@ -350,16 +353,31 @@ export function useAddWater(date: string) {
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
     },
   })
+
+  // The day goes in with the amount rather than being read when the answer
+  // comes back. A mutation's callbacks are replaced on every render, so one
+  // that closed over `date` settled against whichever day was selected by
+  // then: a drink added on Monday and answered after a tap on Tuesday was
+  // rolled back, or undone from its toast, on Tuesday.
+  return useMemo(
+    () => ({
+      mutate: (ml: number) => drink.mutate({ ml, date }),
+      mutateAsync: (ml: number) => drink.mutateAsync({ ml, date }),
+    }),
+    [drink.mutate, drink.mutateAsync, date],
+  )
 }
 
+type Drink = { ml: number; date: string }
+
 /**
- * Drinks in flight per day, and whether any two of them were out at once.
- * Counted here rather than asked of react-query, whose own count still
- * includes a tap whose answer has arrived but not yet been recorded: two
- * answers in one tick each saw the other as outstanding, and neither settled
- * the day. See `useAddWater`.
+ * Drinks in flight per day, and whether the last one's answer can be trusted
+ * as the day's total. Counted here rather than asked of react-query, whose own
+ * count still includes a tap whose answer has arrived but not yet been
+ * recorded: two answers in one tick each saw the other as outstanding, and
+ * neither settled the day. See `useAddWater`.
  */
-const waterInFlight = new Map<string, { out: number; overlapped: boolean }>()
+const waterInFlight = new Map<string, { out: number; unsure: boolean }>()
 
 /** The one call. Shared so the two hooks around it cannot pass different arguments. */
 async function addWater(ml: number, date: string) {

@@ -231,8 +231,8 @@ export function toEntry(row: EntryRow): Entry {
   return {
     id: row.id ?? '',
     quantity: Number(row.quantity ?? 1),
-    // Defaulted rather than trusted: a database without the migration that
-    // added these answers without them, and this build still has to read it.
+    // Defaulted like every other column here: a view's columns are typed
+    // nullable. Both are on `ENTRY_COLUMNS`, so the database has to have them.
     plateQuantity: Number(row.plate_quantity ?? 1),
     ingredientCount: row.ingredient_count ?? 0,
     loggedAt: row.logged_at ?? new Date(0).toISOString(),

@@ -4,8 +4,10 @@ import { Platform } from 'react-native'
 import { forgetPerson, type SignInMethod, track } from '@/lib/analytics'
 import { isValidEmailAddress, normalizeEmailAddress } from '@/lib/email'
 import { env, isConfigured } from '@/lib/env'
+import { queryClient } from '@/lib/query'
 import { appScheme } from '@/lib/scheme'
 import { supabase } from '@/lib/supabase'
+import { keys } from './keys'
 import { clearRecovered, markRecovered } from './recovery'
 
 /**
@@ -687,6 +689,9 @@ export async function signInWithApple(): Promise<void> {
           .update({ display_name: fullName })
           .eq('id', data.user.id)
           .is('display_name', null)
+        // The profile is read the moment the session exists, which is before
+        // this lands, and it is not read again for minutes.
+        queryClient.invalidateQueries({ queryKey: keys.profile(data.user.id) })
       }
     }
   } catch (error) {

@@ -253,7 +253,7 @@ async function persist(
   provider: ProviderId,
   reading: HealthReading,
   window: { from: string; to: string; withHours: boolean },
-): Promise<void> {
+): Promise<{ weighInsWritten: number }> {
   const days = async () => {
     // One request per row shape, as for sessions below.
     for (const batch of dayBatches(userId, provider, reading.days)) {
@@ -299,9 +299,9 @@ async function persist(
    * A reading the user typed always wins, which is a WHERE on the DO UPDATE that
    * PostgREST's `.upsert()` cannot express.
    */
-  const weights = async () => {
-    if (reading.weights.length === 0) return
-    const { error } = await supabase.rpc('sync_weight_readings', {
+  const weights = async (): Promise<number> => {
+    if (reading.weights.length === 0) return 0
+    const { data, error } = await supabase.rpc('sync_weight_readings', {
       p_provider: provider,
       p_readings: reading.weights.map((weigh) => ({
         measured_on: weigh.date,
@@ -310,6 +310,7 @@ async function persist(
       })),
     })
     if (error) throw error
+    return typeof data === 'number' ? data : 0
   }
 
   // Together rather than in turn. The four touch different tables with nothing
@@ -317,7 +318,18 @@ async function persist(
   // heard about any of it. One that fails still fails the pass, so its
   // fingerprint is not stored and the next pass sends all four again; the
   // others land meanwhile, where they used to be skipped.
-  await Promise.all([days(), sessions(), hours(), weights()])
+  //
+  // All four are waited for, whichever fails first. A pass that reported
+  // itself over with a write still on the wire let the next pass start, and
+  // the straggler could then land on top of the newer reading.
+  const [, , , weighIns] = await Promise.allSettled([days(), sessions(), hours(), weights()]).then(
+    (results) =>
+      results.map((result) => {
+        if (result.status === 'rejected') throw result.reason
+        return result.value
+      }),
+  )
+  return { weighInsWritten: typeof weighIns === 'number' ? weighIns : 0 }
 }
 
 /**
@@ -480,13 +492,14 @@ export async function syncRange(
   const total = chunks.length
 
   const readings: HealthReading[] = []
+  let weighInsWritten = 0
 
   for (const chunk of chunks) {
     const reading = await provider.read(chunk.from, chunk.to, {
       withHours: chunk.withHours,
       ...person,
     })
-    await persist(userId, provider.id, reading, chunk)
+    weighInsWritten += (await persist(userId, provider.id, reading, chunk)).weighInsWritten
     readings.push(reading)
     written += reading.days.length
     if (reading.deviceName) deviceName = reading.deviceName
@@ -505,6 +518,11 @@ export async function syncRange(
   }
   // The one fingerprint an earlier version kept for the whole reading.
   if (lastRead.contains(key)) lastRead.remove(key)
+  // The server is the other witness for weigh-ins: it says how many readings
+  // changed a row. The same reading can do that when the row it was refused
+  // for has gone, as when a typed weigh-in is deleted and the scale's is
+  // written in its place, moving the budget with nothing new read.
+  if (weighInsWritten > 0) changed.weights = true
 
   return { days: written, deviceName, changed }
 }
@@ -772,8 +790,14 @@ export function useConnectHealth() {
         days: result.days,
       })
       if (result.granted) setPersonProps({ health_provider: provider })
-      queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
       invalidateAfterSync(queryClient, userId)
+    },
+    // Settled, not succeeded. The connection is written before the backfill
+    // so an interrupted one still leaves the account connected, and the cache
+    // has to hear that too: it holds its answer for minutes, and a failed
+    // backfill left it saying "not connected" over a row that was.
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: keys.healthConnection(userId) })
     },
   })
 }

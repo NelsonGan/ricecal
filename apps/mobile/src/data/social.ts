@@ -227,8 +227,10 @@ function useSocialPages<T>(
     // A list behind another tab is not refetched because the app came back
     // to the front: the Feed tab stays mounted, and every return to the app
     // on Today reloaded every page it held. Its screen refetches a stale list
-    // when it is shown.
+    // when it is shown. `meta` says the same to a write that has to choose
+    // between refetching this list and marking it stale (`invalidateEntryPosts`).
     refetchOnWindowFocus: shown,
+    meta: { shown },
   })
   return {
     ...query,

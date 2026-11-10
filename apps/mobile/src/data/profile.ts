@@ -345,6 +345,10 @@ export function useFinishOnboarding() {
       // cache has ever seen them.
       queryClient.invalidateQueries({ queryKey: keys.goals(userId) })
       queryClient.invalidateQueries({ queryKey: keys.weighIns(userId) })
+      // And the units, written above. The settings were read at sign-in, some
+      // steps before this, and stay fresh for minutes: without this, somebody
+      // who chose pounds opened Today in kilograms.
+      queryClient.invalidateQueries({ queryKey: keys.settings(userId) })
     },
   })
 }
