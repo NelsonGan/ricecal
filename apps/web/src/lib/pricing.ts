@@ -59,87 +59,89 @@ const CURRENCIES = {
  * `asia` is the pan-Asian default and takes the US price, which is also what
  * Apple charges in every territory it has no specific price for — Myanmar and
  * Sri Lanka among them, which is why those three are the same numbers.
+ *
+ * Lifetime is 2.5 times the yearly price in each market's own currency, set by
+ * hand in every territory on both stores, so it is never Apple's conversion of
+ * the US figure.
  */
 const PRICING = {
   asia: {
-    lifetime: { amount: 119.99, currency: "USD" },
+    lifetime: { amount: 74.9, currency: "USD" },
     monthly: { amount: 4.9, currency: "USD" },
     yearly: { amount: 29.9, currency: "USD" },
   },
   china: {
-    lifetime: { amount: 798, currency: "CNY" },
+    lifetime: { amount: 498, currency: "CNY" },
     monthly: { amount: 32, currency: "CNY" },
     yearly: { amount: 198, currency: "CNY" },
   },
   "hong-kong": {
-    lifetime: { amount: 888, currency: "HKD" },
+    lifetime: { amount: 568, currency: "HKD" },
     monthly: { amount: 38, currency: "HKD" },
     yearly: { amount: 228, currency: "HKD" },
   },
   india: {
-    lifetime: { amount: 11900, currency: "INR" },
+    lifetime: { amount: 7499, currency: "INR" },
     monthly: { amount: 499, currency: "INR" },
     yearly: { amount: 2999, currency: "INR" },
   },
   indonesia: {
-    lifetime: { amount: 1999000, currency: "IDR" },
+    lifetime: { amount: 1249000, currency: "IDR" },
     monthly: { amount: 79000, currency: "IDR" },
     yearly: { amount: 499000, currency: "IDR" },
   },
   japan: {
-    lifetime: { amount: 20000, currency: "JPY" },
+    lifetime: { amount: 12500, currency: "JPY" },
     monthly: { amount: 800, currency: "JPY" },
     yearly: { amount: 5000, currency: "JPY" },
   },
   malaysia: {
-    // Set by hand in App Store Connect rather than taken from Apple's
-    // equalisation of the US price, which is why it is not RM569.90.
-    lifetime: { amount: 479.9, currency: "MYR" },
+    lifetime: { amount: 299.9, currency: "MYR" },
     monthly: { amount: 19.9, currency: "MYR" },
     yearly: { amount: 119.9, currency: "MYR" },
   },
   myanmar: {
-    lifetime: { amount: 119.99, currency: "USD" },
+    lifetime: { amount: 74.9, currency: "USD" },
     monthly: { amount: 4.9, currency: "USD" },
     yearly: { amount: 29.9, currency: "USD" },
   },
   pakistan: {
-    lifetime: { amount: 29900, currency: "PKR" },
+    lifetime: { amount: 19900, currency: "PKR" },
     monthly: { amount: 1300, currency: "PKR" },
     yearly: { amount: 7900, currency: "PKR" },
   },
   philippines: {
-    lifetime: { amount: 7990, currency: "PHP" },
+    lifetime: { amount: 4990, currency: "PHP" },
     monthly: { amount: 299, currency: "PHP" },
     yearly: { amount: 1990, currency: "PHP" },
   },
   singapore: {
-    lifetime: { amount: 179.98, currency: "SGD" },
+    lifetime: { amount: 99.98, currency: "SGD" },
     monthly: { amount: 6.98, currency: "SGD" },
     yearly: { amount: 39.98, currency: "SGD" },
   },
   "south-korea": {
-    lifetime: { amount: 199000, currency: "KRW" },
+    lifetime: { amount: 122000, currency: "KRW" },
     monthly: { amount: 7700, currency: "KRW" },
     yearly: { amount: 49000, currency: "KRW" },
   },
   "sri-lanka": {
-    lifetime: { amount: 119.99, currency: "USD" },
+    lifetime: { amount: 74.9, currency: "USD" },
     monthly: { amount: 4.9, currency: "USD" },
     yearly: { amount: 29.9, currency: "USD" },
   },
   taiwan: {
-    lifetime: { amount: 3990, currency: "TWD" },
+    lifetime: { amount: 2490, currency: "TWD" },
     monthly: { amount: 150, currency: "TWD" },
     yearly: { amount: 990, currency: "TWD" },
   },
   thailand: {
-    lifetime: { amount: 3990, currency: "THB" },
+    lifetime: { amount: 2490, currency: "THB" },
     monthly: { amount: 179, currency: "THB" },
     yearly: { amount: 999, currency: "THB" },
   },
   vietnam: {
-    lifetime: { amount: 3999000, currency: "VND" },
+    lifetime: { amount: 2499000, currency: "VND" },
     monthly: { amount: 149000, currency: "VND" },
     yearly: { amount: 999000, currency: "VND" },
   },
