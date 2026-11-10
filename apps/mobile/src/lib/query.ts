@@ -3,6 +3,7 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 import {
   defaultShouldDehydrateQuery,
   focusManager,
+  onlineManager,
   type Query,
   QueryClient,
 } from '@tanstack/react-query'
@@ -112,8 +113,8 @@ const PERSIST_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 7 // 7 days
  *   written back at each launch. A query a screen still uses is refetched long
  *   before it falls a week behind; one that is not stops being saved. Measured
  *   from the newest answer rather than from now, so a phone with no connection
- *   for a fortnight still opens on the diary it last had. Only answers that
- *   needed a connection count towards "newest".
+ *   for a fortnight still opens on the diary it last had. Only what the
+ *   server answered counts as newest: nothing written while offline does.
  *
  * The whole snapshot is serialised again each time any query changes, at most
  * once a second, and parsed before the first query runs at launch, so its size
@@ -124,18 +125,19 @@ const PERSIST_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 7 // 7 days
  * query off the disk.
  */
 export function shouldPersistQuery(query: Query): boolean {
+  // Only an answer from the server says how old the rest are. The store's
+  // entitlement and the photos are answered with no connection, and a tap
+  // patches its query before the paused write goes anywhere; counting any of
+  // them made a phone a week offline drop the diary it was meant to keep.
+  if ((query.options.networkMode ?? 'online') === 'online' && onlineManager.isOnline()) {
+    newestAnswer = Math.max(newestAnswer, query.state.dataUpdatedAt)
+  }
   const [area, , third, fourth] = query.queryKey
   if (area === 'social' || area === 'photo' || area === 'food-search') return false
   if (area === 'groups' && third !== 'my_groups' && third !== 'group_invite_count') return false
   // A recipe shelf with something in its search field. The shelves themselves
   // have an empty one, and the count has none.
   if (area === 'recipes' && typeof fourth === 'string' && fourth !== '') return false
-  // Only an answer that needed a connection says how old the rest are. The
-  // store's entitlement and the photos are answered with none, so counting
-  // them made a phone a week offline drop the diary it was meant to keep.
-  if ((query.options.networkMode ?? 'online') === 'online') {
-    newestAnswer = Math.max(newestAnswer, query.state.dataUpdatedAt)
-  }
   // Never later than now: an answer stamped while the phone's clock was set
   // ahead would otherwise age out everything fetched since it was put back.
   const newest = Math.min(newestAnswer, Date.now())

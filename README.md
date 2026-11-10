@@ -444,7 +444,10 @@ both ends. Left out:
   Measured from the newest answer rather than from now, so a phone with no
   connection for a fortnight still opens on the diary it last had, and never
   from later than now, so an answer stamped while the clock was set ahead
-  does not age out everything after it.
+  does not age out everything after it. Only answers from the server count as
+  newest: the store's entitlement and the photos are answered with no
+  connection, and a tap patches its query while the write waits for one, so
+  counting those dropped the diary after a week offline.
 
 ---
 

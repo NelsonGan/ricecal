@@ -1,11 +1,14 @@
-import { type Query, QueryClient } from '@tanstack/react-query'
+import { type onlineManager as OnlineManager, type Query, QueryClient } from '@tanstack/react-query'
 
 // Loaded afresh for each test: the rule remembers the newest answer it has
 // seen, which in the app is one cache for the life of the process.
 let shouldPersistQuery: (query: Query) => boolean
+// The rule's own copy, which the isolated load gives it.
+let onlineManager: typeof OnlineManager
 beforeEach(() => {
   jest.isolateModules(() => {
     shouldPersistQuery = require('../query').shouldPersistQuery
+    onlineManager = require('@tanstack/react-query').onlineManager
   })
 })
 
@@ -134,6 +137,33 @@ it('keeps the last diary through a week offline, though a photo was read from di
       [['photo', 'meals/a.jpg', 'visible'], 0, 'offlineFirst'],
     ]),
   ).toEqual(['profile/user', 'day/user/2026-11-01'])
+})
+
+it('keeps the last diary through a week offline, though a tap patched the day', () => {
+  // A drink or a settings toggle patches its query at once and its write
+  // waits for a connection, so the patch is stamped now with nothing behind it.
+  onlineManager.setOnline(false)
+  try {
+    expect(
+      cached([
+        [['profile', 'user'], 9],
+        [['day', 'user', '2026-11-01'], 9],
+        [['day', 'user', '2026-11-10'], 0],
+      ]),
+    ).toEqual(['profile/user', 'day/user/2026-11-01', 'day/user/2026-11-10'])
+  } finally {
+    onlineManager.setOnline(true)
+  }
+})
+
+it('still counts a feed or a search as the newest answer, though neither is saved', () => {
+  // Both need the server, so they say how old the rest are.
+  expect(
+    cached([
+      [['social', 'user', 'social_feed', {}], 0],
+      [['day', 'user', '2026-11-01'], 9],
+    ]),
+  ).toEqual([])
 })
 
 it('is not thrown by an answer stamped while the clock was set ahead', () => {
