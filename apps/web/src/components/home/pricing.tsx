@@ -149,7 +149,7 @@ export function Pricing() {
       />
 
       {/* Two cards, breaking to one column at `lg` rather than `sm`. The
-          headline price is the widest thing here — `₫2,499,000` beside
+          headline price is the widest thing here — `Rp1,249,000` beside
           `once` runs past 260px at this display size — and two columns at
           `sm` leave only about 230px, which the short-price markets would
           never show.

@@ -6147,10 +6147,10 @@ can check.
 
 **Lifetime is 2.5 times yearly, in every territory's own currency.** It is a
 manual price everywhere on both stores (175 App Store territories, 174 Play
-regions), picked as the nearest price point to 2.5 times that territory's
-yearly price, so neither store converts it from the US figure. Repricing yearly
-anywhere means repricing lifetime there too, and then the snapshot in
-`apps/web/src/lib/pricing.ts`.
+regions), picked as the price closest to 2.5 times that territory's yearly
+price in its local style (RM299.90, ₩122,000), so neither store converts it
+from the US figure. Repricing yearly anywhere means repricing lifetime there
+too, and then the snapshot in `apps/web/src/lib/pricing.ts`.
 
 ### The mirror is a cache, not the record
 
