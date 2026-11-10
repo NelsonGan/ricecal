@@ -221,6 +221,15 @@ invalidating "the day" could spell it differently from the query that reads it.
 The failure mode is a screen that silently does not refresh, which looks like a
 caching bug and is really a typo.
 
+**A read that feeds a mapper names the columns the mapper reads.** The diary is
+the case that matters: `food_log_details` has 44 columns and `toEntry` reads
+37, so every select that feeds it asks for `ENTRY_COLUMNS` (`data/mappers.ts`)
+rather than `*`. `EntryRow` is exactly those columns, so reading an eighth one
+in the mapper without adding it to the list does not compile. It took a sixth
+off the diary's most frequent read and off the two hundred rows behind Past
+foods (184 KB to 154 KB). The view itself still answers every column, for the
+apps already in a store.
+
 ### Edge functions own the model
 
 The client never talks to OpenRouter and never sees the key. It uploads a photo
