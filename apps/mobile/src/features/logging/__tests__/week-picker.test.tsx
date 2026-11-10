@@ -75,6 +75,11 @@ function lastFor(from: string) {
   return mockMarks.filter((call) => call.from === from).at(-1)
 }
 
+/** Every week a render since the last reset subscribed to. */
+function subscribed() {
+  return mockMarks.filter((call) => call.onScreen).map((call) => call.from)
+}
+
 /** The app comes back to the front on Monday without the strip remounting. */
 async function resumeOn(day: string, rerender: (ui: ReactElement) => Promise<void>) {
   mockToday = day
@@ -92,9 +97,7 @@ it('keeps the current week subscribed after the app resumes into a new week', as
 
   expect(lastFor('2026-11-16')?.onScreen).toBe(true)
   // And it is the only one: last week, if drawn at all, is drawn as the page beside.
-  expect(mockMarks.filter((call) => call.onScreen).map((call) => call.from)).not.toContain(
-    '2026-11-09',
-  )
+  expect(subscribed()).not.toContain('2026-11-09')
 })
 
 it('opens on the week of an older selected day and keeps that one subscribed', async () => {
@@ -104,5 +107,22 @@ it('opens on the week of an older selected day and keeps that one subscribed', a
   await layOut()
 
   expect(lastFor('2026-10-26')?.onScreen).toBe(true)
-  expect(lastFor('2026-11-09')).toBeUndefined()
+  expect(subscribed()).not.toContain('2026-11-09')
+})
+
+it('keeps the week swiped to subscribed after the app resumes into a new week', async () => {
+  const { rerender } = await render(<WeekPicker />)
+  await layOut()
+  // iOS reports where the pager came to rest as soon as it opens; a swipe does the same.
+  const pager = findHost((props) => typeof props.onMomentumScrollEnd === 'function')
+  await act(async () => {
+    fireEvent(pager, 'momentumScrollEnd', {
+      nativeEvent: { contentOffset: { x: WIDTH * 52, y: 0 } },
+    })
+  })
+
+  await resumeOn('2026-11-16', rerender)
+
+  expect(lastFor('2026-11-16')?.onScreen).toBe(true)
+  expect(subscribed()).not.toContain('2026-11-09')
 })

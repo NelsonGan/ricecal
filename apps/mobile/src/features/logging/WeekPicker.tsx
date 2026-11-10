@@ -124,12 +124,11 @@ export function WeekPicker({ className }: { className?: string }) {
    * date, it named last week instead, and the week on screen stopped refreshing
    * its dots until the next swipe.
    */
-  const page = useRef<number | null>(null)
-  if (page.current === null) {
+  const [page] = useState(() => {
     const start = dateKey(startOfWeek(parseISO(selectedDate), { weekStartsOn: WEEK_STARTS_ON }))
     const found = weeks.indexOf(start)
-    page.current = found === -1 ? weeks.length - 1 : found
-  }
+    return found === -1 ? weeks.length - 1 : found
+  })
 
   /**
    * The page on screen, kept for when the strip changes width. Pages are as wide
@@ -142,7 +141,7 @@ export function WeekPicker({ className }: { className?: string }) {
   // The same page as state, for the one thing that renders off it: which week
   // keeps its dots current. See `useDayMarks`.
   const [shown, setShown] = useState<number | null>(null)
-  const onScreen = weeks[shown ?? page.current]
+  const onScreen = weeks[shown ?? page]
 
   return (
     <View className={className} onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
@@ -162,7 +161,7 @@ export function WeekPicker({ className }: { className?: string }) {
           // the offset is arithmetic and the list never has to measure to find
           // it — which is what `initialScrollIndex` needs to land first try.
           key={width}
-          initialScrollIndex={showing.current ?? page.current}
+          initialScrollIndex={showing.current ?? page}
           onMomentumScrollEnd={(event) => {
             showing.current = Math.round(event.nativeEvent.contentOffset.x / width)
             setShown(showing.current)
