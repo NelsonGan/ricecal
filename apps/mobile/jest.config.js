@@ -38,7 +38,7 @@ module.exports = {
   // monorepo of many jest packages does not start a worker pool in each. This
   // repo has one jest package, so under `pnpm check` that meant every suite on
   // one core, in the main process, and then a five minute wait on the timers
-  // the tests had left behind (see the end of jest.setup.js). CI spent 5m25s
+  // the tests had left behind (see the end of jest.setup.js). CI spent 5m50s
   // on a 2m09s run.
   //
   // Three of a runner's four cores in CI, where the tests are what the job is
