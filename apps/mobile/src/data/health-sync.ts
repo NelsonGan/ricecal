@@ -18,6 +18,7 @@ import type {
 } from '@/lib/health'
 import { endOf, providerFor, startOf } from '@/lib/health'
 import { ageFrom, basalRate } from '@/lib/nutrition'
+import { screenshotMode } from '@/lib/screenshot-mode'
 import { supabase } from '@/lib/supabase'
 import { daysAgo, type HealthConnection, toConnection } from './activity'
 import { dateKey } from './client'
@@ -974,7 +975,7 @@ export function useHealthAutoSync(provider: ProviderId | null): {
 
   const run = useCallback(
     (force: boolean, urgent = false) => {
-      if (!provider) return
+      if (!provider || screenshotMode) return
       if (running.current) {
         if (urgent) again.current = true
         return
