@@ -117,13 +117,18 @@ export function WeekPicker({ className }: { className?: string }) {
    *
    * Read once at mount, which is all `initialScrollIndex` is for: picking a day
    * inside the visible week must not scroll the pager.
+   *
+   * Kept as a position, not a date. The list always holds the same number of
+   * weeks, so when the app comes back in a new week every week slides one place
+   * and the position on screen now holds the new week. Worked out again from the
+   * date, it named last week instead, and the week on screen stopped refreshing
+   * its dots until the next swipe.
    */
-  const initial = useRef(selectedDate).current
-  const page = useMemo(() => {
-    const start = dateKey(startOfWeek(parseISO(initial), { weekStartsOn: WEEK_STARTS_ON }))
+  const [page] = useState(() => {
+    const start = dateKey(startOfWeek(parseISO(selectedDate), { weekStartsOn: WEEK_STARTS_ON }))
     const found = weeks.indexOf(start)
     return found === -1 ? weeks.length - 1 : found
-  }, [weeks, initial])
+  })
 
   /**
    * The page on screen, kept for when the strip changes width. Pages are as wide
