@@ -9208,6 +9208,45 @@ server, bypasses migrations entirely, and this job is the only thing that
 notices. A migration applied that way needs its file committed at the *same*
 version, or the job goes red on a change that is genuinely in the repo.
 
+### Localized screenshot fixtures
+
+This is the `app-studio-seed-data` branch: `main` plus the store-screenshot
+tooling. **It is never merged**; rebase it on `origin/main` before each capture.
+The `update-app-studio-screenshots` skill on `main` is the procedure. In short:
+
+- `scripts/screenshots/seed.mjs` (`pnpm screenshots:seed [locales]`) creates one
+  fictional, confirmed account per app language on the **local** stack (it
+  refuses hosted Supabase), with credentials only in `.secrets/screenshots.json`:
+  90 days of diary, water and activity history, weigh-ins, six saved recipes, a
+  local Pro subscription, six public food posts by two followed cooks, an
+  unfollowed cook for Discover, and 16 push days so the logger has a PREVIOUS
+  column. English, Malay and both Chinese scripts use Malaysian dishes; the
+  others use their own market's. Rerun it on the capture day so Today lines up.
+  It uploads 60 generated food photos through the `photos` function, so the
+  stack's photo storage must be reachable (`R2_ENDPOINT` in
+  `apps/supabase/functions/.env` must be this Mac's current address).
+- `pnpm screenshots:setup` writes the gitignored mobile env for the local stack
+  with analytics off and `EXPO_PUBLIC_SCREENSHOT_MODE=true`, which stops Health
+  sync from replacing the activity fixtures and keeps the logging sheet from
+  focusing its field.
+- `scripts/screenshots/capture.mjs` (`pnpm screenshots:capture --udid <UDID>
+  --agent-device <command> --port <metro port> --output <dir>`) runs on a Simlock
+  lease: an `iPhone 18 Pro Max` (1320 × 2868) or an open `iPhone Duo`
+  (2853 × 2007). It reaches the app through Metro's debugger, signs into each
+  language's account, sets the language, routes to the six screens, checks each
+  route and that every query succeeded, and stages the PNGs before replacing the
+  set and its `capture.json`. iPhone shots come from `agent-device`; the Duo is
+  unfolded with `agent-device`'s fold helper through `simctl spawn` and captured
+  with `simctl io --display=3`, because `agent-device` cannot see simulators in
+  Simlock's device set.
+- `pnpm screenshots:test` runs the tooling's failure-path checks.
+
+The food images were generated in ten batches with the Malaysian sheet as the
+reference. Source sheets are in `scripts/screenshots/batches/`, prompts in
+`image-prompts.mjs`, and `pnpm screenshots:crop` reproduces the 60 JPEGs. The
+manifest `scripts/screenshots/photos.json` records each image's prompt, crop
+and checksum, and is copied beside the captures as `photo-provenance.json`.
+
 ### pgTAP
 
 `apps/supabase/tests/*.test.sql`, run with `pnpm db:test`. Each file is one
