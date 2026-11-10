@@ -5,7 +5,7 @@ import {
   QueryObserver,
   useQuery,
 } from '@tanstack/react-query'
-import { act, renderHook } from '@testing-library/react-native'
+import { act, renderHook, waitFor } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 
 import type { HealthReading } from '@/lib/health'
@@ -407,16 +407,22 @@ describe('a drink recorded', () => {
     await unmount()
   })
 
-  it('does not let a read that started during the tap put the drink back', async () => {
+  /**
+   * A tap, and a read of the day that starts while it is out: a meal finishing,
+   * say. The server's row has the drink once the tap is answered, and a read
+   * sees the row as it was when the read began, so that read is a drink short.
+   */
+  async function readDuringTap({ leaveTheDay }: { leaveTheDay: boolean }) {
     const { client, wrapper } = setup()
-    client.setQueryData(keys.day(USER, DATE), day(500))
-    // The server's row: the drink is in it once the tap has been answered, and
-    // a read sees the row as it was when the read began.
+    const key = keys.day(USER, DATE)
+    client.setQueryData(key, day(500))
     let committed = false
+    const reads = { count: 0 }
     const observer = new QueryObserver(client, {
-      queryKey: keys.day(USER, DATE),
+      queryKey: key,
       staleTime: Number.POSITIVE_INFINITY,
       queryFn: () => {
+        reads.count += 1
         const seen = committed ? 750 : 500
         return new Promise<DayLog>((resolve) => setTimeout(() => resolve(day(seen)), 30))
       },
@@ -434,19 +440,30 @@ describe('a drink recorded', () => {
     await act(async () => {
       result.current.mutate(250)
     })
-    // A meal finishes saving while the drink is out, and the day is read again.
     await act(async () => {
-      client.invalidateQueries({ queryKey: keys.day(USER, DATE) })
+      client.invalidateQueries({ queryKey: key })
     })
+    expect(reads.count).toBe(1)
+    // Another day is picked on the strip, so nothing is showing this one.
+    if (leaveTheDay) stop()
     await act(async () => {
       committed = true
       answer({ data: 750, error: null })
     })
-    await act(async () => new Promise<void>((resolve) => setTimeout(resolve, 80)))
+    await waitFor(() => expect(client.isFetching({ queryKey: key })).toBe(0))
 
-    expect(client.getQueryData<DayLog>(keys.day(USER, DATE))?.waterMl).toBe(750)
-    stop()
+    if (!leaveTheDay) stop()
     await unmount()
+    return { waterMl: client.getQueryData<DayLog>(key)?.waterMl, reads: reads.count }
+  }
+
+  it('does not let a read that started during the tap put the drink back', async () => {
+    // The read that saw the old row is replaced by one that sees the drink.
+    expect(await readDuringTap({ leaveTheDay: false })).toEqual({ waterMl: 750, reads: 2 })
+  })
+
+  it('does not either when another day is showing by the time the tap is answered', async () => {
+    expect(await readDuringTap({ leaveTheDay: true })).toEqual({ waterMl: 750, reads: 2 })
   })
 
   it('asks for the day when the drink failed', async () => {

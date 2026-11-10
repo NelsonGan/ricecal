@@ -349,8 +349,10 @@ export function useAddWater(date: string) {
         // order, so the last to arrive is not always the last the server
         // added; a read of the day that a tap cancelled is still owed, or a
         // meal that landed meanwhile would wait for the next foreground; and
-        // one still out is replaced by a read that sees the drink.
-        queryClient.invalidateQueries({ queryKey: key })
+        // one still out is replaced by a read that sees the drink. Replaced
+        // even when the day is no longer on screen: left alone, that read
+        // lands with the old total and is what the day shows when it is back.
+        queryClient.invalidateQueries({ queryKey: key, refetchType: reading ? 'all' : 'active' })
       }
       // The water card counts this drink in its line, its average and its goal
       // days. Not optimistic, unlike the tank itself: nothing on Trends is
