@@ -572,6 +572,9 @@ jobs:
           CMAKE_CXX_COMPILER_LAUNCHER: ccache
         run: |
           mkdir -p build
+          # The counters come back with the restored cache; start them at zero
+          # so the statistics step below describes this build alone.
+          ccache --zero-stats
           eas build \
             --platform ${{ matrix.platform }} \
             --profile ${{ matrix.profile }} \
