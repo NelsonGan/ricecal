@@ -84,8 +84,10 @@ on:
         type: boolean
         default: true
 
+# The platform is in the group so that dispatching one platform does not
+# cancel a dispatch of the other. It is empty on a push or a pull request.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.platform }}
   cancel-in-progress: true
 
 jobs:
@@ -445,6 +447,14 @@ jobs:
       # app uses ccache whenever it is installed. The two `CMAKE_*_LAUNCHER`
       # variables at the build step extend that to the libraries with their own
       # CMake project (Reanimated, Worklets, Skia, Nitro).
+      #
+      # `CCACHE_BINARY` is exported because the iOS half does nothing without
+      # it, and says nothing either. The Podfile hook points Xcode's compiler at
+      # a wrapper script that runs `$CCACHE_BINARY clang`, and sets that name as
+      # a build setting. Xcode 27 does not hand build settings to a compile, so
+      # the wrapper ran plain `clang`: a first build with ccache "on" compiled
+      # for 22 minutes and recorded no calls at all. A variable in the
+      # environment does reach the compile.
       - name: Set up the compiler cache
         run: |
           if [ "$RUNNER_OS" = macOS ]; then
@@ -461,6 +471,7 @@ jobs:
             'compiler_check = %compiler% -v' \
             'sloppiness = include_file_ctime,include_file_mtime,time_macros' \
             | sudo tee "$conf"
+          echo "CCACHE_BINARY=$(command -v ccache)" >> "$GITHUB_ENV"
           ccache --version | head -1
           ccache --show-config | grep -E '(cache_dir|compiler_check|max_size|sloppiness) ='
 
