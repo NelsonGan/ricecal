@@ -60,11 +60,18 @@ jobs:
 
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
+      # The website's manifest is in the cache's name because this job fills
+      # the pnpm store with the website's packages only. Named after the
+      # lockfile alone it shared one cache with the whole-workspace installs
+      # (`deploy.yml`), and whichever saved first was what the rest restored.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            apps/web/package.json
 
       # The website and what it depends on, not the whole workspace: the root
       # install pulls Expo and its native toolchain.

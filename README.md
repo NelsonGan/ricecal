@@ -9316,8 +9316,9 @@ test traffic to PostHog and GA4 as production.
 
 Pull requests run the same split. **CI / CD** (`deploy.yml`) runs its Test job
 (`pnpm check`, which covers every package, the website and the studio included)
-unless the PR touches only `apps/web` or `apps/app-studio`. **Web**, **App
-Studio** and **Cloudflare** run when their own folder changes. No check is
+and, beside it, its Bundle job (the app's JavaScript through Metro for both
+platforms) unless the PR touches only `apps/web` or `apps/app-studio`. **Web**,
+**App Studio** and **Cloudflare** run when their own folder changes. No check is
 required on `main`.
 
 ## Testing
@@ -9342,6 +9343,51 @@ read-only: anything applied through the SQL editor, or through the Supabase MCP
 server, bypasses migrations entirely, and this job is the only thing that
 notices. A migration applied that way needs its file committed at the *same*
 version, or the job goes red on a change that is genuinely in the repo.
+
+### What CI keeps between runs
+
+Every cache is named after what it depends on, and a cache is written once
+under a name and never rewritten. Both halves have gone wrong here: a cache
+named after files that do not exist is one name for ever (the Gradle cache was
+saved once and restored unchanged for three months), and two jobs sharing a
+name share whichever of them saved first.
+
+| Cache | Named after | Used by |
+|---|---|---|
+| pnpm store, whole workspace | the lockfile and `pnpm-workspace.yaml` | `deploy.yml` |
+| pnpm store, one package | the lockfile and that package's `package.json` | `web.yml`, `app-studio.yml`, `cloudflare.yml` |
+| Turbo task results (`.turbo/cache`) | the Node version and the commit, falling back to the newest earlier commit | Test |
+| jest transforms (`apps/mobile/node_modules/.cache/jest`) | the lockfile | Test |
+| Metro transforms (`apps/mobile/node_modules/.cache/metro`) | the lockfile | Bundle |
+| EAS CLI | its version | the store build |
+| React Native's prebuilt iOS frameworks | the React Native version | the iOS store build |
+| CocoaPods downloads, Gradle | the lockfile | the store build |
+
+A pull request can read a cache saved on `main`, and never one saved by another
+pull request. So a cache is only worth having if a job on `main` saves it, which
+is why Bundle runs on `main` as well, where nothing waits on it.
+
+`ios/` and `android/` are prebuild output and are never in a CI checkout, so
+nothing under them can name a cache.
+
+**Turbo replays a task whose inputs have not changed, on a pull request as on
+your machine, so a file a task reads and Turbo does not know about is a check
+that stops running.** A task's inputs are its own package's tracked files, the
+lockfile, and the tasks it depends on. Anything else is named in `turbo.json`:
+the root one lists the README and the SQL schemas the tests read, and makes
+`test` depend on `^test` so an edit to `packages/shared` re-runs the app's
+tests; the jobs Worker's own `turbo.json` lists the edge-function source it
+imports. A new test or import that reaches outside its package needs the same
+line. Test on `main` replays nothing (`TURBO_FORCE`), since it is what stands
+between a merge and the stores, so a pull request that passed on a replay it
+should not have had goes red there before anything is built.
+
+**The app's jest config sets `maxWorkers` itself.** The `jest-expo` preset sets
+it to 1 whenever Turbo is the caller, which here ran every suite in one process
+and then left that process waiting five minutes on the timer react-query starts
+for each query a test had seeded. That was most of what `pnpm check` took, in CI
+and locally. `jest.setup.js` now tells Node not to wait for those timers, so a
+single file or `jest -i` exits when its tests do.
 
 ### pgTAP
 

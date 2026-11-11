@@ -13,7 +13,15 @@ name: Supabase Migrations
 
 on:
   pull_request:
-    paths: ['apps/supabase/**']
+    paths:
+      - 'apps/supabase/**'
+      - '.github/workflows/supabase-migrations.yml'
+
+# A newer push to a pull request replaces its older run. Without this every
+# push left its own two and a half minutes of Postgres running to the end.
+concurrency:
+  group: supabase-migrations-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   migrations:

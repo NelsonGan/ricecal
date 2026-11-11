@@ -48,11 +48,17 @@ jobs:
 
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
 
+      # The studio's manifest is in the cache's name because this job fills the
+      # pnpm store with the studio's packages only (see the same note in
+      # `web.yml`).
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
+          cache-dependency-path: |
+            pnpm-lock.yaml
+            apps/app-studio/package.json
 
       # The Search creative tests encode and decode real video.
       - name: Install ffmpeg
