@@ -9362,6 +9362,7 @@ name share whichever of them saved first.
 | EAS CLI | its version | the store build |
 | React Native's prebuilt iOS frameworks | the React Native version | the iOS store build |
 | CocoaPods downloads, Gradle | the lockfile | the store build |
+| Compiled C, C++ and Objective-C (ccache) | the lockfile, and the Xcode version on iOS | the store build |
 
 A pull request can read a cache saved on `main`, and never one saved by another
 pull request. So a cache is only worth having if a job on `main` saves it, which
@@ -9369,6 +9370,41 @@ is why Bundle runs on `main` as well, where nothing waits on it.
 
 `ios/` and `android/` are prebuild output and are never in a CI checkout, so
 nothing under them can name a cache.
+
+**The compiler cache is most of what a store build no longer does.** With it
+warm, the Android build step went from about 30 minutes to 9. iOS gains less,
+about 5 minutes off the Xcode phase, because most of what Xcode still compiles
+there is Swift. ccache keeps each compiled C, C++ and
+Objective-C file under a hash of its source, the headers it includes, the flags
+and the compiler's version, and hands it back when all of them match. Swift and
+Kotlin are not cached. Three things it depends on, each of which fails without
+an error:
+
+- **The build runs in the same directory every time**
+  (`EAS_LOCAL_BUILD_WORKINGDIR`), because the paths in a compile command are
+  part of the hash.
+- **`CCACHE_BINARY` is in the environment on iOS.** React Native's compiler
+  wrapper runs `$CCACHE_BINARY clang`, Xcode 27 does not pass the build setting
+  that holds that name to a compile, and without it the wrapper runs plain
+  `clang`.
+- **Its settings are environment variables, not config files.** The same
+  wrapper names React Native's own config file, and ccache then reads no other.
+
+The "Compiler cache statistics" step in the job log says how many compiles were
+hits. If it says none on a build whose lockfile did not change, start with
+those three. A build that misses more than a twentieth of its compiles saves a
+new cache; one that hits saves nothing. It is a cache with deliberate
+looseness: React Native's settings for iOS skip the checks on system headers,
+precompiled header defines and `__TIME__`, so if a store build ever misbehaves
+in native code that did not change, rule the cache out by bumping the name in
+"Restore the compiler cache".
+
+**A store build can be tried without releasing it.** Run **CI / CD** by hand
+with `submit` off (`gh workflow run deploy.yml --ref <branch> -f platform=all
+-f profile=production -f submit=false`): it builds and stops, from any branch.
+Each such build still takes the next build number, since the production profile
+increments it when the build starts, and saves its own compiler cache, which
+only that branch can read.
 
 **Turbo replays a task whose inputs have not changed, on a pull request as on
 your machine, so a file a task reads and Turbo does not know about is a check
