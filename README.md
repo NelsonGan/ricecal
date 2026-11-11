@@ -9362,7 +9362,8 @@ name share whichever of them saved first.
 | EAS CLI | its version | the store build |
 | React Native's prebuilt iOS frameworks | the React Native version | the iOS store build |
 | CocoaPods downloads, Gradle | the lockfile | the store build |
-| Compiled C, C++ and Objective-C (ccache) | the lockfile, and the Xcode version on iOS | the store build |
+| Compiled C, C++ and Objective-C (ccache) | the run, falling back to the newest for the lockfile, then for the toolchain | the store build |
+| Compiled Swift (Xcode's compilation cache) | the lockfile and the Xcode version | the iOS store build |
 
 A pull request can read a cache saved on `main`, and never one saved by another
 pull request. So a cache is only worth having if a job on `main` saves it, which
@@ -9372,13 +9373,14 @@ is why Bundle runs on `main` as well, where nothing waits on it.
 nothing under them can name a cache.
 
 **The compiler cache is most of what a store build no longer does.** With it
-warm, the Android build step went from about 30 minutes to 9. iOS gains less,
-about 5 minutes off the Xcode phase, because most of what Xcode still compiles
-there is Swift. ccache keeps each compiled C, C++ and
+and the Swift cache below both warm, the build step went from about 30 minutes
+to 9 on Android and from about 25 to 10 on iOS. On its own it takes about 5
+minutes off the iOS one, because most of what Xcode compiles there is Swift.
+ccache keeps each compiled C, C++ and
 Objective-C file under a hash of its source, the headers it includes, the flags
-and the compiler's version, and hands it back when all of them match. Swift and
-Kotlin are not cached. Three things it depends on, each of which fails without
-an error:
+and the compiler's version, and hands it back when all of them match. It does
+nothing for Swift or Kotlin. Three things it depends on, each of which fails
+without an error:
 
 - **The build runs in the same directory every time**
   (`EAS_LOCAL_BUILD_WORKINGDIR`), because the paths in a compile command are
@@ -9398,6 +9400,15 @@ looseness: React Native's settings for iOS skip the checks on system headers,
 precompiled header defines and `__TIME__`, so if a store build ever misbehaves
 in native code that did not change, rule the cache out by bumping the name in
 "Restore the compiler cache".
+
+**Swift on iOS goes through Xcode's own compilation cache**, which is off unless
+asked for. The workflow asks through `XCODE_XCCONFIG_FILE`, a file of build
+settings that xcodebuild applies to every target, so the Podfile and the app's
+config know nothing about it and a build on a laptop is unchanged. The two
+caches do not overlap: Xcode leaves C, C++ and Objective-C out of its own cache
+once the compiler is a wrapper script, which is what ccache makes it. What the
+Swift pods compile to is most of that cache and changes only with the lockfile;
+the app's own Swift is compiled on every release.
 
 **A store build can be tried without releasing it.** Run **CI / CD** by hand
 with `submit` off (`gh workflow run deploy.yml --ref <branch> -f platform=all
