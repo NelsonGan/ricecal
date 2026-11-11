@@ -6,8 +6,10 @@ name: CI / CD
 # - **pull_request** → Test only. A PR publishes nothing: no `eas update`, no
 #   Worker version, no preview comment. To try a branch on a device, run it
 #   from a dev client against your own Metro.
-# - **workflow_dispatch** → one platform, any profile; `development` takes the
-#   cloud dev-client path instead of the store one.
+# - **workflow_dispatch** → one platform or both, any profile; `development`
+#   takes the cloud dev-client path instead of the store one. With `submit`
+#   off it builds and stops, from any branch: the only way to try a change to
+#   the store build before it is on main.
 #
 # The Worker deploy is not here — it lives in `cloudflare.yml`, which runs on
 # main when `apps/cloudflare/**` changes, and putting it here too would deploy
@@ -21,7 +23,7 @@ name: CI / CD
 
 run-name: >-
   ${{ github.event_name == 'pull_request' && format('PR · #{0}', github.event.number)
-   || github.event_name == 'workflow_dispatch' && format('Manual · {0}/{1}', github.event.inputs.platform, github.event.inputs.profile)
+   || github.event_name == 'workflow_dispatch' && format('Manual · {0}/{1}{2}', github.event.inputs.platform, github.event.inputs.profile, github.event.inputs.submit == 'false' && ' · build only' || '')
    || github.ref == 'refs/heads/main' && 'Production Release'
    || format('Branch · {0}', github.ref_name) }}
 
@@ -64,6 +66,7 @@ on:
         options:
           - ios
           - android
+          - all
       profile:
         description: EAS profile
         type: choice
@@ -76,6 +79,10 @@ on:
         description: Xcode version (iOS only, e.g. 27.0) — blank uses the pinned version
         type: string
         default: ''
+      submit:
+        description: Submit the build to the store (off builds only, and may run from any branch)
+        type: boolean
+        default: true
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -235,6 +242,8 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = "push" ]; then
             echo 'include=[{"platform":"ios","label":"iOS","os":"xcode-27","profile":"production"},{"platform":"android","label":"Android","os":"ubuntu-latest","profile":"production"}]' >> "$GITHUB_OUTPUT"
+          elif [ "${{ inputs.platform }}" = "all" ]; then
+            echo "include=[{\"platform\":\"ios\",\"label\":\"iOS\",\"os\":\"xcode-27\",\"profile\":\"${{ inputs.profile }}\"},{\"platform\":\"android\",\"label\":\"Android\",\"os\":\"ubuntu-latest\",\"profile\":\"${{ inputs.profile }}\"}]" >> "$GITHUB_OUTPUT"
           else
             if [ "${{ inputs.platform }}" = "ios" ]; then
               os="xcode-27"
@@ -277,10 +286,12 @@ jobs:
       # problem and is not one. Same fix as the `ios` script in package.json.
       LANG: en_US.UTF-8
     steps:
+      # Only a build that will be submitted has to come from main. A dispatch
+      # with `submit` off stops after the build, so it may run from a branch.
       - name: Verify branch
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/main' && (github.event_name != 'workflow_dispatch' || inputs.submit)
         run: |
-          echo "Deploy can only run on main (got ${{ github.ref }})."
+          echo "Only main can be submitted to the stores (got ${{ github.ref }})."
           exit 1
 
       - uses: actions/checkout@v4
@@ -411,6 +422,59 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('pnpm-lock.yaml') }}
 
+      # Most of a store build is compiling C, C++ and Objective-C that has not
+      # changed since the last one: React Native's libraries, Skia, Reanimated,
+      # the code generated for every native module. ccache keeps each compiled
+      # file, keyed on its preprocessed source and the compiler's flags, and
+      # hands it back when both match.
+      #
+      # Three things make that work on a fresh runner:
+      #
+      # - `compiler_check` asks the compiler for its version instead of looking
+      #   at the binary's timestamp, which changes with every runner image. On
+      #   iOS the binary is also `/usr/bin/clang`, a shim that is identical
+      #   whichever Xcode is selected.
+      # - the build runs in the same directory every time (see
+      #   `EAS_LOCAL_BUILD_WORKINGDIR` at the build step), because the paths in
+      #   a compile command are part of what ccache compares.
+      # - `sloppiness` lets it use headers written moments before the compile,
+      #   which is every header on a runner that has just installed them.
+      #
+      # React Native already knows about ccache on both platforms: its Podfile
+      # hook wraps the compiler when `USE_CCACHE=1`, and its CMake file for the
+      # app uses ccache whenever it is installed. The two `CMAKE_*_LAUNCHER`
+      # variables at the build step extend that to the libraries with their own
+      # CMake project (Reanimated, Worklets, Skia, Nitro).
+      - name: Set up the compiler cache
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install ccache
+            conf="$(brew --prefix)/etc/ccache.conf"
+          else
+            install() { sudo apt-get install -y -qq ccache > /dev/null; }
+            install || { sudo apt-get update -qq && install; }
+            conf=/etc/ccache.conf
+          fi
+          sudo mkdir -p "$(dirname "$conf")"
+          printf '%s\n' \
+            'max_size = 2G' \
+            'compiler_check = %compiler% -v' \
+            'sloppiness = include_file_ctime,include_file_mtime,time_macros' \
+            | sudo tee "$conf"
+          ccache --version | head -1
+          ccache --show-config | grep -E '(cache_dir|compiler_check|max_size|sloppiness) ='
+
+      # Named after the lockfile, like the two above, plus the Xcode version on
+      # iOS. ccache keeps itself under `max_size`, so unlike those it could be
+      # carried from one lockfile to the next; it is not, because every carried
+      # copy is another 2 GB against the repository's 10 GB of cache.
+      - name: Restore the compiler cache
+        id: ccache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ matrix.platform == 'ios' && '~/Library/Caches/ccache' || '~/.cache/ccache' }}
+          key: ccache-${{ matrix.platform }}-${{ matrix.platform == 'ios' && (github.event.inputs.xcode || '27.1') || 'ndk' }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - run: pnpm install --frozen-lockfile
 
       # `pod install` downloads React Native's prebuilt iOS frameworks (about
@@ -489,6 +553,12 @@ jobs:
           # starve a build of the disk it was going to use — it only leaves the
           # tree behind on a runner that is about to be destroyed anyway.
           EAS_LOCAL_BUILD_SKIP_CLEANUP: '1'
+          # The same directory on every run, where the default is a new random
+          # one under the temp folder. See "Set up the compiler cache".
+          EAS_LOCAL_BUILD_WORKINGDIR: ${{ runner.temp }}/eas-build-local
+          USE_CCACHE: '1'
+          CMAKE_C_COMPILER_LAUNCHER: ccache
+          CMAKE_CXX_COMPILER_LAUNCHER: ccache
         run: |
           mkdir -p build
           eas build \
@@ -497,6 +567,20 @@ jobs:
             --local \
             --non-interactive \
             --output=${{ steps.output.outputs.file }}
+
+      # How much of the build came out of the cache, in the job log.
+      - name: Compiler cache statistics
+        if: always()
+        continue-on-error: true
+        run: ccache --show-stats --verbose
+
+      - name: Save the compiler cache
+        if: steps.ccache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ matrix.platform == 'ios' && '~/Library/Caches/ccache' || '~/.cache/ccache' }}
+          key: ${{ steps.ccache.outputs.cache-primary-key }}
 
       - name: Save CocoaPods downloads
         if: matrix.platform == 'ios' && steps.pods-cache.outputs.cache-hit != 'true'
@@ -530,12 +614,11 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/raw-logs" build-logs
           cp -R ~/Library/Logs/gym "$RUNNER_TEMP/raw-logs/gym" 2>/dev/null || true
-          # The local build plugin works out of a temp directory whose name is a
-          # fresh uuid per run, so the logs can only be found by searching. The
-          # `logs/` subdirectory of that tree is where gym's raw xcodebuild
+          # The local build's working directory (EAS_LOCAL_BUILD_WORKINGDIR
+          # above). Its `logs/` subdirectory is where gym's raw xcodebuild
           # output lands, and it survives the build only because of
           # EAS_LOCAL_BUILD_SKIP_CLEANUP above.
-          find "${TMPDIR:-/tmp}" -maxdepth 8 -path '*eas-build-local*' \
+          find "$RUNNER_TEMP/eas-build-local" -maxdepth 6 \
             \( -name '*.log' -o -name '*.txt' \) \
             -exec cp {} "$RUNNER_TEMP/raw-logs/" \; 2>/dev/null || true
           # The artifact is public, and GitHub masks secrets in the job log only,
@@ -592,6 +675,7 @@ jobs:
       # unchanged: `ascAppId` sends it to TestFlight, and putting that build in
       # front of users is still a submission somebody makes in App Store Connect.
       - name: Submit build
+        if: github.event_name != 'workflow_dispatch' || inputs.submit
         working-directory: apps/mobile
         run: |
           eas submit \
