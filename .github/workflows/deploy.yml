@@ -6,8 +6,10 @@ name: CI / CD
 # - **pull_request** → Test only. A PR publishes nothing: no `eas update`, no
 #   Worker version, no preview comment. To try a branch on a device, run it
 #   from a dev client against your own Metro.
-# - **workflow_dispatch** → one platform, any profile; `development` takes the
-#   cloud dev-client path instead of the store one.
+# - **workflow_dispatch** → one platform or both, any profile; `development`
+#   takes the cloud dev-client path instead of the store one. With `submit`
+#   off it builds and stops, from any branch: the only way to try a change to
+#   the store build before it is on main.
 #
 # The Worker deploy is not here — it lives in `cloudflare.yml`, which runs on
 # main when `apps/cloudflare/**` changes, and putting it here too would deploy
@@ -21,7 +23,7 @@ name: CI / CD
 
 run-name: >-
   ${{ github.event_name == 'pull_request' && format('PR · #{0}', github.event.number)
-   || github.event_name == 'workflow_dispatch' && format('Manual · {0}/{1}', github.event.inputs.platform, github.event.inputs.profile)
+   || github.event_name == 'workflow_dispatch' && format('Manual · {0}/{1}{2}', github.event.inputs.platform, github.event.inputs.profile, (github.event.inputs.submit == 'false' || github.event.inputs.profile != 'production') && ' · build only' || '')
    || github.ref == 'refs/heads/main' && 'Production Release'
    || format('Branch · {0}', github.ref_name) }}
 
@@ -64,6 +66,7 @@ on:
         options:
           - ios
           - android
+          - all
       profile:
         description: EAS profile
         type: choice
@@ -76,9 +79,19 @@ on:
         description: Xcode version (iOS only, e.g. 27.0) — blank uses the pinned version
         type: string
         default: ''
+      submit:
+        description: Submit the build to the store (off builds only, and may run from any branch)
+        type: boolean
+        default: true
 
+# Everything that can submit shares one group per ref, under the name it has
+# always had: a release and a dispatch on main must never both reach the
+# stores, and neither must two releases, one of them started before this file
+# last changed. A dispatch that cannot submit (`submit` off, or a profile other
+# than production; see WILL_SUBMIT) gets a group of its own per platform, so
+# that trying iOS does not cancel a try of Android, or a release.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.submit == 'false' || github.event.inputs.profile != 'production') && format('-build-only-{0}', github.event.inputs.platform) || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -232,19 +245,20 @@ jobs:
       - name: Resolve build matrix
         id: matrix
         shell: bash
+        env:
+          # A push builds both platforms for production; a dispatch builds what
+          # it was asked for.
+          PLATFORM: ${{ github.event_name == 'push' && 'all' || inputs.platform }}
+          PROFILE: ${{ github.event_name == 'push' && 'production' || inputs.profile }}
         run: |
-          if [ "${{ github.event_name }}" = "push" ]; then
-            echo 'include=[{"platform":"ios","label":"iOS","os":"xcode-27","profile":"production"},{"platform":"android","label":"Android","os":"ubuntu-latest","profile":"production"}]' >> "$GITHUB_OUTPUT"
-          else
-            if [ "${{ inputs.platform }}" = "ios" ]; then
-              os="xcode-27"
-              label="iOS"
-            else
-              os="ubuntu-latest"
-              label="Android"
-            fi
-            echo "include=[{\"platform\":\"${{ inputs.platform }}\",\"label\":\"$label\",\"os\":\"$os\",\"profile\":\"${{ inputs.profile }}\"}]" >> "$GITHUB_OUTPUT"
-          fi
+          ios="{\"platform\":\"ios\",\"label\":\"iOS\",\"os\":\"xcode-27\",\"profile\":\"$PROFILE\"}"
+          android="{\"platform\":\"android\",\"label\":\"Android\",\"os\":\"ubuntu-latest\",\"profile\":\"$PROFILE\"}"
+          case "$PLATFORM" in
+            ios) include="[$ios]" ;;
+            android) include="[$android]" ;;
+            *) include="[$ios,$android]" ;;
+          esac
+          echo "include=$include" >> "$GITHUB_OUTPUT"
 
   deploy:
     name: Production · App (${{ matrix.label }} · ${{ matrix.profile }})
@@ -260,6 +274,17 @@ jobs:
       contents: read
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # The one place the Xcode pin is written (see "Select Xcode").
+      XCODE_VERSION: ${{ github.event.inputs.xcode || '27.1' }}
+      # The first part of both compiler caches' names. Change the number to
+      # start them again from nothing, which is how to rule them out if a store
+      # build ever misbehaves in native code that did not change.
+      COMPILER_CACHE: compiled-1
+      # Whether this run ends in a store. A push always does. A dispatch does
+      # when it asks to and builds the production profile, which is the only
+      # one `eas.json` has a submit profile for: a preview build has nowhere
+      # to be submitted to.
+      WILL_SUBMIT: ${{ github.event_name != 'workflow_dispatch' || (inputs.submit && inputs.profile == 'production') }}
       # No POSTHOG_CLI_API_KEY here on purpose.
       #
       # When that key is set, app.config.ts adds PostHog's Expo plugin, which
@@ -277,10 +302,12 @@ jobs:
       # problem and is not one. Same fix as the `ios` script in package.json.
       LANG: en_US.UTF-8
     steps:
+      # Only a build that will be submitted has to come from main. One that
+      # stops after the build may run from a branch.
       - name: Verify branch
-        if: github.ref != 'refs/heads/main'
+        if: github.ref != 'refs/heads/main' && env.WILL_SUBMIT == 'true'
         run: |
-          echo "Deploy can only run on main (got ${{ github.ref }})."
+          echo "Only main can be submitted to the stores (got ${{ github.ref }})."
           exit 1
 
       - uses: actions/checkout@v4
@@ -337,14 +364,29 @@ jobs:
       # fails the job outright — and keep the pin at least as new as the
       # newest hardware the app adapts to.
       #
-      # The dispatch input overrides it and defaults to blank rather than to a
-      # version, so there is one place to change the pin and a dispatch run
-      # archives the same toolchain main does unless asked otherwise.
+      # The pin itself is `XCODE_VERSION` in this job's `env`, because the
+      # compiler cache is named after it too. The dispatch input overrides it
+      # and defaults to blank rather than to a version, so there is one place
+      # to change the pin and a dispatch run archives the same toolchain main
+      # does unless asked otherwise.
       - name: Select Xcode
         if: matrix.platform == 'ios'
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
-          xcode-version: ${{ github.event.inputs.xcode || '27.1' }}
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      # What the compiler caches are named after besides the lockfile. On iOS
+      # that is Xcode's build number rather than the pin: the image can move to
+      # a new patch of 27.1 under the same pin, and a cache of what the old
+      # compiler produced would then be restored for ever and match nothing.
+      - name: Identify the toolchain
+        id: toolchain
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            echo "id=xcode-$(xcodebuild -version | awk '/Build version/ { print $3 }')" >> "$GITHUB_OUTPUT"
+          else
+            echo "id=ndk" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
       - uses: actions/setup-node@v4
@@ -411,6 +453,134 @@ jobs:
             ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-${{ hashFiles('pnpm-lock.yaml') }}
 
+      # Most of a store build is compiling C, C++ and Objective-C that has not
+      # changed since the last one: React Native's libraries, Skia, Reanimated,
+      # the code generated for every native module. ccache keeps each compiled
+      # file under a hash of its source, the headers it includes, the flags and
+      # the compiler, and hands it back when all of them match.
+      #
+      # Three things make that work on a fresh runner:
+      #
+      # - `CCACHE_COMPILERCHECK` asks the compiler for its version instead of
+      #   looking at the binary's timestamp, which changes with every runner
+      #   image. On iOS the binary is also `/usr/bin/clang`, a shim that is
+      #   identical whichever Xcode is selected.
+      # - the build runs in the same directory every time (see
+      #   `EAS_LOCAL_BUILD_WORKINGDIR` at the build step), because the paths in
+      #   a compile command are part of what ccache compares.
+      # - `CCACHE_SLOPPINESS` lets it use headers written moments before the
+      #   compile, which is every header on a runner that has just installed
+      #   them. Android only: on iOS React Native's own `ccache.conf` sets a
+      #   longer list, and a variable here would replace it.
+      #
+      # All of it is set through the environment and none through ccache's
+      # config files. React Native's iOS wrapper names its own config file
+      # (`CCACHE_CONFIGPATH`), and ccache then reads no other, so a setting
+      # written to the system file reached Android's compiles and never iOS's.
+      #
+      # React Native already knows about ccache on both platforms: its Podfile
+      # hook wraps the compiler when `USE_CCACHE=1`, and its CMake file for the
+      # app uses ccache whenever it is installed. The two `CMAKE_*_LAUNCHER`
+      # variables extend that to the libraries with their own CMake project
+      # (Reanimated, Worklets, Skia, Nitro).
+      #
+      # `CCACHE_BINARY` is exported because the iOS half does nothing without
+      # it, and says nothing either. The Podfile hook points Xcode's compiler at
+      # a wrapper script that runs `$CCACHE_BINARY clang`, and sets that name as
+      # a build setting. Xcode 27 does not hand build settings to a compile, so
+      # the wrapper ran plain `clang`: a first build with ccache "on" compiled
+      # for 22 minutes and recorded no calls at all. A variable in the
+      # environment does reach the compile.
+      #
+      # The build does not need any of this, so nothing here may stop a
+      # release: if the install fails, the variables are never exported and the
+      # build compiles everything as it always did.
+      - name: Set up the compiler cache
+        id: ccache-setup
+        continue-on-error: true
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install ccache
+          else
+            install() { sudo apt-get install -y -qq ccache > /dev/null; }
+            install || { sudo apt-get update -qq && install; }
+            echo "CCACHE_SLOPPINESS=include_file_ctime,include_file_mtime,time_macros" >> "$GITHUB_ENV"
+          fi
+          # On their own lines so that a ccache which is missing or broken
+          # fails this step, and the variables below are never exported.
+          ccache_binary=$(command -v ccache)
+          "$ccache_binary" --version
+          {
+            echo "CCACHE_BINARY=$ccache_binary"
+            echo "CCACHE_DIR=$HOME/.cache/ccache"
+            echo "CCACHE_MAXSIZE=2G"
+            echo "CCACHE_COMPILERCHECK=%compiler% -v"
+            echo "USE_CCACHE=1"
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache"
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache"
+          } >> "$GITHUB_ENV"
+
+      # A new name on every run, so this never restores by its own name: it
+      # takes the newest cache for this lockfile, or failing that the newest
+      # for this toolchain, since most of what a new lockfile compiles is what
+      # the old one did. Unlike Gradle's and CocoaPods' caches, ccache keeps
+      # itself under `CCACHE_MAXSIZE`, so carrying it forward cannot grow it.
+      # Whether to save one is decided after the build, from what it did.
+      - name: Restore the compiler cache
+        id: ccache
+        if: steps.ccache-setup.outcome == 'success'
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ccache
+          key: ${{ env.COMPILER_CACHE }}-ccache-${{ matrix.platform }}-${{ steps.toolchain.outputs.id }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            ${{ env.COMPILER_CACHE }}-ccache-${{ matrix.platform }}-${{ steps.toolchain.outputs.id }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            ${{ env.COMPILER_CACHE }}-ccache-${{ matrix.platform }}-${{ steps.toolchain.outputs.id }}-
+
+      # The counters come back with the restored cache. Start them at zero, so
+      # that the statistics step after the build describes this build alone,
+      # and a job that fails before it ever compiles reports nothing to save.
+      - name: Reset the compiler cache's counters
+        if: steps.ccache-setup.outcome == 'success'
+        continue-on-error: true
+        run: ccache --zero-stats
+
+      # ccache does nothing for Swift, and with the C family cached Swift is
+      # most of what Xcode still compiles: the Swift pods (RevenueCat, PostHog,
+      # the Expo modules that ship as source), then the app, its widgets and
+      # the watch app. Xcode has a cache of its own for that, keyed on content
+      # like ccache's, and it is off unless asked for. The two do not overlap:
+      # Xcode leaves the C family out of its cache once the compiler is a
+      # wrapper script, which is what ccache makes it.
+      #
+      # It is asked for through `XCODE_XCCONFIG_FILE`, a file of build settings
+      # that xcodebuild applies to every target when the variable names one.
+      # That keeps it in this workflow: the Podfile and the app's config are
+      # untouched, and a build on a laptop is as it was.
+      #
+      # Named after the lockfile and Xcode's build number, with no `restore-keys`,
+      # like Gradle's and CocoaPods': Xcode does not trim this folder, so a copy
+      # carried from one lockfile to the next would only grow. What the pods
+      # compile to is most of it and changes only with the lockfile. The app's
+      # own Swift changes with every release and is compiled every time.
+      - name: Set up the Swift compilation cache
+        if: matrix.platform == 'ios'
+        continue-on-error: true
+        run: |
+          printf '%s\n' \
+            'COMPILATION_CACHE_ENABLE_CACHING = YES' \
+            "COMPILATION_CACHE_CAS_PATH = $HOME/.cache/xcode-compilation-cache" \
+            > "$RUNNER_TEMP/store-build.xcconfig"
+          echo "XCODE_XCCONFIG_FILE=$RUNNER_TEMP/store-build.xcconfig" >> "$GITHUB_ENV"
+
+      - name: Restore the Swift compilation cache
+        if: matrix.platform == 'ios'
+        id: swift-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/xcode-compilation-cache
+          key: ${{ env.COMPILER_CACHE }}-swift-${{ steps.toolchain.outputs.id }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - run: pnpm install --frozen-lockfile
 
       # `pod install` downloads React Native's prebuilt iOS frameworks (about
@@ -475,6 +645,7 @@ jobs:
       # app's own correctness is being skipped here: `pnpm check` is the gate,
       # and lint's release-blocking pass is checking node_modules.
       - name: Build app
+        id: build
         working-directory: apps/mobile
         env:
           # The collector below searched the local build's working directory and
@@ -489,6 +660,9 @@ jobs:
           # starve a build of the disk it was going to use — it only leaves the
           # tree behind on a runner that is about to be destroyed anyway.
           EAS_LOCAL_BUILD_SKIP_CLEANUP: '1'
+          # The same directory on every run, where the default is a new random
+          # one under the temp folder. See "Set up the compiler cache".
+          EAS_LOCAL_BUILD_WORKINGDIR: ${{ runner.temp }}/eas-build-local
         run: |
           mkdir -p build
           eas build \
@@ -497,6 +671,50 @@ jobs:
             --local \
             --non-interactive \
             --output=${{ steps.output.outputs.file }}
+
+      # How much of the build came out of the cache, in the job log, and
+      # whether what is in it now is worth keeping. A build that found nearly
+      # everything adds nothing by saving again. One that missed more than a
+      # twentieth of its compiles has new objects in it: a cold start, a new
+      # lockfile or Xcode, or a cache that was restored and turned out not to
+      # match. Saving on that test rather than on "there was nothing to
+      # restore" is what stops a useless cache from being kept for good.
+      - name: Compiler cache statistics
+        id: ccache-stats
+        if: ${{ !cancelled() && steps.ccache-setup.outcome == 'success' && steps.build.outcome != 'skipped' }}
+        continue-on-error: true
+        run: |
+          ccache --show-stats --verbose
+          stat() { ccache --print-stats | awk -v k="$1" '$1 == k { print $2 }'; }
+          misses=$(stat cache_miss)
+          misses=${misses:-0}
+          direct=$(stat direct_cache_hit)
+          preprocessed=$(stat preprocessed_cache_hit)
+          hits=$(( ${direct:-0} + ${preprocessed:-0} ))
+          echo "hits=$hits misses=$misses"
+          if [ $(( hits + misses )) -eq 0 ]; then
+            # What a broken wiring looks like (see CCACHE_BINARY above): the
+            # build passes, compiles everything, and ccache was never called.
+            echo "::warning::The compiler cache recorded no compiles for ${{ matrix.label }}. If this build compiled native code, ccache is not being reached."
+          elif [ $(( misses * 20 )) -gt $(( hits + misses )) ]; then
+            echo "save=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Save the compiler cache
+        if: ${{ !cancelled() && steps.ccache-stats.outputs.save == 'true' }}
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ccache
+          key: ${{ steps.ccache.outputs.cache-primary-key }}
+
+      - name: Save the Swift compilation cache
+        if: matrix.platform == 'ios' && steps.swift-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/xcode-compilation-cache
+          key: ${{ steps.swift-cache.outputs.cache-primary-key }}
 
       - name: Save CocoaPods downloads
         if: matrix.platform == 'ios' && steps.pods-cache.outputs.cache-hit != 'true'
@@ -530,12 +748,11 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/raw-logs" build-logs
           cp -R ~/Library/Logs/gym "$RUNNER_TEMP/raw-logs/gym" 2>/dev/null || true
-          # The local build plugin works out of a temp directory whose name is a
-          # fresh uuid per run, so the logs can only be found by searching. The
-          # `logs/` subdirectory of that tree is where gym's raw xcodebuild
+          # The local build's working directory (EAS_LOCAL_BUILD_WORKINGDIR
+          # above). Its `logs/` subdirectory is where gym's raw xcodebuild
           # output lands, and it survives the build only because of
           # EAS_LOCAL_BUILD_SKIP_CLEANUP above.
-          find "${TMPDIR:-/tmp}" -maxdepth 8 -path '*eas-build-local*' \
+          find "$RUNNER_TEMP/eas-build-local" -maxdepth 6 \
             \( -name '*.log' -o -name '*.txt' \) \
             -exec cp {} "$RUNNER_TEMP/raw-logs/" \; 2>/dev/null || true
           # The artifact is public, and GitHub masks secrets in the job log only,
@@ -592,6 +809,7 @@ jobs:
       # unchanged: `ascAppId` sends it to TestFlight, and putting that build in
       # front of users is still a submission somebody makes in App Store Connect.
       - name: Submit build
+        if: env.WILL_SUBMIT == 'true'
         working-directory: apps/mobile
         run: |
           eas submit \

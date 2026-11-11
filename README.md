@@ -9362,6 +9362,8 @@ name share whichever of them saved first.
 | EAS CLI | its version | the store build |
 | React Native's prebuilt iOS frameworks | the React Native version | the iOS store build |
 | CocoaPods downloads, Gradle | the lockfile | the store build |
+| Compiled C, C++ and Objective-C (ccache) | the run, falling back to the newest for the lockfile, then for the toolchain | the store build |
+| Compiled Swift (Xcode's compilation cache) | the lockfile and Xcode's build number | the iOS store build |
 
 A pull request can read a cache saved on `main`, and never one saved by another
 pull request. So a cache is only worth having if a job on `main` saves it, which
@@ -9369,6 +9371,55 @@ is why Bundle runs on `main` as well, where nothing waits on it.
 
 `ios/` and `android/` are prebuild output and are never in a CI checkout, so
 nothing under them can name a cache.
+
+**The compiler cache is most of what a store build no longer does.** With it
+and the Swift cache below both warm, the build step went from about 30 minutes
+to 9 on Android and from about 25 to 10 on iOS. On its own it takes about 5
+minutes off the iOS one, because most of what Xcode compiles there is Swift.
+ccache keeps each compiled C, C++ and
+Objective-C file under a hash of its source, the headers it includes, the flags
+and the compiler's version, and hands it back when all of them match. It does
+nothing for Swift or Kotlin. Three things it depends on, each of which fails
+without an error:
+
+- **The build runs in the same directory every time**
+  (`EAS_LOCAL_BUILD_WORKINGDIR`), because the paths in a compile command are
+  part of the hash.
+- **`CCACHE_BINARY` is in the environment on iOS.** React Native's compiler
+  wrapper runs `$CCACHE_BINARY clang`, Xcode 27 does not pass the build setting
+  that holds that name to a compile, and without it the wrapper runs plain
+  `clang`.
+- **Its settings are environment variables, not config files.** The same
+  wrapper names React Native's own config file, and ccache then reads no other.
+
+The "Compiler cache statistics" step in the job log says how many compiles were
+hits. If it says none on a build whose lockfile did not change, start with
+those three. A build that misses more than a twentieth of its compiles saves a
+new cache; one that hits saves nothing. It is a cache with deliberate
+looseness: React Native's settings for iOS skip the checks on system headers,
+precompiled header defines and `__TIME__`, so if a store build ever misbehaves
+in native code that did not change, rule both caches out by changing the number
+in `COMPILER_CACHE` at the top of the build job, which starts them again from
+nothing.
+
+**Swift on iOS goes through Xcode's own compilation cache**, which is off unless
+asked for. The workflow asks through `XCODE_XCCONFIG_FILE`, a file of build
+settings that xcodebuild applies to every target, so the Podfile and the app's
+config know nothing about it and a build on a laptop is unchanged. The two
+caches do not overlap: Xcode leaves C, C++ and Objective-C out of its own cache
+once the compiler is a wrapper script, which is what ccache makes it. What the
+Swift pods compile to is most of that cache and changes only with the lockfile;
+the app's own Swift is compiled on every release.
+
+**A store build can be tried without releasing it.** Run **CI / CD** by hand
+with `submit` off (`gh workflow run deploy.yml --ref <branch> -f platform=all
+-f profile=production -f submit=false`): it builds and stops, from any branch.
+It is a real production build in every other way. It takes the next build
+number, since the production profile increments it when the build starts. It
+runs with the production EAS environment, so it uploads its source maps and
+debug symbols to PostHog like a release. It saves its own compiler caches,
+which only that branch can read. And the binary is thrown away with the runner:
+the repository is public, and so would an uploaded artifact be.
 
 **Turbo replays a task whose inputs have not changed, on a pull request as on
 your machine, so a file a task reads and Turbo does not know about is a check
