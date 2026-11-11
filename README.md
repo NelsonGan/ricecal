@@ -9363,7 +9363,7 @@ name share whichever of them saved first.
 | React Native's prebuilt iOS frameworks | the React Native version | the iOS store build |
 | CocoaPods downloads, Gradle | the lockfile | the store build |
 | Compiled C, C++ and Objective-C (ccache) | the run, falling back to the newest for the lockfile, then for the toolchain | the store build |
-| Compiled Swift (Xcode's compilation cache) | the lockfile and the Xcode version | the iOS store build |
+| Compiled Swift (Xcode's compilation cache) | the lockfile and Xcode's build number | the iOS store build |
 
 A pull request can read a cache saved on `main`, and never one saved by another
 pull request. So a cache is only worth having if a job on `main` saves it, which
@@ -9398,8 +9398,9 @@ those three. A build that misses more than a twentieth of its compiles saves a
 new cache; one that hits saves nothing. It is a cache with deliberate
 looseness: React Native's settings for iOS skip the checks on system headers,
 precompiled header defines and `__TIME__`, so if a store build ever misbehaves
-in native code that did not change, rule the cache out by bumping the name in
-"Restore the compiler cache".
+in native code that did not change, rule both caches out by changing the number
+in `COMPILER_CACHE` at the top of the build job, which starts them again from
+nothing.
 
 **Swift on iOS goes through Xcode's own compilation cache**, which is off unless
 asked for. The workflow asks through `XCODE_XCCONFIG_FILE`, a file of build
@@ -9413,9 +9414,12 @@ the app's own Swift is compiled on every release.
 **A store build can be tried without releasing it.** Run **CI / CD** by hand
 with `submit` off (`gh workflow run deploy.yml --ref <branch> -f platform=all
 -f profile=production -f submit=false`): it builds and stops, from any branch.
-Each such build still takes the next build number, since the production profile
-increments it when the build starts, and saves its own compiler cache, which
-only that branch can read.
+It is a real production build in every other way. It takes the next build
+number, since the production profile increments it when the build starts. It
+runs with the production EAS environment, so it uploads its source maps and
+debug symbols to PostHog like a release. It saves its own compiler caches,
+which only that branch can read. And the binary is thrown away with the runner:
+the repository is public, and so would an uploaded artifact be.
 
 **Turbo replays a task whose inputs have not changed, on a pull request as on
 your machine, so a file a task reads and Turbo does not know about is a check

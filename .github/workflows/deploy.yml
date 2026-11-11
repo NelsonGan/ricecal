@@ -23,7 +23,7 @@ name: CI / CD
 
 run-name: >-
   ${{ github.event_name == 'pull_request' && format('PR · #{0}', github.event.number)
-   || github.event_name == 'workflow_dispatch' && format('Manual · {0}/{1}{2}', github.event.inputs.platform, github.event.inputs.profile, github.event.inputs.submit == 'false' && ' · build only' || '')
+   || github.event_name == 'workflow_dispatch' && format('Manual · {0}/{1}{2}', github.event.inputs.platform, github.event.inputs.profile, (github.event.inputs.submit == 'false' || github.event.inputs.profile != 'production') && ' · build only' || '')
    || github.ref == 'refs/heads/main' && 'Production Release'
    || format('Branch · {0}', github.ref_name) }}
 
@@ -84,12 +84,14 @@ on:
         type: boolean
         default: true
 
-# A build-only dispatch gets a group of its own per platform, so trying iOS does
-# not cancel a try of Android. Everything that can submit shares one group per
-# ref, as before: a release and a dispatch on main must never both reach the
-# stores.
+# Everything that can submit shares one group per ref, under the name it has
+# always had: a release and a dispatch on main must never both reach the
+# stores, and neither must two releases, one of them started before this file
+# last changed. A dispatch that cannot submit (`submit` off, or a profile other
+# than production; see WILL_SUBMIT) gets a group of its own per platform, so
+# that trying iOS does not cancel a try of Android, or a release.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.submit == 'false' && github.event.inputs.platform || '' }}
+  group: ${{ github.workflow }}-${{ github.ref }}${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.submit == 'false' || github.event.inputs.profile != 'production') && format('-build-only-{0}', github.event.inputs.platform) || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -274,6 +276,10 @@ jobs:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       # The one place the Xcode pin is written (see "Select Xcode").
       XCODE_VERSION: ${{ github.event.inputs.xcode || '27.1' }}
+      # The first part of both compiler caches' names. Change the number to
+      # start them again from nothing, which is how to rule them out if a store
+      # build ever misbehaves in native code that did not change.
+      COMPILER_CACHE: compiled-1
       # Whether this run ends in a store. A push always does. A dispatch does
       # when it asks to and builds the production profile, which is the only
       # one `eas.json` has a submit profile for: a preview build has nowhere
@@ -368,6 +374,19 @@ jobs:
         uses: maxim-lobanov/setup-xcode@ed7a3b1fda3918c0306d1b724322adc0b8cc0a90 # v1.7.0
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
+
+      # What the compiler caches are named after besides the lockfile. On iOS
+      # that is Xcode's build number rather than the pin: the image can move to
+      # a new patch of 27.1 under the same pin, and a cache of what the old
+      # compiler produced would then be restored for ever and match nothing.
+      - name: Identify the toolchain
+        id: toolchain
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then
+            echo "id=xcode-$(xcodebuild -version | awk '/Build version/ { print $3 }')" >> "$GITHUB_OUTPUT"
+          else
+            echo "id=ndk" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
       - uses: actions/setup-node@v4
@@ -487,9 +506,12 @@ jobs:
             install || { sudo apt-get update -qq && install; }
             echo "CCACHE_SLOPPINESS=include_file_ctime,include_file_mtime,time_macros" >> "$GITHUB_ENV"
           fi
-          ccache --version | head -1
+          # On their own lines so that a ccache which is missing or broken
+          # fails this step, and the variables below are never exported.
+          ccache_binary=$(command -v ccache)
+          "$ccache_binary" --version
           {
-            echo "CCACHE_BINARY=$(command -v ccache)"
+            echo "CCACHE_BINARY=$ccache_binary"
             echo "CCACHE_DIR=$HOME/.cache/ccache"
             echo "CCACHE_MAXSIZE=2G"
             echo "CCACHE_COMPILERCHECK=%compiler% -v"
@@ -505,14 +527,23 @@ jobs:
       # itself under `CCACHE_MAXSIZE`, so carrying it forward cannot grow it.
       # Whether to save one is decided after the build, from what it did.
       - name: Restore the compiler cache
+        id: ccache
         if: steps.ccache-setup.outcome == 'success'
         uses: actions/cache/restore@v4
         with:
           path: ~/.cache/ccache
-          key: ccache-${{ matrix.platform }}-${{ matrix.platform == 'ios' && env.XCODE_VERSION || 'ndk' }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ env.COMPILER_CACHE }}-ccache-${{ matrix.platform }}-${{ steps.toolchain.outputs.id }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            ccache-${{ matrix.platform }}-${{ matrix.platform == 'ios' && env.XCODE_VERSION || 'ndk' }}-${{ hashFiles('pnpm-lock.yaml') }}
-            ccache-${{ matrix.platform }}-${{ matrix.platform == 'ios' && env.XCODE_VERSION || 'ndk' }}-
+            ${{ env.COMPILER_CACHE }}-ccache-${{ matrix.platform }}-${{ steps.toolchain.outputs.id }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            ${{ env.COMPILER_CACHE }}-ccache-${{ matrix.platform }}-${{ steps.toolchain.outputs.id }}-
+
+      # The counters come back with the restored cache. Start them at zero, so
+      # that the statistics step after the build describes this build alone,
+      # and a job that fails before it ever compiles reports nothing to save.
+      - name: Reset the compiler cache's counters
+        if: steps.ccache-setup.outcome == 'success'
+        continue-on-error: true
+        run: ccache --zero-stats
 
       # ccache does nothing for Swift, and with the C family cached Swift is
       # most of what Xcode still compiles: the Swift pods (RevenueCat, PostHog,
@@ -527,7 +558,7 @@ jobs:
       # That keeps it in this workflow: the Podfile and the app's config are
       # untouched, and a build on a laptop is as it was.
       #
-      # Named after the lockfile and the Xcode version, with no `restore-keys`,
+      # Named after the lockfile and Xcode's build number, with no `restore-keys`,
       # like Gradle's and CocoaPods': Xcode does not trim this folder, so a copy
       # carried from one lockfile to the next would only grow. What the pods
       # compile to is most of it and changes only with the lockfile. The app's
@@ -548,7 +579,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/.cache/xcode-compilation-cache
-          key: xcode-compilation-cache-${{ env.XCODE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: ${{ env.COMPILER_CACHE }}-swift-${{ steps.toolchain.outputs.id }}-${{ hashFiles('pnpm-lock.yaml') }}
 
       - run: pnpm install --frozen-lockfile
 
@@ -614,6 +645,7 @@ jobs:
       # app's own correctness is being skipped here: `pnpm check` is the gate,
       # and lint's release-blocking pass is checking node_modules.
       - name: Build app
+        id: build
         working-directory: apps/mobile
         env:
           # The collector below searched the local build's working directory and
@@ -633,9 +665,6 @@ jobs:
           EAS_LOCAL_BUILD_WORKINGDIR: ${{ runner.temp }}/eas-build-local
         run: |
           mkdir -p build
-          # The counters come back with the restored cache; start them at zero
-          # so the statistics step below describes this build alone.
-          ccache --zero-stats || true
           eas build \
             --platform ${{ matrix.platform }} \
             --profile ${{ matrix.profile }} \
@@ -652,7 +681,7 @@ jobs:
       # restore" is what stops a useless cache from being kept for good.
       - name: Compiler cache statistics
         id: ccache-stats
-        if: ${{ !cancelled() && steps.ccache-setup.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.ccache-setup.outcome == 'success' && steps.build.outcome != 'skipped' }}
         continue-on-error: true
         run: |
           ccache --show-stats --verbose
@@ -663,7 +692,11 @@ jobs:
           preprocessed=$(stat preprocessed_cache_hit)
           hits=$(( ${direct:-0} + ${preprocessed:-0} ))
           echo "hits=$hits misses=$misses"
-          if [ "$misses" -gt 0 ] && [ $(( misses * 20 )) -gt $(( hits + misses )) ]; then
+          if [ $(( hits + misses )) -eq 0 ]; then
+            # What a broken wiring looks like (see CCACHE_BINARY above): the
+            # build passes, compiles everything, and ccache was never called.
+            echo "::warning::The compiler cache recorded no compiles for ${{ matrix.label }}. If this build compiled native code, ccache is not being reached."
+          elif [ $(( misses * 20 )) -gt $(( hits + misses )) ]; then
             echo "save=true" >> "$GITHUB_OUTPUT"
           fi
 
@@ -673,7 +706,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: ~/.cache/ccache
-          key: ccache-${{ matrix.platform }}-${{ matrix.platform == 'ios' && env.XCODE_VERSION || 'ndk' }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          key: ${{ steps.ccache.outputs.cache-primary-key }}
 
       - name: Save the Swift compilation cache
         if: matrix.platform == 'ios' && steps.swift-cache.outputs.cache-hit != 'true'
