@@ -514,6 +514,42 @@ jobs:
             ccache-${{ matrix.platform }}-${{ matrix.platform == 'ios' && env.XCODE_VERSION || 'ndk' }}-${{ hashFiles('pnpm-lock.yaml') }}
             ccache-${{ matrix.platform }}-${{ matrix.platform == 'ios' && env.XCODE_VERSION || 'ndk' }}-
 
+      # ccache does nothing for Swift, and with the C family cached Swift is
+      # most of what Xcode still compiles: the Swift pods (RevenueCat, PostHog,
+      # the Expo modules that ship as source), then the app, its widgets and
+      # the watch app. Xcode has a cache of its own for that, keyed on content
+      # like ccache's, and it is off unless asked for. The two do not overlap:
+      # Xcode leaves the C family out of its cache once the compiler is a
+      # wrapper script, which is what ccache makes it.
+      #
+      # It is asked for through `XCODE_XCCONFIG_FILE`, a file of build settings
+      # that xcodebuild applies to every target when the variable names one.
+      # That keeps it in this workflow: the Podfile and the app's config are
+      # untouched, and a build on a laptop is as it was.
+      #
+      # Named after the lockfile and the Xcode version, with no `restore-keys`,
+      # like Gradle's and CocoaPods': Xcode does not trim this folder, so a copy
+      # carried from one lockfile to the next would only grow. What the pods
+      # compile to is most of it and changes only with the lockfile. The app's
+      # own Swift changes with every release and is compiled every time.
+      - name: Set up the Swift compilation cache
+        if: matrix.platform == 'ios'
+        continue-on-error: true
+        run: |
+          printf '%s\n' \
+            'COMPILATION_CACHE_ENABLE_CACHING = YES' \
+            "COMPILATION_CACHE_CAS_PATH = $HOME/.cache/xcode-compilation-cache" \
+            > "$RUNNER_TEMP/store-build.xcconfig"
+          echo "XCODE_XCCONFIG_FILE=$RUNNER_TEMP/store-build.xcconfig" >> "$GITHUB_ENV"
+
+      - name: Restore the Swift compilation cache
+        if: matrix.platform == 'ios'
+        id: swift-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/xcode-compilation-cache
+          key: xcode-compilation-cache-${{ env.XCODE_VERSION }}-${{ hashFiles('pnpm-lock.yaml') }}
+
       - run: pnpm install --frozen-lockfile
 
       # `pod install` downloads React Native's prebuilt iOS frameworks (about
@@ -638,6 +674,14 @@ jobs:
         with:
           path: ~/.cache/ccache
           key: ccache-${{ matrix.platform }}-${{ matrix.platform == 'ios' && env.XCODE_VERSION || 'ndk' }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.run_id }}-${{ github.run_attempt }}
+
+      - name: Save the Swift compilation cache
+        if: matrix.platform == 'ios' && steps.swift-cache.outputs.cache-hit != 'true'
+        continue-on-error: true
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/xcode-compilation-cache
+          key: ${{ steps.swift-cache.outputs.cache-primary-key }}
 
       - name: Save CocoaPods downloads
         if: matrix.platform == 'ios' && steps.pods-cache.outputs.cache-hit != 'true'
