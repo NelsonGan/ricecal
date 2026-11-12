@@ -20,6 +20,17 @@ export function normalize(text: string): string {
 }
 
 /**
+ * A search as it was typed. iOS's Pinyin keyboard shows the letters it is still
+ * composing with a six-per-em space (U+2006) between the syllables it guesses,
+ * and the field reports that as its value, so "pineapple" arrives as
+ * "pi ne a p p le" and found nothing. Nobody types that space, so it is removed
+ * rather than read as a word break. Query side only: a name never holds one.
+ */
+export function asTyped(q: string): string {
+  return (q ?? '').replace(/ /g, '')
+}
+
+/**
  * Any barcode spelling as a GTIN-14. One packet carries up to four spellings
  * (UPC-E, EAN-8, UPC-A, EAN-13) and an American scanner drops the leading zero an
  * EAN-13 carries, so padding every spelling to fourteen digits makes them one key.

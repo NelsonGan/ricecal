@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { normalize, trigrams } from './text.ts'
+import { asTyped, ftsQuery, normalize, trigrams } from './text.ts'
 
 test('splits a query into its distinct trigrams, spaces included', () => {
   assert.deepEqual(trigrams('nasi lemak'), ['nas', 'asi', 'si ', 'i l', ' le', 'lem', 'ema', 'mak'])
@@ -32,4 +32,15 @@ test('counts code points, so a character outside the BMP stays whole', () => {
 test('caps how many trigrams one query can send', () => {
   const long = Array.from({ length: 90 }, (_, i) => String.fromCharCode(97 + (i % 26)) + i).join('')
   assert.equal(trigrams(long).length, 64)
+})
+
+test("drops the Pinyin keyboard's composing space, so a half-typed word still finds its dish", () => {
+  // What the field reports while "pineapple" is still being composed on iOS's
+  // Pinyin keyboard: the syllables it guesses, split by U+2006.
+  const composing = 'pi ne a p p le'
+  assert.equal(normalize(asTyped(composing)), 'pineapple')
+  assert.equal(ftsQuery(asTyped(composing)), '"pineapple"')
+  assert.ok(trigrams(normalize(asTyped('chi c ken'))).includes('ick'))
+  // An ordinary space is still a word break.
+  assert.equal(normalize(asTyped('white eg g')), 'white egg')
 })
