@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { IOS_LOCALE_MAP, ANDROID_LOCALE_MAP, IOS_METADATA_LOCALE_MAP, ANDROID_METADATA_LOCALE_MAP } from '../src/data/storeLocales.mjs';
+import { capturedOnAllowedDevice } from './capture-devices.mjs';
 
 const locales = ['en', 'zh-Hans', 'zh-Hant', 'ms', 'id', 'th', 'vi', 'fil', 'ja', 'ko', 'hi', 'ta', 'bn'];
 const screens = ['01-today', '02-workout', '03-dish', '04-trends', '05-feed', '06-recipes'];
@@ -14,10 +15,10 @@ const routes = {
   '06-recipes': '/settings/foods',
 };
 // The iPhone set and the iPhone Duo set, open on its side, are captured
-// separately from the same fixtures and food images.
+// separately from the same fixtures and food images. `devices` names the
+// retired fixed simulators that took the sets in the repo; a recapture comes
+// from a Simlock pool lease, which `capturedOnAllowedDevice` also accepts.
 const sets = [
-  // The current iPhone set predates RiceCal's fixed simulators; a recapture
-  // comes from RiceCal iPhone 18 Pro.
   { folder: 'screenshots-iphone', devices: ['RiceCal Screenshots', 'RiceCal iPhone 18 Pro'], width: 1320, height: 2868 },
   { folder: 'screenshots-iphone-duo', devices: ['RiceCal iPhone Duo'], width: 2853, height: 2007 },
 ];
@@ -46,7 +47,7 @@ for (const set of sets) {
       assert.match(records[0].appSourceCommit, /^[a-f0-9]{40}$/);
       assert.match(records[0].fixtureSha256, /^[a-f0-9]{64}$/);
       assert.match(records[0].appVersion, /^\d+\.\d+\.\d+$/);
-      assert(set.devices.includes(records[0].device), `${name} was captured on ${records[0].device}`);
+      assert(capturedOnAllowedDevice(set.devices, records[0].device), `${name} was captured on ${records[0].device}`);
       const bytes = await readFile(new URL(`${locale}/${screen}.png`, root));
       assert.equal(bytes.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
       assert.equal(bytes.readUInt32BE(16), set.width);
