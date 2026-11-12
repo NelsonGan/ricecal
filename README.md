@@ -8895,8 +8895,9 @@ date, app source revision, verified route and simulator for all 78 images,
 without account details. Run `pnpm check:screenshots` after replacing a capture set; it checks
 every file's dimensions, recorded checksum, duplicate captures, image provenance and store mappings.
 A recapture comes from a Simlock pool lease, which `capture.json` records by its
-`simlock-<uuid>` name. The checker accepts those as well as the retired fixed simulators that
-took the current sets; the image dimensions are what pin the model.
+`simlock-<uuid>` name. The checker accepts those as well as the retired fixed simulator that
+took each current set. A lease name says nothing about the model, and the exact image size only
+pins the form (an iPhone Pro Max size or the open iPhone Duo), so lease the model the skill names.
 
 The 60 food photos were generated with OpenAI image generation in ten batches,
 then cropped into close food portraits. Each batch matches the Malaysian sheet's

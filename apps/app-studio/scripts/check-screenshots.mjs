@@ -16,10 +16,9 @@ const routes = {
 };
 // The iPhone set and the iPhone Duo set, open on its side, are captured
 // separately from the same fixtures and food images. `devices` names the
-// retired fixed simulators that took the sets in the repo; a recapture comes
-// from a Simlock pool lease, which `capturedOnAllowedDevice` also accepts.
+// retired simulator that took each set in the repo; see `capturedOnAllowedDevice`.
 const sets = [
-  { folder: 'screenshots-iphone', devices: ['RiceCal Screenshots', 'RiceCal iPhone 18 Pro'], width: 1320, height: 2868 },
+  { folder: 'screenshots-iphone', devices: ['RiceCal Screenshots'], width: 1320, height: 2868 },
   { folder: 'screenshots-iphone-duo', devices: ['RiceCal iPhone Duo'], width: 2853, height: 2007 },
 ];
 const hashes = new Set();
