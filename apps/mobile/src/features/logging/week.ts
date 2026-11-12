@@ -30,6 +30,11 @@ export const WEEKS_BACK = 52
 /** Monday. The strip reads M T W T F S S, which is how the week is written here. */
 export const WEEK_STARTS_ON = 1
 
+/** The first day of the week holding `date`, as `yyyy-MM-dd`: a page of the pager. */
+export function weekOf(date: string): string {
+  return dateKey(startOfWeek(parseISO(date), { weekStartsOn: WEEK_STARTS_ON }))
+}
+
 /** The seven dates of the week beginning on `start`, as `yyyy-MM-dd`. */
 export function weekDays(start: string): string[] {
   const monday = parseISO(start)
@@ -44,7 +49,7 @@ export function weekDays(start: string): string[] {
  * strip opens on has to be reachable from.
  */
 export function weekStarts(today: string): string[] {
-  const current = startOfWeek(parseISO(today), { weekStartsOn: WEEK_STARTS_ON })
+  const current = parseISO(weekOf(today))
   return Array.from({ length: WEEKS_BACK + 1 }, (_, i) =>
     dateKey(subWeeks(current, WEEKS_BACK - i)),
   )

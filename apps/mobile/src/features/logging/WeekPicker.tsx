@@ -1,11 +1,9 @@
 import { format } from 'date-fns/format'
 import { parseISO } from 'date-fns/parseISO'
-import { startOfWeek } from 'date-fns/startOfWeek'
-import { useMemo, useRef, useState } from 'react'
+import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View } from 'react-native'
 import {
-  dateKey,
   useDayMarks,
   usePrefetchActivityDays,
   usePrefetchDays,
@@ -14,7 +12,7 @@ import {
 } from '@/data'
 import { datePattern } from '@/lib/dates'
 import { DateStrip, type DateStripDay } from '@/ui'
-import { markFor, WEEK_STARTS_ON, weekDays, weekStarts } from './week'
+import { markFor, weekDays, weekOf, weekStarts } from './week'
 
 type WeekProps = {
   /** Monday of this week, `yyyy-MM-dd`. */
@@ -125,8 +123,7 @@ export function WeekPicker({ className }: { className?: string }) {
    * its dots until the next swipe.
    */
   const [page] = useState(() => {
-    const start = dateKey(startOfWeek(parseISO(selectedDate), { weekStartsOn: WEEK_STARTS_ON }))
-    const found = weeks.indexOf(start)
+    const found = weeks.indexOf(weekOf(selectedDate))
     return found === -1 ? weeks.length - 1 : found
   })
 
@@ -141,6 +138,43 @@ export function WeekPicker({ className }: { className?: string }) {
   // The same page as state, for the one thing that renders off it: which week
   // keeps its dots current. See `useDayMarks`.
   const [shown, setShown] = useState<number | null>(null)
+
+  /**
+   * The pager moves to the selected day's week whenever the selection or the
+   * weeks change and that week is not the one on screen, so the strip does not
+   * sit on a week with no day of it picked. (A day more than a year back has no
+   * page, and the strip stays where it is.)
+   *
+   * Two ways it used to. When the app comes back in a new week, every week
+   * slides one place and the list keeps its offset, so the position on screen
+   * holds the next week. That is right while the selection follows today, but a
+   * day picked on purpose stays picked and was left a page behind. And the
+   * button back to today, pressed after swiping back a few weeks, selected today
+   * and left the strip on the old week.
+   *
+   * A swipe changes neither, so browsing another week without picking a day in
+   * it stays put until the selection itself moves, as it does when the app
+   * comes back on a new day with today selected.
+   */
+  const newest = weeks[weeks.length - 1]
+  const [followed, setFollowed] = useState({ selectedDate, newest })
+  // An object each time, so asking for the same page twice still scrolls.
+  const [slide, setSlide] = useState<{ to: number } | null>(null)
+  if (followed.selectedDate !== selectedDate || followed.newest !== newest) {
+    setFollowed({ selectedDate, newest })
+    const index = weeks.indexOf(weekOf(selectedDate))
+    if (index !== -1 && index !== (shown ?? page)) {
+      setShown(index)
+      setSlide({ to: index })
+    }
+  }
+  // Before paint, or the old week is drawn for a frame and then jumps.
+  useLayoutEffect(() => {
+    if (!slide) return
+    showing.current = slide.to
+    list.current?.scrollToIndex({ index: slide.to, animated: false })
+  }, [slide])
+
   const onScreen = weeks[shown ?? page]
 
   return (
