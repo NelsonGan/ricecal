@@ -1,7 +1,7 @@
 import { format } from 'date-fns/format'
 import { parseISO } from 'date-fns/parseISO'
 import { startOfWeek } from 'date-fns/startOfWeek'
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { FlatList, View } from 'react-native'
 import {
@@ -141,6 +141,41 @@ export function WeekPicker({ className }: { className?: string }) {
   // The same page as state, for the one thing that renders off it: which week
   // keeps its dots current. See `useDayMarks`.
   const [shown, setShown] = useState<number | null>(null)
+
+  /**
+   * The pager follows a selection made anywhere but on itself, so the strip
+   * never sits on a week with no day of it picked.
+   *
+   * Two ways that happened. When the app comes back in a new week, every week
+   * slides one place and the list keeps its offset, so the position on screen
+   * holds the next week. That is right while the selection follows today, but a
+   * day picked on purpose stays picked and was left a page behind. And the
+   * button back to today, pressed after swiping back a few weeks, selected today
+   * and left the strip on the old week.
+   *
+   * Only when the selection or the weeks change. A swipe changes neither, so
+   * looking at another week without picking a day in it stays where it is.
+   */
+  const newest = weeks[weeks.length - 1]
+  const [followed, setFollowed] = useState({ selectedDate, newest })
+  const [slideTo, setSlideTo] = useState<number | null>(null)
+  if (followed.selectedDate !== selectedDate || followed.newest !== newest) {
+    setFollowed({ selectedDate, newest })
+    const index = weeks.indexOf(
+      dateKey(startOfWeek(parseISO(selectedDate), { weekStartsOn: WEEK_STARTS_ON })),
+    )
+    if (index !== -1 && index !== (shown ?? page)) {
+      setShown(index)
+      setSlideTo(index)
+    }
+  }
+  useEffect(() => {
+    if (slideTo === null) return
+    showing.current = slideTo
+    list.current?.scrollToIndex({ index: slideTo, animated: false })
+    setSlideTo(null)
+  }, [slideTo])
+
   const onScreen = weeks[shown ?? page]
 
   return (
