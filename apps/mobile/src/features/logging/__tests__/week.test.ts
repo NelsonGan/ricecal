@@ -1,5 +1,5 @@
 import type { DayMark } from '@/data/types'
-import { markFor, weekDays, weekStarts } from '../week'
+import { markFor, weekDays, weekOf, weekStarts } from '../week'
 
 /**
  * The dot under each day of the week strip.
@@ -20,6 +20,13 @@ const mark = (over: Partial<DayMark> = {}): DayMark => ({
   goalKcal: 2000,
   activeKcal: 0,
   ...over,
+})
+
+it('puts a day in the week that starts on its Monday', () => {
+  expect(weekOf('2026-11-09')).toBe('2026-11-09') // Monday
+  expect(weekOf('2026-11-15')).toBe('2026-11-09') // Sunday
+  expect(weekOf('2026-11-02')).toBe('2026-11-02')
+  expect(weekStarts('2026-11-15')).toContain(weekOf('2026-10-28'))
 })
 
 it('gives a week seven days from its Monday', () => {
