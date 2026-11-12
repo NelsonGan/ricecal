@@ -67,6 +67,18 @@ function RowSkeletons() {
 const SETTLED_MS = 1_200
 
 /**
+ * The search as it was typed. iOS's Pinyin keyboard shows letters it is still
+ * composing with a six-per-em space (U+2006) between the syllables it guesses,
+ * and the field reports that as its value, so "pineapple" read as
+ * "pi ne a p p le" and no list matched it. The field keeps showing it, since
+ * rewriting text the keyboard is composing would break the keyboard; every list
+ * works from this. The catalogue Worker does the same for older apps.
+ */
+function asTyped(query: string): string {
+  return query.replace(/\u2006/g, '')
+}
+
+/**
  * Which list is on screen.
  *
  * `catalogue` is the shared rows behind the Worker. `mine` is the food this
@@ -233,7 +245,8 @@ export function FoodSearchPanel({
   // The field renders `query` on every keystroke; the catalogue is only asked
   // once typing pauses. See `useDebouncedValue` for why this is a debounce
   // rather than the `useDeferredValue` that was here before.
-  const debouncedQuery = useDebouncedValue(query)
+  const typed = asTyped(query)
+  const debouncedQuery = useDebouncedValue(typed)
 
   // The Worker ranks rather than only filtering: it fuses an exact name, an
   // exact alias, a full-text and a trigram match over ~48,000 rows, which is why
@@ -254,7 +267,7 @@ export function FoodSearchPanel({
   // Typing again should not leave the previous dishes on screen looking like
   // answers to the new query: the debounced query has not caught up, so the old
   // result set is still "fresh" as far as react-query is concerned.
-  const settling = query.trim() !== debouncedQuery.trim()
+  const settling = typed.trim() !== debouncedQuery.trim()
 
   /**
    * Exactly one of five things is on screen, and this decides which.
@@ -296,7 +309,7 @@ export function FoodSearchPanel({
    * says nothing about whether the catalogue can be searched.
    */
   const lastTracked = useRef<string | undefined>(
-    restore?.tracked ? restore.query.trim() || undefined : undefined,
+    restore?.tracked ? asTyped(restore.query).trim() || undefined : undefined,
   )
   useEffect(() => {
     const needle = debouncedQuery.trim()
@@ -341,7 +354,7 @@ export function FoodSearchPanel({
       ) : null}
 
       {source === 'past' && onPickHistory ? (
-        <HistoryList query={query} onPick={onPickHistory} />
+        <HistoryList query={typed} onPick={onPickHistory} />
       ) : source === 'mine' && onPickOwn && onOpenOwn ? (
         <OwnFoodList
           query={debouncedQuery}
@@ -349,13 +362,13 @@ export function FoodSearchPanel({
           // The live query rather than the debounced filter. What returns after
           // backing out has to match the field, including its newest keystroke.
           onOpen={(recipe) =>
-            onOpenOwn(recipe, { query, tracked: lastTracked.current === query.trim() })
+            onOpenOwn(recipe, { query, tracked: lastTracked.current === typed.trim() })
           }
           // The live query rather than the debounced one, exactly as `onPick`
           // hands it over: what is restored has to be what is in the field.
           onCreate={
             onCreateOwn &&
-            (() => onCreateOwn({ query, tracked: lastTracked.current === query.trim() }))
+            (() => onCreateOwn({ query, tracked: lastTracked.current === typed.trim() }))
           }
         />
       ) : (
@@ -405,7 +418,7 @@ export function FoodSearchPanel({
                     // `pnpm foods:gate` grades against thirty fixed queries: a
                     // ranking that is working puts most picks at position one.
                     track('Food Picked', { position: index + 1, results: results.length })
-                    onPick(food, { query, tracked: lastTracked.current === query.trim() })
+                    onPick(food, { query, tracked: lastTracked.current === typed.trim() })
                   }}
                 />
               </Card>
