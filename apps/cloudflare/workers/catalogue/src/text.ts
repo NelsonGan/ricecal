@@ -27,7 +27,7 @@ export function normalize(text: string): string {
  * rather than read as a word break. Query side only: a name never holds one.
  */
 export function asTyped(q: string): string {
-  return (q ?? '').replace(/ /g, '')
+  return (q ?? '').replace(/\u2006/g, '')
 }
 
 /**

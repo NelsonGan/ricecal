@@ -865,7 +865,9 @@ iOS's Pinyin keyboard puts that space between the syllables of letters it is
 still composing, and the field reports them as its value, so "pineapple" came
 in as "pi ne a p p le" and found nothing. Hundreds of searches a week did, most
 of them from Malaysia. It is removed on the query side only, never in
-`normalize`, which the stored columns are written with.
+`normalize`, which the stored columns are written with. The app's search panel
+removes it too, for My foods and Past foods, which never reach the Worker; the
+field itself keeps it, because the keyboard owns that text until it commits.
 
 ### Loading it
 

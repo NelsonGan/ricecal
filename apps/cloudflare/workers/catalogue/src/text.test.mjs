@@ -37,10 +37,10 @@ test('caps how many trigrams one query can send', () => {
 test("drops the Pinyin keyboard's composing space, so a half-typed word still finds its dish", () => {
   // What the field reports while "pineapple" is still being composed on iOS's
   // Pinyin keyboard: the syllables it guesses, split by U+2006.
-  const composing = 'pi ne a p p le'
+  const composing = 'pi\u2006ne\u2006a\u2006p\u2006p\u2006le'
   assert.equal(normalize(asTyped(composing)), 'pineapple')
   assert.equal(ftsQuery(asTyped(composing)), '"pineapple"')
-  assert.ok(trigrams(normalize(asTyped('chi c ken'))).includes('ick'))
+  assert.ok(trigrams(normalize(asTyped('chi\u2006c\u2006ken'))).includes('ick'))
   // An ordinary space is still a word break.
-  assert.equal(normalize(asTyped('white eg g')), 'white egg')
+  assert.equal(normalize(asTyped('white eg\u2006g')), 'white egg')
 })

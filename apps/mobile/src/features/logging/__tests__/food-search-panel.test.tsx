@@ -164,3 +164,18 @@ it('hands the host the search when one of My foods is opened', async () => {
 
   expect(onOpenOwn).toHaveBeenCalledWith(GINGER_RICE, { query: 'ginger', tracked: false })
 })
+
+/**
+ * iOS's Pinyin keyboard reports a word it is still composing with U+2006
+ * between the syllables. The field has to keep showing that, since the keyboard
+ * owns it until it commits; what is searched and measured is the word.
+ */
+it('searches for the word the Pinyin keyboard is still composing, not its syllables', async () => {
+  const composing = 'tho sai'
+  await settle(<FoodSearchPanel restore={{ query: composing, tracked: false }} onPick={onPick} />)
+
+  expect(screen.getByDisplayValue(composing)).toBeOnTheScreen()
+  expect(mockSearch).toHaveBeenCalledWith('thosai')
+  expect(mockSearch).not.toHaveBeenCalledWith(composing)
+  expect(mockTrack).toHaveBeenCalledWith('Food Searched', { results: 1, query_length: 6 })
+})

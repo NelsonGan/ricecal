@@ -235,9 +235,8 @@ function trigramArm(env: Env, grams: string[], vocab: boolean): D1PreparedStatem
 async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
   // Bound the input before it becomes an FTS5 MATCH expression: normalize, both
   // FTS arms and the trigram split all scale with its length. See
-  // MAX_QUERY_CHARS.
-  const typed = asTyped(q)
-  const bounded = typed.length > MAX_QUERY_CHARS ? typed.slice(0, MAX_QUERY_CHARS) : typed
+  // MAX_QUERY_CHARS. The bound comes first, so even `asTyped` reads no more.
+  const bounded = asTyped(q.length > MAX_QUERY_CHARS ? q.slice(0, MAX_QUERY_CHARS) : q)
   const qn = normalize(bounded)
   if (!qn) return []
 
@@ -538,8 +537,8 @@ async function publicSearch(
 
   // Bounded here as well as inside `search`, so the length check and the cache
   // key use the same capped string the query will. See MAX_QUERY_CHARS.
-  const raw = asTyped(url.searchParams.get('q') ?? '')
-  const qn = normalize(raw.length > MAX_QUERY_CHARS ? raw.slice(0, MAX_QUERY_CHARS) : raw)
+  const raw = url.searchParams.get('q') ?? ''
+  const qn = normalize(asTyped(raw.length > MAX_QUERY_CHARS ? raw.slice(0, MAX_QUERY_CHARS) : raw))
   const limit = Math.min(
     Math.max(Number(url.searchParams.get('limit') ?? PUBLIC_MAX_LIMIT), 1),
     PUBLIC_MAX_LIMIT,
