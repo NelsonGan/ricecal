@@ -45,8 +45,8 @@ const WEEK = [1, 2, 3, 4, 5, 6, 0] as const
 
 /**
  * Workout settings. The default rest and the reminders follow the account
- * (`user_settings`); Apple Health and keeping the screen on follow the phone
- * (`features/workouts/prefs.ts`).
+ * (`user_settings`); Apple Health, keeping the screen on and the finish sound
+ * follow the phone (`features/workouts/prefs.ts`).
  */
 export default function WorkoutSettingsScreen() {
   const { t } = useTranslation(['workouts', 'common', 'profile'])
@@ -176,6 +176,13 @@ export default function WorkoutSettingsScreen() {
           value={prefs.keepAwake}
           divider={false}
           onValueChange={(keepAwake) => setWorkoutPrefs({ keepAwake })}
+        />
+        <Divider />
+        <ToggleRow
+          title={t('workouts:settings.finishSound')}
+          value={prefs.finishSound}
+          divider={false}
+          onValueChange={(finishSound) => setWorkoutPrefs({ finishSound })}
         />
         {Platform.OS === 'ios' ? (
           <>

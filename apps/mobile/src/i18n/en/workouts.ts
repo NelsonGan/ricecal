@@ -431,6 +431,7 @@ export const workouts = {
     reminders: 'Workout reminders',
     reminderTime: 'Time',
     keepAwake: 'Keep the screen on while training',
+    finishSound: 'Play a sound when you finish',
     export: 'Export workouts (CSV)',
     exportNone: 'No workouts to export yet',
     exportFailed: 'Could not export. Try again.',

@@ -2162,6 +2162,7 @@ export const vi = {
       reminders: 'Nhắc tập',
       reminderTime: 'Giờ',
       keepAwake: 'Giữ màn hình sáng khi tập',
+      finishSound: 'Phát âm thanh khi hoàn thành',
       export: 'Xuất buổi tập (CSV)',
       exportNone: 'Chưa có buổi tập để xuất',
       exportFailed: 'Không xuất được. Thử lại.',

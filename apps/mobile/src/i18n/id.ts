@@ -2171,6 +2171,7 @@ export const id = {
       reminders: 'Pengingat latihan',
       reminderTime: 'Waktu',
       keepAwake: 'Layar tetap menyala saat berlatih',
+      finishSound: 'Putar suara saat selesai',
       export: 'Ekspor latihan (CSV)',
       exportNone: 'Belum ada latihan untuk diekspor',
       exportFailed: 'Gagal mengekspor. Coba lagi.',

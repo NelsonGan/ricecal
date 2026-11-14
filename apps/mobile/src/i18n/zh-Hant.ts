@@ -2139,6 +2139,7 @@ export const zhHant = {
       reminders: '訓練提醒',
       reminderTime: '時間',
       keepAwake: '訓練時保持螢幕常亮',
+      finishSound: '完成時播放提示音',
       export: '匯出訓練（CSV）',
       exportNone: '還沒有可匯出的訓練',
       exportFailed: '匯出失敗，請重試。',

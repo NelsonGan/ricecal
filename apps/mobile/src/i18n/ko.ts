@@ -2146,6 +2146,7 @@ export const ko = {
       reminders: '운동 알림',
       reminderTime: '시간',
       keepAwake: '운동 중 화면 켜두기',
+      finishSound: '완료 시 알림음 재생',
       export: '운동 내보내기 (CSV)',
       exportNone: '아직 내보낼 운동이 없어요',
       exportFailed: '내보내지 못했어요. 다시 시도하세요.',

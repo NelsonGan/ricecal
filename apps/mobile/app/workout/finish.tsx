@@ -23,6 +23,7 @@ import {
   type LiveExercise,
   type LiveSet,
   liveTotals,
+  playFinishSound,
   RECORD_KEY,
   type RecordKind,
   type RoutineUpdate,
@@ -219,6 +220,8 @@ export default function FinishWorkoutScreen() {
       }
       trackWorkoutFinished(document, result)
       end(true, endedAt)
+      // Queued counts: the workout is off the phone's hands either way.
+      playFinishSound()
       toast.show({
         title: t('workouts:finish.saved'),
         // A failure is said; a success is not, since saving to Health is the

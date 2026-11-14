@@ -95,6 +95,11 @@ jest.mock('expo-store-review', () => ({
   storeUrl: jest.fn(() => null),
 }))
 
+jest.mock('expo-audio', () => ({
+  createAudioPlayer: jest.fn(() => ({ play: jest.fn(), remove: jest.fn() })),
+  setAudioModeAsync: jest.fn(() => Promise.resolve()),
+}))
+
 jest.mock('expo-haptics', () => ({
   impactAsync: jest.fn(() => Promise.resolve()),
   selectionAsync: jest.fn(() => Promise.resolve()),
