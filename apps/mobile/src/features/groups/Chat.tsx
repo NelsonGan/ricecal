@@ -2269,12 +2269,8 @@ function SharePicker({
   useRecentFoodPosts(visible)
   useRecentWorkouts(visible)
   return (
-    <Sheet
-      visible={visible}
-      onClose={onClose}
-      closeLabel={t('common:action.close')}
-      title={t('share')}
-    >
+    <Sheet visible={visible} onClose={onClose} closeLabel={t('common:action.close')}>
+      {/* No title: the control under the handle already says what is on offer. */}
       <View className="gap-md">
         <SegmentedControl
           size="sm"
