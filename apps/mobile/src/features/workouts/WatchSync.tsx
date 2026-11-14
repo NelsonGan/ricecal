@@ -30,6 +30,7 @@ import { track } from '@/lib/analytics'
 import { announceNotice } from '@/lib/notifications'
 import { UNIT_KEY, unitFor } from '@/lib/units'
 import { useToast } from '@/ui'
+import { playFinishSound } from './finishSound'
 import { distanceUnitFor } from './format'
 import { loggerIsOpen } from './loggerOpen'
 import { doneSets } from './model'
@@ -180,6 +181,7 @@ function useWatchSync(): void {
         trackWorkoutFinished(document, result)
         clearActiveWorkout(userId)
         recordEndedWorkout(userId, document.id, true, endedAt)
+        playFinishSound()
         toast.show({
           title: t('workouts:finish.saved'),
           description: result.queued ? t('workouts:finish.queued') : undefined,

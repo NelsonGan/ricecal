@@ -2192,6 +2192,7 @@ export const ms = {
       reminders: 'Peringatan senaman',
       reminderTime: 'Masa',
       keepAwake: 'Kekalkan skrin menyala semasa bersenam',
+      finishSound: 'Mainkan bunyi apabila selesai',
       export: 'Eksport senaman (CSV)',
       exportNone: 'Belum ada senaman untuk dieksport',
       exportFailed: 'Tidak dapat dieksport. Cuba lagi.',

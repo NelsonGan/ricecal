@@ -2160,6 +2160,7 @@ export const ja = {
       reminders: 'ワークアウトのリマインダー',
       reminderTime: '時刻',
       keepAwake: 'トレーニング中は画面を消さない',
+      finishSound: '完了時にサウンドを鳴らす',
       export: 'ワークアウトを書き出す（CSV）',
       exportNone: '書き出すワークアウトはまだありません',
       exportFailed: '書き出せませんでした。もう一度お試しください。',

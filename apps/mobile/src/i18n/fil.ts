@@ -2195,6 +2195,7 @@ export const fil = {
       reminders: 'Mga paalala sa workout',
       reminderTime: 'Oras',
       keepAwake: 'Panatilihing bukas ang screen habang nagte-train',
+      finishSound: 'Magpatunog kapag natapos',
       export: 'I-export ang mga workout (CSV)',
       exportNone: 'Wala pang workout na mai-export',
       exportFailed: 'Hindi na-export. Subukan ulit.',

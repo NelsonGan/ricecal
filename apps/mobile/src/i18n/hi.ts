@@ -2143,6 +2143,7 @@ export const hi = {
       reminders: 'वर्कआउट की याद',
       reminderTime: 'समय',
       keepAwake: 'ट्रेनिंग के दौरान स्क्रीन चालू रखें',
+      finishSound: 'पूरा होने पर आवाज़ चलाएँ',
       export: 'वर्कआउट निर्यात करें (CSV)',
       exportNone: 'अभी निर्यात के लिए कोई वर्कआउट नहीं',
       exportFailed: 'निर्यात नहीं हो सका। फिर से कोशिश करें।',

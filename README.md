@@ -5602,7 +5602,19 @@ repeats. Rebooking the reminders cancels only the reminder kinds, never a rest
 or "still training?" notice: it used to cancel everything, so turning on the
 water reminder mid-workout took the rest timer's notice with it. The default
 rest is `workout_rest_s`. Keeping the screen awake while training is per phone,
-with Health.
+with Health, and so is the finish sound.
+
+**A saved workout dings** (`playFinishSound`), on the finish screen's save and
+on a finish from the watch, queued saves included. It is on by default and a
+switch in workout settings (`finishSound` in the phone's prefs). It plays only
+with the app in front, follows the silent switch, and mixes with whatever is
+playing rather than pausing or ducking a gym playlist. The sound is synthesized
+by `apps/mobile/scripts/sounds/workout-done.py` rather than taken from a
+library, so the app owns it outright: a single C6 with a soft attack, chosen
+over a glass bell, a hand bell, a singing bowl, a marimba and a two-note chime
+as the gentlest that still carries on a phone speaker. `expo-audio` is in the
+plugins with the microphone, Android's `RECORD_AUDIO` and background playback
+all off, since its defaults would add all three for a sound effect.
 
 Both rests, the default and an exercise's own, are picked on two wheels
 (`RestSheet`): minutes up to ten, the most `workout_rest_s` accepts, and seconds

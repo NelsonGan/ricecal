@@ -2139,6 +2139,7 @@ export const zhHans = {
       reminders: '训练提醒',
       reminderTime: '时间',
       keepAwake: '训练时保持屏幕常亮',
+      finishSound: '完成时播放提示音',
       export: '导出训练（CSV）',
       exportNone: '还没有可导出的训练',
       exportFailed: '导出失败，请重试。',
