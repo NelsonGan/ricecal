@@ -892,7 +892,6 @@ export const bn = {
     },
 
     share: {
-      loggedBy: 'লিখেছেন',
       brand: 'RiceCal',
       text: '{{food}}, {{kcal}} kcal. RiceCal দিয়ে লেখা',
       failed: 'সেই ছবিটি তৈরি করা গেল না',

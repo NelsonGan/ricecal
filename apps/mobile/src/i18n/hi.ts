@@ -894,7 +894,6 @@ export const hi = {
     },
 
     share: {
-      loggedBy: 'दर्ज किया',
       brand: 'RiceCal',
       text: '{{food}}, {{kcal}} kcal. RiceCal से दर्ज',
       failed: 'वह तस्वीर नहीं बन सकी',

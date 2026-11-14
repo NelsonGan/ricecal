@@ -931,7 +931,6 @@ export const ms = {
     },
 
     share: {
-      loggedBy: 'Direkod oleh',
       brand: 'RiceCal',
       text: '{{food}}, {{kcal}} kcal. Direkod dengan RiceCal',
       failed: 'Tidak dapat membuat gambar itu',

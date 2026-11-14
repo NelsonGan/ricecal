@@ -514,13 +514,7 @@ export const logging = {
    * are the entry's own.
    */
   share: {
-    /**
-     * The signature under the figures, in two halves, so a translation that
-     * wants the name first can put it first and neither is interpolated into the
-     * other's weight.
-     */
-    loggedBy: 'Logged by',
-    /** The name on the picture. Not translated: it is a name. */
+    /** The signature at the foot of the picture. Not translated: it is a name. */
     brand: 'RiceCal',
     /**
      * Android only. Its share intent carries a message and nothing else, so a

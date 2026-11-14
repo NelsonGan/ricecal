@@ -907,7 +907,6 @@ export const ta = {
     },
 
     share: {
-      loggedBy: 'பதிவு செய்தவர்',
       brand: 'RiceCal',
       text: '{{food}}, {{kcal}} kcal. RiceCal இல் பதிவு',
       failed: 'அந்தப் படத்தை உருவாக்க முடியவில்லை',

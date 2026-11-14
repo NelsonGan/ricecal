@@ -895,7 +895,6 @@ export const th = {
     },
 
     share: {
-      loggedBy: 'บันทึกโดย',
       brand: 'RiceCal',
       text: '{{food}} {{kcal}} แคล บันทึกด้วย RiceCal',
       failed: 'สร้างรูปนั้นไม่ได้',

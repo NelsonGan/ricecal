@@ -904,7 +904,6 @@ export const vi = {
     },
 
     share: {
-      loggedBy: 'Ghi bởi',
       brand: 'RiceCal',
       text: '{{food}}, {{kcal}} kcal. Ghi bằng RiceCal',
       failed: 'Không tạo được tấm hình đó',

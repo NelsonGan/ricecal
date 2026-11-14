@@ -2381,9 +2381,12 @@ colour over whatever is up there.
 ### Sharing a meal
 
 **A meal is shared as a picture, and the picture is not a screenshot.**
-`features/logging/MealShareCard.tsx` is a card built for it: the plate square
-and full width, the app's mark watermarked in, and one caption carrying the
-dish, the calorie total and the three macros.
+`features/logging/MealShareCard.tsx` is a card built for it: phone shaped
+(9:16), the plate filling all of it. At its foot, centred: the dish in white, the
+calorie total and the three macros on one line in a dark translucent capsule,
+and the app's signature. A white pill holding all of it was tried first and
+looked pasted on. Phone shaped because a share mostly lands full screen (a story, a
+status, a chat); square, the photograph was a third of the picture.
 
 It is drawn off to the left of the page at full opacity and photographed on
 demand (Skia's `makeImageFromView`). The two other ways to hide a view break the

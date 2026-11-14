@@ -899,7 +899,6 @@ export const ko = {
     },
 
     share: {
-      loggedBy: '기록한 사람',
       brand: 'RiceCal',
       text: '{{food}}, {{kcal}} kcal. RiceCal로 기록',
       failed: '그 이미지를 만들지 못했습니다',
