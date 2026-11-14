@@ -2919,8 +2919,8 @@ The first implementation includes:
 
 - Following, newest first, containing the viewer and accounts they follow;
   Discover, containing public posts from other accounts they do not follow.
-  A filter in the Feed header shows everything, meals only or workouts only,
-  for both feeds; it is the `p_kinds` argument the feed already takes, so each
+  A row of small filters at the top of the feed (above both panes on a wide
+  screen) shows everything, meals only or workouts only, for both feeds; it is the `p_kinds` argument the feed already takes, so each
   choice is its own cached feed and a server that predates it needs nothing.
 - Public identity fields in the existing Settings profile: a unique
   handle, display name, optional short bio and avatar. Accounts appear in
