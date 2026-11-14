@@ -1,8 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useFocusEffect, useIsFocused, useRouter } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { type ReactElement, useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { ScrollView, View } from 'react-native'
 import { useUserId } from '@/data'
 import { keys } from '@/data/keys'
 import {
@@ -20,7 +20,6 @@ import {
   Icon,
   IconButton,
   Screen,
-  Sheet,
   Tabs,
   Tappable,
   Text,
@@ -33,7 +32,6 @@ export default function FeedScreen() {
   const viewer = useUserId()
   const [mode, setMode] = useState<'following' | 'discover'>('following')
   const [show, setShow] = useState<SocialFeedShow>('all')
-  const [filtering, setFiltering] = useState(false)
   // With two panes both feeds are on screen, one in each, and the tabs that
   // switch between them have nothing to do. See `Aside`.
   const { split } = useWindowLayout()
@@ -53,23 +51,6 @@ export default function FeedScreen() {
             title={t('feed')}
             trailing={
               <View className="flex-row items-center">
-                <IconButton
-                  size="sm"
-                  variant="ghost"
-                  accessibilityLabel={`${t('feedShow')}, ${t(SHOW_LABEL[show])}`}
-                  onPress={() => setFiltering(true)}
-                >
-                  <View className="h-6 w-6 items-center justify-center">
-                    <Icon set="ui" name="filter" size={21} />
-                    {/* A filter left on would otherwise read as a quiet feed. */}
-                    {show !== 'all' ? (
-                      <View
-                        className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-pandan"
-                        accessibilityElementsHidden
-                      />
-                    ) : null}
-                  </View>
-                </IconButton>
                 <IconButton
                   size="sm"
                   variant="ghost"
@@ -109,7 +90,11 @@ export default function FeedScreen() {
               </View>
             }
           />
-          {split ? null : (
+          {split ? (
+            // Two panes have no tabs, and the filter covers both feeds, so it
+            // sits once above them rather than in each.
+            <FeedShowChips value={show} onChange={setShow} inHeader />
+          ) : (
             <Tabs
               value={mode}
               align="center"
@@ -133,17 +118,13 @@ export default function FeedScreen() {
           </Aside>
         </>
       ) : (
-        <FeedColumn key={`${mode}-${show}`} mode={mode} show={show} />
+        <FeedColumn
+          key={`${mode}-${show}`}
+          mode={mode}
+          show={show}
+          header={<FeedShowChips value={show} onChange={setShow} />}
+        />
       )}
-      <FeedFilter
-        visible={filtering}
-        value={show}
-        onChange={(value) => {
-          setShow(value)
-          setFiltering(false)
-        }}
-        onClose={() => setFiltering(false)}
-      />
     </Screen>
   )
 }
@@ -155,52 +136,57 @@ const SHOW_LABEL = {
 } as const satisfies Record<SocialFeedShow, string>
 const SHOWS = Object.keys(SHOW_LABEL) as SocialFeedShow[]
 
-/** The feed's filter: every post, meals only or workouts only, for both feeds. */
-function FeedFilter({
-  visible,
+/**
+ * The feed's filter: every post, meals only or workouts only, for both feeds.
+ * It heads the list rather than the app bar, so it reads as part of the feed
+ * and scrolls away with it.
+ */
+function FeedShowChips({
   value,
   onChange,
-  onClose,
+  inHeader = false,
 }: {
-  visible: boolean
   value: SocialFeedShow
   onChange: (value: SocialFeedShow) => void
-  onClose: () => void
+  /** In the screen header, which already pads its sides. */
+  inHeader?: boolean
 }) {
-  const { t } = useTranslation(['social', 'common'])
+  const { t } = useTranslation('social')
   return (
-    <Sheet
-      visible={visible}
-      onClose={onClose}
-      title={t('feedShow')}
-      closeLabel={t('common:action.close')}
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerClassName={cn('gap-1', inHeader ? 'pt-1' : 'px-gutter pb-2 pt-3')}
+      accessibilityRole="tablist"
+      accessibilityLabel={t('feedShow')}
     >
-      <View>
-        {SHOWS.map((option, index) => {
-          const selected = option === value
-          return (
-            <Tappable
-              key={option}
-              onPress={() => onChange(option)}
+      {SHOWS.map((option) => {
+        const selected = option === value
+        return (
+          // Small and flat on purpose: it is a quiet refinement of the feed
+          // beneath it, and a row of raised chips outshouted the posts.
+          <Tappable
+            key={option}
+            onPress={() => {
+              if (!selected) onChange(option)
+            }}
+            hitSlop={{ top: 8, bottom: 8 }}
+            className={cn('rounded-full px-3 py-1.5', selected && 'bg-pandan-soft')}
+            accessibilityRole="tab"
+            accessibilityState={{ selected }}
+          >
+            <Text
               className={cn(
-                'min-h-sm flex-row items-center gap-3 py-4',
-                index > 0 && 'border-t-2 border-track',
+                'font-body-black text-[14px] leading-[18px]',
+                selected ? 'text-pandan-ink' : 'text-muted',
               )}
-              accessibilityRole="menuitem"
-              accessibilityState={{ selected }}
             >
-              <Text
-                variant="bodyStrong"
-                className={cn('flex-1', selected ? 'text-pandan-ink' : 'font-body-bold')}
-              >
-                {t(SHOW_LABEL[option])}
-              </Text>
-              {selected ? <Icon set="ui" name="check" size={22} /> : null}
-            </Tappable>
-          )
-        })}
-      </View>
-    </Sheet>
+              {t(SHOW_LABEL[option])}
+            </Text>
+          </Tappable>
+        )
+      })}
+    </ScrollView>
   )
 }
 
@@ -213,10 +199,13 @@ function FeedColumn({
   mode,
   show,
   titled = false,
+  header,
 }: {
   mode: 'following' | 'discover'
   show: SocialFeedShow
   titled?: boolean
+  /** Drawn above the first post, scrolling with the list. */
+  header?: ReactElement
 }) {
   const { t } = useTranslation('social')
   const viewer = useUserId()
@@ -238,6 +227,7 @@ function FeedColumn({
     <SocialList
       query={feed}
       variant="feed"
+      header={header}
       rowKey={(post) => post.id}
       renderRow={(post, visible) => <PostCard post={post} visible={visible} />}
       empty={t(mode === 'following' && show === 'all' ? 'emptyFollowing' : 'end')}
