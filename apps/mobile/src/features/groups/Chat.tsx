@@ -89,6 +89,7 @@ import {
   type IconProps,
   RadioGroup,
   Screen,
+  SegmentedControl,
   Sheet,
   Skeleton,
   SkeletonRow,
@@ -2237,11 +2238,11 @@ function MessageMenu({
 type ShareKind = 'food' | 'workouts' | 'recipes'
 
 /**
- * The + beside the field: three tiles (Food, Workout, My Food), and under the
- * one chosen a grid of the viewer's recent ones of that kind, one tap to
- * share. Food is a recent post, a workout one logged in the app or recorded
- * by a health store, My Food one of their own written foods. Opens on food,
- * the thing most shared.
+ * The + beside the field: Food, Workouts and My Food in a segmented control,
+ * and under the one chosen a list of the viewer's recent ones of that kind,
+ * one tap to share. Food is a recent post, a workout one logged in the app or
+ * recorded by a health store, My Food one of their own written foods. Opens
+ * on food, the thing most shared.
  */
 function SharePicker({
   visible,
@@ -2263,95 +2264,71 @@ function SharePicker({
   useEffect(() => {
     if (!visible) setKind('food')
   }, [visible])
-  const tiles: { kind: ShareKind; label: string; icon: IconProps; tint: string }[] = [
-    {
-      kind: 'food',
-      label: t('tabFood'),
-      icon: { set: 'dishes', name: 'nasi-lemak' },
-      tint: 'bg-pandan-soft',
-    },
-    {
-      kind: 'workouts',
-      label: t('tabWorkouts'),
-      icon: workoutIcon('strength') as IconProps,
-      tint: 'bg-hibiscus-soft',
-    },
-    {
-      kind: 'recipes',
-      label: t('tabMyFood'),
-      icon: { set: 'food', name: 'cooking-pot' },
-      tint: 'bg-kaya-soft',
-    },
-  ]
+  // All three load as the sheet opens, so switching kinds draws a list that is
+  // already there rather than a skeleton each time.
+  useRecentFoodPosts(visible)
+  useRecentWorkouts(visible)
   return (
-    <Sheet
-      visible={visible}
-      onClose={onClose}
-      closeLabel={t('common:action.close')}
-      title={t('share')}
-    >
-      <View className="gap-lg">
-        <View className="flex-row gap-3" accessibilityRole="tablist">
-          {tiles.map((tile) => {
-            const chosen = kind === tile.kind
-            return (
-              <Tappable
-                key={tile.kind}
-                onPress={() => setKind(tile.kind)}
-                className={cn(
-                  'aspect-square min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[20px] border-2',
-                  tile.tint,
-                  chosen ? 'border-pandan' : 'border-transparent',
-                )}
-                accessibilityRole="tab"
-                accessibilityState={{ selected: chosen }}
-                accessibilityLabel={tile.label}
-              >
-                <Icon {...tile.icon} size={52} />
-                <Text variant="label" numberOfLines={1} className="px-1">
-                  {tile.label}
-                </Text>
-              </Tappable>
-            )
-          })}
+    <Sheet visible={visible} onClose={onClose} closeLabel={t('common:action.close')}>
+      {/* No title: the control under the handle already says what is on offer. */}
+      <View className="gap-md">
+        <SegmentedControl
+          size="sm"
+          value={kind}
+          onChange={setKind}
+          accessibilityLabel={t('share')}
+          options={[
+            { value: 'food', label: t('tabFood') },
+            { value: 'workouts', label: t('tabWorkouts') },
+            { value: 'recipes', label: t('tabMyFood') },
+          ]}
+        />
+        {/* Five rows tall whatever is in it, so the sheet holds its height
+            when the kind changes rather than jumping to fit each list. */}
+        <View style={{ minHeight: CHOICES * CHOICE_ROW }}>
+          {kind === 'food' ? (
+            <FoodChoices visible={visible} onPick={onPickFood} />
+          ) : kind === 'workouts' ? (
+            <WorkoutChoices visible={visible} onPick={onPickWorkout} />
+          ) : (
+            <RecipeChoices visible={visible} onPick={onPickRecipe} />
+          )}
         </View>
-        {kind === 'food' ? (
-          <FoodChoices visible={visible} onPick={onPickFood} />
-        ) : kind === 'workouts' ? (
-          <WorkoutChoices visible={visible} onPick={onPickWorkout} />
-        ) : (
-          <RecipeChoices visible={visible} onPick={onPickRecipe} />
-        )}
       </View>
     </Sheet>
   )
 }
 
-/** Four grey cards while a grid of choices loads. */
+/** The most of each kind on offer: the recent foods and workouts come five at a time. */
+const CHOICES = 5
+const CHOICE_ROW = 68
+
+const SKELETON_ROWS = [0, 1, 2, 3, 4]
+
+/** Rows of grey while a list of choices loads. */
 function ChoicesSkeleton() {
   return (
-    <View className="flex-row flex-wrap gap-3">
-      {[0, 1, 2, 3].map((key) => (
-        <View key={key} className="gap-2" style={{ width: '47%' }}>
-          <Skeleton rounded={false} width="100%" height={96} className="rounded-[16px]" />
-          <Skeleton width={110} height={12} />
+    <View>
+      {SKELETON_ROWS.map((key) => (
+        <View key={key} className="flex-row items-center gap-md" style={{ height: CHOICE_ROW }}>
+          <Skeleton rounded={false} width={52} height={52} className="rounded-[14px]" />
+          <View className="flex-1 gap-2">
+            <Skeleton width={140} height={14} />
+            <Skeleton width={100} height={12} />
+          </View>
         </View>
       ))}
     </View>
   )
 }
 
-/** A grid of things to share, two to a row. */
-function ChoiceGrid({ children }: { children: ReactNode }) {
-  return <View className="flex-row flex-wrap justify-between gap-y-3">{children}</View>
-}
-
-/** One thing to share: its picture across the top, its name, and when or how much under it. */
+/** One thing to share: its picture, its name, and when or how much under it. */
 function Choice({
   picture,
   tint,
   name,
   detail,
+  first,
   onPress,
 }: {
   picture: ReactNode
@@ -2359,25 +2336,43 @@ function Choice({
   tint: string
   name: string
   detail: string
+  first: boolean
   onPress: () => void
 }) {
   const { t } = useTranslation('groups')
+  const colors = useThemeColors()
   return (
     <Tappable
       onPress={onPress}
-      className="overflow-hidden rounded-[16px] border border-line bg-surface"
-      style={{ width: '48.5%' }}
+      className="flex-row items-center gap-md"
+      style={{ height: CHOICE_ROW }}
       accessibilityRole="button"
       accessibilityLabel={t('shareThis', { name })}
     >
-      <View className={cn('h-[96px] w-full overflow-hidden', tint)}>{picture}</View>
-      <View className="gap-0.5 px-2.5 py-2">
-        <Text variant="label" numberOfLines={1}>
-          {name}
-        </Text>
-        <Text variant="meta" numberOfLines={1}>
-          {detail}
-        </Text>
+      <View className={cn('h-[52px] w-[52px] overflow-hidden rounded-[14px]', tint)}>
+        {picture}
+      </View>
+      {/* The divider starts at the text, as a list's does, not under the picture. */}
+      <View
+        className={cn(
+          'h-full min-w-0 flex-1 flex-row items-center gap-md',
+          !first && 'border-t border-line',
+        )}
+      >
+        <View className="min-w-0 flex-1 gap-0.5">
+          <Text variant="label" numberOfLines={1}>
+            {name}
+          </Text>
+          <Text variant="meta" numberOfLines={1}>
+            {detail}
+          </Text>
+        </View>
+        <View className="h-9 w-9 items-center justify-center rounded-full bg-pandan-soft">
+          {/* The plane points up and right; nudged so it sits in the middle. */}
+          <View style={{ marginLeft: -1, marginTop: 1 }}>
+            <Icon set="ui" name="send" size={18} tintColor={colors.pandanInk} />
+          </View>
+        </View>
       </View>
     </Tappable>
   )
@@ -2406,7 +2401,7 @@ function choicesState(
   }
   if (!query.data?.length) {
     return (
-      <Text variant="meta" className="py-md text-center">
+      <Text variant="meta" className="py-xl text-center">
         {empty}
       </Text>
     )
@@ -2427,18 +2422,19 @@ function FoodChoices({
   const state = choicesState(posts, t('shareFoodEmpty'))
   if (state) return state
   return (
-    <ChoiceGrid>
-      {(posts.data ?? []).map((post) => (
+    <View>
+      {(posts.data ?? []).map((post, index) => (
         <Choice
           key={post.id}
+          first={index === 0}
           onPress={() => onPick(post)}
           name={post.food_name ?? ''}
           detail={`${count(post.kcal ?? 0)} ${t('common:unit.kcal')} · ${postedAt(post.created_at, t('common:date.today'), t('common:date.yesterday'))}`}
           tint={post.photo_path ? 'bg-surface-alt' : 'bg-pandan-soft'}
-          picture={<EntryPicture entry={foodOf(post)} ownerId={viewer} iconSize={56} />}
+          picture={<EntryPicture entry={foodOf(post)} ownerId={viewer} iconSize={38} />}
         />
       ))}
-    </ChoiceGrid>
+    </View>
   )
 }
 
@@ -2455,27 +2451,25 @@ function WorkoutChoices({
   const state = choicesState(workouts, t('shareWorkoutEmpty'))
   if (state) return state
   return (
-    <ChoiceGrid>
-      {(workouts.data ?? []).map((workout) => (
+    <View>
+      {(workouts.data ?? []).map((workout, index) => (
         <Choice
           key={`${workout.source}:${workout.id}`}
+          first={index === 0}
           onPress={() => onPick(workout)}
           name={nameOf(workout)}
           detail={`${duration(workout.duration_s)} · ${postedAt(workout.started_at, t('common:date.today'), t('common:date.yesterday'))}`}
           tint="bg-hibiscus-soft"
           picture={
             <View className="h-full w-full items-center justify-center">
-              <Icon {...workoutIcon(workout.kind)} size={56} />
+              <Icon {...workoutIcon(workout.kind)} size={34} />
             </View>
           }
         />
       ))}
-    </ChoiceGrid>
+    </View>
   )
 }
-
-/** The viewer's own foods (recipes), newest first: the few they would share. */
-const RECIPE_CHOICES = 6
 
 function RecipeChoices({
   visible,
@@ -2490,18 +2484,19 @@ function RecipeChoices({
   if (!visible) return null
   if (state) return state
   return (
-    <ChoiceGrid>
-      {(recipes.data ?? []).slice(0, RECIPE_CHOICES).map((recipe) => (
+    <View>
+      {(recipes.data ?? []).slice(0, CHOICES).map((recipe, index) => (
         <Choice
           key={recipe.id}
+          first={index === 0}
           onPress={() => onPick(recipe)}
           name={recipe.name}
           detail={t('recipePerServing', { kcal: count(recipe.perServing.kcal) })}
           tint={recipe.photoPath ? 'bg-surface-alt' : 'bg-kaya-soft'}
-          picture={<RecipePicture recipe={recipeOf(recipe)} mine iconSize={56} />}
+          picture={<RecipePicture recipe={recipeOf(recipe)} mine iconSize={38} />}
         />
       ))}
-    </ChoiceGrid>
+    </View>
   )
 }
 
