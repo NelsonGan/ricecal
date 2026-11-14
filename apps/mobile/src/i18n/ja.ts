@@ -905,7 +905,6 @@ export const ja = {
     },
 
     share: {
-      loggedBy: '記録者',
       brand: 'RiceCal',
       text: '{{food}}、{{kcal}} kcal。RiceCal で記録',
       failed: 'その画像を作成できませんでした',

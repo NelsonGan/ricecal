@@ -916,7 +916,6 @@ export const id = {
     },
 
     share: {
-      loggedBy: 'Dicatat oleh',
       brand: 'RiceCal',
       text: '{{food}}, {{kcal}} kkal. Dicatat dengan RiceCal',
       failed: 'Tidak bisa membuat gambar itu',

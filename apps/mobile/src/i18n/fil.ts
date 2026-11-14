@@ -927,7 +927,6 @@ export const fil = {
     },
 
     share: {
-      loggedBy: 'Ni-log ni',
       brand: 'RiceCal',
       text: '{{food}}, {{kcal}} kcal. Ni-log gamit ang RiceCal',
       failed: 'Hindi magawa ang larawang iyon',

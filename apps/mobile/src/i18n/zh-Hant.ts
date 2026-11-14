@@ -896,7 +896,6 @@ export const zhHant = {
     },
 
     share: {
-      loggedBy: '記錄者',
       brand: 'RiceCal',
       text: '{{food}}，{{kcal}} 大卡。用 RiceCal 記錄',
       failed: '這張圖沒能做出來',
