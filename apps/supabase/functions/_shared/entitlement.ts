@@ -6,7 +6,7 @@
 //                              meal, correcting one and reading a recipe out of a
 //                              photograph are Pro; photographing a plate is not.
 //   Has it spent today?     -> how many scans, and the ceiling depends on the
-//                              answer above: three a day free, fifty a day Pro.
+//                              answer above: three a day free, a hundred a day Pro.
 //
 // Both are checked server-side. The client gates the same two things so the
 // buttons read honestly, but a paywall enforced only in the app is a paywall
@@ -65,7 +65,7 @@ export class NotEntitled extends Error {
 /**
  * Refused because the account has spent today's scans. `entitled` decides what
  * the app says: a free account has something to buy and is shown the paywall,
- * where a Pro account at fifty is asked to get in touch. Two messages behind one
+ * where a Pro account at a hundred is asked to get in touch. Two messages behind one
  * status code, which the client cannot tell apart from the numbers alone.
  */
 export class ScanLimitReached extends Error {

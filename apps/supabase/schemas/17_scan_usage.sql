@@ -66,7 +66,7 @@ create policy "scan_usage: read own"
 -- thread.
 --
 -- The Pro ceiling is not sold as a number. The comparison table says "unlimited",
--- because 50 photographed meals in one day is not a diary and nobody eating
+-- because 100 photographed meals in one day is not a diary and nobody eating
 -- normally will meet it. It is an abuse ceiling wearing a quota's clothes, and
 -- printing it would invite the reading where it is a restriction. The free one is
 -- sold exactly as it is: three a day.
@@ -91,7 +91,7 @@ immutable
 parallel safe
 set search_path = ''
 as $$
-  select 50;
+  select 100;
 $$;
 
 revoke execute on function public.pro_daily_scans from public, anon;
@@ -138,7 +138,7 @@ grant execute on function public.scan_daily_limit to service_role;
 -- and an exception would have to be caught and re-read to find out what the
 -- number even was. `entitled` rides along because the two refusals read
 -- differently: a free account that has spent its three has something to buy, and
--- a Pro account that has spent its fifty has not.
+-- a Pro account that has spent its hundred has not.
 -- ---------------------------------------------------------------------------
 create or replace function public.claim_scan(p_user uuid)
 returns table (

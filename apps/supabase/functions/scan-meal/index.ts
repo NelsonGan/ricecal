@@ -26,7 +26,7 @@
 //
 // They are asked of different inputs, which is the freemium shape. A typed meal
 // needs a subscription; a photographed one spends one of the day's scans, three
-// on a free account and fifty on a paid one. So the same endpoint answers 402 to
+// on a free account and a hundred on a paid one. So the same endpoint answers 402 to
 // one input and 429 to either, and the client reads the `code` in the body.
 
 import { createClient } from '@supabase/supabase-js'

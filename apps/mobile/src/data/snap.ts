@@ -294,7 +294,7 @@ function useRecogniseMeal() {
           // The two refusals. The camera is not behind the paywall any more, so
           // what lands here is a free account's fourth plate of the day and the
           // answer is the paywall rather than an apology. The exception is a
-          // subscriber who has reached fifty, who is shown nothing to buy.
+          // subscriber who has reached a hundred, who is shown nothing to buy.
           //
           // Typing a meal is still Pro, so a described one can arrive here as
           // `not_entitled` when a subscription lapsed mid-request.
