@@ -6132,7 +6132,7 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 
 | | Free | Pro |
 |---|---|---|
-| photographed plate | 3 a day | 50 a day, sold as unlimited |
+| photographed plate | 3 a day | 100 a day, sold as unlimited |
 | barcode, search, quick add, logging a saved recipe | yes | yes |
 | a meal typed in words | no | yes |
 | a meal corrected in words | no | yes |
@@ -10120,9 +10120,9 @@ get your three back without waiting for midnight.
 The same applies to the account behind `.secrets/eval.json`: `pnpm eval:scan` and
 `pnpm eval:recipe` drive the deployed functions, so that account needs a real
 entitlement or every case fails identically at the first request. And it has a
-ceiling too: Pro is fifty scans a day and `eval:scan` is 27 cases, so a second
-`--repeat` in one day runs into it and the cases past 50 fail as 429s rather than
-as bad answers.
+ceiling too: Pro is a hundred scans a day and `eval:scan` is 27 cases, so a
+fourth `--repeat` in one day runs into it and the cases past 100 fail as 429s
+rather than as bad answers.
 
 ### React Native
 

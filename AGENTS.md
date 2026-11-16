@@ -791,8 +791,8 @@ holds both; the ids themselves are in those consoles.
 cascade's `debug: true` trace on every call. **Always `--repeat` when you change
 something** — one pass is not a measurement.
 
-- **The account is capped at 50 scans a day.** The full suite at `--repeat=3` is
-  90, so a long run dies partway and every remaining case reports "Daily scan
+- **The account is capped at 100 scans a day.** The full suite at `--repeat=3` is
+  90, so a second long run that day dies partway and every remaining case reports "Daily scan
   limit reached", which reads as a catastrophic regression rather than a quota
   because the cases that already ran passed. Check for that string before
   believing a wall of failures; clear `public.scan_usage` for the eval user to

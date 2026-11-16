@@ -93,7 +93,7 @@ export const paywall = {
    * already have a working diary, here is what it does not do yet" only reads as
    * generous if the ticks are real.
    *
-   * No number on the Pro side of `snap`. The ceiling is fifty a day, and printing
+   * No number on the Pro side of `snap`. The ceiling is a hundred a day, and printing
    * it would turn the row being sold into a restriction.
    */
   table: {
@@ -225,7 +225,7 @@ export const paywall = {
    *
    * Three of these are about the allowance rather than a feature. A free account
    * out of scans has somewhere to go, and the paywall opens behind the toast; a
-   * Pro account at fifty in one day is asked to get in touch; and an account
+   * Pro account at a hundred in one day is asked to get in touch; and an account
    * whose subscription lapsed mid-request is told which half failed.
    *
    * The free message names the number, because it counts plates rather than

@@ -25,7 +25,7 @@ export const SCHEMA_VERSION = '5'
  * Screens prefer the figure the server sends back with a refusal. These are for
  * copy rendered before anybody has been refused anything.
  *
- * The Pro ceiling is deliberately absent. It exists, at fifty scans a day, but
+ * The Pro ceiling is deliberately absent. It exists, at a hundred scans a day, but
  * the table says "unlimited": it is an abuse ceiling rather than a quota, and
  * printing it would invite reading it as a restriction on the thing being sold.
  */

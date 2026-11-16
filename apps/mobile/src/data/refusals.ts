@@ -41,7 +41,7 @@ export class NotEntitledError extends Error {
 /**
  * The account has spent today's scans. `entitled` decides the message, which is
  * why the server sends it: a free account has something to buy and is shown the
- * paywall, where a Pro account at fifty in one day is asked to get in touch.
+ * paywall, where a Pro account at a hundred in one day is asked to get in touch.
  */
 export class ScanLimitError extends Error {
   readonly used: number

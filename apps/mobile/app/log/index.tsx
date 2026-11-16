@@ -520,7 +520,7 @@ function LogSheet() {
                  surprise costs a photograph somebody has already framed and
                  taken.
 
-                 Not shown to a subscriber, whose ceiling is fifty and is not a
+                 Not shown to a subscriber, whose ceiling is a hundred and is not a
                  number they are meant to be counting against — printing it
                  would turn the thing they paid for into a quota. Not shown over
                  the barcode tab either: a packet spends nothing. And nothing at
