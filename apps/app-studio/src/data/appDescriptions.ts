@@ -49,13 +49,12 @@ A day over budget gets "a bit over today, tomorrow is a new count." Never a tell
 Terms of Use: https://ricecal.app/terms
 Privacy Policy: https://ricecal.app/privacy
 Contact: https://ricecal.app/contact`,
-    whatsNew: `- Added saved food sharing in group chats
-- Added the ability to see who reacted to messages
-- Added control over automatic food and workout sharing
-- Fixed health sync getting stuck
-- Fixed crashes when opening the app on older phones
+    whatsNew: `- Revamped the progress charts
+- Added a soft ding when a workout is finished
+- Revamped the look of shared meal photos
+- Fixed food search while typing in Pinyin
 
-The best meals come with good company.`,
+Good food, good mood.`,
   },
 
   ms: {
@@ -84,13 +83,12 @@ Hari yang terlebih sedikit dapat "lebih sedikit hari ini, esok kiraan baharu." B
 Terma Penggunaan: https://ricecal.app/terms
 Dasar Privasi: https://ricecal.app/privacy
 Hubungi kami: https://ricecal.app/contact`,
-    whatsNew: `- Menambah perkongsian makanan tersimpan dalam sembang kumpulan
-- Menambah senarai pemberi reaksi pada mesej
-- Menambah kawalan perkongsian automatik makanan dan senaman
-- Membaiki penyegerakan kesihatan yang tersekat
-- Membaiki aplikasi ranap apabila dibuka pada telefon lama
+    whatsNew: `- Mereka bentuk semula carta kemajuan
+- Menambah bunyi lembut apabila senaman selesai
+- Mereka bentuk semula rupa foto hidangan yang dikongsi
+- Membaiki carian makanan semasa menaip dalam Pinyin
 
-Hidangan terbaik dinikmati bersama teman yang baik.`,
+Makanan sedap, hati gembira.`,
   },
 
   zh: {
@@ -119,13 +117,12 @@ Hidangan terbaik dinikmati bersama teman yang baik.`,
 使用条款：https://ricecal.app/terms
 隐私政策：https://ricecal.app/privacy
 联系我们：https://ricecal.app/contact`,
-    whatsNew: `- 新增了在群组聊天中分享已保存食物的功能
-- 新增了查看消息回应者的功能
-- 新增了食物和运动自动分享控制
-- 修复了健康同步卡住的问题
-- 修复了旧手机打开应用时崩溃的问题
+    whatsNew: `- 重新设计了进度图表
+- 新增了运动结束时的轻柔提示音
+- 重新设计了分享的餐食照片
+- 修复了拼音输入时的食物搜索问题
 
-美食配好友才更美好。`,
+美食带来好心情。`,
   },
 
   id: {
@@ -154,13 +151,12 @@ Hari yang lewat sedikit dapat "hari ini sedikit lebih, besok hitungan baru." Buk
 Ketentuan Penggunaan: https://ricecal.app/terms
 Kebijakan Privasi: https://ricecal.app/privacy
 Kontak: https://ricecal.app/contact`,
-    whatsNew: `- Menambahkan fitur berbagi makanan tersimpan di obrolan grup
-- Menambahkan daftar pemberi reaksi pada pesan
-- Menambahkan kontrol berbagi makanan dan olahraga otomatis
-- Memperbaiki sinkronisasi kesehatan yang macet
-- Memperbaiki aplikasi tertutup saat dibuka di ponsel lama
+    whatsNew: `- Mendesain ulang grafik kemajuan
+- Menambahkan bunyi lembut saat olahraga selesai
+- Mendesain ulang tampilan foto makanan yang dibagikan
+- Memperbaiki pencarian makanan saat mengetik dengan Pinyin
 
-Hidangan terbaik dinikmati bersama teman yang baik.`,
+Makanan enak, hati senang.`,
   },
 
   th: {
@@ -189,13 +185,12 @@ Hidangan terbaik dinikmati bersama teman yang baik.`,
 ข้อกำหนดการใช้งาน: https://ricecal.app/terms
 นโยบายความเป็นส่วนตัว: https://ricecal.app/privacy
 ติดต่อเรา: https://ricecal.app/contact`,
-    whatsNew: `- เพิ่มการแชร์อาหารที่บันทึกไว้ในแชทกลุ่ม
-- เพิ่มรายชื่อผู้แสดงความรู้สึกต่อข้อความ
-- เพิ่มการควบคุมการแชร์อาหารและการออกกำลังกายอัตโนมัติ
-- แก้ไขการซิงค์สุขภาพค้าง
-- แก้ไขแอปปิดตัวเมื่อเปิดบนโทรศัพท์รุ่นเก่า
+    whatsNew: `- ออกแบบกราฟความคืบหน้าใหม่
+- เพิ่มเสียงเบา ๆ เมื่อออกกำลังกายเสร็จ
+- ออกแบบรูปอาหารที่แชร์ใหม่
+- แก้ไขการค้นหาอาหารขณะพิมพ์ด้วยพินอิน
 
-มื้อที่ดีที่สุดคือมื้อที่มีเพื่อนดี ๆ ร่วมโต๊ะ`,
+อาหารอร่อย ใจก็เป็นสุข`,
   },
 
   vi: {
@@ -224,13 +219,12 @@ Ngày quá một chút sẽ nhận được "hôm nay hơi quá, mai đếm lạ
 Điều khoản sử dụng: https://ricecal.app/terms
 Chính sách bảo mật: https://ricecal.app/privacy
 Liên hệ: https://ricecal.app/contact`,
-    whatsNew: `- Thêm chia sẻ món ăn đã lưu trong trò chuyện nhóm
-- Thêm danh sách người bày tỏ cảm xúc với tin nhắn
-- Thêm điều khiển tự động chia sẻ món ăn và buổi tập
-- Sửa lỗi đồng bộ sức khỏe bị kẹt
-- Sửa lỗi ứng dụng bị đóng khi mở trên điện thoại cũ
+    whatsNew: `- Thiết kế lại biểu đồ tiến độ
+- Thêm âm thanh nhẹ khi hoàn thành buổi tập
+- Thiết kế lại ảnh món ăn được chia sẻ
+- Sửa lỗi tìm món ăn khi gõ bằng Pinyin
 
-Bữa ăn ngon nhất luôn có bạn tốt bên cạnh.`,
+Ăn ngon, lòng vui.`,
   },
 
   ja: {
@@ -259,13 +253,12 @@ Apple Health または Health Connect をつなぐと、消費した分が食べ
 利用規約：https://ricecal.app/terms
 プライバシーポリシー：https://ricecal.app/privacy
 お問い合わせ：https://ricecal.app/contact`,
-    whatsNew: `- グループチャットで保存した食事を共有する機能を追加しました
-- メッセージにリアクションした人の一覧を追加しました
-- 食事と運動の自動共有を切り替える機能を追加しました
-- ヘルスケアの同期が止まる問題を修正しました
-- 古いスマートフォンで起動時にクラッシュする問題を修正しました
+    whatsNew: `- 進捗グラフを一新しました
+- 運動の終了時に鳴るやさしい音を追加しました
+- 共有する食事写真のデザインを一新しました
+- ピンイン入力中の食品検索の問題を修正しました
 
-最高の食事には気の合う仲間がいます。`,
+おいしい食事は心も満たします。`,
   },
 
   ko: {
@@ -294,13 +287,12 @@ Apple Health나 Health Connect를 연결하면 소모한 칼로리가 먹을 수
 이용약관: https://ricecal.app/terms
 개인정보처리방침: https://ricecal.app/privacy
 문의: https://ricecal.app/contact`,
-    whatsNew: `- 그룹 채팅에 저장한 음식 공유를 추가했습니다
-- 메시지에 반응한 사람 목록을 추가했습니다
-- 음식과 운동 자동 공유 설정을 추가했습니다
-- 건강 동기화가 멈추는 문제를 수정했습니다
-- 오래된 휴대폰에서 앱 실행 시 종료되는 문제를 수정했습니다
+    whatsNew: `- 진행 차트를 새롭게 디자인했습니다
+- 운동을 마치면 울리는 부드러운 소리를 추가했습니다
+- 공유하는 식사 사진을 새롭게 디자인했습니다
+- 병음 입력 중 음식 검색 문제를 수정했습니다
 
-최고의 식사에는 좋은 친구가 함께합니다.`,
+맛있는 음식은 기분도 좋게 합니다.`,
   },
 
   hi: {
@@ -329,13 +321,12 @@ Apple Health या Health Connect जोड़िए और जो कैलो
 उपयोग की शर्तें: https://ricecal.app/terms
 गोपनीयता नीति: https://ricecal.app/privacy
 संपर्क: https://ricecal.app/contact`,
-    whatsNew: `- समूह चैट में सहेजे गए भोजन साझा करने की सुविधा जोड़ी गई
-- संदेशों पर प्रतिक्रिया देने वालों की सूची जोड़ी गई
-- भोजन और वर्कआउट के अपने आप साझा होने का नियंत्रण जोड़ा गया
-- स्वास्थ्य सिंक अटकने की समस्या ठीक की गई
-- पुराने फ़ोन पर ऐप खोलते समय क्रैश ठीक किया गया
+    whatsNew: `- प्रगति चार्ट नए सिरे से बनाए गए
+- वर्कआउट पूरा होने पर हल्की ध्वनि जोड़ी गई
+- साझा भोजन फ़ोटो का रूप नया किया गया
+- पिनयिन में टाइप करते समय भोजन खोज ठीक की गई
 
-अच्छे साथ के साथ हर भोजन बेहतरीन होता है।`,
+अच्छा खाना मन खुश कर देता है।`,
   },
 
   ta: {
@@ -364,13 +355,12 @@ Apple Health அல்லது Health Connect உடன் இணைத்த�
 பயன்பாட்டு விதிமுறைகள்: https://ricecal.app/terms
 தனியுரிமைக் கொள்கை: https://ricecal.app/privacy
 தொடர்புக்கு: https://ricecal.app/contact`,
-    whatsNew: `- குழு அரட்டையில் சேமித்த உணவுகளைப் பகிரும் வசதி சேர்க்கப்பட்டது
-- செய்திகளுக்கு எதிர்வினையாற்றியோர் பட்டியல் சேர்க்கப்பட்டது
-- உணவு மற்றும் உடற்பயிற்சித் தானியங்கிப் பகிர்வுக் கட்டுப்பாடு சேர்க்கப்பட்டது
-- உடல்நல ஒத்திசைவு முடங்குவது சரிசெய்யப்பட்டது
-- பழைய கைபேசிகளில் செயலியைத் திறக்கும்போது மூடுவது சரிசெய்யப்பட்டது
+    whatsNew: `- முன்னேற்ற வரைபடங்கள் புதுப்பிக்கப்பட்டன
+- உடற்பயிற்சி முடிந்ததும் மென்மையான ஒலி சேர்க்கப்பட்டது
+- பகிரும் உணவுப் படங்களின் தோற்றம் புதுப்பிக்கப்பட்டது
+- பின்யினில் தட்டச்சு செய்யும்போது உணவுத் தேடல் சரிசெய்யப்பட்டது
 
-நல்ல துணையுடன் உணவே சிறந்த விருந்து.`,
+நல்ல உணவு மனதை மகிழ்விக்கும்.`,
   },
 
   bn: {
@@ -399,13 +389,12 @@ Apple Health বা Health Connect যুক্ত করলে শরীরচ�
 ব্যবহারের শর্তাবলি: https://ricecal.app/terms
 গোপনীয়তার নীতি: https://ricecal.app/privacy
 যোগাযোগ: https://ricecal.app/contact`,
-    whatsNew: `- গ্রুপ চ্যাটে সংরক্ষিত খাবার শেয়ার করার সুবিধা যোগ করা হয়েছে
-- বার্তায় প্রতিক্রিয়া দেওয়া ব্যক্তিদের তালিকা যোগ করা হয়েছে
-- খাবার ও ওয়ার্কআউট স্বয়ংক্রিয় শেয়ারের নিয়ন্ত্রণ যোগ করা হয়েছে
-- স্বাস্থ্য সিঙ্ক আটকে যাওয়ার সমস্যা ঠিক করা হয়েছে
-- পুরোনো ফোনে অ্যাপ খোলার সময় ক্র্যাশ ঠিক করা হয়েছে
+    whatsNew: `- অগ্রগতির চার্ট নতুনভাবে সাজানো হয়েছে
+- ওয়ার্কআউট শেষ হলে মৃদু শব্দ যোগ করা হয়েছে
+- শেয়ার করা খাবারের ছবির রূপ নতুন করা হয়েছে
+- পিনইনে টাইপ করার সময় খাবার খোঁজা ঠিক করা হয়েছে
 
-ভালো সঙ্গেই খাবার সবচেয়ে উপভোগ্য হয়।`,
+ভালো খাবারে মন ভালো থাকে।`,
   },
 
   fil: {
@@ -434,13 +423,12 @@ Ang araw na lumagpas nang kaunti ay makakakuha ng "medyo lumagpas ngayon, bukas 
 Mga Tuntunin ng Paggamit: https://ricecal.app/terms
 Patakaran sa Privacy: https://ricecal.app/privacy
 Kontak: https://ricecal.app/contact`,
-    whatsNew: `- Nagdagdag ng pagbabahagi ng na-save na pagkain sa group chat
-- Nagdagdag ng listahan ng mga nag-react sa mensahe
-- Nagdagdag ng kontrol sa awtomatikong pagbabahagi ng pagkain at ehersisyo
-- Inayos ang natigil na pag-sync ng kalusugan
-- Inayos ang pag-crash sa pagbukas ng app sa lumang telepono
+    whatsNew: `- Binago ang disenyo ng mga chart ng progreso
+- Nagdagdag ng mahinang tunog kapag tapos na ang ehersisyo
+- Binago ang hitsura ng ibinahaging larawan ng pagkain
+- Inayos ang paghahanap ng pagkain habang nagta-type sa Pinyin
 
-Pinakamasarap ang pagkain kapag maganda ang kasama.`,
+Masaya ang puso sa masarap na pagkain.`,
   },
 
   es: {
@@ -469,13 +457,12 @@ Un día pasado de la cuenta recibe "hoy te has pasado un poco, mañana se cuenta
 Términos de uso: https://ricecal.app/terms
 Política de privacidad: https://ricecal.app/privacy
 Contacto: https://ricecal.app/contact`,
-    whatsNew: `- Se añadió la opción de compartir comidas guardadas en chats de grupo
-- Se añadió una lista de personas que reaccionaron a mensajes
-- Se añadió control del uso compartido automático de comidas y entrenamientos
-- Se corrigió el bloqueo de la sincronización de salud
-- Se corrigieron cierres al abrir la app en teléfonos antiguos
+    whatsNew: `- Se renovaron los gráficos de progreso
+- Se añadió un sonido suave al terminar un entrenamiento
+- Se renovó el diseño de las fotos de comidas compartidas
+- Se corrigió la búsqueda de comidas al escribir en pinyin
 
-Las mejores comidas se disfrutan en buena compañía.`,
+Buena comida, buen humor.`,
   },
 
   fr: {
@@ -504,13 +491,12 @@ Une journée un peu au-dessus reçoit « un peu trop aujourd’hui, demain on re
 Conditions d’utilisation: https://ricecal.app/terms
 Politique de confidentialité: https://ricecal.app/privacy
 Contact: https://ricecal.app/contact`,
-    whatsNew: `- Ajout du partage de plats enregistrés dans les discussions de groupe
-- Ajout de la liste des personnes ayant réagi aux messages
-- Ajout du contrôle du partage automatique des plats et entraînements
-- Correction de la synchronisation de santé bloquée
-- Correction des plantages au lancement sur les anciens téléphones
+    whatsNew: `- Refonte des graphiques de progression
+- Ajout d'un son doux à la fin d'un entraînement
+- Refonte des photos de plats partagées
+- Correction de la recherche de plats en saisie pinyin
 
-Les meilleurs repas se savourent en bonne compagnie.`,
+Bonne cuisine, bonne humeur.`,
   },
 
   de: {
@@ -539,13 +525,12 @@ Ein Tag über dem Budget bekommt „heute ein bisschen drüber, morgen wird neu 
 Nutzungsbedingungen: https://ricecal.app/terms
 Datenschutzrichtlinie: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Teilen gespeicherter Gerichte in Gruppenchats hinzugefügt
-- Liste der Personen mit Nachrichtenreaktionen hinzugefügt
-- Steuerung des automatischen Teilens von Essen und Workouts hinzugefügt
-- Hängenbleibende Gesundheitssynchronisierung behoben
-- Abstürze beim Öffnen der App auf älteren Handys behoben
+    whatsNew: `- Fortschrittsdiagramme neu gestaltet
+- Sanften Ton am Ende eines Workouts hinzugefügt
+- Geteilte Essensfotos neu gestaltet
+- Essenssuche beim Tippen mit Pinyin behoben
 
-Die besten Mahlzeiten genießt man in guter Gesellschaft.`,
+Gutes Essen, gute Laune.`,
   },
 
   pt: {
@@ -574,13 +559,12 @@ Um dia acima da meta recebe "passou um pouco hoje, amanhã a conta recomeça." N
 Termos de Uso: https://ricecal.app/terms
 Política de Privacidade: https://ricecal.app/privacy
 Contato: https://ricecal.app/contact`,
-    whatsNew: `- Adicionado compartilhamento de comidas salvas em chats de grupo
-- Adicionada lista de pessoas que reagiram às mensagens
-- Adicionado controle do compartilhamento automático de comidas e treinos
-- Corrigido travamento da sincronização de saúde
-- Corrigidas falhas ao abrir o app em celulares antigos
+    whatsNew: `- Renovados os gráficos de progresso
+- Adicionado um som suave ao terminar um treino
+- Renovado o visual das fotos de comidas compartilhadas
+- Corrigida a busca de comidas ao digitar em pinyin
 
-As melhores refeições vêm com boa companhia.`,
+Comida boa traz bom humor.`,
   },
 
   it: {
@@ -609,13 +593,12 @@ Una giornata sopra la soglia riceve "oggi un po’ oltre, domani si riconta." Ma
 Termini di utilizzo: https://ricecal.app/terms
 Informativa sulla privacy: https://ricecal.app/privacy
 Contatti: https://ricecal.app/contact`,
-    whatsNew: `- Aggiunta la condivisione dei piatti salvati nelle chat di gruppo
-- Aggiunto l'elenco delle persone che hanno reagito ai messaggi
-- Aggiunto il controllo della condivisione automatica di pasti e allenamenti
-- Corretto il blocco della sincronizzazione dei dati sanitari
-- Corretti gli arresti all'apertura dell'app sui vecchi telefoni
+    whatsNew: `- Rinnovati i grafici dei progressi
+- Aggiunto un suono delicato alla fine di un allenamento
+- Rinnovate le foto dei piatti condivisi
+- Corretta la ricerca dei piatti durante la digitazione in pinyin
 
-I pasti migliori si gustano in buona compagnia.`,
+Buon cibo, buon umore.`,
   },
 
   nl: {
@@ -644,13 +627,12 @@ Een dag boven het budget krijgt "vandaag een beetje eroverheen, morgen telt opni
 Gebruiksvoorwaarden: https://ricecal.app/terms
 Privacybeleid: https://ricecal.app/privacy
 Contact: https://ricecal.app/contact`,
-    whatsNew: `- Opgeslagen gerechten delen in groepschats toegevoegd
-- Lijst toegevoegd van mensen die op berichten reageerden
-- Instelling voor automatisch delen van eten en trainingen toegevoegd
-- Vastlopende gezondheidssynchronisatie verholpen
-- Crashes bij het openen van de app op oudere telefoons verholpen
+    whatsNew: `- Voortgangsgrafieken vernieuwd
+- Zacht geluid toegevoegd aan het einde van een training
+- Gedeelde maaltijdfoto's vernieuwd
+- Eten zoeken tijdens typen in pinyin verholpen
 
-De beste maaltijden geniet je in goed gezelschap.`,
+Lekker eten, goed humeur.`,
   },
 
   ru: {
@@ -679,13 +661,12 @@ De beste maaltijden geniet je in goed gezelschap.`,
 Условия использования: https://ricecal.app/terms
 Политика конфиденциальности: https://ricecal.app/privacy
 Связаться с нами: https://ricecal.app/contact`,
-    whatsNew: `- Добавлен обмен сохранёнными блюдами в групповых чатах
-- Добавлен список авторов реакций на сообщения
-- Добавлено управление автоматической отправкой еды и тренировок
-- Исправлено зависание синхронизации здоровья
-- Исправлены сбои при открытии приложения на старых телефонах
+    whatsNew: `- Обновлены графики прогресса
+- Добавлен мягкий звук по окончании тренировки
+- Обновлён дизайн фото блюд для публикации
+- Исправлен поиск еды при вводе на пиньине
 
-Лучшие блюда вкуснее в хорошей компании.`,
+Вкусная еда поднимает настроение.`,
   },
 
   tr: {
@@ -714,13 +695,12 @@ Bütçeyi biraz aşan gün "bugün biraz fazla oldu, yarın sayım yeniden başl
 Kullanım Koşulları: https://ricecal.app/terms
 Gizlilik Politikası: https://ricecal.app/privacy
 İletişim: https://ricecal.app/contact`,
-    whatsNew: `- Grup sohbetlerinde kayıtlı yemek paylaşımı eklendi
-- Mesajlara tepki veren kişilerin listesi eklendi
-- Otomatik yemek ve antrenman paylaşımı kontrolü eklendi
-- Sağlık eşitlemesinin takılması düzeltildi
-- Eski telefonlarda uygulama açılırken oluşan çökmeler düzeltildi
+    whatsNew: `- İlerleme grafikleri yenilendi
+- Antrenman bitince çalan yumuşak bir ses eklendi
+- Paylaşılan yemek fotoğrafları yenilendi
+- Pinyin ile yazarken yemek araması düzeltildi
 
-En güzel yemekler iyi dostlarla yenir.`,
+Güzel yemek gönlü şenlendirir.`,
   },
 
   pl: {
@@ -749,13 +729,12 @@ Dzień ponad limit dostaje „dziś trochę więcej, jutro liczymy od nowa." Nig
 Warunki korzystania: https://ricecal.app/terms
 Polityka prywatności: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Dodano udostępnianie zapisanych potraw w czatach grupowych
-- Dodano listę osób reagujących na wiadomości
-- Dodano kontrolę automatycznego udostępniania jedzenia i treningów
-- Naprawiono zawieszanie synchronizacji zdrowia
-- Naprawiono awarie przy otwieraniu aplikacji na starszych telefonach
+    whatsNew: `- Odświeżono wykresy postępów
+- Dodano cichy dźwięk po zakończeniu treningu
+- Odświeżono wygląd udostępnianych zdjęć posiłków
+- Naprawiono wyszukiwanie jedzenia podczas pisania w pinyin
 
-Najlepsze posiłki smakują w dobrym towarzystwie.`,
+Dobre jedzenie poprawia humor.`,
   },
 
   uk: {
@@ -784,13 +763,12 @@ Najlepsze posiłki smakują w dobrym towarzystwie.`,
 Умови використання: https://ricecal.app/terms
 Політика конфіденційності: https://ricecal.app/privacy
 Зв’язатися з нами: https://ricecal.app/contact`,
-    whatsNew: `- Додано обмін збереженими стравами в групових чатах
-- Додано список людей з реакціями на повідомлення
-- Додано керування автоматичним поширенням їжі та тренувань
-- Виправлено зависання синхронізації здоров’я
-- Виправлено збої під час відкриття застосунку на старих телефонах
+    whatsNew: `- Оновлено графіки прогресу
+- Додано м’який звук після завершення тренування
+- Оновлено вигляд фото страв для поширення
+- Виправлено пошук їжі під час введення піньїнем
 
-Найкращі страви смакують у добрій компанії.`,
+Смачна їжа підіймає настрій.`,
   },
 
   sv: {
@@ -819,13 +797,12 @@ En dag över budget får "lite över idag, imorgon räknas det om." Aldrig en ti
 Användarvillkor: https://ricecal.app/terms
 Integritetspolicy: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Lade till delning av sparade maträtter i gruppchattar
-- Lade till en lista över personer som reagerat på meddelanden
-- Lade till inställning för automatisk delning av mat och träning
-- Åtgärdade hälsosynkronisering som fastnade
-- Åtgärdade krascher när appen öppnas på äldre telefoner
+    whatsNew: `- Förnyade framstegsdiagrammen
+- Lade till ett mjukt ljud när ett träningspass är klart
+- Förnyade utseendet på delade matfoton
+- Åtgärdade matsökning vid skrivning med pinyin
 
-De bästa måltiderna avnjuts i gott sällskap.`,
+God mat ger gott humör.`,
   },
 
   nb: {
@@ -854,13 +831,12 @@ En dag over budsjett får "litt over i dag, i morgen telles det på nytt." Aldri
 Bruksvilkår: https://ricecal.app/terms
 Personvernerklæring: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- La til deling av lagrede retter i gruppechatter
-- La til en liste over personer som reagerte på meldinger
-- La til kontroll over automatisk deling av mat og trening
-- Rettet helsesynkronisering som hang seg opp
-- Rettet krasj ved åpning av appen på eldre telefoner
+    whatsNew: `- Fornyet fremgangsdiagrammene
+- La til en myk lyd når en treningsøkt er ferdig
+- Fornyet utseendet på delte matbilder
+- Rettet matsøk ved skriving med pinyin
 
-De beste måltidene nytes i godt selskap.`,
+God mat gir godt humør.`,
   },
 
   da: {
@@ -889,13 +865,12 @@ En dag over budgettet får "lidt over i dag, i morgen tælles der forfra." Aldri
 Brugsvilkår: https://ricecal.app/terms
 Privatlivspolitik: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Tilføjede deling af gemte retter i gruppechats
-- Tilføjede en liste over personer der reagerede på beskeder
-- Tilføjede styring af automatisk deling af mad og træning
-- Rettede sundhedssynkronisering der gik i stå
-- Rettede nedbrud ved åbning af appen på ældre telefoner
+    whatsNew: `- Fornyede fremskridtsdiagrammerne
+- Tilføjede en blød lyd når en træning er færdig
+- Fornyede udseendet af delte madbilleder
+- Rettede madsøgning ved skrivning med pinyin
 
-De bedste måltider nydes i godt selskab.`,
+God mad giver godt humør.`,
   },
 };
 
