@@ -46,6 +46,22 @@ it('writes a person property once, and again only when it changes', () => {
   ])
 })
 
+it('still sends a person property when the phone cannot note that it did', () => {
+  // MMKV throws from `set` on a phone with no room left. The properties have
+  // already gone; failing to note it must not surface as an error.
+  const mmkv = jest.requireMock('react-native-mmkv') as { __failWrites: (on: boolean) => void }
+  const fake = fakePostHog()
+  // biome-ignore lint/suspicious/noExplicitAny: a partial SDK double
+  const people = postHogAnalytics(fake.sdk as any).getPeople()
+  mmkv.__failWrites(true)
+  try {
+    expect(() => people.set({ widgets_installed: 2 })).not.toThrow()
+  } finally {
+    mmkv.__failWrites(false)
+  }
+  expect(fake.calls).toEqual([['set', { widgets_installed: 2 }, undefined, false]])
+})
+
 it('does not carry one account’s answers over to the next', () => {
   // biome-ignore lint/suspicious/noExplicitAny: a partial SDK double
   postHogAnalytics(fakePostHog('user-1').sdk as any)

@@ -2,7 +2,6 @@ import { type AnalyticsClient, registerAnalytics, resetAnalyticsForTest } from '
 import {
   claimDailyOpen,
   daysBetween,
-  handsetEngagementStorage,
   localDay,
   parseEngagement,
   recordAppOpen,
@@ -121,30 +120,35 @@ describe('engagement events', () => {
     expect(fake.events.map((e) => e.event)).toEqual(['Daily App Open'])
   })
 
-  it('counts the day once on a phone whose store cannot write', () => {
-    // A full disk makes MMKV's `set` throw. Wired straight to the store, that
-    // came out of startup as an unhandled rejection, skipping the replay and
-    // the foreground listener registered after it. The day's open is still
-    // sent, once: this process remembers it even though the disk did not.
+  it('counts nothing until the day can be remembered, then counts it once', () => {
+    // MMKV throws from `set` on a phone with no room left. That came out of
+    // launch as an unhandled rejection; and an open sent without being
+    // remembered would go again on every launch and foreground.
     const { client, events } = fakeClient()
     registerAnalytics(client)
-    const full = {
-      getString: () => undefined,
-      set: () => {
-        throw new Error('MMKV.set(...): Failed to set value for key "state"!')
+    let full = true
+    let value: string | undefined
+    const storage = {
+      read: () => value,
+      write: (next: string) => {
+        if (full) throw new Error('MMKV.set(...): Failed to set value for key "state"!')
+        value = next
       },
     }
-    // How startup.ts wired it before.
-    const direct = { read: () => full.getString(), write: () => full.set() }
-    expect(() =>
-      recordAppOpen(direct, { freshInstall: false, now: new Date(2026, 9, 12, 9) }),
-    ).toThrow('Failed to set value')
-    const storage = handsetEngagementStorage(full)
-    const morning = recordAppOpen(storage, { freshInstall: false, now: new Date(2026, 9, 12, 9) })
-    const evening = recordAppOpen(storage, { freshInstall: false, now: new Date(2026, 9, 12, 21) })
+    const morning = new Date(2026, 9, 12, 9)
 
-    expect(morning.daily).toBe(true)
-    expect(evening.daily).toBe(false)
-    expect(events.filter((e) => e.event === 'Daily App Open')).toHaveLength(1)
+    expect(recordAppOpen(storage, { freshInstall: true, now: morning })).toEqual({
+      firstOpen: false,
+      daily: false,
+      firstDay: true,
+    })
+    recordAppOpen(storage, { freshInstall: true, now: morning })
+    expect(events).toEqual([])
+
+    full = false
+    recordAppOpen(storage, { freshInstall: true, now: morning })
+    recordAppOpen(storage, { freshInstall: false, now: new Date(2026, 9, 12, 21) })
+    expect(events.map((e) => e.event)).toEqual(['First App Open', 'Daily App Open'])
+    expect(events[1].props).toEqual({ active_days: 1, days_since_last_open: null })
   })
 })

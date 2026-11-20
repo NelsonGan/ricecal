@@ -3,7 +3,7 @@ import { createMMKV } from 'react-native-mmkv'
 
 import { registerAnalytics } from './analytics'
 import { sending } from './analytics/client'
-import { handsetEngagementStorage, recordAppOpen } from './analytics/engagement'
+import { recordAppOpen } from './analytics/engagement'
 import { configureGa4Collection, ga4CollectionEnabled } from './analytics/ga4'
 import { createAnalyticsProviders, type FirebaseAnalyticsBridge } from './analytics/providers'
 import { registerRevenueAnalytics } from './analytics/revenue'
@@ -71,7 +71,11 @@ const freshInstall = (() => {
   }
 })()
 
-const engagementStorage = handsetEngagementStorage(createMMKV({ id: 'ricecal-engagement' }))
+const engagementStore = createMMKV({ id: 'ricecal-engagement' })
+const engagementStorage = {
+  read: () => engagementStore.getString('state'),
+  write: (value: string) => engagementStore.set('state', value),
+}
 
 /**
  * PostHog, as early as the root layout's module scope so error autocapture

@@ -34,35 +34,6 @@ export type EngagementStorage = {
   write(value: string): void
 }
 
-/**
- * The handset's MMKV store as `EngagementStorage`, with this process's last
- * write held in memory too.
- *
- * MMKV throws from `set` when the phone has no room left. Thrown from launch,
- * that skipped everything `initAnalytics` does after it; swallowed with
- * nothing remembered, every return to the foreground would send today's open
- * again. Remembering it here sends it once, and the next write tries the disk
- * again.
- */
-export function handsetEngagementStorage(store: {
-  getString(key: string): string | undefined
-  set(key: string, value: string): void
-}): EngagementStorage {
-  const KEY = 'state'
-  let latest: string | undefined
-  return {
-    read: () => latest ?? store.getString(KEY),
-    write: (value) => {
-      latest = value
-      try {
-        store.set(KEY, value)
-      } catch {
-        // A full disk. Nothing to tell anyone: `latest` covers this process.
-      }
-    },
-  }
-}
-
 const EMPTY: EngagementState = { lastDay: null, activeDays: 0, installDay: null }
 
 /** `YYYY-MM-DD` in the phone's own time zone, which is the day the user lives in. */
@@ -142,15 +113,20 @@ export function recordAppOpen(
   const today = localDay(now)
   let state = parseEngagement(storage.read())
   const firstOpen = freshInstall && state.lastDay === null
-  if (firstOpen) {
-    state = { ...state, installDay: today }
-    track('First App Open', {})
-  }
+  if (firstOpen) state = { ...state, installDay: today }
   const firstDay = state.installDay === today
 
   const claim = claimDailyOpen(state, today)
   if (!claim) return { firstOpen, daily: false, firstDay }
-  storage.write(JSON.stringify(claim.next))
+  // Remembered before anything is sent. MMKV throws from `set` on a phone with
+  // no room left, and an open that cannot be remembered would go again on every
+  // launch and return to the foreground. So it waits for a write that works.
+  try {
+    storage.write(JSON.stringify(claim.next))
+  } catch {
+    return { firstOpen: false, daily: false, firstDay }
+  }
+  if (firstOpen) track('First App Open', {})
   track('Daily App Open', claim.properties)
   return { firstOpen, daily: true, firstDay }
 }

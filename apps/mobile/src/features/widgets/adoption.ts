@@ -18,12 +18,6 @@ const storage = createMMKV({ id: 'ricecal-widgets' })
 
 const KEY = 'installed'
 let profileOwner: string | null = null
-/**
- * This process's last poll. MMKV throws from `set` on a phone with no room
- * left, and without this every poll after that would diff against the old
- * baseline and report the same addition again.
- */
-let lastPoll: WidgetKind[] | null = null
 
 export type WidgetDiff = {
   added: WidgetKind[]
@@ -56,7 +50,6 @@ export function diffWidgets(previous: WidgetKind[], current: WidgetKind[]): Widg
  * the widgets survive the app being deleted.
  */
 function stored(): WidgetKind[] | null {
-  if (lastPoll !== null) return lastPoll
   const raw = storage.getString(KEY)
   if (raw === undefined) return null
 
@@ -80,11 +73,13 @@ function stored(): WidgetKind[] | null {
  */
 export function reportWidgets(current: WidgetKind[], userId?: string): WidgetDiff {
   const previous = stored()
-  lastPoll = current
   try {
     storage.set(KEY, JSON.stringify(current))
   } catch {
-    // A full disk. `lastPoll` stands in until there is room again.
+    // MMKV throws from `set` on a phone with no room left. A change that cannot
+    // be remembered would be reported again by every poll, so it waits for the
+    // first poll that can write it down.
+    return { added: [], removed: [] }
   }
   const owner = userId ?? null
 
@@ -120,5 +115,4 @@ export function reportWidgets(current: WidgetKind[], userId?: string): WidgetDif
 export function forgetWidgetsForTest(): void {
   storage.remove(KEY)
   profileOwner = null
-  lastPoll = null
 }

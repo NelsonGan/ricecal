@@ -250,10 +250,15 @@ export function postHogAnalytics(posthog: PostHog): AnalyticsClient {
             undefined,
             false,
           )
-          personStore.set(
-            'person',
-            JSON.stringify({ userId, values: { ...record.values, ...changed } }),
-          )
+          try {
+            personStore.set(
+              'person',
+              JSON.stringify({ userId, values: { ...record.values, ...changed } }),
+            )
+          } catch {
+            // Only a note that they went. MMKV throws from `set` on a phone with
+            // no room left; the cost of not noting it is one repeated `$set`.
+          }
         },
         deleteUser() {
           posthog.unsetPersonProperties(PERSON_PROPERTIES, false)
