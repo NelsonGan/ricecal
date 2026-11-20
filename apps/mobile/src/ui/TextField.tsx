@@ -16,6 +16,18 @@ const NUMERIC = new Set<TextInputProps['keyboardType']>(['number-pad', 'decimal-
 export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
   label?: string
   /**
+   * Keep the label for the number pad's header and for a screen reader, but
+   * do not draw it. For a field in a row whose label is already drawn beside
+   * it, where a second copy above the box would say the same word twice.
+   */
+  hideLabel?: boolean
+  /**
+   * `sm` is a 44pt box with a thinner border and body-size type, for a form
+   * where several short answers share one card. `md`, the default, is the
+   * full-width field every other screen uses.
+   */
+  size?: 'md' | 'sm'
+  /**
    * A control on the label's line, pushed to the right edge of the field.
    *
    * For the action that belongs TO a field rather than after it: "Forgot your
@@ -75,6 +87,8 @@ export type TextFieldProps = Omit<TextInputProps, 'style' | 'className'> & {
 export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function TextField(
   {
     label,
+    hideLabel = false,
+    size = 'md',
     labelAction,
     labelActionInline = false,
     error,
@@ -173,7 +187,7 @@ export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function 
       {/* One row when there is an action, so the label and it share a baseline
           rather than the action opening a line of its own. `min-w-0` on the
           label so a long one truncates instead of pushing the action off. */}
-      {label || labelAction ? (
+      {(label && !hideLabel) || labelAction ? (
         <View
           className={cn(
             'min-h-[20px] flex-row items-center',
@@ -181,7 +195,7 @@ export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function 
           )}
         >
           <Text variant="label" numberOfLines={1} className="min-w-0 shrink">
-            {label}
+            {hideLabel ? null : label}
           </Text>
           {labelAction}
         </View>
@@ -189,7 +203,9 @@ export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function 
 
       <View
         className={cn(
-          'min-h-[60px] flex-row items-center gap-3 rounded-md border-[3px] bg-surface px-5',
+          size === 'sm'
+            ? 'min-h-[44px] flex-row items-center gap-2 rounded-sm border-2 bg-surface px-3'
+            : 'min-h-[60px] flex-row items-center gap-3 rounded-md border-[3px] bg-surface px-5',
           border,
           !editable && 'opacity-60',
           className,
@@ -215,7 +231,12 @@ export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function 
             secureTextEntry={secureTextEntry}
             placeholder={ownPlaceholder ? undefined : placeholder}
             selectTextOnFocus={selectTextOnFocus}
-            className={cn('font-body-bold text-[17px] text-ink', inputClassName)}
+            className={cn(
+              size === 'sm'
+                ? 'font-body-black text-[16px] text-ink'
+                : 'font-body-bold text-[17px] text-ink',
+              inputClassName,
+            )}
             placeholderTextColor={colors.faint}
             // The caret defaults to the platform blue, which is the one colour
             // in the app that belongs to no role.

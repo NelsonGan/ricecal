@@ -38,6 +38,8 @@ export type SelectProps<T extends string> = {
   /** Screen-reader name for the sheet's drag handle. Translated. */
   closeLabel: string
   disabled?: boolean
+  /** `sm` matches `TextField`'s: a 44pt trigger for a row in a form card. */
+  size?: 'md' | 'sm'
   className?: string
 }
 
@@ -59,6 +61,7 @@ export function Select<T extends string>({
   placeholder,
   closeLabel,
   disabled = false,
+  size = 'md',
   className,
 }: SelectProps<T>) {
   const [open, setOpen] = useState(false)
@@ -72,7 +75,9 @@ export function Select<T extends string>({
         onPress={() => setOpen(true)}
         disabled={disabled}
         className={cn(
-          'min-h-md flex-row items-center gap-3 rounded-md border-[3px] border-line bg-surface px-[18px]',
+          size === 'sm'
+            ? 'min-h-[44px] flex-row items-center gap-2 rounded-sm border-2 border-line bg-surface px-3'
+            : 'min-h-md flex-row items-center gap-3 rounded-md border-[3px] border-line bg-surface px-[18px]',
           disabled && 'opacity-50',
         )}
         accessibilityRole="button"
@@ -87,7 +92,7 @@ export function Select<T extends string>({
         >
           {selected?.label ?? placeholder}
         </Text>
-        <Icon set="ui" name="chevron-down" size={20} />
+        <Icon set="ui" name="chevron-down" size={size === 'sm' ? 16 : 20} />
       </Tappable>
 
       <Sheet visible={open} onClose={() => setOpen(false)} title={label} closeLabel={closeLabel}>

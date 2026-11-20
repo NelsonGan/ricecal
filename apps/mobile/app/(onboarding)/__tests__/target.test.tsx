@@ -37,21 +37,6 @@ jest.mock('expo-router', () => ({
 // itself rather than reading `current_daily_goals`.
 jest.mock('@/data', () => ({ useSession: () => ({ session: null }) }))
 
-/**
- * The ring, as the number in the middle of it.
- *
- * Skia's own jest setup does not mock `PathBuilder`, which `CalorieRing` calls
- * during render, and no other test in the repo draws one. Mocking the module
- * rather than the barrel it is re-exported from keeps every other `@/ui` import
- * on this screen real.
- */
-jest.mock('@/ui/CalorieRing', () => {
-  const { Text: RNText } = require('react-native')
-  return {
-    CalorieRing: ({ centerLabel }: { centerLabel: string }) => <RNText>{centerLabel}</RNText>,
-  }
-})
-
 const store = createMMKV({ id: 'ricecal-onboarding' })
 const seed = (draft: OnboardingDraft) => store.set('draft', JSON.stringify(draft))
 
@@ -149,17 +134,16 @@ it('says what the macros cost once they stop agreeing with the calories', async 
   expect(screen.getByText('Macros add up to 5,406 kcal')).toBeTruthy()
 })
 
-it('opens on a budget already in the draft, and moves the ring with it', async () => {
+it('opens on a budget already in the draft, and saves an edit to it', async () => {
   seed({ ...BODY, targets: { kcal: 1800, carbs: 203, protein: 104, fat: 46 } })
   await render(<TargetStep />)
 
-  expect(screen.getByText('1,800')).toBeTruthy()
+  expect(screen.getByLabelText('DAILY CALORIES')).toHaveDisplayValue('1800')
 
   // Appended to the 1,800 already in the box, which lands past the ceiling
   // `daily_goals.kcal` will store and is clamped to it.
   await user.type(screen.getByLabelText('DAILY CALORIES'), '0')
 
-  expect(screen.getByText('10,000')).toBeTruthy()
   expect(saved().targets).toEqual({ kcal: 10_000, carbs: 203, protein: 104, fat: 46 })
 })
 
@@ -193,4 +177,13 @@ it('puts the budget back under the formula', async () => {
 
   expect(screen.getByLabelText('Protein')).toHaveDisplayValue('104')
   expect(saved().targets).toBeUndefined()
+})
+
+it('shows the goal weight in the units chosen on setup', async () => {
+  seed({ ...BODY, units: 'imperial', targetWeightKg: 68 })
+  await render(<TargetStep />)
+
+  // 68 kg is 149.9 lb, the figure the basics step showed for the same target.
+  expect(screen.getByText('149.9 lb')).toBeTruthy()
+  expect(screen.queryByText('68.0 kg')).toBeNull()
 })

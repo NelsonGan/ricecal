@@ -6,7 +6,7 @@ import { View } from 'react-native'
 import { type Meal, useSession, useUpdateMealTime } from '@/data'
 import { FactRow, OnboardingStep } from '@/features/onboarding'
 import { ensureNotificationPermission } from '@/lib/notifications'
-import { Card, Icon, Text, useToast } from '@/ui'
+import { FormCard, Text, useToast } from '@/ui'
 
 /**
  * Enable notifications: the one ask that has to do something.
@@ -107,7 +107,7 @@ function NotificationsStep() {
   return (
     <OnboardingStep
       name="notifications"
-      accent="kaya"
+      art={{ set: 'scenes', name: 'clock' }}
       title={t('onboarding:notifications.title')}
       subtitle={t('onboarding:notifications.subtitle')}
       /* "Continue", and no second button, for the same reason the health step
@@ -126,40 +126,32 @@ function NotificationsStep() {
       secondaryLabel={undefined}
       onSecondary={undefined}
     >
-      {/* A clock and a bowl, which is the whole ask in one picture.
-          96 because that is the ceiling `Icon` documents for art, and on an SE
-          it is what leaves the promise line clear of the CTA.
-
-          This screen has room for a picture where the other permission does
-          not: the health step already carries a card of read rows, a reason
-          card when the store is unusable and a demo button, and a hero on top
-          of that is what pushes its CTA off a small phone. */}
-      <View className="items-center pb-1">
-        <Icon set="scenes" name="clock" size={96} />
-      </View>
-
       {/* Three lines and no card title. What each row said underneath itself
           ("breakfast, lunch and dinner, at your own times") is now the screen's
           own subtitle, said once — the rows were repeating the heading in
           smaller type, which is how a permission ask ends up being three
           paragraphs long. The third row stays, because "and nothing else" is
           the one thing here nobody expects and every other tracker gets wrong. */}
-      <Card>
-        <View className="gap-4">
+      <FormCard>
+        <View className="py-3.5">
           <FactRow
             icon={{ set: 'system', name: 'bell-active' }}
             title={t('onboarding:notifications.meals')}
           />
+        </View>
+        <View className="py-3.5">
           <FactRow
             icon={{ set: 'system', name: 'camera' }}
             title={t('onboarding:notifications.scans')}
           />
+        </View>
+        <View className="py-3.5">
           <FactRow
             icon={{ set: 'system', name: 'bell-off' }}
             title={t('onboarding:notifications.nothingElse')}
           />
         </View>
-      </Card>
+      </FormCard>
 
       <Text variant="meta" className="px-0.5 text-center">
         {t('onboarding:notifications.promise')}

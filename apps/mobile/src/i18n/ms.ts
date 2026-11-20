@@ -470,38 +470,42 @@ export const ms = {
 
   onboarding: {
     setup: {
-      title: 'Sebelum kita mula',
-      subtitle: 'Kedua-duanya mengubah bahasa dan ukuran beberapa skrin seterusnya.',
+      title: 'Bahasa dan unit',
+      subtitle: 'Anda boleh tukar kedua-duanya kemudian dalam Saya.',
       unitsTitle: 'UNIT',
       metric: 'Metrik',
       imperial: 'Imperial',
-      metricNote: 'Sentimeter dan kilogram.',
-      imperialNote: 'Kaki, inci dan paun.',
     },
 
     welcome: {
-      title: 'Penjejak kalori untuk orang Asia',
-      subtitle: 'Nasi lemak, pho, laksa, nasi char siu.',
-      perks: {
-        track: {
-          title: 'Jejak setiap kalori',
-          subtitle: 'Snap gambar atau cari dalam beberapa saat',
-        },
-        habit: {
-          title: 'Bina tabiat lebih sihat',
-          subtitle: 'Sasaran lembut, rentetan, tiada kutukan',
-        },
-        local: {
-          title: '50,000 hidangan Asia',
-          subtitle: 'Dan 3 juta bungkusan, dibaca melalui barkod',
-        },
-      },
+      title: 'Snap pinggan anda. Tahu kalorinya.',
+      subtitle: 'Penjejak kalori untuk makanan Asia.',
       start: 'Mula',
       signIn: 'Saya sudah ada akaun',
     },
 
+    how: {
+      title: 'Snap. Kami kira.',
+      subtitle: 'Satu gambar memberi hidangan, saiz hidangan dan kalorinya.',
+      portion: '1 pinggan',
+      more: 'Atau taip, cari, atau imbas barkod.',
+    },
+
+    workouts: {
+      title: 'Catat senaman juga',
+      subtitle: 'Set, ulangan dan pemasa rehat. Angkatan lepas anda di sebelah setiap set.',
+      routine: 'Senaman pagi',
+    },
+
+    social: {
+      title: 'Lebih seronok bersama kawan',
+      subtitle: 'Kongsi makanan, beri sokongan, bersembang dalam kumpulan.',
+      group: 'Kelab makan tengah hari',
+    },
+
     about: {
       title: 'Beberapa perkara asas',
+      subtitle: 'Untuk bajet kalori harian anda.',
       height: 'TINGGI',
       heightPlaceholder: '170',
       weight: 'BERAT',
@@ -526,6 +530,7 @@ export const ms = {
 
     activity: {
       title: 'Sesibuk mana hari anda?',
+      subtitle: 'Pilih yang paling dekat dengan hari biasa anda.',
       sedentary: { title: 'Kebanyakannya duduk', subtitle: 'Pejabat, memandu, belajar' },
       light: { title: 'Aktif sedikit', subtitle: 'Sedikit berjalan, kerja rumah ringan' },
       onFeet: {
@@ -537,7 +542,7 @@ export const ms = {
 
     source: {
       title: 'Dari mana anda dengar tentang kami?',
-      subtitle: 'Ia membantu kami tahu di mana perlu muncul seterusnya.',
+      subtitle: 'Satu ketik. Ia membantu kami berkembang.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -563,6 +568,7 @@ export const ms = {
 
     target: {
       title: 'Bajet harian anda',
+      subtitle: 'Dikira daripada jawapan anda. Tukar mana-mana angka.',
       perDay: 'KCAL SEHARI',
       goalWeight: 'BERAT SASARAN',
       goalBy: 'DIJANGKA MENJELANG',

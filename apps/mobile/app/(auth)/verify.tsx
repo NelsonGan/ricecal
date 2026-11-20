@@ -192,6 +192,15 @@ export default function VerifyScreen() {
   const total = Number(params.total)
   const showProgress = Number.isFinite(step) && Number.isFinite(total) && step > 0 && step <= total
 
+  /**
+   * Present tense while it is still going out, past tense once it has. Saying
+   * "we sent a code" over a request still in flight is the one version that
+   * can be wrong.
+   */
+  const sentLine = sending
+    ? t('auth:verify.sendingTo', { email })
+    : t('auth:verify.sentTo', { email })
+
   return (
     <Screen
       header={
@@ -201,7 +210,9 @@ export default function VerifyScreen() {
             total={total}
             tone="pandan"
             onBack={back}
+            art={{ art: 'envelope' }}
             title={t('auth:verify.title')}
+            subtitle={sentLine}
           />
         ) : (
           <AppBar title={t('auth:verify.title')} onBack={back} backLabel={t('common:a11y.back')} />
@@ -213,14 +224,12 @@ export default function VerifyScreen() {
         </Button>
       }
     >
-      <View className="pb-2 pt-6">
-        {/* Present tense while it is still going out, past tense once it has.
-            Saying "we sent a code" over a request still in flight is the one
-            version that can be wrong. */}
-        <Text variant="meta">
-          {sending ? t('auth:verify.sendingTo', { email }) : t('auth:verify.sentTo', { email })}
-        </Text>
-      </View>
+      {/* In the flow, the header says it, as every step's header does. */}
+      {showProgress ? null : (
+        <View className="pb-2 pt-6">
+          <Text variant="meta">{sentLine}</Text>
+        </View>
+      )}
 
       <TextField
         label={t('auth:verify.field')}

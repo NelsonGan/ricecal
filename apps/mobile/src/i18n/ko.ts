@@ -457,32 +457,42 @@ export const ko = {
 
   onboarding: {
     setup: {
-      title: '시작하기 전에',
-      subtitle: '두 가지 모두 다음 화면들의 언어와 단위를 바꿉니다.',
+      title: '언어와 단위',
+      subtitle: '둘 다 나중에 내 정보에서 바꿀 수 있어요.',
       unitsTitle: '단위',
       metric: '미터법',
       imperial: '야드파운드법',
-      metricNote: '센티미터와 킬로그램.',
-      imperialNote: '피트, 인치, 파운드.',
     },
 
     welcome: {
-      title: '아시아 사람을 위한 칼로리 기록',
-      subtitle: '나시르막, 쌀국수, 락사, 차슈덮밥.',
-      perks: {
-        track: { title: '칼로리를 하나하나 기록', subtitle: '사진을 찍거나 몇 초 만에 검색' },
-        habit: {
-          title: '더 건강한 습관 만들기',
-          subtitle: '부담 없는 목표, 연속 기록, 잔소리 없음',
-        },
-        local: { title: '아시아 음식 50,000가지', subtitle: '그리고 300만 개 제품을 바코드로' },
-      },
+      title: '접시를 찍으면, 칼로리가 보여요.',
+      subtitle: '아시아 음식을 위한 칼로리 기록 앱.',
       start: '시작하기',
       signIn: '이미 계정이 있습니다',
     },
 
+    how: {
+      title: '찍기만 하세요. 계산은 저희가.',
+      subtitle: '사진 한 장으로 메뉴, 양, 칼로리를 알려 드려요.',
+      portion: '1접시',
+      more: '직접 입력, 검색, 바코드 스캔도 돼요.',
+    },
+
+    workouts: {
+      title: '운동도 기록해요',
+      subtitle: '세트, 횟수, 휴식 타이머. 세트마다 지난번 기록이 옆에 보여요.',
+      routine: '아침 운동',
+    },
+
+    social: {
+      title: '친구와 함께라면 더 즐겁게',
+      subtitle: '식사를 공유하고, 서로 응원하고, 그룹에서 대화해요.',
+      group: '점심 클럽',
+    },
+
     about: {
       title: '기본적인 몇 가지',
+      subtitle: '하루 칼로리 예산을 계산하는 데 써요.',
       height: '키',
       heightPlaceholder: '170',
       weight: '몸무게',
@@ -507,6 +517,7 @@ export const ko = {
 
     activity: {
       title: '하루를 얼마나 활동적으로 보내나요?',
+      subtitle: '평소 하루와 가장 가까운 것을 골라 주세요.',
       sedentary: { title: '대부분 앉아 있음', subtitle: '사무, 운전, 공부' },
       light: { title: '가볍게 활동', subtitle: '조금 걷고 가벼운 집안일' },
       onFeet: { title: '주로 서 있음', subtitle: '판매, 간호, 현장 작업' },
@@ -515,7 +526,7 @@ export const ko = {
 
     source: {
       title: '어떻게 알게 되셨나요?',
-      subtitle: '다음에 어디에 나타나야 할지 정하는 데 도움이 됩니다.',
+      subtitle: '한 번만 탭하면 저희에게 큰 도움이 돼요.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -541,6 +552,7 @@ export const ko = {
 
     target: {
       title: '하루 예산',
+      subtitle: '답변으로 계산했어요. 어떤 숫자든 바꿀 수 있어요.',
       perDay: '하루 KCAL',
       goalWeight: '목표 몸무게',
       goalBy: '도달 예상',

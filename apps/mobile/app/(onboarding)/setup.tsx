@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
 
 import type { Units } from '@/data'
 import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
@@ -14,7 +13,7 @@ import {
   setLanguage,
   storedLanguage,
 } from '@/i18n'
-import { Card, SegmentedControl, Select, Text } from '@/ui'
+import { FormCard, FormRow, SegmentedControl, Select } from '@/ui'
 
 /**
  * Setup: the language the app is read in and the units it is measured in.
@@ -69,41 +68,46 @@ export default function SetupStep() {
   return (
     <OnboardingStep
       name="setup"
-      accent="pandan"
+      art={{ art: 'globe' }}
       title={t('setup.title')}
       subtitle={t('setup.subtitle')}
-      onBack={() => router.dismissTo('/(onboarding)/welcome')}
+      onBack={() => router.dismissTo('/(onboarding)/how')}
       primaryLabel={t('common:action.continue')}
       onPrimary={next}
     >
-      <Card title={t('profile:preferences.language')} titleAction={<LanguageHelpButton />}>
-        <Select
-          label={t('profile:preferences.languageLabel')}
-          hideLabel
-          options={LANGUAGES.map((entry) => ({ value: entry.code, label: entry.label }))}
-          closeLabel={t('common:action.close')}
-          value={currentLanguage()}
-          onChange={chooseLanguage}
-        />
-        <LanguageAiNote />
-      </Card>
+      {/* One card of two rows, the same shape as the questions after it. Each
+          answer used to be its own titled card, with a line under the units
+          spelling out what "metric" means. */}
+      <FormCard>
+        <FormRow label={t('profile:preferences.language')}>
+          <LanguageHelpButton />
+          <Select
+            size="sm"
+            className="w-[168px]"
+            label={t('profile:preferences.languageLabel')}
+            hideLabel
+            options={LANGUAGES.map((entry) => ({ value: entry.code, label: entry.label }))}
+            closeLabel={t('common:action.close')}
+            value={currentLanguage()}
+            onChange={chooseLanguage}
+          />
+        </FormRow>
+        <FormRow label={t('setup.unitsTitle')}>
+          <SegmentedControl
+            size="sm"
+            className="w-[176px]"
+            options={[
+              { value: 'metric', label: t('setup.metric') },
+              { value: 'imperial', label: t('setup.imperial') },
+            ]}
+            value={units}
+            onChange={(chosen) => patch({ units: chosen as Units })}
+            accessibilityLabel={t('setup.unitsTitle')}
+          />
+        </FormRow>
+      </FormCard>
 
-      <Card title={t('setup.unitsTitle')}>
-        <SegmentedControl
-          options={[
-            { value: 'metric', label: t('setup.metric') },
-            { value: 'imperial', label: t('setup.imperial') },
-          ]}
-          value={units}
-          onChange={(chosen) => patch({ units: chosen as Units })}
-          accessibilityLabel={t('setup.unitsTitle')}
-        />
-        <View className="pt-0.5">
-          <Text variant="meta">
-            {units === 'metric' ? t('setup.metricNote') : t('setup.imperialNote')}
-          </Text>
-        </View>
-      </Card>
+      <LanguageAiNote />
     </OnboardingStep>
   )
 }

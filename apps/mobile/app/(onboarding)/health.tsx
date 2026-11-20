@@ -13,7 +13,7 @@ import {
   type ProviderId,
   providerFor,
 } from '@/lib/health'
-import { Button, Card, Text, useToast } from '@/ui'
+import { Button, Card, FormCard, Text, useToast } from '@/ui'
 
 /**
  * Connect health: the first of the two permissions, and first because it gives
@@ -165,7 +165,7 @@ function HealthStep() {
   return (
     <OnboardingStep
       name="health"
-      accent="water"
+      art={{ set: 'body', name: 'heart-rate' }}
       title={t('onboarding:health.title')}
       subtitle={t('onboarding:health.subtitle')}
       /* "Continue", on both branches, and it used to name the store.
@@ -198,19 +198,23 @@ function HealthStep() {
           permission sheet in front of somebody. What is being read is a list,
           and a list wants to be scanned. The bodies still exist for the
           panel in Settings, Health, which is a screen somebody CAME to read. */}
-      <Card title={t('activity:connect.readTitle')}>
-        <View className="gap-3.5">
+      <FormCard>
+        <View className="py-3.5">
           <FactRow
             icon={{ set: 'body', name: 'flame-burn' }}
             title={t('activity:connect.energy')}
           />
+        </View>
+        <View className="py-3.5">
           <FactRow icon={{ set: 'body', name: 'footprints' }} title={t('activity:connect.steps')} />
+        </View>
+        <View className="py-3.5">
           <FactRow
             icon={{ set: 'body', name: 'stopwatch' }}
             title={t('activity:connect.workouts')}
           />
         </View>
-      </Card>
+      </FormCard>
 
       {/* Only when the store cannot be used. The reason is a real sentence with
           a real remedy — "install Health Connect", "this device has no Health

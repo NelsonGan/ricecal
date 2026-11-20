@@ -459,32 +459,42 @@ export const vi = {
 
   onboarding: {
     setup: {
-      title: 'Trước khi bắt đầu',
-      subtitle: 'Cả hai đều thay đổi ngôn ngữ và đơn vị của vài màn hình tiếp theo.',
+      title: 'Ngôn ngữ và đơn vị',
+      subtitle: 'Bạn có thể đổi cả hai sau trong mục Tôi.',
       unitsTitle: 'ĐƠN VỊ',
       metric: 'Hệ mét',
       imperial: 'Hệ Anh',
-      metricNote: 'Xăng ti mét và ki lô gam.',
-      imperialNote: 'Foot, inch và pound.',
     },
 
     welcome: {
-      title: 'Ứng dụng đếm calo làm cho người châu Á',
-      subtitle: 'Nasi lemak, phở, laksa, cơm xá xíu.',
-      perks: {
-        track: { title: 'Theo dõi từng calo', subtitle: 'Chụp một tấm hoặc tìm trong vài giây' },
-        habit: {
-          title: 'Xây thói quen lành mạnh hơn',
-          subtitle: 'Mục tiêu nhẹ nhàng, chuỗi ngày, không phán xét',
-        },
-        local: { title: '50.000 món châu Á', subtitle: 'Và 3 triệu gói, đọc bằng mã vạch' },
-      },
+      title: 'Chụp đĩa ăn. Biết ngay calo.',
+      subtitle: 'Ứng dụng đếm calo dành cho món ăn châu Á.',
       start: 'Bắt đầu',
       signIn: 'Tôi đã có tài khoản',
     },
 
+    how: {
+      title: 'Chụp là xong. Chúng tôi đếm.',
+      subtitle: 'Một bức ảnh cho biết món, khẩu phần và lượng calo.',
+      portion: '1 đĩa',
+      more: 'Hoặc gõ, tìm kiếm, hay quét mã vạch.',
+    },
+
+    workouts: {
+      title: 'Ghi lại cả buổi tập',
+      subtitle: 'Hiệp, số lần và hẹn giờ nghỉ. Mức tạ lần trước hiện bên mỗi hiệp.',
+      routine: 'Buổi tập sáng',
+    },
+
+    social: {
+      title: 'Vui hơn cùng bạn bè',
+      subtitle: 'Chia sẻ bữa ăn, cổ vũ nhau, trò chuyện trong nhóm.',
+      group: 'Hội ăn trưa',
+    },
+
     about: {
       title: 'Vài thông tin cơ bản',
+      subtitle: 'Để tính ngân sách calo mỗi ngày của bạn.',
       height: 'CHIỀU CAO',
       heightPlaceholder: '170',
       weight: 'CÂN NẶNG',
@@ -509,6 +519,7 @@ export const vi = {
 
     activity: {
       title: 'Một ngày của bạn vận động thế nào?',
+      subtitle: 'Chọn mức gần nhất với một ngày bình thường.',
       sedentary: { title: 'Chủ yếu ngồi', subtitle: 'Văn phòng, lái xe, học' },
       light: { title: 'Vận động nhẹ', subtitle: 'Đi bộ chút ít, việc nhà nhẹ' },
       onFeet: { title: 'Đứng cả ngày', subtitle: 'Bán hàng, điều dưỡng, công trường' },
@@ -517,7 +528,7 @@ export const vi = {
 
     source: {
       title: 'Bạn biết tới chúng tôi từ đâu?',
-      subtitle: 'Điều này giúp chúng tôi biết nên xuất hiện ở đâu tiếp theo.',
+      subtitle: 'Chỉ một chạm. Giúp chúng tôi phát triển.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -543,6 +554,7 @@ export const vi = {
 
     target: {
       title: 'Hạn mức hằng ngày của bạn',
+      subtitle: 'Tính từ câu trả lời của bạn. Sửa con số nào cũng được.',
       perDay: 'KCAL MỖI NGÀY',
       goalWeight: 'CÂN NẶNG ĐÍCH',
       goalBy: 'DỰ KIẾN ĐẠT',

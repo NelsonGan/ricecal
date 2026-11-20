@@ -116,8 +116,10 @@ it('will not move on until every question is answered', async () => {
   await user.press(screen.getByText('Female'))
 
   // Still held: the target weight is the one answer left, and it is the one a
-  // user is most likely to walk past because the slider looks answered.
+  // user is most likely to walk past because the slider looks answered. The
+  // card says so, or a dash and a dead button are all there is to go on.
   expect(advance()).toBeDisabled()
+  expect(screen.getByText('Slide to set the weight you are aiming for.')).toBeTruthy()
 
   // A press on a disabled button does nothing at all, which is the behaviour
   // that matters — an incomplete draft reaching the flush leaves the budget

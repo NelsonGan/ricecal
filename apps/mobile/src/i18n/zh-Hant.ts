@@ -459,29 +459,42 @@ export const zhHant = {
 
   onboarding: {
     setup: {
-      title: '開始之前',
-      subtitle: '這兩項會影響接下來幾個畫面的語言和計量單位。',
+      title: '語言和單位',
+      subtitle: '之後可以在「我的」裡更改。',
       unitsTitle: '單位',
       metric: '公制',
       imperial: '英制',
-      metricNote: '公分和公斤。',
-      imperialNote: '英尺、英吋和磅。',
     },
 
     welcome: {
-      title: '為亞洲人做的卡路里記錄',
-      subtitle: '椰漿飯、河粉、叻沙、叉燒飯。',
-      perks: {
-        track: { title: '記下每一卡', subtitle: '拍張照，或者幾秒鐘搜出來' },
-        habit: { title: '養成更健康的習慣', subtitle: '溫和的目標，連續紀錄，不說教' },
-        local: { title: '5 萬道亞洲菜', subtitle: '還有 300 萬件包裝食品，掃條碼就讀' },
-      },
+      title: '拍下餐盤，知道熱量。',
+      subtitle: '為亞洲美食打造的卡路里記錄 App。',
       start: '開始使用',
       signIn: '我已經有帳號了',
     },
 
+    how: {
+      title: '拍一下，我們來算。',
+      subtitle: '一張照片，辨識菜色、份量和熱量。',
+      portion: '1 盤',
+      more: '也可以輸入、搜尋或掃描條碼。',
+    },
+
+    workouts: {
+      title: '運動也能記錄',
+      subtitle: '組數、次數和休息計時。每組旁邊都顯示你上次的重量。',
+      routine: '晨間訓練',
+    },
+
+    social: {
+      title: '和朋友一起更有動力',
+      subtitle: '分享餐點，互相鼓勵，在群組裡聊天。',
+      group: '午餐俱樂部',
+    },
+
     about: {
       title: '幾個基本資料',
+      subtitle: '用於計算你的每日熱量預算。',
       height: '身高',
       heightPlaceholder: '170',
       weight: '體重',
@@ -506,6 +519,7 @@ export const zhHant = {
 
     activity: {
       title: '你平常一天有多活躍？',
+      subtitle: '選最接近你平常一天的。',
       sedentary: { title: '大多坐著', subtitle: '辦公、開車、唸書' },
       light: { title: '輕度活動', subtitle: '會走走路，做點家事' },
       onFeet: { title: '常常站著', subtitle: '零售、護理、工地' },
@@ -514,7 +528,7 @@ export const zhHant = {
 
     source: {
       title: '你是怎麼知道我們的？',
-      subtitle: '這能幫我們知道下一步該出現在哪裡。',
+      subtitle: '點一下就好，能幫助我們成長。',
       xiaohongshu: '小紅書',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -540,6 +554,7 @@ export const zhHant = {
 
     target: {
       title: '你的每日額度',
+      subtitle: '根據你的回答計算。任何數字都可以改。',
       perDay: '大卡每天',
       goalWeight: '目標體重',
       goalBy: '預計達成',

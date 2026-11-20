@@ -28,3 +28,17 @@ it('puts the account after the plan and before the permissions', () => {
   expect(stepNumber('account')).toBeLessThan(stepNumber('health'))
   expect(stepNumber('health')).toBeLessThan(stepNumber('notifications'))
 })
+
+it('shows how the app works before it asks anything', () => {
+  // The welcome screen promises a photo is enough; the scan showcase keeps that
+  // promise before the first question rather than after the account.
+  expect(ONBOARDING_STEPS[0]).toBe('how')
+  expect(stepNumber('how')).toBeLessThan(stepNumber('setup'))
+})
+
+it('puts the showcases between the questions, before the plan', () => {
+  expect(stepNumber('activity')).toBeLessThan(stepNumber('workouts'))
+  expect(stepNumber('workouts')).toBeLessThan(stepNumber('social'))
+  expect(stepNumber('social')).toBeLessThan(stepNumber('source'))
+  expect(stepNumber('source')).toBeLessThan(stepNumber('calculating'))
+})

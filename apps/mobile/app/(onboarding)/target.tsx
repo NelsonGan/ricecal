@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useSession } from '@/data'
-import { StepHeader, stepNumber, TOTAL_STEPS, useOnboardingDraft } from '@/features/onboarding'
+import {
+  planBody,
+  StepHeader,
+  stepNumber,
+  TOTAL_STEPS,
+  useOnboardingDraft,
+} from '@/features/onboarding'
 import {
   BudgetEditor,
   type BudgetFields,
@@ -16,7 +22,8 @@ import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { computeTargets, goalDate } from '@/lib/nutrition'
 import { ReplayMask } from '@/lib/replay-mask'
-import { Button, CalorieRing, Icon, Screen, StatTile } from '@/ui'
+import { fromKg, UNIT_KEY, unitFor } from '@/lib/units'
+import { Button, FormCard, FormRow, Screen, Text } from '@/ui'
 
 /**
  * Your target: the budget, worked out on the phone.
@@ -40,22 +47,11 @@ export default function TargetStep() {
   const { draft, patch } = useOnboardingDraft()
   const { session } = useSession()
 
-  // Defaults that only matter if a screen was skipped, which the Continue gates
-  // do not allow. Present so the arithmetic below cannot divide by nothing.
-  const weightKg = draft.weightKg ?? 65
-  const targetWeightKg = draft.targetWeightKg ?? weightKg
-  const body = {
-    sex: draft.sex ?? 'female',
-    weightKg,
-    heightCm: draft.heightCm ?? 164,
-    age: draft.age ?? 29,
-    activity: draft.activity ?? 'light',
-    // The gap between this and `weightKg` IS the plan, so it has to be here and
-    // not only in the footnote below. `finish` writes it to the profile and the
-    // trigger runs the same arithmetic against it — leaving it out is how this
-    // screen would promise a budget the account then quietly disagrees with.
-    targetWeightKg,
-  }
+  const body = planBody(draft)
+  // The goal weight in the units chosen on setup, as the basics step showed it.
+  const weightUnit = unitFor(draft.units ?? 'metric')
+  const weightKg = body.weightKg
+  const targetWeightKg = body.targetWeightKg ?? weightKg
 
   const recommended = computeTargets(body)
   // From the same body as the budget, so the date and the number on the ring
@@ -79,7 +75,6 @@ export default function TargetStep() {
     draft.targets ? budgetFields(draft.targets) : undefined,
   )
   const shown = fields ?? budgetFields(recommended)
-  const budget = readBudget(shown, recommended)
 
   /**
    * Written to the draft on every keystroke rather than on the way out.
@@ -158,7 +153,9 @@ export default function TargetStep() {
           total={TOTAL_STEPS}
           tone="pandan"
           onBack={goBack}
+          art={{ set: 'body', name: 'target' }}
           title={t('target.title')}
+          subtitle={t('target.subtitle')}
         />
       }
       footer={
@@ -172,36 +169,6 @@ export default function TargetStep() {
         </View>
       }
     >
-      <View className="items-center gap-2 pt-2">
-        <CalorieRing
-          // Both the same figure, and both the EDITED one: the ring is what the
-          // calorie box below is a box for, so it has to answer a keystroke.
-          value={budget.kcal}
-          goal={budget.kcal}
-          /**
-           * 156 and a thinner stroke, because at the default 196 the ring, the
-           * card and the two plan tiles ran past the CTA on a 6.3" phone, so the
-           * two figures the plan is for were behind the footer. Forty points off
-           * the ring and five off its stroke buys 37, and dropping the card's
-           * heading another 28.
-           *
-           * It still scrolls on an SE, and the ring is not why: the content runs
-           * 74 points past the CTA there, so the fix for a 4.7" screen is a
-           * slimmer `StatTile` or fewer of them.
-           *
-           * It reads quieter too, which suits a full ring: the whole budget
-           * rather than progress through one, with nothing to animate.
-           */
-          size={156}
-          thickness={16}
-          // A full ring here is the plan, not a day gone over, so the automatic
-          // "you are at 100%" kaya would say the wrong thing.
-          tone="pandan"
-          centerLabel={budget.kcal.toLocaleString()}
-          centerCaption={t('target.perDay')}
-        />
-      </View>
-
       {/* Editable, and this is the first screen in the flow where a number the
           app worked out can be argued with. It used to be three read-only tiles
           under a ring, over a button reading "This looks right" and a second one
@@ -215,43 +182,32 @@ export default function TargetStep() {
         onChange={edit}
         recommended={recommended}
         onReset={() => edit(budgetFields(recommended))}
+        compact
       />
 
-      {/* Where the plan is going, as two figures rather than a sentence.
-          A maintain plan has no date to reach, so the second tile says what it
-          is doing instead of showing a dash — "steady" is the answer, not a
-          missing measurement. */}
-      <View className="flex-row gap-2.5">
-        {/* Kept out of replays, like every weight. */}
-        <ReplayMask style={{ flex: 1 }}>
-          <StatTile
-            className="flex-1"
-            tone="pandan"
-            icon={<Icon set="body" name="target" size={26} />}
-            label={t('target.goalWeight')}
-            value={`${targetWeightKg.toFixed(1)} ${t('common:unit.kg')}`}
-          />
-        </ReplayMask>
-        <StatTile
-          className="flex-1"
-          tone="water"
-          // Two elements rather than one with computed props: `IconProps` is a
-          // mapped union, so a `set` and a `name` chosen by separate ternaries
-          // widen to "any set, any name" and stop being checked against each
-          // other.
-          icon={
-            reachedOn ? (
-              <Icon set="system" name="calendar" size={26} />
-            ) : (
-              <Icon set="body" name="plateau" size={26} />
-            )
+      {/* Where the plan is going, as two rows of the same card shape rather
+          than two coloured tiles. A maintain plan has no date to reach, so the
+          second row says what it is doing instead of showing a dash: "steady"
+          is the answer, not a missing measurement. */}
+      <FormCard>
+        <FormRow
+          label={t('target.goalWeight')}
+          // Kept out of replays, like every weight.
+          value={
+            <ReplayMask>
+              <Text variant="bodyStrong">
+                {`${fromKg(targetWeightKg, weightUnit).toFixed(1)} ${t(UNIT_KEY[weightUnit])}`}
+              </Text>
+            </ReplayMask>
           }
+        />
+        <FormRow
           label={reachedOn ? t('target.goalBy') : t('target.maintain')}
           value={
             reachedOn ? format(reachedOn, datePattern('dayMonthYear')) : t('target.maintainValue')
           }
         />
-      </View>
+      </FormCard>
     </Screen>
   )
 }

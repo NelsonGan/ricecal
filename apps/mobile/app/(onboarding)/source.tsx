@@ -101,12 +101,12 @@ export default function SourceStep() {
   return (
     <OnboardingStep
       name="source"
-      accent="water"
+      art={{ art: 'megaphone' }}
       title={t('source.title')}
       subtitle={t('source.subtitle')}
       // `dismissTo` rather than `back()`, as everywhere in this flow — see the
       // note on `about`.
-      onBack={() => router.dismissTo('/(onboarding)/activity')}
+      onBack={() => router.dismissTo('/(onboarding)/social')}
       primaryLabel={t('common:action.continue')}
       primaryDisabled={!draft.referralSource}
       // Group-qualified for the same reason `about` qualifies its push: route

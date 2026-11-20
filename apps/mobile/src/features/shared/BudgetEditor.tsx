@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { energyOf, KCAL_RANGE, MACRO_RANGE } from '@/lib/nutrition'
-import { Card, Tappable, Text, TextField } from '@/ui'
+import { Card, FormCard, FormRow, Tappable, Text, TextField } from '@/ui'
 
 /** Every figure, in the order the card reads them. */
 const FIELDS = ['kcal', 'carbs', 'protein', 'fat'] as const
@@ -91,6 +91,11 @@ export type BudgetEditorProps = {
   recommended: Budget
   /** Puts the four figures back under the formula's control. */
   onReset: () => void
+  /**
+   * Smaller boxes in body type, for onboarding, where the plan is one step in
+   * a row of compact forms. Goals keeps the full-size fields.
+   */
+  compact?: boolean
 }
 
 /**
@@ -111,7 +116,16 @@ export type BudgetEditorProps = {
  * step, where there is no account yet and the figures ride in the draft, and on
  * the goals screen, where they are a `daily_goals` row.
  */
-export function BudgetEditor({ value, onChange, recommended, onReset }: BudgetEditorProps) {
+/** A compact box: room for five digits and a unit. */
+const COMPACT_WIDTH = 'w-[124px]'
+
+export function BudgetEditor({
+  value,
+  onChange,
+  recommended,
+  onReset,
+  compact = false,
+}: BudgetEditorProps) {
   const { t } = useTranslation(['profile', 'common'])
 
   const set = (field: keyof BudgetFields) => (next: string) => onChange({ ...value, [field]: next })
@@ -151,7 +165,8 @@ export function BudgetEditor({ value, onChange, recommended, onReset }: BudgetEd
 
   const macro = (field: 'carbs' | 'protein' | 'fat') => (
     <TextField
-      containerClassName="flex-1"
+      containerClassName={compact ? COMPACT_WIDTH : 'flex-1'}
+      hideLabel={compact}
       label={t(`common:macro.${field}`)}
       value={value[field]}
       onChangeText={set(field)}
@@ -163,10 +178,85 @@ export function BudgetEditor({ value, onChange, recommended, onReset }: BudgetEd
       placeholder={String(recommended[field])}
       selectTextOnFocus
       maxLength={4}
-      inputClassName="font-display text-[22px]"
+      size={compact ? 'sm' : 'md'}
+      inputClassName={compact ? undefined : 'font-display text-[22px]'}
       rightSlot={<Text variant="caption">{t('common:unit.gram')}</Text>}
     />
   )
+
+  const kcalField = (
+    <TextField
+      containerClassName={compact ? COMPACT_WIDTH : undefined}
+      hideLabel={compact}
+      label={t('profile:goals.dailyCalories')}
+      value={value.kcal}
+      onChangeText={set('kcal')}
+      onFocus={() => {
+        before.current = value.kcal
+      }}
+      onBlur={settle('kcal')}
+      /* Whole calories. Nobody has half a kilocalorie of intent about a day. */
+      keyboardType="number-pad"
+      // The recommendation, named where it is read: this used to be a
+      // caption under the box as well, printing the same figure the box
+      // already held on every budget nobody had touched.
+      placeholder={
+        compact
+          ? String(recommended.kcal)
+          : t('profile:goals.recommended', { value: recommended.kcal.toLocaleString() })
+      }
+      selectTextOnFocus
+      maxLength={5}
+      size={compact ? 'sm' : 'md'}
+      inputClassName={compact ? undefined : 'font-display text-[26px]'}
+      rightSlot={<Text variant="caption">{t('common:unit.kcal')}</Text>}
+    />
+  )
+
+  const footer = (
+    <View className="flex-row items-center justify-between gap-3">
+      {/* Only when they disagree. On an untouched budget the three grams
+          are the split of the figure above by construction, and a line
+          restating that is a line saying nothing. */}
+      <Text variant="caption" className="flex-1">
+        {drifted ? t('profile:goals.macrosAddUpTo', { value: fromMacros.toLocaleString() }) : ''}
+      </Text>
+
+      {/* Fills all four with the formula's answer rather than emptying them,
+          which is the same choice `NutritionSheet` makes: "use the app's
+          figures" is one answer about the budget, not four separate ones. */}
+      {isRecommended(value, recommended) ? null : (
+        <Tappable
+          className="py-1"
+          onPress={onReset}
+          accessibilityRole="button"
+          accessibilityLabel={t('profile:goals.useRecommended')}
+        >
+          <Text variant="label" className="text-pandan-ink">
+            {t('profile:goals.useRecommended')}
+          </Text>
+        </Tappable>
+      )}
+    </View>
+  )
+
+  /**
+   * Onboarding's shape: one card of four rows, the same card the questions
+   * before it use, rather than a calorie card and a macro card in display type.
+   */
+  if (compact) {
+    return (
+      <>
+        <FormCard>
+          <FormRow label={t('profile:goals.dailyCalories')}>{kcalField}</FormRow>
+          <FormRow label={t('common:macro.carbs')}>{macro('carbs')}</FormRow>
+          <FormRow label={t('common:macro.protein')}>{macro('protein')}</FormRow>
+          <FormRow label={t('common:macro.fat')}>{macro('fat')}</FormRow>
+        </FormCard>
+        {drifted || !isRecommended(value, recommended) ? footer : null}
+      </>
+    )
+  }
 
   return (
     <>
@@ -174,29 +264,7 @@ export function BudgetEditor({ value, onChange, recommended, onReset }: BudgetEd
           the same words one above the other — but the label has a second job the
           title cannot do: it is what the app's own number pad puts in its header,
           and this field is under the pad by the time it opens. */}
-      <Card>
-        <TextField
-          label={t('profile:goals.dailyCalories')}
-          value={value.kcal}
-          onChangeText={set('kcal')}
-          onFocus={() => {
-            before.current = value.kcal
-          }}
-          onBlur={settle('kcal')}
-          /* Whole calories. Nobody has half a kilocalorie of intent about a day. */
-          keyboardType="number-pad"
-          // The recommendation, named where it is read: this used to be a
-          // caption under the box as well, printing the same figure the box
-          // already held on every budget nobody had touched.
-          placeholder={t('profile:goals.recommended', {
-            value: recommended.kcal.toLocaleString(),
-          })}
-          selectTextOnFocus
-          maxLength={5}
-          inputClassName="font-display text-[26px]"
-          rightSlot={<Text variant="caption">{t('common:unit.kcal')}</Text>}
-        />
-      </Card>
+      <Card>{kcalField}</Card>
 
       <Card title={t('profile:goals.macroTargets')}>
         {/* Three across, the way they read everywhere else in the app, each
@@ -209,32 +277,7 @@ export function BudgetEditor({ value, onChange, recommended, onReset }: BudgetEd
           {macro('fat')}
         </View>
 
-        <View className="flex-row items-center justify-between gap-3">
-          {/* Only when they disagree. On an untouched budget the three grams
-              are the split of the figure above by construction, and a line
-              restating that is a line saying nothing. */}
-          <Text variant="caption" className="flex-1">
-            {drifted
-              ? t('profile:goals.macrosAddUpTo', { value: fromMacros.toLocaleString() })
-              : ''}
-          </Text>
-
-          {/* Fills all four with the formula's answer rather than emptying them,
-              which is the same choice `NutritionSheet` makes: "use the app's
-              figures" is one answer about the budget, not four separate ones. */}
-          {isRecommended(value, recommended) ? null : (
-            <Tappable
-              className="py-1"
-              onPress={onReset}
-              accessibilityRole="button"
-              accessibilityLabel={t('profile:goals.useRecommended')}
-            >
-              <Text variant="label" className="text-pandan-ink">
-                {t('profile:goals.useRecommended')}
-              </Text>
-            </Tappable>
-          )}
-        </View>
+        {footer}
       </Card>
     </>
   )

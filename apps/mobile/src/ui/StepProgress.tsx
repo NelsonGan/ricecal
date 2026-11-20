@@ -24,8 +24,14 @@ export type StepProgressProps = {
    * bare percentage, since the marks carry their meaning visually.
    */
   accessibilityLabel?: string
-  /** Colour of the filled segments. Onboarding rotates this per step. */
+  /** Colour of the filled segments. */
   tone?: StepProgressTone
+  /**
+   * `bar` draws one continuous track instead of a mark per step. Onboarding
+   * uses it: at twelve steps the marks were twelve slivers, which read as noise
+   * rather than as a count.
+   */
+  variant?: 'segments' | 'bar'
   className?: string
 }
 
@@ -42,6 +48,7 @@ export function StepProgress({
   caption,
   accessibilityLabel,
   tone = 'pandan',
+  variant = 'segments',
   className,
 }: StepProgressProps) {
   // Materialised with an id rather than mapped over an index: a step bar is
@@ -59,14 +66,23 @@ export function StepProgress({
       accessibilityLabel={accessibilityLabel}
       accessibilityValue={{ min: 0, max: total, now: current, text: caption }}
     >
-      <View className="flex-row gap-2">
-        {steps.map((step) => (
+      {variant === 'bar' ? (
+        <View className="h-2 overflow-hidden rounded-full bg-track">
           <View
-            key={step.id}
-            className={cn('h-2.5 flex-1 rounded-full', step.done ? fills[tone] : 'bg-track')}
+            className={cn('h-full rounded-full', fills[tone])}
+            style={{ width: `${Math.min(100, (current / Math.max(total, 1)) * 100)}%` }}
           />
-        ))}
-      </View>
+        </View>
+      ) : (
+        <View className="flex-row gap-2">
+          {steps.map((step) => (
+            <View
+              key={step.id}
+              className={cn('h-2.5 flex-1 rounded-full', step.done ? fills[tone] : 'bg-track')}
+            />
+          ))}
+        </View>
+      )}
       {caption ? (
         <Text variant="label" className="text-muted">
           {caption}
