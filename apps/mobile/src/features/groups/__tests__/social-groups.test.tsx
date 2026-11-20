@@ -72,7 +72,11 @@ const social = (inView = true) => (
 beforeEach(() => {
   mockPush.mockClear()
   mockRefetch.mockReset()
-  mockRefetch.mockResolvedValue({ isError: false })
+  // As React Query does: a successful fetch stamps the list anew.
+  mockRefetch.mockImplementation(async () => {
+    mockUpdatedAt = Date.now()
+    return { isError: false }
+  })
   mockFetching = false
   mockError = false
   mockUpdatedAt = Date.now() - 60_000
@@ -89,18 +93,29 @@ it('shows the first group until another is chosen, and remembers the choice', as
   expect(screen.getByText('board g2')).toBeOnTheScreen()
 })
 
-it('falls back to the first group when the remembered one is gone', async () => {
+it('falls back to the first group when the remembered one is gone, and forgets it', async () => {
   setOpenGroup('me', 'left-it')
-  await render(social())
+  const view = await render(social())
   expect(mockRefetch).toHaveBeenCalledTimes(1)
+  await view.rerender(social())
+  expect(screen.getByText('board g1')).toBeOnTheScreen()
+
+  // Forgotten, not merely hidden: a group by that id turning up later is not
+  // opened on its own.
+  mockGroups = [...mockGroups, group('left-it', 'Old Crew')]
+  await view.rerender(social())
   expect(screen.getByText('board g1')).toBeOnTheScreen()
 })
 
 it('asks again for a group a notification opened before this phone listed it', async () => {
   setOpenGroup('me', 'joined-elsewhere')
-  mockRefetch.mockImplementation(async () => {
+  // Settled only when the list lands, as a real refetch is.
+  let land: (result: { isError: boolean }) => void = () => {}
+  mockRefetch.mockImplementation(() => {
     mockFetching = true
-    return { isError: false }
+    return new Promise((resolve) => {
+      land = resolve
+    })
   })
   const view = await render(social())
   expect(mockRefetch).toHaveBeenCalledTimes(1)
@@ -108,7 +123,9 @@ it('asks again for a group a notification opened before this phone listed it', a
   expect(screen.queryByText(/^board/)).toBeNull()
 
   mockFetching = false
+  mockUpdatedAt = Date.now()
   mockGroups = [...mockGroups, group('joined-elsewhere', 'Lunch Club')]
+  land({ isError: false })
   await view.rerender(social())
   expect(screen.getByText('board joined-elsewhere')).toBeOnTheScreen()
 })
