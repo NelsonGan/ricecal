@@ -13,6 +13,9 @@ const METRICS = {
 const mockPush = jest.fn()
 let mockGroups: GroupSummary[] = []
 let mockFetching = false
+let mockError = false
+/** When the list last arrived from the server, as React Query keeps it. */
+let mockUpdatedAt = 0
 const mockRefetch = jest.fn()
 
 jest.mock('@/data/groups', () => ({
@@ -20,7 +23,8 @@ jest.mock('@/data/groups', () => ({
   useMyGroups: () => ({
     data: mockGroups,
     isLoading: false,
-    isError: false,
+    isError: mockError,
+    dataUpdatedAt: mockUpdatedAt,
     isFetching: mockFetching,
     fetchStatus: mockFetching ? 'fetching' : 'idle',
     refetch: mockRefetch,
@@ -68,7 +72,14 @@ const social = (inView = true) => (
 beforeEach(() => {
   mockPush.mockClear()
   mockRefetch.mockReset()
+  // As React Query does: a successful fetch stamps the list anew.
+  mockRefetch.mockImplementation(async () => {
+    mockUpdatedAt = Date.now()
+    return { isError: false }
+  })
   mockFetching = false
+  mockError = false
+  mockUpdatedAt = Date.now() - 60_000
   setOpenGroup('me', null)
   mockGroups = [group('g1', 'Test Two'), group('g2', 'Makan Buddies')]
 })
@@ -82,17 +93,29 @@ it('shows the first group until another is chosen, and remembers the choice', as
   expect(screen.getByText('board g2')).toBeOnTheScreen()
 })
 
-it('falls back to the first group when the remembered one is gone', async () => {
+it('falls back to the first group when the remembered one is gone, and forgets it', async () => {
   setOpenGroup('me', 'left-it')
-  await render(social())
+  const view = await render(social())
   expect(mockRefetch).toHaveBeenCalledTimes(1)
+  await view.rerender(social())
+  expect(screen.getByText('board g1')).toBeOnTheScreen()
+
+  // Forgotten, not merely hidden: a group by that id turning up later is not
+  // opened on its own.
+  mockGroups = [...mockGroups, group('left-it', 'Old Crew')]
+  await view.rerender(social())
   expect(screen.getByText('board g1')).toBeOnTheScreen()
 })
 
 it('asks again for a group a notification opened before this phone listed it', async () => {
   setOpenGroup('me', 'joined-elsewhere')
+  // Settled only when the list lands, as a real refetch is.
+  let land: (result: { isError: boolean }) => void = () => {}
   mockRefetch.mockImplementation(() => {
     mockFetching = true
+    return new Promise((resolve) => {
+      land = resolve
+    })
   })
   const view = await render(social())
   expect(mockRefetch).toHaveBeenCalledTimes(1)
@@ -100,7 +123,9 @@ it('asks again for a group a notification opened before this phone listed it', a
   expect(screen.queryByText(/^board/)).toBeNull()
 
   mockFetching = false
+  mockUpdatedAt = Date.now()
   mockGroups = [...mockGroups, group('joined-elsewhere', 'Lunch Club')]
+  land({ isError: false })
   await view.rerender(social())
   expect(screen.getByText('board joined-elsewhere')).toBeOnTheScreen()
 })
@@ -132,6 +157,55 @@ it('waits for a group just made rather than showing another, and falls back once
   expect(screen.queryByText(/^board/)).toBeNull()
 
   mockFetching = false
+  await view.rerender(social())
+  expect(screen.getByText('board g1')).toBeOnTheScreen()
+})
+
+it('keeps a group a notification opened when asking for it fails, and asks only once', async () => {
+  // The refetch that should prove the group gone failed instead (a timeout or a
+  // 5xx, with the connection up). React Query keeps the old list and goes idle,
+  // which is not an answer: the group stays chosen for the next list that
+  // arrives, without asking again or blanking the card meanwhile.
+  setOpenGroup('me', 'joined-elsewhere')
+  mockRefetch.mockImplementation(async () => {
+    mockError = true
+    return { isError: true }
+  })
+  const view = await render(social())
+  expect(mockRefetch).toHaveBeenCalledTimes(1)
+  await view.rerender(social())
+  await view.rerender(social())
+  expect(mockRefetch).toHaveBeenCalledTimes(1)
+  expect(screen.getByText('board g1')).toBeOnTheScreen()
+
+  // Later, a pull to refresh brings the list with the group in it.
+  mockError = false
+  mockUpdatedAt = Date.now() + 1
+  mockGroups = [...mockGroups, group('joined-elsewhere', 'Lunch Club')]
+  await view.rerender(social())
+  expect(screen.getByText('board joined-elsewhere')).toBeOnTheScreen()
+})
+
+it('forgets a group the first list after a failed ask leaves out', async () => {
+  setOpenGroup('me', 'left-it')
+  mockRefetch.mockImplementation(async () => {
+    mockError = true
+    return { isError: true }
+  })
+  const view = await render(social())
+  await view.rerender(social())
+
+  mockError = false
+  mockUpdatedAt = Date.now() + 1
+  mockGroups = [...mockGroups]
+  await view.rerender(social())
+  await view.rerender(social())
+  expect(mockRefetch).toHaveBeenCalledTimes(1)
+  expect(screen.getByText('board g1')).toBeOnTheScreen()
+
+  // Forgotten, not merely hidden: a group by that id turning up later is not
+  // opened on its own.
+  mockGroups = [...mockGroups, group('left-it', 'Old Crew')]
   await view.rerender(social())
   expect(screen.getByText('board g1')).toBeOnTheScreen()
 })

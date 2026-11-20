@@ -46,24 +46,48 @@ export function SocialGroups({ inView }: { inView: boolean }) {
   // server once and wait for the answer rather than show another group's
   // card, or the empty one. A group left or deleted elsewhere falls back to
   // the first.
-  const [askedFor, setAskedFor] = useState<string | null>(null)
+  //
+  // The answer is the ask's own refetch, judged by its result rather than by
+  // the query's flags: a failed refetch goes idle with the old list too, and
+  // read that way it once dropped a group just joined on another phone. A
+  // failed ask keeps the choice and stops waiting; the next list that lands
+  // (its stamp changes) decides, and coming back to Social asks again.
+  const [ask, setAsk] = useState<{
+    id: string
+    stamp: number
+    state: 'asking' | 'answered' | 'failed'
+  } | null>(null)
   const missing = Boolean(remembered) && !chosen
-  // Idle, not merely not fetching: offline the refetch pauses, and a paused
-  // list proves nothing about the group.
-  const settled = Boolean(groups.data) && groups.fetchStatus === 'idle'
+  const asked = ask !== null && ask.id === remembered
+  const answered =
+    asked &&
+    (ask.state === 'answered' || (ask.state === 'failed' && groups.dataUpdatedAt !== ask.stamp))
   const { refetch } = groups
   useEffect(() => {
-    if (missing && settled && askedFor !== remembered) {
-      setAskedFor(remembered ?? null)
-      void refetch()
-    }
-  }, [missing, settled, askedFor, remembered, refetch])
-  const arriving = missing && (groups.isFetching || (settled && askedFor !== remembered))
+    // Idle, not merely not fetching: offline the refetch pauses, and is asked
+    // once it can be answered.
+    if (!missing || !remembered || asked || !groups.data || groups.fetchStatus !== 'idle') return
+    const sent = { id: remembered, stamp: groups.dataUpdatedAt, state: 'asking' as const }
+    setAsk(sent)
+    void refetch().then((result) => {
+      setAsk((current) =>
+        current === sent ? { ...sent, state: result.isError ? 'failed' : 'answered' } : current,
+      )
+    })
+  }, [missing, remembered, asked, groups.data, groups.fetchStatus, groups.dataUpdatedAt, refetch])
+  useFocusEffect(
+    useCallback(() => {
+      setAsk((current) => (current?.state === 'failed' ? null : current))
+    }, []),
+  )
+  const waiting = !answered && !(asked && ask.state === 'failed')
+  const arriving =
+    missing && waiting && (groups.isFetching || (groups.fetchStatus === 'idle' && !asked))
   const selected = chosen ?? list[0] ?? null
   const openGroups = () => router.push('/group')
   // Forgotten once a list fetched after it was chosen says it is gone, so
   // later refetches do not read as a group still arriving.
-  const gone = missing && settled && askedFor === remembered
+  const gone = missing && answered && !groups.isFetching
   useEffect(() => {
     if (gone) setOpenGroup(userId, null)
   }, [gone, userId])
