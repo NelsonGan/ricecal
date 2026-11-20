@@ -185,8 +185,24 @@ export function leadingAmount(label: string | null | undefined): LabelAmount | n
 export function labelQuantities(label: string | null | undefined): { g?: number; ml?: number } {
   const text = (label ?? '').trim().toLowerCase()
   const found: { g?: number; ml?: number } = {}
-  for (const amount of [amountFrom(text.match(BRACKETED)), amountFrom(text.match(LEADING_LOOSE))]) {
-    if (!amount) continue
+  const amounts = [amountFrom(text.match(BRACKETED)), amountFrom(text.match(LEADING_LOOSE))]
+  // A bare "oz" that states the same volume as the other half is fluid ounces:
+  // "12 oz (355 ml)" is a can, and read as a weight it made a density of 0.96
+  // out of one measurement. Only when the two agree, because "1/4 cup (1 oz)"
+  // is a weight beside a volume and is the label's whole density.
+  const mlOf = (amount: LabelAmount | null) =>
+    amount && MEASURES[amount.unit].family === 'volume'
+      ? amount.count * MEASURES[amount.unit].size
+      : null
+  const fluid = (stated: LabelAmount) => {
+    if (stated.unit !== 'oz') return false
+    const other = amounts.find((amount) => amount && amount !== stated)
+    const ml = mlOf(other ?? null)
+    return ml != null && Math.abs(stated.count * MEASURES.floz.size - ml) <= ml * 0.05
+  }
+  for (const stated of amounts) {
+    if (!stated) continue
+    const amount = fluid(stated) ? { ...stated, unit: 'floz' as const } : stated
     const { family, size } = MEASURES[amount.unit]
     const key = family === 'weight' ? 'g' : 'ml'
     found[key] ??= amount.count * size

@@ -68,7 +68,7 @@ export default function WorkoutsStep() {
       subtitle={t('workouts.subtitle')}
       onBack={() => router.dismissTo('/(onboarding)/activity')}
       primaryLabel={t('common:action.continue')}
-      onPrimary={() => router.push('/(onboarding)/social')}
+      onPrimary={() => router.push('/(onboarding)/social-showcase')}
     >
       <View
         className="gap-3.5 rounded-tile border-2 border-line bg-surface p-4"

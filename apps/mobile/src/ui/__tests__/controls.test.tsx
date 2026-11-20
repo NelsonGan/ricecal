@@ -148,6 +148,42 @@ describe('Stepper', () => {
     expect(onChange).toHaveBeenLastCalledWith(0.5)
   })
 
+  // Grams step in tens from a minimum of 1: the mark below 10 is 0, under the
+  // minimum, and the step clamps to it rather than disabling the button.
+  it('steps down to the minimum when the next mark is below it, and stops there', async () => {
+    const onChange = jest.fn()
+    const view = await render(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={10}
+        onChange={onChange}
+        step={10}
+        min={1}
+        max={5000}
+        snapToStep
+      />,
+    )
+    await userEvent.setup().press(screen.getByLabelText('Decrease'))
+    expect(onChange).toHaveBeenLastCalledWith(1)
+
+    onChange.mockClear()
+    await view.rerender(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={1}
+        onChange={onChange}
+        step={10}
+        min={1}
+        max={5000}
+        snapToStep
+      />,
+    )
+    await userEvent.setup().press(screen.getByLabelText('Decrease'))
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('formats halves as vulgar fractions', async () => {
     await render(
       <Stepper

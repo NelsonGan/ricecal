@@ -88,10 +88,14 @@ export function Stepper({
   // Where a tap would land, which is the next mark rather than `value ± step`
   // when snapping: 0.41 cup steps down to the ¼ minimum, and judged by
   // 0.41 − 0.25 its minus was disabled.
+  //
+  // Snapping, a value above the minimum can always step down: a mark below the
+  // minimum clamps to it. Grams step in tens from a minimum of 1, so judged by
+  // the mark alone 10 g could not go lower and ½ tbsp could not reach ¼.
   const below = snapToStep ? steppedTo(value, step, -1) : value - step
   const above = snapToStep ? steppedTo(value, step, 1) : value + step
-  const atMin = below < min - 1e-9
-  const atMax = above > max + 1e-9
+  const atMin = snapToStep ? value <= min + 1e-9 : below < min - 1e-9
+  const atMax = snapToStep ? value >= max - 1e-9 : above > max + 1e-9
 
   const colors = useThemeColors()
 

@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import type { RecipeIngredientInput } from '@/data'
-import { useMeasureText } from '@/features/shared/useMeasureText'
+import { pluralCount, useMeasureText } from '@/features/shared/useMeasureText'
 import { keyOf, shownAmount } from './basis'
 
 /**
@@ -15,7 +15,7 @@ export function useIngredientMeasure() {
     const key = keyOf(item.unit, item.displayUnit)
     const shown = shownAmount(item.amount, key)
     return key === 'piece'
-      ? `${shown.toLocaleString()} ${t('ingredient.unit.piece', { count: shown })}`
+      ? `${shown.toLocaleString()} ${t('ingredient.unit.piece', { count: pluralCount(shown) })}`
       : measure.amount(shown, key)
   }
 }

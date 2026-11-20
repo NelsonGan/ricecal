@@ -13,6 +13,7 @@ const METRICS = {
 const mockPush = jest.fn()
 let mockGroups: GroupSummary[] = []
 let mockFetching = false
+const mockRefetch = jest.fn()
 
 jest.mock('@/data/groups', () => ({
   ...jest.requireActual('@/data/groups'),
@@ -21,6 +22,8 @@ jest.mock('@/data/groups', () => ({
     isLoading: false,
     isError: false,
     isFetching: mockFetching,
+    fetchStatus: mockFetching ? 'fetching' : 'idle',
+    refetch: mockRefetch,
   }),
   useGroupInviteCount: () => ({ data: 2, refetch: jest.fn() }),
   useGroupBoardChatLive: () => false,
@@ -64,6 +67,7 @@ const social = (inView = true) => (
 
 beforeEach(() => {
   mockPush.mockClear()
+  mockRefetch.mockReset()
   mockFetching = false
   setOpenGroup('me', null)
   mockGroups = [group('g1', 'Test Two'), group('g2', 'Makan Buddies')]
@@ -81,7 +85,24 @@ it('shows the first group until another is chosen, and remembers the choice', as
 it('falls back to the first group when the remembered one is gone', async () => {
   setOpenGroup('me', 'left-it')
   await render(social())
+  expect(mockRefetch).toHaveBeenCalledTimes(1)
   expect(screen.getByText('board g1')).toBeOnTheScreen()
+})
+
+it('asks again for a group a notification opened before this phone listed it', async () => {
+  setOpenGroup('me', 'joined-elsewhere')
+  mockRefetch.mockImplementation(() => {
+    mockFetching = true
+  })
+  const view = await render(social())
+  expect(mockRefetch).toHaveBeenCalledTimes(1)
+  await view.rerender(social())
+  expect(screen.queryByText(/^board/)).toBeNull()
+
+  mockFetching = false
+  mockGroups = [...mockGroups, group('joined-elsewhere', 'Lunch Club')]
+  await view.rerender(social())
+  expect(screen.getByText('board joined-elsewhere')).toBeOnTheScreen()
 })
 
 it('opens the full board from the card, and the Groups page with its invites counted', async () => {

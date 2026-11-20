@@ -42,3 +42,55 @@ it('puts the showcases between the questions, before the plan', () => {
   expect(stepNumber('social')).toBeLessThan(stepNumber('source'))
   expect(stepNumber('source')).toBeLessThan(stepNumber('calculating'))
 })
+
+/**
+ * Route groups add no path segment, so an onboarding screen named like a
+ * screen elsewhere in the app takes that screen's bare links. The showcase
+ * named `social` did exactly that: `dismissTo('/social')` from a group, a post
+ * or a deep link opened onboarding for a signed-in user. `activity` predates
+ * this check and every caller of either side names its group.
+ */
+it('gives no onboarding screen a path another screen already answers', () => {
+  const fs = jest.requireActual<typeof import('node:fs')>('node:fs')
+  const path = jest.requireActual<typeof import('node:path')>('node:path')
+  const appDir = path.join(__dirname, '../../../../app')
+  const routes: string[] = []
+  const walk = (dir: string) => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === '__tests__') continue
+      const full = path.join(dir, entry.name)
+      if (entry.isDirectory()) walk(full)
+      else if (/\.tsx$/.test(entry.name) && !entry.name.startsWith('_'))
+        routes.push(path.relative(appDir, full))
+    }
+  }
+  walk(appDir)
+  const pathOf = (file: string) =>
+    `/${file
+      .replace(/\.tsx$/, '')
+      .split(path.sep)
+      .filter((part) => !/^\(.*\)$/.test(part))
+      .join('/')}`.replace(/\/index$/, '') || '/'
+
+  const onboarding = routes.filter((file) => file.startsWith('(onboarding)'))
+  const elsewhere = new Set(routes.filter((file) => !file.startsWith('(onboarding)')).map(pathOf))
+  const shadowed = onboarding
+    .map(pathOf)
+    .filter((route) => elsewhere.has(route) && route !== '/activity')
+
+  expect(onboarding.length).toBeGreaterThan(5)
+  expect(shadowed).toEqual([])
+})
+
+it('declares in the layout only screens that exist', () => {
+  // A renamed screen left behind here is dropped with only a console warning,
+  // and the real one loses the layout's options.
+  const fs = jest.requireActual<typeof import('node:fs')>('node:fs')
+  const path = jest.requireActual<typeof import('node:path')>('node:path')
+  const dir = path.join(__dirname, '../../../../app/(onboarding)')
+  const layout = fs.readFileSync(path.join(dir, '_layout.tsx'), 'utf8')
+  const declared = [...layout.matchAll(/<Stack\.Screen name="([^"]+)"/g)].map((match) => match[1])
+
+  expect(declared.length).toBeGreaterThan(5)
+  expect(declared.filter((name) => !fs.existsSync(path.join(dir, `${name}.tsx`)))).toEqual([])
+})

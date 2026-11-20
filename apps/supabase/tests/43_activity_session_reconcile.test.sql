@@ -4,7 +4,7 @@
 -- not come back with the next sync.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(34);
+select plan(43);
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
 
@@ -16,6 +16,8 @@ values
 -- Four copies of one run, as four Connect syncs left them; a walk another phone
 -- on the same provider synced; an older run outside the window; a demo row; and
 -- another account's run at the same moment.
+-- The copies predate the trigger that now skips them, so it is off for these.
+alter table public.activity_sessions disable trigger activity_sessions_skip_dismissed;
 insert into public.activity_sessions
   (id, user_id, provider, external_id, log_date, kind, started_at, ended_at, duration_s, active_kcal, source_name, created_at)
 values
@@ -27,6 +29,7 @@ values
   ('a0000000-0000-0000-0000-000000000005', :'user_a', 'apple_health', 'OLD', '2026-11-01', 'run', '2026-11-01 13:00:00+00', '2026-11-01 13:30:00+00', 1800, 200, 'Connect', '2026-11-01 14:00:00+00'),
   ('a0000000-0000-0000-0000-000000000006', :'user_a', 'demo', 'DEMO', '2026-11-16', 'run', '2026-11-16 13:55:29+00', '2026-11-16 14:18:49+00', 1400, 153, 'Demo', '2026-11-16 09:00:00+00'),
   ('b0000000-0000-0000-0000-000000000001', :'user_b', 'apple_health', 'B1', '2026-11-16', 'run', '2026-11-16 13:55:29+00', '2026-11-16 14:18:49+00', 1400, 153, 'Connect', '2026-11-16 14:38:00+00');
+alter table public.activity_sessions enable trigger activity_sessions_skip_dismissed;
 
 select ok(not has_function_privilege('anon', 'public.reconcile_activity_sessions(public.health_provider,timestamptz,timestamptz,jsonb,uuid)', 'EXECUTE'), 'reconciling is not public');
 select ok(not has_function_privilege('anon', 'public.delete_activity_session(uuid)', 'EXECUTE'), 'deleting is not public');
@@ -81,14 +84,21 @@ select is((select active_kcal from public.activity_sessions where external_id = 
 select is((select count(*)::integer from public.activity_sessions where user_id = auth.uid() and provider = 'apple_health' and kind = 'run' and log_date = '2026-11-16'), 1,
   'rather than adding one');
 
--- An old binary on another device writes one more copy of the run.
-reset role;
+-- An old binary on another device, with no reconcile, syncs Connect's next
+-- rewrite of the run under another id.
 insert into public.activity_sessions (user_id, provider, external_id, log_date, kind, started_at, ended_at, duration_s, active_kcal, source_name)
 values (:'user_a', 'apple_health', 'LEFT', '2026-11-16', 'run', '2026-11-16 13:55:29+00', '2026-11-16 14:18:49+00', 1400, 153, 'Connect');
+select is((select count(*)::integer from public.activity_sessions where external_id = 'LEFT'), 0,
+  'a copy an old binary syncs under another id is skipped');
+
+-- A copy left from before that, as old binaries wrote them.
+reset role;
+alter table public.activity_sessions disable trigger activity_sessions_skip_dismissed;
+insert into public.activity_sessions (id, user_id, provider, external_id, log_date, kind, started_at, ended_at, duration_s, active_kcal, source_name)
+values ('a0000000-0000-0000-0000-000000000008', :'user_a', 'apple_health', 'LEFT', '2026-11-16', 'run', '2026-11-16 13:55:29+00', '2026-11-16 14:18:49+00', 1400, 153, 'Connect');
+alter table public.activity_sessions enable trigger activity_sessions_skip_dismissed;
 set local role authenticated;
-select is((select count(*)::integer from public.activity_sessions where external_id = 'LEFT'), 1,
-  'a copy an old binary wrote under another id is there');
--- The person removes it.
+-- The person removes one of the two copies.
 select ok(public.delete_activity_session('a0000000-0000-0000-0000-000000000004'), 'a synced workout can be removed');
 select ok(not public.delete_activity_session('a0000000-0000-0000-0000-000000000004'), 'removing it twice answers false');
 select ok(not public.delete_activity_session('b0000000-0000-0000-0000-000000000001'), 'another account''s workout cannot be removed');
@@ -111,21 +121,34 @@ values (:'user_a', 'apple_health', 'G', '2026-11-16', 'walk', '2026-11-16 13:55:
 select is((select count(*)::integer from public.activity_sessions where external_id = 'G'), 1,
   'a different kind of workout at the same moment still lands');
 
--- A removed workout's re-save is not given a surviving copy's row: the copy
--- goes, as the person asked.
+-- Removing one of two copies removed the duplicate, not the run: the re-save
+-- takes over the copy the person kept rather than deleting it.
 select is(public.reconcile_activity_sessions('apple_health', '2026-11-13', '2026-11-20',
   '[{"external_id":"H","started_at":"2026-11-16T13:55:29.000Z","kind":"run","source_name":"Connect"},
     {"external_id":"WATCH","started_at":"2026-11-16T13:55:29.000Z","kind":"run","source_name":"Apple Watch"}]'), 1,
-  'a removed workout''s re-save removes its leftover copy rather than taking it over');
-select is((select count(*)::integer from public.activity_sessions where external_id in ('LEFT', 'H')), 0,
-  'and the removed run stays gone');
+  'a removed duplicate''s re-save takes over the copy the person kept');
+select is((select id::text from public.activity_sessions where external_id = 'H'), 'a0000000-0000-0000-0000-000000000008',
+  'which keeps its row');
 select is((select count(*)::integer from public.activity_sessions where external_id = 'WATCH'), 1,
   'while the watch''s recording stays');
 
+-- Removing the last copy removes the run.
+select ok(public.delete_activity_session('a0000000-0000-0000-0000-000000000008'), 'the kept copy is removed too');
+select is(public.reconcile_activity_sessions('apple_health', '2026-11-13', '2026-11-20',
+  '[{"external_id":"I","started_at":"2026-11-16T13:55:29.000Z","kind":"run","source_name":"Connect"},
+    {"external_id":"WATCH","started_at":"2026-11-16T13:55:29.000Z","kind":"run","source_name":"Apple Watch"}]'), 0,
+  'a removed run''s re-save takes over nothing');
+insert into public.activity_sessions (user_id, provider, external_id, log_date, kind, started_at, ended_at, duration_s, active_kcal, source_name)
+values (:'user_a', 'apple_health', 'I', '2026-11-16', 'run', '2026-11-16 13:55:29+00', '2026-11-16 14:18:49+00', 1400, 153, 'Connect');
+select is((select count(*)::integer from public.activity_sessions where user_id = auth.uid() and kind = 'run' and source_name = 'Connect' and log_date = '2026-11-16'), 0,
+  'and the run stays gone');
+
 -- Removing one of two copies the person keeps leaves the other one updating.
 reset role;
+alter table public.activity_sessions disable trigger activity_sessions_skip_dismissed;
 insert into public.activity_sessions (user_id, provider, external_id, log_date, kind, started_at, ended_at, duration_s, active_kcal, source_name)
 values (:'user_a', 'apple_health', 'G2', '2026-11-16', 'walk', '2026-11-16 13:55:29+00', '2026-11-16 14:18:49+00', 1400, 50, 'Connect');
+alter table public.activity_sessions enable trigger activity_sessions_skip_dismissed;
 set local role authenticated;
 select ok(public.delete_activity_session((select id from public.activity_sessions where external_id = 'G')), 'one copy of the walk is removed');
 insert into public.activity_sessions (user_id, provider, external_id, log_date, kind, started_at, ended_at, duration_s, active_kcal, source_name)
@@ -133,6 +156,41 @@ values (:'user_a', 'apple_health', 'G2', '2026-11-16', 'walk', '2026-11-16 13:55
 on conflict (user_id, provider, external_id) do update set active_kcal = excluded.active_kcal;
 select is((select active_kcal from public.activity_sessions where external_id = 'G2'), 75,
   'a kept row''s late update is not skipped');
+
+-- The store briefly holds both Connect's old copy and its rewrite of the walk,
+-- and neither is the id stored.
+select is(public.reconcile_activity_sessions('apple_health', '2026-11-13', '2026-11-20',
+  '[{"external_id":"N1","started_at":"2026-11-17T01:00:00.000Z","kind":"walk","source_name":"iPad"},
+    {"external_id":"N2","started_at":"2026-11-17T01:00:00.000Z","kind":"walk","source_name":"iPad"}]'), 1,
+  'one of two copies in the store takes over the stored row');
+insert into public.activity_sessions (user_id, provider, external_id, log_date, kind, started_at, ended_at, duration_s, active_kcal, source_name)
+values
+  (:'user_a', 'apple_health', 'N1', '2026-11-17', 'walk', '2026-11-17 01:00:00+00', '2026-11-17 01:30:00+00', 1800, 90, 'iPad'),
+  (:'user_a', 'apple_health', 'N2', '2026-11-17', 'walk', '2026-11-17 01:00:00+00', '2026-11-17 01:30:00+00', 1800, 90, 'iPad')
+on conflict (user_id, provider, external_id) do update set active_kcal = excluded.active_kcal;
+select is((select count(*)::integer from public.activity_sessions where user_id = auth.uid() and started_at = '2026-11-17 01:00:00+00'), 1,
+  'and the other is not added beside it, so it is not shared again');
+-- Whichever copy took the row over, the store then keeps only the other one.
+select case external_id when 'N1' then 'N2' else 'N1' end as survivor
+from public.activity_sessions where id = 'a0000000-0000-0000-0000-000000000007' \gset
+select is(public.reconcile_activity_sessions('apple_health', '2026-11-13', '2026-11-20',
+  format('[{"external_id":"%s","started_at":"2026-11-17T01:00:00.000Z","kind":"walk","source_name":"iPad"}]', :'survivor')::jsonb), 1,
+  'once the store drops the old copy the row follows the survivor');
+select is((select id::text from public.activity_sessions where external_id = :'survivor'), 'a0000000-0000-0000-0000-000000000007',
+  'still the original row');
+
+-- A run across the window's first midnight, which the store's read returns.
+reset role;
+alter table public.activity_sessions disable trigger activity_sessions_skip_dismissed;
+insert into public.activity_sessions (id, user_id, provider, external_id, log_date, kind, started_at, ended_at, duration_s, active_kcal, source_name)
+values ('a0000000-0000-0000-0000-000000000009', :'user_a', 'apple_health', 'EDGE', '2026-11-12', 'run', '2026-11-12 23:40:00+00', '2026-11-13 00:20:00+00', 2400, 250, 'Connect');
+alter table public.activity_sessions enable trigger activity_sessions_skip_dismissed;
+set local role authenticated;
+select is(public.reconcile_activity_sessions('apple_health', '2026-11-13', '2026-11-20',
+  '[{"external_id":"EDGE2","started_at":"2026-11-12T23:40:00.000Z","kind":"run","source_name":"Connect"}]'), 1,
+  'a run across the window''s edge is re-keyed too');
+select is((select id::text from public.activity_sessions where external_id = 'EDGE2'), 'a0000000-0000-0000-0000-000000000009',
+  'onto its own row');
 reset role;
 
 select is((select count(*)::integer from public.activity_sessions where user_id = :'user_b'), 1,

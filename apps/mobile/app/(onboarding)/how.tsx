@@ -155,7 +155,9 @@ function Macro({
       <Text variant="meta" className="w-[76px]" numberOfLines={1}>
         {label}
       </Text>
-      <Text variant="label" className="w-[40px] text-right">
+      {/* Fixed width so the three bars start together; shrinks rather than
+          wraps where the unit is two characters (zh-Hant writes 公克). */}
+      <Text variant="label" className="w-[40px] text-right" numberOfLines={1} adjustsFontSizeToFit>
         {grams}
         {unit}
       </Text>

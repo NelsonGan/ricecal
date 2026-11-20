@@ -78,6 +78,13 @@ revoke execute on function private.activity_dismissed(uuid, public.health_provid
 -- A row already stored under the same id goes ahead: a BEFORE INSERT trigger
 -- also fires for an upsert that will become an update, and skipping it would
 -- freeze a copy the person kept (another copy of a run they removed one of).
+--
+-- Another copy of a workout already stored (same start, kind and source under
+-- a new id) is skipped too. Old binaries have no reconcile, so without this
+-- every Garmin rewrite they synced was a new row and a new group card; and a
+-- store briefly holding both the old and the new copy would add one even on a
+-- new binary. A new binary's reconcile re-keys the stored row before its
+-- upsert, so that upsert lands on it as an update.
 create or replace function private.skip_dismissed_activity()
 returns trigger
 language plpgsql
@@ -90,6 +97,14 @@ begin
     where a.user_id = new.user_id and a.provider = new.provider and a.external_id = new.external_id
   ) then
     return new;
+  end if;
+  if exists (
+    select 1 from public.activity_sessions a
+    where a.user_id = new.user_id and a.provider = new.provider
+      and a.started_at = new.started_at and a.kind = new.kind
+      and a.source_name is not distinct from new.source_name
+  ) then
+    return null;
   end if;
   if private.activity_dismissed(new.user_id, new.provider, new.external_id,
                                 new.started_at, new.kind, new.source_name) then
@@ -116,8 +131,10 @@ create trigger activity_sessions_skip_dismissed
 --
 --   * When the returned workout is not stored yet, the oldest such copy takes
 --     its id, so the upsert that follows updates it: the row keeps its id, its
---     group card and its reactions, and nothing is shared again. Not for a
---     workout the person removed, whose copies go with the next step.
+--     group card and its reactions, and nothing is shared again. For a workout
+--     the person removed, only a copy from the same source, which is the copy
+--     they kept when they removed a duplicate; with none left the run stays
+--     removed.
 --   * Any copy left over is deleted. Garmin Connect deletes and re-saves its
 --     workouts in Apple Health under a new id, and an upsert alone kept every
 --     copy: one run showed four times on Today.
@@ -148,6 +165,7 @@ declare
   v_new record;
   v_rekeyed integer := 0;
   v_deleted integer;
+  v_dismissed boolean;
 begin
   if v_user is null then
     raise exception 'Authentication required' using errcode = '42501';
@@ -186,16 +204,19 @@ begin
       where a.user_id = v_user and a.provider = p_provider and a.external_id = s.external_id
     )
   loop
-    continue when private.activity_dismissed(v_user, p_provider, v_new.external_id,
-                                             v_new.started_at, v_new.kind, v_new.source_name);
+    v_dismissed := private.activity_dismissed(v_user, p_provider, v_new.external_id,
+                                              v_new.started_at, v_new.kind, v_new.source_name);
     update public.activity_sessions a
        set external_id = v_new.external_id
      where a.id = (
        select o.id from public.activity_sessions o
        where o.user_id = v_user and o.provider = p_provider
          and o.started_at = v_new.started_at and o.kind = v_new.kind
-         and o.started_at >= p_from and o.ended_at <= p_to
+         -- Overlapping the window, as the store's read does: a run across the
+         -- window's first midnight is returned, and its copies must match.
+         and o.started_at < p_to and o.ended_at > p_from
          and o.external_id <> all (v_seen)
+         and (not v_dismissed or o.source_name is not distinct from v_new.source_name)
        order by o.created_at
        limit 1
      );
@@ -204,7 +225,7 @@ begin
 
   delete from public.activity_sessions a
   where a.user_id = v_user and a.provider = p_provider
-    and a.started_at >= p_from and a.ended_at <= p_to
+    and a.started_at < p_to and a.ended_at > p_from
     and a.external_id <> all (v_seen)
     and exists (
       select 1 from jsonb_to_recordset(p_sessions) as s(started_at timestamptz, kind text)

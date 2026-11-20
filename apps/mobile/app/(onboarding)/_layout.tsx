@@ -24,8 +24,8 @@ export default function OnboardingLayout() {
       <Stack.Screen name="setup" />
       <Stack.Screen name="about" />
       <Stack.Screen name="activity" />
-      <Stack.Screen name="workouts" />
-      <Stack.Screen name="social" />
+      <Stack.Screen name="workouts-showcase" />
+      <Stack.Screen name="social-showcase" />
       <Stack.Screen name="source" />
       <Stack.Screen name="calculating" />
       <Stack.Screen name="target" />

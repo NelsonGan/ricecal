@@ -40,7 +40,7 @@ export default function ActivityStep() {
       // The activity multiplier is the other half of the budget calculation;
       // `compute_targets()` reads it, so it cannot be skipped.
       primaryDisabled={!draft.activity}
-      onPrimary={() => router.push('/(onboarding)/workouts')}
+      onPrimary={() => router.push('/(onboarding)/workouts-showcase')}
     >
       {OPTIONS.map((option) => (
         <ChoiceCard

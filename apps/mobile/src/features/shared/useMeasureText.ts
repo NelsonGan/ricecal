@@ -21,6 +21,13 @@ export function measureFigure(unit: MeasureUnit, amount: number): string {
 }
 
 /**
+ * The count a unit's plural agrees with. A fraction of one reads as one, "¾
+ * cup" rather than "¾ cups", where i18next's English rules call anything but
+ * exactly 1 plural.
+ */
+export const pluralCount = (amount: number) => (amount > 0 && amount < 1 ? 1 : amount)
+
+/**
  * Amounts and unit names in the language the app is read in. A hook rather than
  * a function taking `t`, because every caller has its own namespaces and these
  * keys live in `common`.
@@ -30,8 +37,8 @@ export function useMeasureText() {
   return {
     /** "150 g", "2 tbsp", "小さじ2". */
     amount: (amount: number, unit: MeasureUnit) =>
-      t(`measure.${unit}`, { count: amount, value: measureFigure(unit, amount) }),
+      t(`measure.${unit}`, { count: pluralCount(amount), value: measureFigure(unit, amount) }),
     /** "tbsp", "cups": the unit alone, agreeing with the figure beside it. */
-    unit: (unit: MeasureUnit, count = 1) => t(`measureUnit.${unit}`, { count }),
+    unit: (unit: MeasureUnit, count = 1) => t(`measureUnit.${unit}`, { count: pluralCount(count) }),
   }
 }
