@@ -156,7 +156,7 @@ it('lands the row on the amount the unit line promised', async () => {
       />
     </SafeAreaProvider>,
   )
-  await user.press(screen.getByRole('button', { name: 'Unit for Kicap, cups' }))
+  await user.press(screen.getByRole('button', { name: 'Unit for Kicap, cup' }))
   await user.press(screen.getByText('6½ tbsp'))
   expect(onUnitChange).toHaveBeenCalledWith('kicap', 'tbsp')
   expect(onAmountChange).toHaveBeenCalledWith('kicap', 96.11)

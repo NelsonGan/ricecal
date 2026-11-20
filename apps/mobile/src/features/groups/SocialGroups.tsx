@@ -41,15 +41,29 @@ export function SocialGroups({ inView }: { inView: boolean }) {
   const remembered = useOpenGroup(userId)
   const list = groups.data ?? []
   const chosen = list.find((group) => group.id === remembered)
-  // A group just made or joined is chosen before the list has it: wait for
-  // the list rather than show another group's card, or the empty one. A group
-  // left or deleted elsewhere falls back to the first.
-  const arriving = Boolean(remembered) && !chosen && groups.isFetching
+  // A group just made or joined is chosen before the list has it, and so is
+  // one a notification opened that this phone has not listed yet: ask the
+  // server once and wait for the answer rather than show another group's
+  // card, or the empty one. A group left or deleted elsewhere falls back to
+  // the first.
+  const [askedFor, setAskedFor] = useState<string | null>(null)
+  const missing = Boolean(remembered) && !chosen
+  // Idle, not merely not fetching: offline the refetch pauses, and a paused
+  // list proves nothing about the group.
+  const settled = Boolean(groups.data) && groups.fetchStatus === 'idle'
+  const { refetch } = groups
+  useEffect(() => {
+    if (missing && settled && askedFor !== remembered) {
+      setAskedFor(remembered ?? null)
+      void refetch()
+    }
+  }, [missing, settled, askedFor, remembered, refetch])
+  const arriving = missing && (groups.isFetching || (settled && askedFor !== remembered))
   const selected = chosen ?? list[0] ?? null
   const openGroups = () => router.push('/group')
-  // Forgotten once a settled list says it is gone, so later refetches do not
-  // read as a group still arriving.
-  const gone = Boolean(remembered) && !chosen && Boolean(groups.data) && !groups.isFetching
+  // Forgotten once a list fetched after it was chosen says it is gone, so
+  // later refetches do not read as a group still arriving.
+  const gone = missing && settled && askedFor === remembered
   useEffect(() => {
     if (gone) setOpenGroup(userId, null)
   }, [gone, userId])

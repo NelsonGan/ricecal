@@ -987,7 +987,9 @@ welcome                          the concept in one line over a sample of today,
 2 setup                          the language, and the units everything after it
                                  is typed in
 3 about   4 activity             the questions, drafted locally
-5 workouts  6 social             two showcases between the questions
+5 workouts  6 social             two showcases between the questions, at
+                                 (onboarding)/workouts-showcase and
+                                 (onboarding)/social-showcase
 7 source                         where they heard about us
 8 calculating                    a beat, then it replaces itself with…
 9 target                         the budget, worked out on the phone and
@@ -1013,8 +1015,9 @@ ring fills, then draws the carbs, protein and fat split inside it, and settles
 with a success haptic. It used to count a percentage of nothing in thirds under
 a spinning segment.
 
-The header keeps only the bar and the title while a keyboard or the number pad
-is up (`StepHeader` reads both). It is pinned above the scroll area, and with
+The header drops its drawing while a keyboard or the number pad is up
+(`StepHeader` reads both) and keeps the bar, the title and the subtitle, which on
+the code and password steps names the address being typed for. It is pinned above the scroll area, and with
 the drawing and the password step's three-line subtitle it left so little room
 that the confirm field sat under the button.
 
@@ -1117,9 +1120,18 @@ backfill without waiting for it, and moves on. The toasts hang off
 `mutateAsync` rather than off `mutate`'s callbacks for the same reason: this
 component is gone a tick later, and those callbacks go with it.
 
-The flow opens on `setup`, which asks for a language and a unit system before
-anything is measured. See [Language](#language) for why both are on one screen
-and why it is the first one.
+The flow opens on `how`, a sample scan that asks nothing, then `setup`, which
+asks for a language and a unit system before anything is measured. See
+[Language](#language) for why both are on one screen and why it comes before
+every question.
+
+**No onboarding screen may share a path with a screen elsewhere.** Route groups
+add no path segment, so `(onboarding)/social` answered every bare `/social`: a
+signed-in user opening a group, leaving one or deleting a post landed in the
+onboarding showcase and was then walked back through the questions. The two
+showcases are `workouts-showcase` and `social-showcase` for that reason, and a
+test in `features/onboarding/__tests__/steps.test.ts` fails on a new clash.
+`activity` predates the rule; every caller of either side names its group.
 
 Step numbers come from `ONBOARDING_STEPS` in `features/onboarding/steps.ts` and
 nowhere else. Written per screen they lasted until a screen was inserted: the
@@ -4836,10 +4848,15 @@ foreground, so `delete_activity_session` records the removal in
 start, kind and source (Garmin re-saves the same run under a new id; the source
 keeps a watch's recording of the same moment). An upsert onto a row already
 stored is let through, so the copy a person kept still updates. Skipped rather
-than refused, so an old binary's batch upsert still lands the rest, and the
-reconcile never hands a removed workout's re-save a leftover copy's row. The
-budget is unchanged by a delete: it reads the day's active energy, not the
-sessions.
+than refused, so an old binary's batch upsert still lands the rest.
+
+**Deleting one of two copies removes the duplicate, not the run.** While a copy
+from the same source is still stored, the run's re-save takes that copy over
+in the reconcile rather than deleting it; only once the person has deleted
+every copy does the run stay gone. The first version keyed the dismissal on the
+run alone, so deleting the duplicate made the next Garmin re-save delete the
+copy that was kept too, and the run vanished. The budget is unchanged by a
+delete: it reads the day's active energy, not the sessions.
 
 For local UI verification, `pnpm workouts:seed --user <local-account-uuid>`
 inserts all 19 sports plus 11 data variants into that account across six days.
@@ -4900,9 +4917,17 @@ So before it upserts, a pass sends `reconcile_activity_sessions` the identity
 (id, start, kind, source) of every workout the store returned for the chunk,
 within the same bounds the providers read (`lib/health/window.ts`). It acts only
 on stored rows that are another copy of a returned workout: same start and kind,
-an id the store did not return. A returned workout not yet stored takes over the
-oldest such copy, so the upsert updates it and it keeps its row id, group card
-and reactions; the copies left over are deleted.
+overlapping the chunk (as the store's read does, so a run across its first
+midnight matches), an id the store did not return. A returned workout not yet
+stored takes over the oldest such copy, so the upsert updates it and it keeps
+its row id, group card and reactions; the copies left over are deleted.
+
+**The insert trigger also skips a second copy of a stored workout**: same
+provider, start, kind and source under a new id. Old binaries have no reconcile,
+so without it every Garmin rewrite they synced was a new row and a new group
+card; and a store briefly holding both the old copy and its rewrite added one
+even on a new binary. The reconcile re-keys the stored row before the upsert,
+so the upsert lands on it as an update.
 
 **A workout the read does not mention is never deleted.** Absence proves
 nothing: a second phone on the same provider has its own store, a new phone's

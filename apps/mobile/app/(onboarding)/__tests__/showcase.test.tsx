@@ -7,8 +7,8 @@ import '@/i18n'
 import { type OnboardingDraft, OnboardingDraftProvider } from '@/features/onboarding'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 import HowStep from '../how'
-import SocialStep from '../social'
-import WorkoutsStep from '../workouts'
+import SocialStep from '../social-showcase'
+import WorkoutsStep from '../workouts-showcase'
 
 /**
  * The three showcase steps answer nothing, so the only thing each can get wrong
@@ -51,7 +51,7 @@ beforeEach(() => {
 
 it.each([
   ['how', <HowStep key="how" />, '/(onboarding)/setup'],
-  ['workouts', <WorkoutsStep key="workouts" />, '/(onboarding)/social'],
+  ['workouts', <WorkoutsStep key="workouts" />, '/(onboarding)/social-showcase'],
   ['social', <SocialStep key="social" />, '/(onboarding)/source'],
 ])('%s continues to the next step', async (_name, ui, next) => {
   await render(ui)

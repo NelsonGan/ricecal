@@ -185,8 +185,13 @@ export function leadingAmount(label: string | null | undefined): LabelAmount | n
 export function labelQuantities(label: string | null | undefined): { g?: number; ml?: number } {
   const text = (label ?? '').trim().toLowerCase()
   const found: { g?: number; ml?: number } = {}
-  for (const amount of [amountFrom(text.match(BRACKETED)), amountFrom(text.match(LEADING_LOOSE))]) {
-    if (!amount) continue
+  const amounts = [amountFrom(text.match(BRACKETED)), amountFrom(text.match(LEADING_LOOSE))]
+  // A bare "oz" beside a volume is fluid ounces: "12 oz (355 ml)" is a can,
+  // and read as a weight it made a density of 0.96 out of one measurement.
+  const volume = amounts.some((amount) => amount && MEASURES[amount.unit].family === 'volume')
+  for (const stated of amounts) {
+    if (!stated) continue
+    const amount = volume && stated.unit === 'oz' ? { ...stated, unit: 'floz' as const } : stated
     const { family, size } = MEASURES[amount.unit]
     const key = family === 'weight' ? 'g' : 'ml'
     found[key] ??= amount.count * size

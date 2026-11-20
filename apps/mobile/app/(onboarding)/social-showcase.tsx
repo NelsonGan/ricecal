@@ -30,7 +30,7 @@ export default function SocialStep() {
       art={{ art: 'friends' }}
       title={t('social.title')}
       subtitle={t('social.subtitle')}
-      onBack={() => router.dismissTo('/(onboarding)/workouts')}
+      onBack={() => router.dismissTo('/(onboarding)/workouts-showcase')}
       primaryLabel={t('common:action.continue')}
       onPrimary={() => router.push('/(onboarding)/source')}
     >

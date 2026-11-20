@@ -3,7 +3,9 @@ import type { LocalDate } from './types'
 /**
  * The instants a read covers. Both providers ask their store for exactly this,
  * and the sync tells the server the same bounds when it reconciles the
- * workouts it read, so the three must not drift apart.
+ * workouts it read, so the three must not drift apart. A store returns a
+ * workout that overlaps the window (Apple's default predicate), so the server
+ * matches stored copies by overlap too, not by containment.
  */
 
 /** Local midnight at the start of a `yyyy-MM-dd`. */

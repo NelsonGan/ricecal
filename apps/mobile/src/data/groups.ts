@@ -1738,7 +1738,15 @@ export function useGroupAction() {
           return
         case 'leave':
           // Its boards and chats are no longer this person's to read.
-          if (!error) client.removeQueries({ queryKey: root, predicate: ofGroup(input.groupId) })
+          if (!error) {
+            client.removeQueries({ queryKey: root, predicate: ofGroup(input.groupId) })
+            // Out of the list now, not when the refetch lands: Social falls
+            // back to the first group listed, and until then that could be
+            // this one, its card re-fetching a board it can no longer read.
+            client.setQueryData<GroupSummary[]>(keys.groupsRead(userId, 'my_groups'), (list) =>
+              list?.filter((group) => group.id !== input.groupId),
+            )
+          }
           refresh(null, 'my_groups')
           return
         default:

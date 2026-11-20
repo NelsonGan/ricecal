@@ -55,6 +55,13 @@ describe('labelQuantities', () => {
   it('reads a prepared portion as the amount it still is', () => {
     expect(labelQuantities('1.0 cup, chopped').ml).toBeCloseTo(236.6, 1)
   })
+
+  // Both halves are one volume, so there is no density in it.
+  it('reads a bare oz beside millilitres as fluid ounces', () => {
+    expect(labelQuantities('12 oz (355 ml)')).toEqual({ ml: 355 })
+    expect(labelQuantities('355 ml (12 oz)')).toEqual({ ml: expect.closeTo(354.9, 1) })
+    expect(labelQuantities('8 oz (227 g)').g).toBe(227)
+  })
 })
 
 describe('foodBasis', () => {

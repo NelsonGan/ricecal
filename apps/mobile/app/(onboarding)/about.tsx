@@ -141,9 +141,9 @@ export default function AboutStep() {
       subtitle={t('about.subtitle')}
       /**
        * `dismissTo`, not `back()`, and this screen is the reason the whole flow
-       * uses it. `app/index.tsx` REDIRECTS a signed-in account with no
-       * `onboarded_at` and no draft straight here, and `finish` redirects here
-       * for an incomplete one — so `about` is regularly the only screen on the
+       * uses it. `app/index.tsx` and `finish` used to REDIRECT an incomplete
+       * flow straight here (they now start it at `ONBOARDING_STEPS[0]`), so
+       * `about` was regularly the only screen on the
        * stack, and `back()` with nothing to pop is answered by whichever
        * navigator up the chain is listening, which means changing tab.
        * `dismissTo` pops to `setup` when it is there and replaces this screen
