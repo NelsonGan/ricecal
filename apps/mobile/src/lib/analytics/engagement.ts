@@ -34,6 +34,35 @@ export type EngagementStorage = {
   write(value: string): void
 }
 
+/**
+ * The handset's MMKV store as `EngagementStorage`, with this process's last
+ * write held in memory too.
+ *
+ * MMKV throws from `set` when the phone has no room left. Thrown from launch,
+ * that skipped everything `initAnalytics` does after it; swallowed with
+ * nothing remembered, every return to the foreground would send today's open
+ * again. Remembering it here sends it once, and the next write tries the disk
+ * again.
+ */
+export function handsetEngagementStorage(store: {
+  getString(key: string): string | undefined
+  set(key: string, value: string): void
+}): EngagementStorage {
+  const KEY = 'state'
+  let latest: string | undefined
+  return {
+    read: () => latest ?? store.getString(KEY),
+    write: (value) => {
+      latest = value
+      try {
+        store.set(KEY, value)
+      } catch {
+        // A full disk. Nothing to tell anyone: `latest` covers this process.
+      }
+    },
+  }
+}
+
 const EMPTY: EngagementState = { lastDay: null, activeDays: 0, installDay: null }
 
 /** `YYYY-MM-DD` in the phone's own time zone, which is the day the user lives in. */

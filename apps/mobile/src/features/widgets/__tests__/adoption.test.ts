@@ -2,6 +2,25 @@ import { registerAnalytics, resetAnalyticsForTest } from '@/lib/analytics'
 import { diffWidgets, forgetWidgetsForTest, reportWidgets } from '../adoption'
 
 /**
+ * Flipped by the full-disk case: MMKV's `set` throws when the phone has no room.
+ * (Named `mock…` so Jest lets the hoisted factory read it.)
+ */
+let mockFailWrites = false
+jest.mock('react-native-mmkv', () => {
+  const store = new Map<string, string>()
+  return {
+    createMMKV: () => ({
+      set: (key: string, value: string) => {
+        if (mockFailWrites) throw new Error(`MMKV.set(...): Failed to set value for key "${key}"!`)
+        store.set(key, value)
+      },
+      getString: (key: string) => store.get(key),
+      remove: (key: string) => store.delete(key),
+    }),
+  }
+})
+
+/**
  * How the app finds out that a widget was added.
  *
  * It cannot be told: neither platform has a callback for it, so adoption is a
@@ -132,4 +151,20 @@ it('sets the handset widget count for a new account without inventing an additio
   people.mockClear()
   reportWidgets(['kcal', 'water'], 'second')
   expect(people).not.toHaveBeenCalled()
+})
+
+it('survives a phone that cannot write the baseline, without repeating the diff', () => {
+  // A full disk makes MMKV's `set` throw ("Failed to set value for key
+  // installed"). That came out of the foreground sync as an unhandled
+  // rejection; the poll after it must not report the same addition again.
+  reportWidgets(['kcal'])
+  mockFailWrites = true
+  try {
+    expect(() => reportWidgets(['kcal', 'water'])).not.toThrow()
+    expect(() => reportWidgets(['kcal', 'water'])).not.toThrow()
+  } finally {
+    mockFailWrites = false
+  }
+  expect(client.track).toHaveBeenCalledTimes(1)
+  expect(client.track).toHaveBeenCalledWith('Widget Added', { widget: 'water' })
 })
