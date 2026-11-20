@@ -12,12 +12,21 @@
  * typecheck.
  */
 export const ONBOARDING_STEPS = [
+  // What the app does, shown before anything is asked: a real plate and what a
+  // scan makes of it. The pitch on `welcome` is one sentence; this is the proof.
+  'how',
   // Language and units, and it is first because everything after it is read in
   // one and measured in the other. The height and weight on `about` are typed
   // in whichever this screen chose.
   'setup',
   'about',
   'activity',
+  // Two showcases between the questions, so the flow alternates asking with
+  // showing. Workouts follows the activity question because it is the same
+  // subject, and social sits before "where did you hear about us" because a
+  // friend is one of its answers.
+  'workouts',
+  'social',
   // No `foodStyle`. The question ("how do you usually makan") fed a
   // `profiles.food_styles` array that ranked nothing: search is the Worker's,
   // and its prior is locale, popularity and verification. A question whose

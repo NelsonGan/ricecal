@@ -981,21 +981,43 @@ top rather than resuming.
 ### The flow
 
 ```
-welcome                          the pitch, and the fork for a returning user
-1 setup                          the language, and the units everything after it
+welcome                          the concept in one line over a picture of it,
+                                 and the fork for a returning user
+1 how                            a sample scan: a real plate and the entry it makes
+2 setup                          the language, and the units everything after it
                                  is typed in
-2 about   3 activity  4 source   the questions, drafted locally
-5 calculating                    a beat, then it replaces itself with…
-6 target                         the budget, worked out on the phone and
+3 about   4 activity             the questions, drafted locally
+5 workouts  6 social             two showcases between the questions
+7 source                         where they heard about us
+8 calculating                    a beat, then it replaces itself with…
+9 target                         the budget, worked out on the phone and
                                  editable there
-7 account       (auth)/sign-in, carrying the same bar through the params
+10 account      (auth)/sign-in, carrying the same bar through the params
                 Apple, Google, or an address, which leads to (auth)/password
                 and then (auth)/verify if a code is owed
   finish                         the one write: profile, first weigh-in, onboarded_at
-8 health        connect the store, a permission that gives rather than asks
-9 notifications turns the three meal reminders on, not just the OS permission
+11 health       connect the store, a permission that gives rather than asks
+12 notifications turns the three meal reminders on, not just the OS permission
   paywall/intro                  the offer, with "Maybe later" leading to Today
 ```
+
+**Every step wears the same frame.** A small drawing over the heading, one
+short line under it, pandan throughout and one continuous progress bar. The
+three steps with a picture of their own (the calculating ring, the budget ring
+and the account screen's bowl) skip the drawing rather than stack two. The
+steps used to rotate four accent colours and draw twelve segmented marks, which
+read as several apps rather than one flow. The drawings are the `scenes` and
+`body` icons plus three made for this flow (a globe, three friends, a
+megaphone) in `assets/onboarding/`, beside the welcome picture and the two
+photos the showcases use. They are not in `assets/icons` because that registry
+is generated from the design system's source set.
+
+**The three showcases are pictures, not demos.** `how`, `workouts` and `social`
+draw a sample scan, a workout and a post from the app's own parts with fixed
+sample figures, and nothing on them can be pressed except Continue. The camera
+needs a permission this flow has not asked for, and a feed needs an account.
+Food, exercise and people's names on them are written in the component in the
+catalogue's spelling, because food is never translated.
 
 Two screens have left this list. "How do you usually makan" wrote a
 `profiles.food_styles` array that ranked nothing, since search is the Worker's
@@ -7250,7 +7272,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder category only |
 | `plan_direction` | `lose`, `gain`, `maintain` | Locally derived; a missing target or absolute target/current weight difference below 0.5 kg means maintain. Body values never leave the app through analytics |
 | `activity_level` | `sedentary`, `light`, `onFeet`, `veryActive` | Client vocabulary; normalized from database spellings |
-| `step`, `step_number` | `setup` 1, `about` 2, `activity` 3, `source` 4, `calculating` 5, `target` 6, `account` 7, `health` 8, `notifications` 9 | `features/onboarding/steps.ts`; calculating has no completion event, and secondary skips do not emit one |
+| `step`, `step_number` | `how` 1, `setup` 2, `about` 3, `activity` 4, `workouts` 5, `social` 6, `source` 7, `calculating` 8, `target` 9, `account` 10, `health` 11, `notifications` 12 | `features/onboarding/steps.ts`; calculating has no completion event, and secondary skips do not emit one. `how`, `workouts` and `social` exist since the onboarding revamp; before it `setup` was 1 and the rest followed in the same order, so a funnel keyed on `step` rather than `step_number` reads across the change |
 | `referral_source` | `xiaohongshu`, `instagram`, `tiktok`, `youtube`, `threads`, `facebook`, `reddit`, `friend`, `other`, `appStore`, `googlePlay` | `app/(onboarding)/source.tsx`; selected answer, not verified acquisition attribution |
 | Log-sheet `panel` | `camera`, `describe`, `search` | `app/log/index.tsx`; legacy `barcode`/`label` map to camera and `recipes` maps to search. Initial panel only |
 | Camera `with_note` | `true` when words were added after the shutter; `false` for Skip, an empty note, the setting switched off, the packet-label handoff, or a device with no camera (no photo, so no note is sent) | `data/snap.ts`; camera `Meal Logged` only, absent on every other method. The note's text is diary content and is never sent |
@@ -7302,7 +7324,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Product question | Events / segmentation | Interpretation |
 | --- | --- | --- |
 | How many people use the app, and do they come back? | `Daily App Open` unique users (DAU/WAU/MAU, stickiness); retention from `First App Open` or `Onboarding Completed` to `Daily App Open`; `days_since_last_open` for resurrection | One event per install per local day, so counts are users, not sessions. Starts at 1.0.14; older versions send nothing until updated |
-| Do new users finish setup? | First App Open → Onboarding Started → Onboarding Completed; inspect step/step_number and referral_source | Count unique users as well as total starts. Permission steps happen after completion; skips/calculating make a nine-event mandatory funnel invalid |
+| Do new users finish setup? | First App Open → Onboarding Started → Onboarding Completed; inspect step/step_number and referral_source | Count unique users as well as total starts. Permission steps happen after completion; skips/calculating make a twelve-event mandatory funnel invalid |
 | Do they keep logging? | Retention from `Onboarding Completed` to `Meal Logged`; `Meal Logged` by method | The logging habit is the core retention metric for a diary |
 | Which logging method is used? | Meal Logged by method, date_offset and last known entitled | One logging action can yield several component rows. Camera/describe includes optimistic work; use scan outcomes and database completion to measure successful persisted meals |
 | Is catalogue search useful? | Food Searched → Food Picked, then Meal Logged with matching method | Catalogue only; counts describe settled answers. Picked is not saved. Keep mobile/web streams separate before comparing result positions or query behavior |
@@ -8065,8 +8087,9 @@ working.
 sneakers, an apron, a dumbbell, a ring, capsules, a plate, an alarm clock and a
 phone. They are whole little scenes rather than single objects, cut from one
 sheet, and they exist for onboarding, where a screen has room for a picture that
-says what a question is about. Eight of them are placed there; `capsules` is not
-used yet and is kept because the set was drawn as a set.
+says what a question is about. Six of them are placed there; `ring` and `plate`
+lost their place when the welcome screen's perk cards went, and `capsules` was
+never used. All three are kept because the set was drawn as a set.
 
 ```tsx
 <Icon set="dishes" name="nasi-lemak" size={44} />

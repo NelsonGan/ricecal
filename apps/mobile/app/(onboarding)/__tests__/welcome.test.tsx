@@ -42,11 +42,12 @@ beforeEach(() => {
   jest.clearAllMocks()
 })
 
-it('starts the questions without asking for an account', async () => {
+it('starts the flow without asking for an account', async () => {
   await render(<Welcome />)
   await user.press(screen.getByText('Get started'))
 
-  expect(mockPush).toHaveBeenCalledWith('/setup')
+  // The showcase of a scan comes before the first question.
+  expect(mockPush).toHaveBeenCalledWith('/how')
 })
 
 it('sends a returning user to the sign-in side of the account screen', async () => {

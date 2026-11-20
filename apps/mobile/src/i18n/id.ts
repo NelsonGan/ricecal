@@ -466,8 +466,7 @@ export const id = {
 
   onboarding: {
     setup: {
-      title: 'Sebelum kita mulai',
-      subtitle: 'Keduanya mengubah bahasa dan satuan di beberapa layar berikutnya.',
+      title: 'Bahasa dan satuan',
       unitsTitle: 'SATUAN',
       metric: 'Metrik',
       imperial: 'Imperial',
@@ -476,25 +475,35 @@ export const id = {
     },
 
     welcome: {
-      title: 'Pelacak kalori untuk orang Asia',
-      subtitle: 'Nasi lemak, pho, laksa, nasi char siu.',
-      perks: {
-        track: { title: 'Lacak setiap kalori', subtitle: 'Foto atau cari dalam hitungan detik' },
-        habit: {
-          title: 'Bangun kebiasaan lebih sehat',
-          subtitle: 'Target lembut, rentetan, tanpa menghakimi',
-        },
-        local: {
-          title: '50.000 hidangan Asia',
-          subtitle: 'Dan 3 juta kemasan, dibaca lewat barkode',
-        },
-      },
+      title: 'Foto piringmu. Ketahui kalorinya.',
+      subtitle: 'Penghitung kalori untuk makanan Asia.',
       start: 'Mulai',
       signIn: 'Saya sudah punya akun',
     },
 
+    how: {
+      title: 'Foto saja. Kami yang hitung.',
+      subtitle: 'Satu foto memberi hidangan, porsi, dan kalorinya.',
+      portion: '1 piring',
+      more: 'Atau ketik, cari, atau pindai barcode.',
+    },
+
+    workouts: {
+      title: 'Catat olahraga juga',
+      subtitle:
+        'Set, repetisi, dan timer istirahat. Angkatan terakhirmu ada di samping setiap set.',
+      routine: 'Latihan pagi',
+    },
+
+    social: {
+      title: 'Lebih seru bersama teman',
+      subtitle: 'Bagikan makanan, saling menyemangati, mengobrol di grup.',
+      group: 'Klub makan siang',
+    },
+
     about: {
       title: 'Beberapa hal dasar',
+      subtitle: 'Untuk anggaran kalori harianmu.',
       height: 'TINGGI',
       heightPlaceholder: '170',
       weight: 'BERAT',
@@ -527,7 +536,6 @@ export const id = {
 
     source: {
       title: 'Dari mana kamu tahu tentang kami?',
-      subtitle: 'Ini membantu kami tahu harus muncul di mana berikutnya.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',

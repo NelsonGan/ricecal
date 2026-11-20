@@ -462,8 +462,7 @@ export const ja = {
 
   onboarding: {
     setup: {
-      title: 'はじめる前に',
-      subtitle: 'どちらも、この先の画面の言葉と単位を変えます。',
+      title: '言語と単位',
       unitsTitle: '単位',
       metric: 'メートル法',
       imperial: 'ヤード・ポンド法',
@@ -472,22 +471,34 @@ export const ja = {
     },
 
     welcome: {
-      title: 'アジアの人のためのカロリー記録',
-      subtitle: 'ナシレマ、フォー、ラクサ、チャーシュー飯。',
-      perks: {
-        track: { title: '1 kcal まで記録', subtitle: '写真を撮るか、数秒で検索' },
-        habit: { title: 'より健康な習慣をつくる', subtitle: 'ゆるい目標、連続記録、責めません' },
-        local: {
-          title: 'アジア料理 50,000 品',
-          subtitle: 'さらに 300 万点の商品をバーコードで読み取り',
-        },
-      },
+      title: 'お皿を撮るだけ。カロリーがわかる。',
+      subtitle: 'アジアの料理のためのカロリー記録アプリ。',
       start: 'はじめる',
       signIn: 'すでにアカウントがあります',
     },
 
+    how: {
+      title: '撮るだけ。計算はおまかせ。',
+      subtitle: '写真1枚で、料理名と量とカロリーがわかります。',
+      portion: '1皿',
+      more: '入力、検索、バーコードでも記録できます。',
+    },
+
+    workouts: {
+      title: '筋トレも記録',
+      subtitle: 'セット、回数、休憩タイマー。前回の重量が各セットの横に表示されます。',
+      routine: '朝のワークアウト',
+    },
+
+    social: {
+      title: '友だちと一緒なら続く',
+      subtitle: '食事をシェアして、応援し合って、グループでチャット。',
+      group: 'ランチ部',
+    },
+
     about: {
       title: '基本のことを少しだけ',
+      subtitle: '1日のカロリー予算を計算するために使います。',
       height: '身長',
       heightPlaceholder: '170',
       weight: '体重',
@@ -520,7 +531,6 @@ export const ja = {
 
     source: {
       title: '何で知りましたか',
-      subtitle: '次にどこへ出ていくべきかの参考になります。',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',

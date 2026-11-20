@@ -3,14 +3,14 @@ import { View } from 'react-native'
 
 import { track } from '@/lib/analytics'
 import { Button, type ButtonVariant, Screen, type StepProgressTone } from '@/ui'
-import { StepHeader } from './StepHeader'
+import { type StepArt, StepHeader } from './StepHeader'
 import { type OnboardingStepName, stepNumber, TOTAL_STEPS } from './steps'
 
 /**
- * The accent each step wears, rotating pandan, kaya, water, hibiscus.
- *
- * The same four names the progress bar takes, so a step's colour is declared
- * once and reaches both the bar and the CTA.
+ * The accent a step wears. Every step in the flow is pandan now: the four
+ * colours used to rotate per screen, and twelve screens of rotating buttons
+ * read as twelve different apps rather than one flow. The prop stays for a
+ * screen outside the flow that borrows the frame.
  */
 export type Accent = StepProgressTone
 
@@ -33,9 +33,11 @@ export type OnboardingStepProps = {
    * renumbers itself the day a question is added.
    */
   name: OnboardingStepName
-  accent: Accent
+  accent?: Accent
   title: string
   subtitle?: string
+  /** The small drawing over the heading. */
+  art?: StepArt
   children: ReactNode
   primaryLabel: string
   onPrimary: () => void
@@ -63,9 +65,10 @@ export type OnboardingStepProps = {
  */
 export function OnboardingStep({
   name,
-  accent,
+  accent = 'pandan',
   title,
   subtitle,
+  art,
   children,
   primaryLabel,
   onPrimary,
@@ -104,6 +107,7 @@ export function OnboardingStep({
           onBack={onBack}
           title={title}
           subtitle={subtitle}
+          art={art}
         />
       }
       footer={

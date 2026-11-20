@@ -29,7 +29,7 @@ export default function ActivityStep() {
   return (
     <OnboardingStep
       name="activity"
-      accent="hibiscus"
+      art={{ set: 'scenes', name: 'sneakers' }}
       title={t('activity.title')}
       // `dismissTo` rather than `back()` on every step of this flow — see the
       // note on `about`, which is deep-linked by two redirects and so cannot
@@ -39,12 +39,11 @@ export default function ActivityStep() {
       // The activity multiplier is the other half of the budget calculation;
       // `compute_targets()` reads it, so it cannot be skipped.
       primaryDisabled={!draft.activity}
-      onPrimary={() => router.push('/(onboarding)/source')}
+      onPrimary={() => router.push('/(onboarding)/workouts')}
     >
       {OPTIONS.map((option) => (
         <ChoiceCard
           key={option.id}
-          accent="hibiscus"
           icon={option.icon}
           title={t(`activity.${option.id}.title`)}
           description={t(`activity.${option.id}.subtitle`)}

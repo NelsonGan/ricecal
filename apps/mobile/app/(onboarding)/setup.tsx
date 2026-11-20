@@ -69,10 +69,9 @@ export default function SetupStep() {
   return (
     <OnboardingStep
       name="setup"
-      accent="pandan"
+      art={{ art: 'globe' }}
       title={t('setup.title')}
-      subtitle={t('setup.subtitle')}
-      onBack={() => router.dismissTo('/(onboarding)/welcome')}
+      onBack={() => router.dismissTo('/(onboarding)/how')}
       primaryLabel={t('common:action.continue')}
       onPrimary={next}
     >

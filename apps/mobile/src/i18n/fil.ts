@@ -471,8 +471,7 @@ export const fil = {
 
   onboarding: {
     setup: {
-      title: 'Bago tayo magsimula',
-      subtitle: 'Parehong nagbabago ang wika at sukat ng susunod na ilang screen.',
+      title: 'Wika at mga yunit',
       unitsTitle: 'MGA UNIT',
       metric: 'Metric',
       imperial: 'Imperial',
@@ -481,28 +480,34 @@ export const fil = {
     },
 
     welcome: {
-      title: 'Calorie tracker na gawa para sa mga Asyano',
-      subtitle: 'Nasi lemak, pho, laksa, char siu rice.',
-      perks: {
-        track: {
-          title: 'Bilangin ang bawat calorie',
-          subtitle: 'Kumuha ng litrato o maghanap sa ilang segundo',
-        },
-        habit: {
-          title: 'Bumuo ng mas malusog na ugali',
-          subtitle: 'Banayad na target, streak, walang pang-iinsulto',
-        },
-        local: {
-          title: '50,000 ulam na Asyano',
-          subtitle: 'At 3 milyong pakete, binabasa sa barcode',
-        },
-      },
+      title: 'Kunan ang plato. Alamin ang calories.',
+      subtitle: 'Ang calorie tracker para sa pagkaing Asyano.',
       start: 'Magsimula',
       signIn: 'May account na ako',
     },
 
+    how: {
+      title: 'Kunan mo. Bilangin namin.',
+      subtitle: 'Isang litrato lang para sa ulam, serving at calories.',
+      portion: '1 plato',
+      more: 'O i-type, hanapin, o i-scan ang barcode.',
+    },
+
+    workouts: {
+      title: 'I-log din ang workouts mo',
+      subtitle: 'Sets, reps at rest timer. Katabi ng bawat set ang huli mong buhat.',
+      routine: 'Workout sa umaga',
+    },
+
+    social: {
+      title: 'Mas masaya kasama ang barkada',
+      subtitle: "Ibahagi ang kain, mag-cheer sa isa't isa, mag-chat sa grupo.",
+      group: 'Lunch club',
+    },
+
     about: {
       title: 'Ilang pangunahing detalye',
+      subtitle: 'Para sa araw-araw mong calorie budget.',
       height: 'TAAS',
       heightPlaceholder: '170',
       weight: 'TIMBANG',
@@ -535,7 +540,6 @@ export const fil = {
 
     source: {
       title: 'Saan mo kami narinig?',
-      subtitle: 'Nakakatulong ito para malaman namin kung saan susunod lilitaw.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',

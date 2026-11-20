@@ -165,7 +165,7 @@ function HealthStep() {
   return (
     <OnboardingStep
       name="health"
-      accent="water"
+      art={{ set: 'body', name: 'heart-rate' }}
       title={t('onboarding:health.title')}
       subtitle={t('onboarding:health.subtitle')}
       /* "Continue", on both branches, and it used to name the store.

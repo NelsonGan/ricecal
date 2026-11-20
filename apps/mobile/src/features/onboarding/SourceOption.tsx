@@ -57,10 +57,10 @@ export function SourceOption({ label, selected, onPress, logo, icon }: SourceOpt
       // `basis-[47%]` with `grow`, so two fit a row and a lone last tile
       // stretches rather than sitting half-width beside a gap.
       containerClassName="basis-[47%] grow"
-      slabClassName={selected ? 'bg-water-soft-line' : 'bg-line'}
+      slabClassName={selected ? 'bg-pandan-soft-line' : 'bg-line'}
       className={cn(
         'h-[74px] flex-row items-center gap-3 border-[3px] px-3.5',
-        selected ? 'border-water bg-water-soft' : 'border-line bg-surface',
+        selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
       )}
       onPress={onPress}
       accessibilityRole="radio"

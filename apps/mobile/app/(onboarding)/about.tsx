@@ -134,8 +134,9 @@ export default function AboutStep() {
   return (
     <OnboardingStep
       name="about"
-      accent="water"
+      art={{ set: 'body', name: 'weighing-scale' }}
       title={t('about.title')}
+      subtitle={t('about.subtitle')}
       /**
        * `dismissTo`, not `back()`, and this screen is the reason the whole flow
        * uses it. `app/index.tsx` REDIRECTS a signed-in account with no

@@ -1,8 +1,27 @@
+import { Image } from 'expo-image'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
-import { cn, Icon, IconButton, StepProgress, type StepProgressTone, Text } from '@/ui'
+import {
+  cn,
+  Icon,
+  IconButton,
+  type IconProps,
+  StepProgress,
+  type StepProgressTone,
+  Text,
+} from '@/ui'
+import { ONBOARDING_ART, type OnboardingArtName } from './art'
+
+/**
+ * The small drawing over a step's heading: one of the design system's icons, or
+ * one of the pictures drawn for this flow.
+ */
+export type StepArt = IconProps | { art: OnboardingArtName }
+
+/** 56, which reads as a picture over a 28pt heading without pushing it down a small phone. */
+const ART_SIZE = 56
 
 export type StepHeaderProps = {
   /** 1-based, matching `stepNumber()`. */
@@ -14,6 +33,8 @@ export type StepHeaderProps = {
   /** The question this progress row belongs to, fixed beneath it. */
   title?: string
   subtitle?: string
+  /** Drawn above the title, at the leading edge. Every step in the flow has one. */
+  art?: StepArt
   className?: string
 }
 
@@ -34,6 +55,7 @@ export function StepHeader({
   onBack,
   title,
   subtitle,
+  art,
   className,
 }: StepHeaderProps) {
   const { t } = useTranslation('common')
@@ -59,6 +81,7 @@ export function StepHeader({
 
         <StepProgress
           className="flex-1"
+          variant="bar"
           total={total}
           current={step}
           tone={tone}
@@ -67,9 +90,27 @@ export function StepHeader({
       </View>
 
       {title ? (
-        <View className="gap-2 pt-4">
+        <View className="gap-1.5 pt-3">
+          {art ? (
+            <View className="pb-1.5">
+              {'art' in art ? (
+                <Image
+                  source={ONBOARDING_ART[art.art]}
+                  style={{ width: ART_SIZE, height: ART_SIZE }}
+                  contentFit="contain"
+                  transition={0}
+                />
+              ) : (
+                <Icon {...art} size={ART_SIZE} />
+              )}
+            </View>
+          ) : null}
           <Text variant="title">{title}</Text>
-          {subtitle ? <Text className="text-[16px] leading-[24px]">{subtitle}</Text> : null}
+          {subtitle ? (
+            <Text variant="meta" className="text-[16px] leading-[22px]">
+              {subtitle}
+            </Text>
+          ) : null}
         </View>
       ) : null}
     </View>

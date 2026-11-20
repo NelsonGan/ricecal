@@ -2,20 +2,15 @@ import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
+import { ONBOARDING_ART } from '@/features/onboarding'
 import { track } from '@/lib/analytics'
-import { Button, Icon, type IconProps, Screen, Text } from '@/ui'
+import { Button, Text } from '@/ui'
 
 /**
- * The app's own icon, and the FILE rather than a copy of the drawing.
- *
- * The first screen is an introduction to a PRODUCT: the thing a user is about
- * to install on their home screen is this square, and showing it here is what
- * makes the icon they tap tomorrow recognisable. Pointing at the icon itself is
- * what keeps the two from drifting when one of them is redrawn.
- *
- * It carries its own background, so it is clipped to the same corner radius the
- * platform gives it.
+ * The app's own icon, and the FILE rather than a copy of the drawing, so the
+ * mark beside the name here is the square somebody taps tomorrow.
  */
 const LOGO = require('../../assets/app-mark.png')
 
@@ -24,60 +19,37 @@ const LOGO = require('../../assets/app-mark.png')
  *
  * The first screen anybody sees, and the fork between the two kinds of visitor.
  *
- * "Get started" goes straight into the questions — no account, nothing to type,
- * no reason given for why an email would be needed before a single question has
- * been answered. The account comes at the end, once the app has shown what it
- * works out for them. Anyone who already has one takes the second button and
- * skips the seven screens entirely.
+ * A picture of the whole idea (a plate, and a phone that has just counted it)
+ * over one sentence that says the same thing in words. It used to be a heading
+ * about who the app is for over three perk cards, which explained the app in
+ * four places and showed it in none. Showing it properly is the next step's job.
+ *
+ * Not a `Screen`: the picture bleeds under the status bar, and a shell that
+ * pads for the safe area and the gutter is exactly what it must not do. The
+ * picture is the part that gives way on a small phone, so the panel under it,
+ * which holds the only two things anybody can act on, is never pushed off.
+ *
+ * "Get started" goes straight into the flow, with no account and nothing to
+ * type. Anyone who already has one takes the second button and skips it.
  */
 export default function Welcome() {
   const { t } = useTranslation('onboarding')
   const router = useRouter()
+  const insets = useSafeAreaInsets()
 
-  /**
-   * Three claims, each with the drawing of the thing it claims.
-   *
-   * `scenes` rather than a single object apiece, which is what these were: a
-   * flame for tracking, a heart-rate line for the habit. Those are symbols for
-   * the CATEGORY — a flame means calories the way a heart means health — and
-   * the three of them said nothing about what the app does. A phone with a tick
-   * on it is the photo being counted, the ring is the day filling up, and the
-   * plate is the catalogue, which is the pitch this screen exists to make.
-   */
-  const perks: { key: string; icon: IconProps; title: string; subtitle: string }[] = [
-    {
-      key: 'track',
-      icon: { set: 'scenes', name: 'phone' },
-      title: t('welcome.perks.track.title'),
-      subtitle: t('welcome.perks.track.subtitle'),
-    },
-    {
-      key: 'habit',
-      icon: { set: 'scenes', name: 'ring' },
-      title: t('welcome.perks.habit.title'),
-      subtitle: t('welcome.perks.habit.subtitle'),
-    },
-    {
-      key: 'local',
-      icon: { set: 'scenes', name: 'plate' },
-      title: t('welcome.perks.local.title'),
-      subtitle: t('welcome.perks.local.subtitle'),
-    },
-  ]
-
-  /** Straight into the questions. No session needed: the answers are held locally. */
+  /** Straight into the flow. No session needed: the answers are held locally. */
   const start = () => {
     // The top of the funnel, and the only place it can be marked. This screen
     // is also where a returning user lands, so rendering it is not the same
-    // thing as starting — pressing this button is.
+    // thing as starting; pressing this button is.
     track('Onboarding Started', {})
-    router.push('/setup')
+    router.push('/how')
   }
 
   /**
-   * Skips the questions.
+   * Skips the flow.
    *
-   * `push`, so the edge swipe comes back here — someone who taps this by mistake
+   * `push`, so the edge swipe comes back here: someone who taps this by mistake
    * has not lost the way in. The mode says which side of that screen to open on,
    * because "I already have an account" under a "Save your progress" heading
    * reads as a tap that was ignored.
@@ -85,20 +57,44 @@ export default function Welcome() {
   const signIn = () => router.push({ pathname: '/sign-in', params: { mode: 'sign-in' } })
 
   return (
-    <Screen
-      /**
-       * Scrolls, because this screen is taller than a small phone.
-       *
-       * It was `scroll={false}`, which on a 6.1" display looks identical and on an
-       * iPhone SE hid the bottom of the third perk behind the footer, with no way
-       * to reach it.
-       *
-       * The content is fixed in length, so on a large phone this never scrolls and
-       * `justify-center` centres it as before. It is the small phone, and the one
-       * with larger text turned on, that need the overflow to go somewhere.
-       */
-      contentClassName="justify-center"
-      footer={
+    <View className="flex-1 bg-canvas">
+      <View className="min-h-[200px] flex-1">
+        <Image
+          source={ONBOARDING_ART.hero}
+          style={{ flex: 1 }}
+          contentFit="cover"
+          contentPosition="top"
+          transition={0}
+          accessible={false}
+        />
+      </View>
+
+      {/* Pulled up over the picture by its own corner radius, so the two read
+          as one surface rather than a photo with a form under it. */}
+      <View
+        className="-mt-7 gap-5 rounded-t-card bg-canvas px-gutter pt-7"
+        style={{ paddingBottom: Math.max(insets.bottom, 16) + 8 }}
+      >
+        <View className="gap-2.5">
+          <View className="flex-row items-center gap-2">
+            <Image
+              source={LOGO}
+              style={{ width: 30, height: 30, borderRadius: 8 }}
+              contentFit="cover"
+              accessible={false}
+            />
+            <Text variant="subtitle" className="text-pandan-ink">
+              RiceCal
+            </Text>
+          </View>
+          <Text variant="displayMd" accessibilityRole="header">
+            {t('welcome.title')}
+          </Text>
+          <Text variant="meta" className="text-[17px] leading-[24px]">
+            {t('welcome.subtitle')}
+          </Text>
+        </View>
+
         <View className="gap-1.5">
           <Button fullWidth onPress={start}>
             {t('welcome.start')}
@@ -107,37 +103,7 @@ export default function Welcome() {
             {t('welcome.signIn')}
           </Button>
         </View>
-      }
-    >
-      <View className="items-center gap-4">
-        <Image
-          source={LOGO}
-          style={{ width: 104, height: 104, borderRadius: 24 }}
-          contentFit="cover"
-        />
-        <Text variant="displayMd" className="text-center">
-          {t('welcome.title')}
-        </Text>
-        <Text className="text-center text-[16px] leading-[24px]">{t('welcome.subtitle')}</Text>
       </View>
-
-      <View className="gap-3 pt-6">
-        {perks.map((perk) => (
-          <View
-            key={perk.key}
-            className="flex-row items-center gap-3.5 rounded-md border-2 border-line bg-surface p-4"
-            accessible
-          >
-            <Icon {...perk.icon} size={48} />
-            <View className="min-w-0 flex-1">
-              <Text variant="bodyStrong" className="text-[16px]">
-                {perk.title}
-              </Text>
-              <Text variant="meta">{perk.subtitle}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
-    </Screen>
+    </View>
   )
 }

@@ -8,8 +8,7 @@ export const onboarding = {
    * and a screen that made them confirm a default would be a tap for nothing.
    */
   setup: {
-    title: 'Before we start',
-    subtitle: 'Both of these change what the next few screens say and how they measure.',
+    title: 'Language and units',
     unitsTitle: 'UNITS',
     metric: 'Metric',
     imperial: 'Imperial',
@@ -20,37 +19,46 @@ export const onboarding = {
 
   welcome: {
     /**
-     * Who it is for, said first, because that is the whole of the pitch.
+     * The concept of the app, in the order it happens: a photo, then a number.
      *
-     * "Every dish, already counted" was a claim any tracker could make without
-     * lying: they all count what is in their catalogue. What they do not have is
-     * this food, which is why somebody downloads this app instead of the one they
-     * already deleted.
-     *
-     * Asian rather than Malaysian. The catalogue was never only Malaysian (seven
-     * national composition tables, the Open Food Facts slice and the researched
-     * dishes make it an Asian book with a Malaysian centre) and "Made for
-     * Malaysia" told everybody else in the region the app was not for them.
+     * The heading used to be who the app is for ("The calorie tracker made for
+     * Asians") over three perk cards. That told somebody who it was for and
+     * not what it does, and the cards said it three more times in smaller type.
+     * The audience is the line under it now, and the `how` step after this one
+     * shows a real scan rather than describing one.
      */
-    title: 'The calorie tracker made for Asians',
-    /**
-     * The proof under the claim, and it is four dish names rather than a
-     * sentence about dish names.
-     *
-     * It used to end "Asian food, counted properly", which was the heading
-     * again, and the third perk says how much is in there in numbers. Three
-     * claims of one thing on one screen. What is left is the part nothing else
-     * on it says: the food itself.
-     */
-    subtitle: 'Nasi lemak, pho, laksa, char siu rice.',
-    perks: {
-      track: { title: 'Track every calorie', subtitle: 'Snap a photo or search in seconds' },
-      habit: { title: 'Build a healthier habit', subtitle: 'Gentle goals, streaks, no shaming' },
-      /** The numbers are `food` and `product` in the D1 catalogue, rounded down. */
-      local: { title: '50,000 Asian dishes', subtitle: 'And 3 million packets, read by barcode' },
-    },
+    title: 'Snap your plate. Know your calories.',
+    subtitle: 'The calorie tracker made for Asian food.',
     start: 'Get started',
     signIn: 'I already have an account',
+  },
+
+  /**
+   * HOW IT WORKS, the first step: a real plate and what a scan makes of it.
+   *
+   * The dish names on this screen are not here. Food is never translated, so
+   * they are written in the component in the spelling the catalogue uses.
+   */
+  how: {
+    title: 'Snap it. We count it.',
+    subtitle: 'One photo gives the dish, the portion and the calories.',
+    portion: '1 plate',
+    /** Under the samples: the three other ways in, said once. */
+    more: 'Or type it, search it, or scan a barcode.',
+  },
+
+  /** A showcase between the questions: the workout logger. */
+  workouts: {
+    title: 'Log your workouts too',
+    subtitle: 'Sets, reps and rest timers. Your last lift sits beside every set.',
+    routine: 'Morning workout',
+  },
+
+  /** A showcase between the questions: the feed and groups. */
+  social: {
+    title: 'Better with friends',
+    subtitle: 'Share meals, cheer each other on, chat in groups.',
+    group: 'Lunch club',
   },
 
   /**
@@ -64,6 +72,7 @@ export const onboarding = {
    */
   about: {
     title: 'A few basics',
+    subtitle: 'For your daily calorie budget.',
     height: 'HEIGHT',
     heightPlaceholder: '170',
     weight: 'WEIGHT',
@@ -104,7 +113,6 @@ export const onboarding = {
 
   source: {
     title: 'Where did you hear about us?',
-    subtitle: 'It helps us know where to show up next.',
     xiaohongshu: 'XiaoHongShu',
     instagram: 'Instagram',
     tiktok: 'TikTok',

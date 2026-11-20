@@ -1,5 +1,6 @@
 import { View } from 'react-native'
 
+import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, type IconProps, Squish, Text } from '@/ui'
 import type { Accent } from './OnboardingStep'
 
@@ -36,15 +37,15 @@ export type ChoiceCardProps = {
   description?: string
   selected: boolean
   onPress: () => void
-  accent: Accent
+  accent?: Accent
   /**
-   * A drawing of the answer, at the TRAILING edge.
+   * A drawing of the answer, at the LEADING edge.
    *
-   * Not beside the radio, which is where it wanted to go: the dot, the
-   * illustration and two lines of text share one row, and putting the picture
-   * on the left leaves "Retail, nursing, site work" about 200px to fit on a
-   * small phone. On the right it costs the description nothing, and the column
-   * of drawings gives the four options something to scan down.
+   * It used to sit at the trailing edge because a radio dot already held the
+   * leading one, and the dot, the drawing and two lines of text could not share
+   * a small phone's row. The dot is gone: the selected card is filled and
+   * carries a check at the end instead, the way the rest of the flow marks a
+   * choice, so the picture can lead and be scanned down as a column.
    */
   icon?: IconProps
   className?: string
@@ -54,28 +55,29 @@ export type ChoiceCardProps = {
  * A radio option rendered as a card.
  *
  * `Radio` from the design system is the right control for a compact list; this
- * is the onboarding variant, where each option is a full-width squishy card in
- * the step's accent. Same role and same state to a screen reader.
+ * is the onboarding variant, where each option is a full-width squishy card.
+ * Same role and same state to a screen reader.
  */
 export function ChoiceCard({
   title,
   description,
   selected,
   onPress,
-  accent,
+  accent = 'pandan',
   icon,
   className,
 }: ChoiceCardProps) {
   const tone = selectedStyles[accent]
+  const colors = useThemeColors()
 
   return (
     <Squish
-      depth={5}
+      depth={4}
       radius={22}
       containerClassName={className}
       slabClassName={selected ? tone.slab : 'bg-line'}
       className={cn(
-        'flex-row items-center gap-3.5 border-[3px] p-[18px]',
+        'flex-row items-center gap-3.5 border-[3px] px-4 py-3.5',
         selected ? `${tone.border} ${tone.fill}` : 'border-line bg-surface',
       )}
       onPress={onPress}
@@ -83,33 +85,25 @@ export function ChoiceCard({
       accessibilityState={{ selected }}
       accessibilityLabel={description ? `${title}. ${description}` : title}
     >
-      <View
-        className={cn(
-          'h-[26px] w-[26px] items-center justify-center rounded-full border-[3px]',
-          selected ? tone.border : 'border-line-strong',
-        )}
-      >
-        {selected ? <View className={cn('h-3 w-3 rounded-full', tone.dot)} /> : null}
-      </View>
+      {/* 44, AND THE NUMBER IS THE iPHONE SE. The drawing is taller than the two
+          lines of text, so it sets the card's height, and four of these plus a
+          heading and a footer is the whole of a small screen. Decorative: the
+          card carries one accessibility label for the whole row. */}
+      {icon ? <Icon {...icon} size={44} /> : null}
 
       <View className="min-w-0 flex-1 gap-0.5">
         <Text variant="bodyStrong">{title}</Text>
         {description ? <Text variant="meta">{description}</Text> : null}
       </View>
 
-      {/* 44, AND THE NUMBER IS THE iPHONE SE.
-          The drawing is taller than the two lines of text, so it is what sets
-          the card's height, and four of these plus a heading and a footer is
-          the whole of a small screen. Measured on an SE: at 56 the fourth
-          option sat under the CTA, at 48 its bottom edge landed exactly on it
-          with nothing to spare, and 44 leaves about 13pt — which is the margin
-          somebody running larger text needs. The question is "pick one of
-          four", so an option below the fold is the one failure this screen
-          cannot have.
-
-          Decorative: the title beside it already says what it is, and the row
-          carries one accessibility label for the whole card. */}
-      {icon ? <Icon {...icon} size={44} /> : null}
+      <View
+        className={cn(
+          'h-[26px] w-[26px] items-center justify-center rounded-full',
+          selected ? tone.dot : 'border-[3px] border-line',
+        )}
+      >
+        {selected ? <Icon set="ui" name="check" size={14} tintColor={colors.onPandan} /> : null}
+      </View>
     </Squish>
   )
 }
