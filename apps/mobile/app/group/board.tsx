@@ -1,7 +1,6 @@
-import { useLocalSearchParams, useNavigation } from 'expo-router'
-import { useEffect } from 'react'
+import { useLocalSearchParams } from 'expo-router'
 import { GroupBoardScreen } from '@/features/groups/Board'
-import { showTabUnder, useBack } from '@/lib/navigation'
+import { useBack, useTabUnder } from '@/lib/navigation'
 import { Screen } from '@/ui'
 
 /**
@@ -13,13 +12,7 @@ import { Screen } from '@/ui'
 export default function GroupBoardRoute() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const back = useBack('/social')
-  const navigation = useNavigation()
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('transitionEnd' as never, () =>
-      showTabUnder(navigation as unknown as Parameters<typeof showTabUnder>[0], 'social'),
-    )
-    return unsubscribe
-  }, [navigation])
+  useTabUnder('social')
   return (
     // The board's only field is in a sheet, so it never makes way for a keyboard.
     <Screen scroll={false} flush keyboardAvoid="none">

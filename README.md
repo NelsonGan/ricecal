@@ -3404,7 +3404,9 @@ group gets one card offering to start one.
 
 **Groups** (`/group`) is the old tab's list as a pushed page: every group with
 its details, the invites, a new group and the public groups. Choosing, joining
-or making a group there selects it on Social and goes back.
+or making a group there selects it on Social and goes back; until `my_groups`
+has the new group, the card waits rather than showing another one. The old
+`/feed` and `/groups` paths redirect to Social.
 
 ### The board reads the diary; it copies nothing
 
@@ -3708,7 +3710,10 @@ each follows the other. Only the day on screen refreshes, every 30 seconds; the
 days either side are fetched once so a swipe lands on a drawn board. The chat
 is live while open (below), and the invite count refreshes every five minutes
 and whenever Social is shown, since an invite also arrives as a push. The card
-on Social polls today's board the same way while Social is on screen. The
+on Social polls today's board and its chat the same way, but only while Social
+is in front and the card can be on screen (no post below the feed's first is
+the first one showing); scrolled down into the feed, it keeps what it last read
+and catches up when it comes back into view. The
 pager follows the selected date rather than a position, so midnight passing
 under an open board does not move it a day.
 

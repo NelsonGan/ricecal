@@ -31,7 +31,7 @@ function Profile({ id }: { id: string }) {
   // there and opens its post for the whole card.
   const posts = useSocialPosts(id)
   const workouts = useSocialWorkoutCount(id).data ?? 0
-  const leaveProfile = useCallback(() => router.dismissTo('/feed'), [router])
+  const leaveProfile = useCallback(() => router.dismissTo('/social'), [router])
   const [options, setOptions] = useState(false)
   const afterDismiss = useRef<(() => void) | null>(null)
   const person = profile.data

@@ -249,7 +249,7 @@ describe('the preview on Social', () => {
   const preview = (onSeeAll = jest.fn()) => (
     <SafeAreaProvider initialMetrics={METRICS}>
       <ToastProvider>
-        <BoardPreview groupId="g1" onSeeAll={onSeeAll} onInvite={jest.fn()} />
+        <BoardPreview groupId="g1" live onSeeAll={onSeeAll} onInvite={jest.fn()} />
       </ToastProvider>
     </SafeAreaProvider>
   )

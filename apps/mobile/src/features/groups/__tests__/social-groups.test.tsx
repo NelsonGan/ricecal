@@ -12,10 +12,16 @@ const METRICS = {
 
 const mockPush = jest.fn()
 let mockGroups: GroupSummary[] = []
+let mockFetching = false
 
 jest.mock('@/data/groups', () => ({
   ...jest.requireActual('@/data/groups'),
-  useMyGroups: () => ({ data: mockGroups, isLoading: false, isError: false }),
+  useMyGroups: () => ({
+    data: mockGroups,
+    isLoading: false,
+    isError: false,
+    isFetching: mockFetching,
+  }),
   useGroupInviteCount: () => ({ data: 2, refetch: jest.fn() }),
   useGroupBoardChatLive: () => false,
   useGroupChatSummary: () => ({ data: undefined }),
@@ -24,7 +30,9 @@ jest.mock('@/data/groups', () => ({
 jest.mock('../Board', () => {
   const { Text } = jest.requireActual('react-native')
   return {
-    BoardPreview: ({ groupId }: { groupId: string }) => <Text>{`board ${groupId}`}</Text>,
+    BoardPreview: ({ groupId, live }: { groupId: string; live: boolean }) => (
+      <Text>{`board ${groupId}${live ? '' : ' paused'}`}</Text>
+    ),
     ChatRow: () => null,
   }
 })
@@ -48,20 +56,21 @@ const group = (id: string, name: string): GroupSummary => ({
   members: [],
 })
 
-const social = (
+const social = (inView = true) => (
   <SafeAreaProvider initialMetrics={METRICS}>
-    <SocialGroups />
+    <SocialGroups inView={inView} />
   </SafeAreaProvider>
 )
 
 beforeEach(() => {
   mockPush.mockClear()
+  mockFetching = false
   setOpenGroup('me', null)
   mockGroups = [group('g1', 'Test Two'), group('g2', 'Makan Buddies')]
 })
 
 it('shows the first group until another is chosen, and remembers the choice', async () => {
-  await render(social)
+  await render(social())
   expect(screen.getByText('board g1')).toBeOnTheScreen()
   expect(screen.getByText('7 of 8 logged today')).toBeOnTheScreen()
 
@@ -71,12 +80,12 @@ it('shows the first group until another is chosen, and remembers the choice', as
 
 it('falls back to the first group when the remembered one is gone', async () => {
   setOpenGroup('me', 'left-it')
-  await render(social)
+  await render(social())
   expect(screen.getByText('board g1')).toBeOnTheScreen()
 })
 
 it('opens the full board from the card, and the Groups page with its invites counted', async () => {
-  await render(social)
+  await render(social())
   await fireEvent.press(screen.getByLabelText('Test Two, 7 of 8 logged today, Open board'))
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/group/board', params: { id: 'g1' } })
   await fireEvent.press(screen.getByLabelText('Groups, Invites 2'))
@@ -85,7 +94,23 @@ it('opens the full board from the card, and the Groups page with its invites cou
 
 it('offers to start a group to someone in none', async () => {
   mockGroups = []
-  await render(social)
+  await render(social())
   await fireEvent.press(screen.getByText('Start a group'))
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/group', params: { new: '1' } })
+})
+
+it('stops reading the board once the card has scrolled away', async () => {
+  await render(social(false))
+  expect(screen.getByText('board g1 paused')).toBeOnTheScreen()
+})
+
+it('waits for a group just made rather than showing another, and falls back once the list settles', async () => {
+  setOpenGroup('me', 'just-made')
+  mockFetching = true
+  const view = await render(social())
+  expect(screen.queryByText(/^board/)).toBeNull()
+
+  mockFetching = false
+  await view.rerender(social())
+  expect(screen.getByText('board g1')).toBeOnTheScreen()
 })

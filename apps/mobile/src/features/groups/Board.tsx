@@ -39,6 +39,7 @@ import { track } from '@/lib/analytics'
 import { showingGroupChat } from '@/lib/notifications'
 import { useThemeColors } from '@/theme/useTheme'
 import {
+  AppBar,
   Button,
   CountBadge,
   cn,
@@ -72,8 +73,6 @@ const GAP = 4
 /** The page's side margin. The grid has no card around it, so the tiles get the width. */
 const EDGE = 8
 const MEMBER_COLUMN = 46
-/** Each side of the header: room for its two buttons, so the title centres on the screen. */
-const HEADER_SIDE = 88
 /** Text in a tile is capped so a large Dynamic Type size cannot push it out of a fixed square. */
 const TILE_TEXT = 1.3
 const SKELETON_ROWS = ['a', 'b', 'c', 'd', 'e']
@@ -144,16 +143,19 @@ function shortNames(members: readonly BoardMember[]): Map<string, string> {
 /**
  * One group, one page per day. Swiping sideways goes back a day, and the week
  * strip under the header picks any day of the last sixty, the way Today's does.
- * The chat for the day on screen sits in a bar above the tabs and opens its
+ * The chat for the day on screen sits in a bar at the foot and opens its
  * own screen.
  */
 export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack: () => void }) {
   const { t } = useTranslation(['groups', 'common'])
-  const colors = useThemeColors()
   const router = useRouter()
   const viewer = useUserId()
   const grid = useGrid()
   const navInset = useNavInset()
+  const insets = useSafeAreaInsets()
+  // The chat bar's foot, clear of the home indicator on a pushed page, and the
+  // room the last row needs to scroll clear of the bar (its 52pt and a gap).
+  const chatBottom = Math.max(navInset + 8, insets.bottom)
   const focused = useIsFocused()
   const today = useToday()
   const days = useMemo(
@@ -231,7 +233,7 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
           day={item}
           enabled={focused && Math.abs(page - index) <= 1}
           live={focused && page === index}
-          bottomInset={navInset + 76}
+          bottomInset={chatBottom + 68}
           topInset={stripHeight}
           scrollY={scrollY}
           grid={grid}
@@ -239,34 +241,28 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
         />
       </View>
     ),
-    [groupId, focused, index, navInset, grid, openInvite, stripHeight, scrollY],
+    [groupId, focused, index, chatBottom, grid, openInvite, stripHeight, scrollY],
   )
 
   return (
     <View className="flex-1">
-      <View className="pb-2 pt-1" style={{ paddingHorizontal: EDGE }}>
-        {/* Equal sides, so the name sits in the middle of the screen rather
-            than in the middle of whatever the buttons leave. */}
-        <View className="flex-row items-center">
-          <View style={{ width: HEADER_SIDE }} className="flex-row">
-            <IconButton
-              size="sm"
-              variant="ghost"
-              accessibilityLabel={t('common:action.back')}
-              onPress={onBack}
-            >
-              <Icon set="ui" name="chevron-left" size={22} tintColor={colors.muted} />
-            </IconButton>
-          </View>
-          <View className="min-w-0 flex-1 items-center">
-            <Text variant="subtitle" numberOfLines={1} maxFontSizeMultiplier={1.3}>
+      {/* The same bar as the chat and the group's settings, the pages either
+          side of this one. */}
+      <AppBar
+        onBack={onBack}
+        backLabel={t('common:action.back')}
+        titleContent={
+          <View className="items-center">
+            <Text variant="label" numberOfLines={1} maxFontSizeMultiplier={1.3}>
               {name ?? ' '}
             </Text>
             {memberCount !== undefined ? (
               <Text variant="micro">{t('members', { count: memberCount })}</Text>
             ) : null}
           </View>
-          <View style={{ width: HEADER_SIDE }} className="flex-row justify-end">
+        }
+        action={
+          <View className="flex-row">
             <IconButton
               size="sm"
               variant="ghost"
@@ -284,8 +280,8 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
               <Icon set="system" name="settings" size={22} />
             </IconButton>
           </View>
-        </View>
-      </View>
+        }
+      />
 
       {/* The strip sits over the board rather than above it, and slides away
           as the board scrolls, so a long board gets the whole screen. Every
@@ -328,7 +324,7 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
 
       <ChatBar
         summary={chat.data}
-        bottom={navInset + 8}
+        bottom={chatBottom}
         onPress={() => router.push({ pathname: '/group/chat', params: { id: groupId } })}
       />
       <InviteSheet groupId={groupId} visible={inviteOpen} onClose={() => setInviteOpen(false)} />
@@ -439,8 +435,8 @@ const BoardPage = memo(function BoardPage({
 
 /** The rows the group's card on Social shows: the viewer and the next two. */
 const PREVIEW_ROWS = 3
-/** Each side of the card on Social: its margin (`mx-3`) and padding (`p-2.5`). */
-const PREVIEW_INSET = 12 + 10
+/** Each side of the card on Social: its margin (`mx-gutter`) and padding (`p-2`). */
+const PREVIEW_INSET = 20 + 8
 /**
  * The widest the preview's rows go. On an iPad the card is the screen's width,
  * and tiles sized to it were bigger than the feed's photos; past this the rows
@@ -457,23 +453,26 @@ const PREVIEW_MAX = 460
  */
 export function BoardPreview({
   groupId,
+  live,
   onSeeAll,
   onInvite,
 }: {
   groupId: string
+  /** Read and poll today's board, while Social is in front and the card in view. */
+  live: boolean
   onSeeAll: () => void
   onInvite: () => void
 }) {
   const { t } = useTranslation('groups')
-  const focused = useIsFocused()
   const today = useToday()
   // A first guess from the pane, the card's margins and padding taken off,
   // so the rows draw at once; the layout then gives the card's real width.
   const pane = usePaneWidth()
   const [inner, setInner] = useState(() => pane - 2 * PREVIEW_INSET)
   const width = Math.min(inner, PREVIEW_MAX)
-  const grid = useMemo(() => gridFor(width, width), [width])
-  const board = useGroupBoard(groupId, today, focused, focused)
+  // The pane decides a narrow phone, as it does for the full board.
+  const grid = useMemo(() => gridFor(pane, width), [pane, width])
+  const board = useGroupBoard(groupId, today, live, live)
   const [open, setOpen] = useState<Open | null>(null)
   const onOpen = useCallback((memberId: string, meal: GroupMeal) => setOpen({ memberId, meal }), [])
   const onClose = useCallback(() => setOpen(null), [])

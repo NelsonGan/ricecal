@@ -200,7 +200,9 @@ function CommentRow({
               kind="comment"
               id={comment.id}
               authorId={comment.author_id}
-              onBlocked={comment.author_id === owner ? () => router.dismissTo('/feed') : undefined}
+              onBlocked={
+                comment.author_id === owner ? () => router.dismissTo('/social') : undefined
+              }
               extraAction={
                 owner === viewer
                   ? {

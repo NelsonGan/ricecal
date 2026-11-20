@@ -41,6 +41,8 @@ export default function SocialScreen() {
   const viewer = useUserId()
   const [mode, setMode] = useState<'following' | 'discover'>('following')
   const [show, setShow] = useState<SocialFeedShow>('all')
+  // Whether the groups above the feed can be on screen; their card polls only then.
+  const [groupsInView, setGroupsInView] = useState(true)
   // With two panes both feeds are on screen, one in each, and the tabs that
   // switch between them have nothing to do. See `Aside`.
   const { split } = useWindowLayout()
@@ -110,13 +112,15 @@ export default function SocialScreen() {
       {split ? (
         <>
           <FeedColumn
-            key={`following-${show}`}
             mode="following"
             show={show}
             titled
-            header={<SocialGroups />}
+            header={<SocialGroups inView={groupsInView} />}
+            onHeaderShown={setGroupsInView}
           />
           <Aside>
+            {/* Keyed, so the filter (in the header, above both) starts this
+                one at its top; it carries no groups to reload. */}
             <FeedColumn key={`discover-${show}`} mode="discover" show={show} titled />
           </Aside>
         </>
@@ -127,9 +131,10 @@ export default function SocialScreen() {
         <FeedColumn
           mode={mode}
           show={show}
+          onHeaderShown={setGroupsInView}
           header={
             <View>
-              <SocialGroups />
+              <SocialGroups inView={groupsInView} />
               <View className="px-gutter pt-sm">
                 <Tabs
                   value={mode}
@@ -214,45 +219,29 @@ function FeedShowChips({
 }
 
 /**
- * One feed. `titled` names it, for when the two stand side by side and there
- * are no tabs to say which is which. Pulling it down refreshes the groups
- * drawn above it too.
+ * One feed. The one under the groups is never keyed by its mode or filter: a
+ * switch keeps the list, and the groups above it, where they are. `titled` names it, for when the two
+ * stand side by side and there are no tabs to say which is which. Pulling it
+ * down refreshes the groups drawn above it too.
  */
 function FeedColumn({
   mode,
   show,
   titled = false,
   header,
+  onHeaderShown,
 }: {
   mode: 'following' | 'discover'
   show: SocialFeedShow
   titled?: boolean
   /** Drawn above the first post, scrolling with the list. */
   header?: ReactElement
+  onHeaderShown?: (shown: boolean) => void
 }) {
   const { t } = useTranslation('social')
   const viewer = useUserId()
   const feed = useSocialFeed(mode, show, useIsFocused())
   const queryClient = useQueryClient()
-  // The feed with a pull that refreshes the groups above it as well. Named
-  // field by field: spreading the query would read, and so subscribe to,
-  // every field it has.
-  const query = {
-    data: feed.data,
-    isPending: feed.isPending,
-    isError: feed.isError,
-    isFetching: feed.isFetching,
-    isFetchingNextPage: feed.isFetchingNextPage,
-    isFetchNextPageError: feed.isFetchNextPageError,
-    hasNextPage: feed.hasNextPage,
-    fetchStatus: feed.fetchStatus,
-    fetchNextPage: feed.fetchNextPage,
-    refetch: () =>
-      Promise.all([
-        feed.refetch(),
-        queryClient.refetchQueries({ queryKey: keys.groups(viewer), type: 'active' }),
-      ]),
-  }
   useFocusEffect(
     useCallback(() => {
       // A food can publish while this tab is mounted behind the diary. Only when
@@ -272,7 +261,14 @@ function FeedColumn({
   ) : null
   return (
     <SocialList
-      query={query}
+      query={feed}
+      onRefresh={() =>
+        Promise.all([
+          feed.refetch(),
+          queryClient.refetchQueries({ queryKey: keys.groups(viewer), type: 'active' }),
+        ])
+      }
+      onHeaderShown={onHeaderShown}
       variant="feed"
       header={
         header || heading ? (

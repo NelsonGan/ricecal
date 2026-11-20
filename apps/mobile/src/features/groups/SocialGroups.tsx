@@ -1,5 +1,5 @@
 import { useFocusEffect, useIsFocused, useRouter } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollView, View } from 'react-native'
 import { useUserId } from '@/data'
@@ -25,7 +25,7 @@ import { setOpenGroup, useOpenGroup } from './store'
  * ate today is the first thing they look for. The chosen group is remembered
  * per account (`store.ts`), so a relaunch comes back to the same card.
  */
-export function SocialGroups() {
+export function SocialGroups({ inView }: { inView: boolean }) {
   const { t } = useTranslation('groups')
   const router = useRouter()
   const userId = useUserId()
@@ -40,11 +40,21 @@ export function SocialGroups() {
   )
   const remembered = useOpenGroup(userId)
   const list = groups.data ?? []
-  // A group left or deleted elsewhere falls back to the first one.
-  const selected = list.find((group) => group.id === remembered) ?? list[0] ?? null
+  const chosen = list.find((group) => group.id === remembered)
+  // A group just made or joined is chosen before the list has it: wait for
+  // the list rather than show another group's card, or the empty one. A group
+  // left or deleted elsewhere falls back to the first.
+  const arriving = Boolean(remembered) && !chosen && groups.isFetching
+  const selected = chosen ?? list[0] ?? null
   const openGroups = () => router.push('/group')
+  // Forgotten once a settled list says it is gone, so later refetches do not
+  // read as a group still arriving.
+  const gone = Boolean(remembered) && !chosen && Boolean(groups.data) && !groups.isFetching
+  useEffect(() => {
+    if (gone) setOpenGroup(userId, null)
+  }, [gone, userId])
 
-  if (groups.isLoading) return <SocialGroupsSkeleton />
+  if (groups.isLoading || arriving) return <SocialGroupsSkeleton />
   if (!groups.data && (groups.isError || groups.fetchStatus === 'paused')) {
     return (
       <View className="px-gutter pt-1">
@@ -67,9 +77,9 @@ export function SocialGroups() {
         onMore={openGroups}
       />
       {selected ? (
-        <GroupDayCard key={selected.id} group={selected} />
+        <GroupDayCard key={selected.id} group={selected} inView={inView} />
       ) : (
-        <Card className="mx-3" contentClassName="items-center gap-md">
+        <Card className="mx-gutter" contentClassName="items-center gap-md">
           <Icon set="food" name="rice-bowl" size={56} />
           <View className="items-center gap-1">
             <Text variant="label" className="text-center">
@@ -115,7 +125,7 @@ function GroupChips({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerClassName="gap-2 px-3"
+      contentContainerClassName="gap-2 px-gutter"
       accessibilityRole="tablist"
       accessibilityLabel={t('title')}
     >
@@ -163,14 +173,15 @@ function GroupChips({
       >
         <View className="h-7 w-7 items-center justify-center">
           <Icon set="system" name="groups" size={24} />
-          <CountBadge
-            count={inviteCount}
-            className="absolute -right-2 -top-1.5 h-5 min-w-5 px-1"
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-          />
         </View>
         <Text className="font-body-black text-[14px] leading-[18px] text-muted">{t('title')}</Text>
+        {/* Beside the word rather than on the picture, where it covered the word. */}
+        <CountBadge
+          count={inviteCount}
+          className="h-5 min-w-5 px-1"
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        />
       </Tappable>
     </ScrollView>
   )
@@ -181,19 +192,21 @@ function GroupChips({
  * chat. Its header and "See all" open the full board, which has every member
  * and the sixty days before.
  */
-function GroupDayCard({ group }: { group: GroupSummary }) {
+function GroupDayCard({ group, inView }: { group: GroupSummary; inView: boolean }) {
   const { t } = useTranslation('groups')
   const colors = useThemeColors()
   const router = useRouter()
-  const focused = useIsFocused()
-  const chatLive = useGroupBoardChatLive(group.id, focused)
-  const chat = useGroupChatSummary(group.id, focused, chatLive)
+  // Read while Social is in front and the card can be on screen; scrolled
+  // into the feed, it keeps what it last read and catches up on the way back.
+  const live = useIsFocused() && inView
+  const chatLive = useGroupBoardChatLive(group.id, live)
+  const chat = useGroupChatSummary(group.id, live, chatLive)
   const [inviteOpen, setInviteOpen] = useState(false)
   const openBoard = () => router.push({ pathname: '/group/board', params: { id: group.id } })
   const logged = t('loggedToday', { logged: group.logged_today, count: group.member_count })
 
   return (
-    <Card className="mx-3" flush contentClassName="gap-2 p-2.5">
+    <Card className="mx-gutter" flush contentClassName="gap-2 p-2">
       <Tappable
         className="flex-row items-center gap-3 px-1 pt-1"
         onPress={openBoard}
@@ -221,7 +234,12 @@ function GroupDayCard({ group }: { group: GroupSummary }) {
         </View>
         <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} />
       </Tappable>
-      <BoardPreview groupId={group.id} onSeeAll={openBoard} onInvite={() => setInviteOpen(true)} />
+      <BoardPreview
+        groupId={group.id}
+        live={live}
+        onSeeAll={openBoard}
+        onInvite={() => setInviteOpen(true)}
+      />
       <ChatRow
         summary={chat.data}
         onPress={() => router.push({ pathname: '/group/chat', params: { id: group.id } })}
@@ -234,11 +252,11 @@ function GroupDayCard({ group }: { group: GroupSummary }) {
 function SocialGroupsSkeleton() {
   return (
     <View className="gap-3 pt-1">
-      <View className="flex-row gap-2 px-3">
+      <View className="flex-row gap-2 px-gutter">
         <Skeleton width={150} height={42} />
         <Skeleton width={110} height={42} />
       </View>
-      <View className="px-3">
+      <View className="px-gutter">
         <Skeleton rounded={false} width="100%" height={300} className="rounded-card" />
       </View>
     </View>

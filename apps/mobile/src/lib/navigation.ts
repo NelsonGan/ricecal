@@ -1,5 +1,5 @@
 import { type Href, type NativeStackNavigationProp, useNavigation, useRouter } from 'expo-router'
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 
 /**
  * Navigation helpers that survive an empty history.
@@ -125,7 +125,7 @@ type NavigatorLike = {
  * Switch the tab bar to `tab` without leaving the screen on top of it.
  *
  * For a screen pushed over the tabs from outside them (a notification), so
- * that its back lands where it belongs. `navigate('/groups')` first and then
+ * that its back lands where it belongs. `navigate('/social')` first and then
  * the push drew three screens in a row; this changes the tab underneath once
  * the push is over, where nobody sees it. A jump aimed at the tab navigator
  * itself, since navigating to the tab would pop everything above it.
@@ -139,4 +139,21 @@ export function showTabUnder(navigation: NavigatorLike, tab: string): void {
     }
     return
   }
+}
+
+/**
+ * For a page that a notification can push over any tab: once it has slid in,
+ * switch the tab under it to `tab`, so back lands there rather than on
+ * whichever tab happened to be showing. Nothing changes when `tab` is already
+ * the one underneath.
+ */
+export function useTabUnder(tab: string): void {
+  const navigation = useNavigation()
+  useEffect(
+    () =>
+      navigation.addListener('transitionEnd' as never, () =>
+        showTabUnder(navigation as unknown as NavigatorLike, tab),
+      ),
+    [navigation, tab],
+  )
 }

@@ -1,9 +1,9 @@
 import { createJsonStore } from '@/lib/jsonStore'
 
 /**
- * Where the Groups tab opens. Most people are in one group, so the tab goes
- * straight back to its board after a relaunch rather than the list, until they
- * tap back out. Kept per account, since one phone can be signed into two.
+ * The group Social shows. Most people are in one group, so it comes back to
+ * the same card after a relaunch, until another is chosen. Kept per account,
+ * since one phone can be signed into two.
  *
  * `day` is set only by a notification tap, for the board to open on the day
  * the nudge was about, and is consumed by the board once read.
@@ -31,6 +31,18 @@ export function useOpenDay(userId: string): string | null {
 
 export function setOpenGroup(userId: string, groupId: string | null, day?: string): void {
   store.set(key(userId), groupId ? { groupId, day } : null)
+}
+
+/**
+ * Whether the Groups page is the screen on top, so an invite tapped while it
+ * is open shows the invites there rather than pushing a second page.
+ */
+let groupsPageOnTop = false
+export function setGroupsPageOnTop(onTop: boolean): void {
+  groupsPageOnTop = onTop
+}
+export function isGroupsPageOnTop(): boolean {
+  return groupsPageOnTop
 }
 
 /** The day a notification asked for, once; later reads get nothing. */

@@ -1,6 +1,6 @@
 import { FREE_GROUPS } from '@ricecal/shared'
 import { useFocusEffect } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RefreshControl, ScrollView, View } from 'react-native'
 import { useEntitlement, useUserId } from '@/data'
@@ -63,9 +63,9 @@ export function GroupsHome({
 }: {
   onOpen: (groupId: string) => void
   onBack: () => void
-  /** Open the new group sheet straight away, as Social's "Start a group" does. */
+  /** Opens the new group sheet whenever it turns true, for Social's "Start a group". */
   startOpen?: boolean
-  /** Open the invites straight away, as an invite's notification does. */
+  /** Opens the invites whenever it turns true, for an invite's notification. */
   invitesOpen?: boolean
 }) {
   const { t } = useTranslation(['groups', 'common'])
@@ -91,6 +91,12 @@ export function GroupsHome({
     if (!atLimit || requirePro('new_group')) setCreating(true)
   }
   const [invitesOpen, setInvitesOpen] = useState(invitesAtFirst)
+  useEffect(() => {
+    if (startOpen) setCreating(true)
+  }, [startOpen])
+  useEffect(() => {
+    if (invitesAtFirst) setInvitesOpen(true)
+  }, [invitesAtFirst])
   const list = groups.data ?? []
 
   return (

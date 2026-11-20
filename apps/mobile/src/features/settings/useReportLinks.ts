@@ -3,7 +3,7 @@ import { router, useNavigationContainerRef } from 'expo-router'
 import { useEffect } from 'react'
 
 import { useSession } from '@/data/session'
-import { setOpenGroup } from '@/features/groups/store'
+import { isGroupsPageOnTop, setOpenGroup } from '@/features/groups/store'
 import { openLogger } from '@/features/workouts/loggerOpen'
 import { getActiveWorkout } from '@/features/workouts/store'
 import { track } from '@/lib/analytics'
@@ -82,8 +82,11 @@ export function useReportLinks(): void {
         track('Notification Opened', {
           kind: data?.invite ? 'group_invite' : data?.chat ? 'group_message' : 'group_nudge',
         })
+        // The invites, on the Groups page already open if it is the one on
+        // top, so two taps in a row do not stack two pages.
         if (data?.invite) {
-          router.push({ pathname: '/group', params: { invites: '1' } })
+          if (isGroupsPageOnTop()) router.setParams({ invites: '1' })
+          else router.push({ pathname: '/group', params: { invites: '1' } })
           return
         }
         if (!groupId) return

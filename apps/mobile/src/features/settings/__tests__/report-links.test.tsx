@@ -32,6 +32,7 @@ jest.mock('expo-router', () => ({
     navigate: (href: unknown) => mockPush(`navigate ${mockHref(href)}`),
     replace: (href: unknown) => mockPush(`replace ${mockHref(href)}`),
     dismissTo: (href: string) => mockPush(`dismissTo ${href}`),
+    setParams: (params: object) => mockPush(`setParams ${JSON.stringify(params)}`),
   },
   useNavigationContainerRef: () => mockNavigation,
 }))
@@ -187,4 +188,17 @@ it('opens an invite on the Groups page with its invites showing', async () => {
     JSON.stringify({ pathname: '/group', params: { invites: '1' } }),
   ])
   unmount()
+})
+
+it('shows a second invite on the Groups page already open rather than pushing another', async () => {
+  const { setGroupsPageOnTop } = jest.requireActual('@/features/groups/store')
+  const { unmount } = await mount()
+  setGroupsPageOnTop(true)
+  try {
+    mockListeners[0]?.(groupPush({ invite: true }))
+    expect(mockPush.mock.calls.map(([href]) => href)).toEqual(['setParams {"invites":"1"}'])
+  } finally {
+    setGroupsPageOnTop(false)
+    unmount()
+  }
 })
