@@ -1,5 +1,6 @@
 import { type AnalyticsClient, registerAnalytics, resetAnalyticsForTest } from '../client'
 import {
+  appOpenRecorder,
   claimDailyOpen,
   daysBetween,
   localDay,
@@ -118,5 +119,36 @@ describe('engagement events', () => {
     recordAppOpen(memoryStorage(), { freshInstall: false, now: new Date(2026, 9, 12) })
 
     expect(fake.events.map((e) => e.event)).toEqual(['Daily App Open'])
+  })
+
+  it('counts nothing until the day can be remembered, then counts it once', () => {
+    // MMKV throws from `set` on a phone with no room left. That came out of
+    // launch as an unhandled rejection; and an open sent without being
+    // remembered would go again on every launch and foreground.
+    const { client, events } = fakeClient()
+    registerAnalytics(client)
+    let full = true
+    let value: string | undefined
+    const storage = {
+      read: () => value,
+      write: (next: string) => {
+        if (full) throw new Error('MMKV.set(...): Failed to set value for key "state"!')
+        value = next
+      },
+    }
+    const morning = new Date(2026, 9, 12, 9)
+    expect(() => recordAppOpen(storage, { freshInstall: true, now: morning })).not.toThrow()
+
+    // As startup.ts drives it: the launch of a fresh install, then foregrounds.
+    const record = appOpenRecorder(storage, true)
+    expect(record(morning)).toEqual({ firstOpen: false, daily: false, firstDay: true })
+    record(morning)
+    expect(events).toEqual([])
+
+    full = false
+    record(new Date(2026, 9, 12, 10))
+    record(new Date(2026, 9, 12, 21))
+    expect(events.map((e) => e.event)).toEqual(['First App Open', 'Daily App Open'])
+    expect(events[1].props).toEqual({ active_days: 1, days_since_last_open: null })
   })
 })

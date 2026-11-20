@@ -73,7 +73,14 @@ function stored(): WidgetKind[] | null {
  */
 export function reportWidgets(current: WidgetKind[], userId?: string): WidgetDiff {
   const previous = stored()
-  storage.set(KEY, JSON.stringify(current))
+  try {
+    storage.set(KEY, JSON.stringify(current))
+  } catch {
+    // MMKV throws from `set` on a phone with no room left. A change that cannot
+    // be remembered would be reported again by every poll, so it waits for the
+    // first poll that can write it down.
+    return { added: [], removed: [] }
+  }
   const owner = userId ?? null
 
   // The first look on this install. Recorded so the next poll has something to

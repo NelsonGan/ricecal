@@ -166,14 +166,22 @@ jest.mock('expo-image-picker', () => ({
  */
 jest.mock('react-native-mmkv', () => {
   const stores = new Map()
+  // A phone with no room left: MMKV's `set` throws. Switched by `__failWrites`.
+  let failWrites = false
 
   return {
+    __failWrites: (on) => {
+      failWrites = on
+    },
     createMMKV: ({ id } = { id: 'default' }) => {
       if (!stores.has(id)) stores.set(id, new Map())
       const store = stores.get(id)
 
       return {
-        set: (key, value) => store.set(key, String(value)),
+        set: (key, value) => {
+          if (failWrites) throw new Error(`MMKV.set(...): Failed to set value for key "${key}"!`)
+          store.set(key, String(value))
+        },
         getString: (key) => store.get(key),
         // Numbers and booleans go in as strings like everything else, so the
         // typed reads parse on the way out. Without them a store that writes a

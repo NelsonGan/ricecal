@@ -98,6 +98,21 @@ export function claimDailyOpen(
 }
 
 /**
+ * `recordAppOpen` for one process: at launch, then on every return to the
+ * foreground. A fresh install's `First App Open` stays owed until a call
+ * manages to write it down, so a launch on a full disk sends it on the first
+ * foreground that can, rather than never.
+ */
+export function appOpenRecorder(storage: EngagementStorage, freshInstall: boolean) {
+  let firstOpenOwed = freshInstall
+  return (now = new Date()) => {
+    const opened = recordAppOpen(storage, { freshInstall: firstOpenOwed, now })
+    if (opened.daily) firstOpenOwed = false
+    return opened
+  }
+}
+
+/**
  * Send `First App Open` when this is a fresh install, then today's
  * `Daily App Open` if it has not gone yet. Call at launch and on every return
  * to the foreground; all but the first call of a day are one storage read.
@@ -113,15 +128,20 @@ export function recordAppOpen(
   const today = localDay(now)
   let state = parseEngagement(storage.read())
   const firstOpen = freshInstall && state.lastDay === null
-  if (firstOpen) {
-    state = { ...state, installDay: today }
-    track('First App Open', {})
-  }
+  if (firstOpen) state = { ...state, installDay: today }
   const firstDay = state.installDay === today
 
   const claim = claimDailyOpen(state, today)
   if (!claim) return { firstOpen, daily: false, firstDay }
-  storage.write(JSON.stringify(claim.next))
+  // Remembered before anything is sent. MMKV throws from `set` on a phone with
+  // no room left, and an open that cannot be remembered would go again on every
+  // launch and return to the foreground. So it waits for a write that works.
+  try {
+    storage.write(JSON.stringify(claim.next))
+  } catch {
+    return { firstOpen: false, daily: false, firstDay }
+  }
+  if (firstOpen) track('First App Open', {})
   track('Daily App Open', claim.properties)
   return { firstOpen, daily: true, firstDay }
 }

@@ -133,3 +133,24 @@ it('sets the handset widget count for a new account without inventing an additio
   reportWidgets(['kcal', 'water'], 'second')
   expect(people).not.toHaveBeenCalled()
 })
+
+it('waits for a poll that can remember a change before reporting it', () => {
+  // MMKV throws from `set` on a phone with no room left ("Failed to set value
+  // for key installed"), which came out of the foreground sync as an unhandled
+  // rejection. Reported without being remembered, the same addition would go
+  // again on every poll.
+  const mmkv = jest.requireMock('react-native-mmkv') as { __failWrites: (on: boolean) => void }
+  reportWidgets(['kcal'])
+  mmkv.__failWrites(true)
+  try {
+    expect(reportWidgets(['kcal', 'water'])).toEqual({ added: [], removed: [] })
+    expect(reportWidgets(['kcal', 'water'])).toEqual({ added: [], removed: [] })
+    expect(client.track).not.toHaveBeenCalled()
+  } finally {
+    mmkv.__failWrites(false)
+  }
+  reportWidgets(['kcal', 'water'])
+  reportWidgets(['kcal', 'water'])
+  expect(client.track).toHaveBeenCalledTimes(1)
+  expect(client.track).toHaveBeenCalledWith('Widget Added', { widget: 'water' })
+})
