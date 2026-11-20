@@ -316,6 +316,9 @@ export const fil = {
       zonesTitle: 'MGA ZONE NG TIBOK NG PUSO',
 
       missing: 'Wala na ang workout na ito sa health app mo.',
+      delete: 'Burahin ang workout',
+      deleteTitle: 'Burahin ang workout na ito?',
+      deleteBody: 'Dito lang ito mabubura. Nasa {{provider}} pa rin ito.',
     },
 
     settings: {

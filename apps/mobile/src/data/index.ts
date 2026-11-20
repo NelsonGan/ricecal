@@ -21,6 +21,7 @@ export {
   useActivitySession,
   useActivitySessions,
   useClearDemoActivity,
+  useDeleteActivitySession,
   useDisconnectHealth,
   useHealthConnection,
   usePrefetchActivityDays,

@@ -532,6 +532,7 @@ auth.users
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
             ├── activity_sessions  one workout, keyed by the store's own id
+            ├── activity_session_dismissals  synced workouts the user deleted
             └── activity_hours ──── steps by local hour, month plus timezone buffer
 
 food_scan_items       what the model claimed, and where it landed
@@ -621,7 +622,8 @@ the day the user thinks it does, which is why the day is stored and not derived.
 server is the previous day for the first eight hours of every Malaysian morning.
 
 **`activity_sessions` is keyed by the health store's own id**, because two
-badminton games can start in the same minute.
+badminton games can start in the same minute. Some apps change that id when
+they re-save a workout; see "Syncing" for how a pass converges anyway.
 
 **`meal_times.at` is a `time`, not a timestamp**, because "08:00 in the user's
 own clock" stays true when they fly somewhere else.
@@ -4654,6 +4656,19 @@ layout and `workoutMetrics.ts` owns the sport-specific measurement choices.
 With large text, supporting measurements stack and the decorative illustration
 gives its space to the figures. Zone names can wrap instead of truncating.
 
+The app bar's delete removes a synced workout from RiceCal only, and says the
+store keeps it. The store still holds it and the sync re-reads a week on every
+foreground, so `delete_activity_session` records the removal in
+`activity_session_dismissals`, and a `before insert` trigger on
+`activity_sessions` skips any new insert matching it by id, or by provider,
+start, kind and source (Garmin re-saves the same run under a new id; the source
+keeps a watch's recording of the same moment). An upsert onto a row already
+stored is let through, so the copy a person kept still updates. Skipped rather
+than refused, so an old binary's batch upsert still lands the rest, and the
+reconcile never hands a removed workout's re-save a leftover copy's row. The
+budget is unchanged by a delete: it reads the day's active energy, not the
+sessions.
+
 For local UI verification, `pnpm workouts:seed --user <local-account-uuid>`
 inserts all 19 sports plus 11 data variants into that account across six days.
 Use `--date yyyy-MM-dd` to choose the last day. The script connects only to
@@ -4704,6 +4719,26 @@ targets and the charts. `invalidateAfterSync` is the list:
 | days and hours | the day's movement, the week strip's dots |
 | workouts | the session lists, the group boards |
 | weigh-ins | the weigh-ins, the targets, the charts, the dots |
+
+**A workout's id is the store's, and some apps change it.** Garmin Connect
+deletes and re-saves each of its workouts in Apple Health on later syncs, under a
+new `HKWorkout.uuid`, and the upsert alone kept every copy: one run showed four
+times on Today, and each copy was shared to the person's groups as it landed.
+So before it upserts, a pass sends `reconcile_activity_sessions` the identity
+(id, start, kind, source) of every workout the store returned for the chunk,
+within the same bounds the providers read (`lib/health/window.ts`). It acts only
+on stored rows that are another copy of a returned workout: same start and kind,
+an id the store did not return. A returned workout not yet stored takes over the
+oldest such copy, so the upsert updates it and it keeps its row id, group card
+and reactions; the copies left over are deleted.
+
+**A workout the read does not mention is never deleted.** Absence proves
+nothing: a second phone on the same provider has its own store, a new phone's
+Health may still be downloading, Health Connect hides what is older than 30 days
+before the grant, and Garmin's delete can land a pass before its re-save. So a
+workout deleted in Health lingers here until it is deleted on its own page. A
+failed reconcile is reported (`health_reconcile`) and does not stop the upsert,
+and any rows it changed count as a change to the workouts.
 
 Weigh-ins have a second witness: `sync_weight_readings` answers with how many
 readings changed a row, and any at all counts as changed. The same reading can
@@ -7467,7 +7502,7 @@ is recording.
 | --- | --- | --- |
 | Uncaught JavaScript errors and unhandled rejections | `errorTracking.autocapture` in `posthog.ts` | Fatal errors are handed to the native SDK, which persists them before the process dies |
 | Native crashes | `nativeCrashes` (iOS signals and Mach exceptions; Android Java/Kotlin), `androidNdkCrashes` | Through `@posthog/react-native-plugin`, reported on the next launch. These reports carry no `app_variant` (the native layer sends them before JavaScript registers it), so tell an internal build's native crash apart by `$app_version` and `$app_build` |
-| Caught errors | `reportError(error, context)` from `src/lib/errors.ts` | Analytics provider failures (`analytics_provider`, `analytics_operation`); context is short scalars only |
+| Caught errors | `reportError(error, context)` from `src/lib/errors.ts` | Analytics provider failures (`analytics_provider`, `analytics_operation`); a health sync's workout reconcile refused by the server (`scope: health_reconcile`, `provider`), which leaves that pass's duplicates in place; announcement seen-marks (`scope: announcement_seen`, `id`); context is short scalars only |
 | Warnings | `reportMessage(text)` | The captcha diagnostics in `features/auth/turnstile.tsx`, sent with `$exception_level: warning` |
 | A host that stays silent while the phone says it is online | `reportNetworkFailure` in `src/lib/network.ts`, called from the Supabase client's `guardedFetch` | Warning `[network] could not reach <host>`, filed when a request sent after a lost one is lost too, with no answer from that host in between (`noteResponse`) and within five minutes. Once per host per launch, never while offline. Context: `network_path` (first three segments, no query string), `network_reason` (the platform's own text from the error Expo's `fetch` threw, native frame removed), `network_type`, `network_reachable`, `network_down_ms` (since the first lost request) |
 | Edge functions | Their own logs | The functions are not instrumented for errors; their model calls are, as AI events |

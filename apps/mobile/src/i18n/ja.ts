@@ -309,6 +309,9 @@ export const ja = {
       zonesTitle: '心拍ゾーン',
 
       missing: 'このワークアウトはヘルスアプリにもう存在しません。',
+      delete: 'ワークアウトを削除',
+      deleteTitle: 'このワークアウトを削除しますか',
+      deleteBody: 'ここでのみ削除されます。{{provider}}には残ります。',
     },
 
     settings: {

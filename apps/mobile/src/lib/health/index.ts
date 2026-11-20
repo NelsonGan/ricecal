@@ -48,6 +48,7 @@ export type {
   ProviderId,
   WorkoutReading,
 } from './types'
+export { endOf, startOf } from './window'
 
 const PROVIDERS: Record<ProviderId, HealthProvider> = {
   apple_health: appleHealth,

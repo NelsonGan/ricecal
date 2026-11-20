@@ -15,6 +15,7 @@ import type {
   WeightReading,
   WorkoutReading,
 } from './types'
+import { endOf, startOf } from './window'
 
 /**
  * Apple Health.
@@ -72,19 +73,6 @@ function load(): HealthKitModule | null {
   } catch {
     return null
   }
-}
-
-/** Local midnight at the start of a `yyyy-MM-dd`. */
-function startOf(date: LocalDate): Date {
-  const [year, month, day] = date.split('-').map(Number)
-  return new Date(year, month - 1, day, 0, 0, 0, 0)
-}
-
-/** Local midnight at the END of a `yyyy-MM-dd` — the first instant of the next day. */
-function endOf(date: LocalDate): Date {
-  const at = startOf(date)
-  at.setDate(at.getDate() + 1)
-  return at
 }
 
 /**

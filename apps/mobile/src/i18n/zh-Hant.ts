@@ -310,6 +310,9 @@ export const zhHant = {
       zonesTitle: '心率區間',
 
       missing: '這次運動已經不在你的健康 App 裡了。',
+      delete: '刪除運動',
+      deleteTitle: '刪除這次運動？',
+      deleteBody: '只在這裡刪除，{{provider}} 裡仍會保留。',
     },
 
     settings: {

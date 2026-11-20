@@ -130,6 +130,33 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_session_dismissals: {
+        Row: {
+          created_at: string
+          external_id: string
+          kind: string
+          provider: Database['public']['Enums']['health_provider']
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          external_id: string
+          kind: string
+          provider: Database['public']['Enums']['health_provider']
+          started_at: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          external_id?: string
+          kind?: string
+          provider?: Database['public']['Enums']['health_provider']
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       activity_sessions: {
         Row: {
           active_kcal: number
@@ -3575,6 +3602,7 @@ export type Database = {
           photo_path: string
         }[]
       }
+      delete_activity_session: { Args: { p_id: string }; Returns: boolean }
       delete_group_message: {
         Args: { p_message_id: string }
         Returns: undefined
@@ -3880,6 +3908,16 @@ export type Database = {
         Returns: undefined
       }
       recipe_review_hourly_limit: { Args: never; Returns: number }
+      reconcile_activity_sessions: {
+        Args: {
+          p_from: string
+          p_provider: Database['public']['Enums']['health_provider']
+          p_sessions: Json
+          p_to: string
+          p_user_id?: string
+        }
+        Returns: number
+      }
       record_job_run: {
         Args: {
           p_detail?: Json

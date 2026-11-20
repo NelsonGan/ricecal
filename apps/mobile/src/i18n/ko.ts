@@ -307,6 +307,9 @@ export const ko = {
       zonesTitle: '심박 구간',
 
       missing: '이 운동은 건강 앱에 더 이상 없습니다.',
+      delete: '운동 삭제',
+      deleteTitle: '이 운동을 삭제할까요?',
+      deleteBody: '여기서만 삭제돼요. {{provider}}에는 그대로 남아 있어요.',
     },
 
     settings: {

@@ -6,6 +6,7 @@ import { createMMKV } from 'react-native-mmkv'
 
 import { setPersonProps, track } from '@/lib/analytics'
 import type { TablesInsert } from '@/lib/database.types'
+import { reportError } from '@/lib/errors'
 import type {
   AccessResult,
   ActivityDayReading,
@@ -15,7 +16,7 @@ import type {
   ProviderId,
   WorkoutReading,
 } from '@/lib/health'
-import { providerFor } from '@/lib/health'
+import { endOf, providerFor, startOf } from '@/lib/health'
 import { ageFrom, basalRate } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
 import { daysAgo, type HealthConnection, toConnection } from './activity'
@@ -243,6 +244,27 @@ export function sessionBatches(
   return byShape(rows)
 }
 
+/** The instants a chunk's workouts were read between, as the providers ask. */
+export function workoutWindow(from: string, to: string): { from: string; to: string } {
+  return { from: startOf(from).toISOString(), to: endOf(to).toISOString() }
+}
+
+/**
+ * Every workout the store returned, by its identity alone, for
+ * `reconcile_activity_sessions`. Sessions `sessionBatches` leaves out as
+ * impossible are in here too: they are still in the store, and a row stored
+ * before they turned impossible must not be deleted for it.
+ */
+export function workoutIdentities(workouts: readonly WorkoutReading[]) {
+  return workouts.map((workout) => ({
+    external_id: workout.externalId,
+    started_at: workout.startedAt,
+    kind: workout.kind,
+    // As `sessionBatches` stores it, since a removed workout is matched on it.
+    source_name: clip(workout.sourceName),
+  }))
+}
+
 /**
  * Writes one reading. Every statement is an upsert onto a key the provider
  * cannot collide with, so calling this twice with the same reading is
@@ -253,7 +275,7 @@ async function persist(
   provider: ProviderId,
   reading: HealthReading,
   window: { from: string; to: string; withHours: boolean },
-): Promise<{ weighInsWritten: number }> {
+): Promise<{ weighInsWritten: number; sessionsReconciled: number }> {
   const days = async () => {
     // One request per row shape, as for sessions below.
     for (const batch of dayBatches(userId, provider, reading.days)) {
@@ -264,7 +286,26 @@ async function persist(
     }
   }
 
-  const sessions = async () => {
+  const sessions = async (): Promise<number> => {
+    // Before the upsert, so a workout an app re-saved under a new id (Garmin
+    // Connect does, on later syncs) takes over its old row instead of adding a
+    // copy, and leftover copies go. An upsert alone only ever adds: one run
+    // showed four times on Today. A failure costs only that tidying, so it is
+    // reported and the upsert still goes ahead.
+    let reconciled = 0
+    if (reading.workouts.length > 0) {
+      const span = workoutWindow(window.from, window.to)
+      const { data, error } = await supabase.rpc('reconcile_activity_sessions', {
+        p_provider: provider,
+        p_from: span.from,
+        p_to: span.to,
+        p_sessions: workoutIdentities(reading.workouts),
+        p_user_id: userId,
+      })
+      if (error) reportError(error, { scope: 'health_reconcile', provider })
+      else if (typeof data === 'number') reconciled = data
+    }
+
     // One request per row shape. See `sessionBatches` for why there can be more
     // than one, and for the rule that makes the difference.
     for (const batch of sessionBatches(userId, provider, reading.workouts)) {
@@ -273,6 +314,7 @@ async function persist(
         .upsert(batch, { onConflict: 'user_id,provider,external_id' })
       if (error) throw error
     }
+    return reconciled
   }
 
   const hours = async () => {
@@ -322,14 +364,21 @@ async function persist(
   // All four are waited for, whichever fails first. A pass that reported
   // itself over with a write still on the wire let the next pass start, and
   // the straggler could then land on top of the newer reading.
-  const [, , , weighIns] = await Promise.allSettled([days(), sessions(), hours(), weights()]).then(
-    (results) =>
-      results.map((result) => {
-        if (result.status === 'rejected') throw result.reason
-        return result.value
-      }),
+  const [, reconciled, , weighIns] = await Promise.allSettled([
+    days(),
+    sessions(),
+    hours(),
+    weights(),
+  ]).then((results) =>
+    results.map((result) => {
+      if (result.status === 'rejected') throw result.reason
+      return result.value
+    }),
   )
-  return { weighInsWritten: typeof weighIns === 'number' ? weighIns : 0 }
+  return {
+    weighInsWritten: typeof weighIns === 'number' ? weighIns : 0,
+    sessionsReconciled: typeof reconciled === 'number' ? reconciled : 0,
+  }
 }
 
 /**
@@ -493,13 +542,16 @@ export async function syncRange(
 
   const readings: HealthReading[] = []
   let weighInsWritten = 0
+  let sessionsReconciled = 0
 
   for (const chunk of chunks) {
     const reading = await provider.read(chunk.from, chunk.to, {
       withHours: chunk.withHours,
       ...person,
     })
-    weighInsWritten += (await persist(userId, provider.id, reading, chunk)).weighInsWritten
+    const stored = await persist(userId, provider.id, reading, chunk)
+    weighInsWritten += stored.weighInsWritten
+    sessionsReconciled += stored.sessionsReconciled
     readings.push(reading)
     written += reading.days.length
     if (reading.deviceName) deviceName = reading.deviceName
@@ -523,6 +575,8 @@ export async function syncRange(
   // for has gone, as when a typed weigh-in is deleted and the scale's is
   // written in its place, moving the budget with nothing new read.
   if (weighInsWritten > 0) changed.weights = true
+  // Likewise a copy removed from the lists with the same workouts read.
+  if (sessionsReconciled > 0) changed.workouts = true
 
   return { days: written, deviceName, changed }
 }

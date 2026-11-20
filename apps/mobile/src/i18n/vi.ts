@@ -308,6 +308,9 @@ export const vi = {
       zonesTitle: 'VÙNG NHỊP TIM',
 
       missing: 'Buổi tập này không còn trong ứng dụng sức khoẻ của bạn.',
+      delete: 'Xoá buổi tập',
+      deleteTitle: 'Xoá buổi tập này?',
+      deleteBody: 'Chỉ xoá ở đây. {{provider}} vẫn giữ buổi tập này.',
     },
 
     settings: {

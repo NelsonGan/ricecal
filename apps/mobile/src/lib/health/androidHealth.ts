@@ -17,6 +17,7 @@ import type {
   WeightReading,
   WorkoutReading,
 } from './types'
+import { endOf, startOf } from './window'
 
 /**
  * Health Connect: the Android path, and by 2026 the only one. Google Fit stopped
@@ -56,17 +57,6 @@ function load(): ConnectModule | null {
   } catch {
     return null
   }
-}
-
-function startOf(date: LocalDate): Date {
-  const [year, month, day] = date.split('-').map(Number)
-  return new Date(year, month - 1, day, 0, 0, 0, 0)
-}
-
-function endOf(date: LocalDate): Date {
-  const at = startOf(date)
-  at.setDate(at.getDate() + 1)
-  return at
 }
 
 const between = (from: LocalDate, to: LocalDate) =>

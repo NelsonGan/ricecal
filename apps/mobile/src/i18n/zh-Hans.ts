@@ -310,6 +310,9 @@ export const zhHans = {
       zonesTitle: '心率区间',
 
       missing: '这次锻炼已经不在你的健康应用里了。',
+      delete: '删除锻炼',
+      deleteTitle: '删除这次锻炼？',
+      deleteBody: '只在这里删除，{{provider}} 里仍会保留。',
     },
 
     settings: {
