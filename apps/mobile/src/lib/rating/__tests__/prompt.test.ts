@@ -73,8 +73,11 @@ function logToTheBrink(): void {
 
 beforeEach(() => {
   // Fake, because every automatic ask is booked on a timer. Real ones would
-  // make each case below a second long and flaky at the end of it.
-  jest.useFakeTimers()
+  // make each case below a second long and flaky at the end of it. Pinned to
+  // the meals' own calendar: answering the sheet stamps the clock, and on the
+  // real date the cases started failing once today drew within the cooldown
+  // of the meals dated after it.
+  jest.useFakeTimers({ now: START })
   resetRatingStateForTest(USER)
   seen.length = 0
   jest.clearAllMocks()
