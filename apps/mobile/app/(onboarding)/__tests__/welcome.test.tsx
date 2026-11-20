@@ -77,7 +77,7 @@ it('shows what the app is for: a meal on today and what is left', async () => {
   expect(screen.getByText('Nasi lemak ayam')).toBeTruthy()
   // 1,880 less the 644 plate and the 120 drink.
   expect(screen.getByText('1,116')).toBeTruthy()
-  // Movement belongs to the day too.
-  expect(screen.getByText('Walk')).toBeTruthy()
-  expect(screen.getByText('32 min · 2.8 km')).toBeTruthy()
+  // Training belongs to the day too.
+  expect(screen.getByText('Morning workout')).toBeTruthy()
+  expect(screen.getByText('38 min · 3 exercises')).toBeTruthy()
 })

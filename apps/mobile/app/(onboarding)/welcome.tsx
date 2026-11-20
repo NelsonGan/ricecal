@@ -3,10 +3,9 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-// The two small modules rather than the feature's barrel, which reaches the
-// whole data layer and its notification handler on the first screen of the app.
-import { distance, duration } from '@/features/activity/format'
-import { workoutIcon, workoutKindKey } from '@/features/activity/workoutKind'
+// The small module rather than the feature's barrel, which reaches the whole
+// data layer and its notification handler on the first screen of the app.
+import { duration } from '@/features/activity/format'
 import { ONBOARDING_ART } from '@/features/onboarding'
 import { track } from '@/lib/analytics'
 import { Button, CalorieRing, Icon, Screen, Text } from '@/ui'
@@ -30,12 +29,19 @@ const MEALS = [
 const EATEN = MEALS.reduce((sum, meal) => sum + meal.kcal, 0)
 
 /**
- * And a walk, because the day the app keeps is food AND movement. Drawn the way
- * Today's day list draws a workout (the kind, then time and distance), with no
- * calorie figure: the ring above is the food budget, and a sample that added a
- * burn to it would have to say where the burn came from.
+ * And a gym session, because the day the app keeps is food AND training. Drawn
+ * with the logger's own exercise art. No calorie figure: the ring above is the
+ * food budget, and a sample that added a burn to it would have to say where
+ * the burn came from.
  */
-const WALK = { kind: 'walk', seconds: 32 * 60, metres: 2800 } as const
+const WORKOUT = {
+  seconds: 38 * 60,
+  exercises: [
+    require('../../assets/exercises/barbell-bench-press.webp'),
+    require('../../assets/exercises/barbell-squat.webp'),
+    require('../../assets/exercises/deadlift.webp'),
+  ],
+}
 
 /**
  * 01 WELCOME
@@ -46,14 +52,15 @@ const WALK = { kind: 'walk', seconds: 32 * 60, metres: 2800 } as const
  * line under it, the buttons at the foot) so the flow looks like one thing from
  * the first screen. Under the heading is the whole idea, drawn from the app's
  * own parts rather than an illustration of it: a photographed plate, a drink
- * and a walk on today's diary, and the ring saying what is left. It used to be a generated
+ * and a gym session on today's diary, and the ring saying what is left. It used to be a generated
  * picture of a plate and a phone, which said "food app" and not what it does.
  *
  * "Get started" goes straight into the flow, with no account and nothing to
  * type. Anyone who already has one takes the second button and skips it.
  */
 export default function Welcome() {
-  const { t } = useTranslation(['onboarding', 'common', 'logging', 'activity'])
+  const { t } = useTranslation(['onboarding', 'common', 'logging', 'workouts'])
+  const workoutLine = `${duration(WORKOUT.seconds)} · ${t('workouts:routines.exercises', { count: WORKOUT.exercises.length })}`
   const router = useRouter()
 
   /** Straight into the flow. No session needed: the answers are held locally. */
@@ -108,7 +115,7 @@ export default function Welcome() {
       <View
         className="mt-6 gap-3 rounded-tile border-2 border-line bg-surface p-4"
         accessible
-        accessibilityLabel={`${t('common:date.today')}: ${MEALS.map((meal) => `${meal.name}, ${meal.kcal} kcal`).join('; ')}; ${t(workoutKindKey(WALK.kind))}, ${duration(WALK.seconds)}. ${(BUDGET - EATEN).toLocaleString()} kcal left.`}
+        accessibilityLabel={`${t('common:date.today')}: ${MEALS.map((meal) => `${meal.name}, ${meal.kcal} kcal`).join('; ')}; ${t('workouts.routine')}, ${workoutLine}. ${(BUDGET - EATEN).toLocaleString()} kcal left.`}
       >
         <View className="flex-row items-center gap-4">
           <CalorieRing
@@ -153,12 +160,23 @@ export default function Welcome() {
         </View>
         <View className="flex-row items-center gap-3">
           <View className="h-[44px] w-[44px] items-center justify-center rounded-[12px] bg-surface-alt">
-            <Icon {...workoutIcon(WALK.kind)} size={34} />
+            <Icon set="scenes" name="dumbbell" size={34} />
           </View>
-          <MealText
-            name={t(workoutKindKey(WALK.kind))}
-            meal={[duration(WALK.seconds), distance(WALK.metres)].filter(Boolean).join(' · ')}
-          />
+          <MealText name={t('workouts.routine')} meal={workoutLine} />
+          {/* The session's exercises, overlapping like a group's faces. */}
+          <View className="flex-row">
+            {WORKOUT.exercises.map((art, index) => (
+              <View
+                // A fixed list that never reorders, so its place is its key.
+                // biome-ignore lint/suspicious/noArrayIndexKey: see above
+                key={index}
+                className="h-[30px] w-[30px] items-center justify-center overflow-hidden rounded-[9px] border-2 border-surface bg-exercise-tile"
+                style={index > 0 ? { marginLeft: -8 } : undefined}
+              >
+                <Image source={art} style={{ width: 26, height: 26 }} contentFit="contain" />
+              </View>
+            ))}
+          </View>
         </View>
       </View>
     </Screen>
