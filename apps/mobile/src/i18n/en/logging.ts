@@ -433,6 +433,10 @@ export const logging = {
      * ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").
      */
     servingWord: 'serving',
+    /** The unit switch under the portion stepper, read out. */
+    measureIn: 'Measure in',
+    /** The portion stepper read out when it counts a unit (grams, spoons) rather than servings. */
+    amount: 'Amount',
     /**
      * The fallback chips, for an entry the model suggested nothing for. They go
      * into the fix box as text and are read by `scan-refine` like anything else

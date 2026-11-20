@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(51);
+select plan(53);
 
 \set cook  '33333333-3333-3333-3333-333333333333'
 \set other '44444444-4444-4444-4444-444444444444'
@@ -62,8 +62,22 @@ select ok(
 insert into public.recipe_ingredients (recipe_id, name, amount, unit, kcal_per_unit, protein_g_per_unit, position)
 values (:'recipe_id', 'Beef shin', 1000, 'g', 1.64, 0.22, 0);
 
-insert into public.recipe_ingredients (recipe_id, name, amount, unit, kcal_per_unit, fat_g_per_unit, position)
-values (:'recipe_id', 'Coconut milk, thick', 400, 'ml', 1.95, 0.21, 1);
+-- Measured in cups by the cook: the amount is still millilitres, and so is
+-- every figure. `display_unit` only says how to show it.
+insert into public.recipe_ingredients (recipe_id, name, amount, unit, display_unit, kcal_per_unit, fat_g_per_unit, position)
+values (:'recipe_id', 'Coconut milk, thick', 400, 'ml', 'cup', 1.95, 0.21, 1);
+
+-- A spoon over an amount in grams would show a figure nobody measured: crossing
+-- families needs a density, which the row does not keep.
+select throws_ok(
+  format(
+    'insert into public.recipe_ingredients (recipe_id, name, amount, unit, display_unit, kcal_per_unit, position) values (%L, %L, 30, %L, %L, 5.9, 9)',
+    :'recipe_id', 'Peanut butter', 'g', 'tbsp'
+  ),
+  '23514',
+  null,
+  'a display unit from the other family is refused'
+);
 
 select is(
   (select total_kcal from public.recipe_details where id = :'recipe_id'),
@@ -292,6 +306,13 @@ select is(
   (select source_recipe_id from public.recipes where id = :'copy_id'),
   :'recipe_id'::uuid,
   'and records where it came from'
+);
+
+select is(
+  (select display_unit from public.recipe_ingredients
+    where recipe_id = :'copy_id' and name = 'Coconut milk, thick'),
+  'cup',
+  'and the unit each was measured in'
 );
 
 -- But NOT the photograph. A key names one object under one user's prefix, so a

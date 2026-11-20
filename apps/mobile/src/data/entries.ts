@@ -165,6 +165,12 @@ export type EntryPatch = {
   servingId?: string
   servingLabel?: string
   servingFactor?: number
+  /**
+   * What one base serving weighs and holds, written when a portion change is
+   * about to drop the label that said so. See `food_logs.serving_ml`.
+   */
+  servingGrams?: number
+  servingMl?: number
   note?: string | null
   /**
    * What this entry is called. Written to `display_label`, which sits over the
@@ -216,6 +222,8 @@ export function useUpdateEntry() {
       servingId,
       servingLabel,
       servingFactor,
+      servingGrams,
+      servingMl,
       note,
       name,
       icon,
@@ -247,6 +255,8 @@ export function useUpdateEntry() {
             // day's arithmetic reads.
             ...(servingLabel === undefined ? {} : { serving_label: servingLabel }),
             ...(servingFactor === undefined ? {} : { serving_factor: servingFactor }),
+            ...(servingGrams === undefined ? {} : { serving_grams: servingGrams }),
+            ...(servingMl === undefined ? {} : { serving_ml: servingMl }),
             ...(note === undefined ? {} : { note }),
             ...(name === undefined ? {} : { display_label: name }),
             // Both columns together: a check constraint refuses half an icon, and

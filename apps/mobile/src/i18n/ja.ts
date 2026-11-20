@@ -188,6 +188,33 @@ export const ja = {
       lUnit: 'L',
     },
 
+    measure: {
+      g: '{{value}}g',
+      kg: '{{value}}kg',
+      oz: '{{value}}オンス',
+      lb: '{{value}}ポンド',
+      ml: '{{value}} ml',
+      l: '{{value}} L',
+      tsp: '小さじ{{value}}',
+      tbsp: '大さじ{{value}}',
+      cup_one: 'カップ{{value}}',
+      cup_other: 'カップ{{value}}',
+      floz: '{{value}} 液量オンス',
+    },
+    measureUnit: {
+      g: 'g',
+      kg: 'kg',
+      oz: 'オンス',
+      lb: 'ポンド',
+      ml: 'ml',
+      l: 'L',
+      tsp: '小さじ',
+      tbsp: '大さじ',
+      cup_one: 'カップ',
+      cup_other: 'カップ',
+      floz: '液量オンス',
+    },
+
     count: {
       dayStreak_one: '{{count}} 日連続',
       dayStreak_other: '{{count}} 日連続',
@@ -870,6 +897,8 @@ export const ja = {
       nameField: '名前',
       numbersReset: 'アプリの数値を使う',
       servingWord: '人前',
+      measureIn: '単位',
+      amount: '量',
       quickFix: {
         halfPortion: '半分の量',
         noSambal: 'サンバル抜き',
@@ -1549,6 +1578,13 @@ export const ja = {
         ml: 'ml',
         piece_one: '個',
         piece_other: '個',
+      },
+      unitTitle: '単位',
+      changeUnit: '{{name}}の単位、{{unit}}',
+      unitGroup: {
+        weight: '重さ',
+        volume: '容量',
+        count: '個数',
       },
     },
 

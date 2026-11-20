@@ -15,6 +15,7 @@ import {
   useRecipe,
   useRecipeIngredients,
   useSaveRecipe,
+  useSettings,
 } from '@/data'
 import { announceRefusal, openPaywall } from '@/data/refusals'
 import { IconPicker, InlineCamera } from '@/features/logging'
@@ -90,6 +91,7 @@ export default function RecipeFormScreen() {
   const recipeId = params.id
   const { data: existing } = useRecipe(recipeId)
   const { data: existingIngredients } = useRecipeIngredients(recipeId)
+  const { data: settings } = useSettings()
 
   const save = useSaveRecipe()
   const read = useReadRecipe()
@@ -498,6 +500,13 @@ export default function RecipeFormScreen() {
               onAmountChange={(key, amount) => {
                 setItems((current) =>
                   current.map((item) => (item.key === key ? { ...item, amount } : item)),
+                )
+                touch()
+              }}
+              units={settings?.units}
+              onUnitChange={(key, displayUnit) => {
+                setItems((current) =>
+                  current.map((item) => (item.key === key ? { ...item, displayUnit } : item)),
                 )
                 touch()
               }}

@@ -2,10 +2,11 @@ import { FREE_RECIPES } from '@ricecal/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { track } from '@/lib/analytics'
+import type { MeasureUnit } from '@/lib/measures'
 import { supabase } from '@/lib/supabase'
 import { unwrap, unwrapMaybe, unwrapOne } from './client'
 import { invalidateGroupBoards, keys } from './keys'
-import { toIcon, toRecipe, toRecipeIngredient } from './mappers'
+import { displayUnitOf, toIcon, toRecipe, toRecipeIngredient } from './mappers'
 import { removeMealPhoto } from './photos'
 import { refusalFrom, ScanLimitError } from './refusals'
 import { useUserId } from './session'
@@ -222,8 +223,11 @@ export function useRecipeIngredients(reference: string | undefined) {
 export type RecipeIngredientInput = {
   name: string
   foodId?: string
+  /** In `unit`, always: grams, millilitres or pieces. */
   amount: number
   unit: RecipeUnit
+  /** What the cook measured in, when it is not `unit`. Display only. */
+  displayUnit?: MeasureUnit
   perUnit: Macros
 }
 
@@ -276,6 +280,10 @@ const toIngredientRow = (recipeId: string, input: RecipeIngredientInput, positio
   food_id: input.foodId ?? null,
   amount: input.amount,
   unit: input.unit,
+  // Through the same check the reader uses, so a spoon never lands on a row
+  // stored in grams. The column's own check would refuse it, and with it the
+  // whole save.
+  display_unit: displayUnitOf(input.unit, input.displayUnit).displayUnit ?? null,
   kcal_per_unit: input.perUnit.kcal,
   carbs_g_per_unit: input.perUnit.carbs,
   protein_g_per_unit: input.perUnit.protein,

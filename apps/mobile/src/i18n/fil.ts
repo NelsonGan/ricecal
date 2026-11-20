@@ -195,6 +195,33 @@ export const fil = {
       lUnit: 'L',
     },
 
+    measure: {
+      g: '{{value}} g',
+      kg: '{{value}} kg',
+      oz: '{{value}} oz',
+      lb: '{{value}} lb',
+      ml: '{{value}} ml',
+      l: '{{value}} L',
+      tsp: '{{value}} kutsarita',
+      tbsp: '{{value}} kutsara',
+      cup_one: '{{value}} tasa',
+      cup_other: '{{value}} tasa',
+      floz: '{{value}} fl oz',
+    },
+    measureUnit: {
+      g: 'g',
+      kg: 'kg',
+      oz: 'oz',
+      lb: 'lb',
+      ml: 'ml',
+      l: 'L',
+      tsp: 'kutsarita',
+      tbsp: 'kutsara',
+      cup_one: 'tasa',
+      cup_other: 'tasa',
+      floz: 'fl oz',
+    },
+
     count: {
       dayStreak_one: '{{count}} araw na sunod-sunod',
       dayStreak_other: '{{count}} araw na sunod-sunod',
@@ -892,6 +919,8 @@ export const fil = {
       nameField: 'Pangalan',
       numbersReset: 'Gamitin ang numero ng app',
       servingWord: 'serving',
+      measureIn: 'Sukatin sa',
+      amount: 'Dami',
       quickFix: {
         halfPortion: 'Kalahating bahagi',
         noSambal: 'Walang sambal',
@@ -1582,6 +1611,13 @@ export const fil = {
         ml: 'ml',
         piece_one: 'piraso',
         piece_other: 'piraso',
+      },
+      unitTitle: 'Sukatin sa',
+      changeUnit: 'Yunit ng {{name}}, {{unit}}',
+      unitGroup: {
+        weight: 'Timbang',
+        volume: 'Dami',
+        count: 'Bilang',
       },
     },
 

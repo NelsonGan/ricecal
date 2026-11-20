@@ -156,7 +156,10 @@ select
   round(e.base_fibre_g   * e.serving_factor * e.quantity * plate.portion, 1)       as fibre_g,
   round(e.base_sugar_g   * e.serving_factor * e.quantity * plate.portion, 1)       as sugar_g,
   round(e.base_sodium_mg * e.serving_factor * e.quantity * plate.portion)::integer as sodium_mg,
-  round(e.serving_grams  * e.quantity * plate.portion, 1)                          as grams,
+  -- `serving_grams` is what one BASE serving weighs, so the portion's factor
+  -- belongs in it like every figure above: without it 150 g of a 350 g plate
+  -- (1.5 of "100 g" at factor 0.286) read as 525 g.
+  round(e.serving_grams  * e.serving_factor * e.quantity * plate.portion, 1)       as grams,
   e.recipe_id,
 
   -- The snapshot itself, unmultiplied, because one caller wants to copy an entry
@@ -183,7 +186,10 @@ select
   plate.parts                            as ingredient_count,
   -- How much of the plate was eaten, and 1 where there is no plate: nothing
   -- multiplies it there, so a reader never has to ask which case it is in.
-  plate.portion                          as plate_quantity
+  plate.portion                          as plate_quantity,
+  -- What one base serving holds, for measuring the entry in spoons. Last for
+  -- the reason above.
+  e.serving_ml                           as base_serving_ml
 from public.food_logs e
 -- The breakdown, added up once per entry. It was four correlated subqueries,
 -- one per macro, and the portion needs a fifth question of the same rows:

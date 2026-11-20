@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
-import { Icon, IconButton, Text } from '@/ui'
+import { cn, Icon, IconButton, Tappable, Text } from '@/ui'
 import { SwipeRow } from './SwipeRow'
 
 export type PartRowProps = {
@@ -21,6 +21,13 @@ export type PartRowProps = {
   onMore: (() => void) | null
   /** The amount itself, between the two buttons. */
   children: ReactNode
+  /**
+   * The amount and the two buttons as ONE pill, with the calories on the right.
+   * For a row whose amount carries its own unit ("2 tbsp", "1 cup"): three loose
+   * controls with a unit floating between them read as four things, and rows
+   * with different units did not line up.
+   */
+  joined?: boolean
 }
 
 /**
@@ -44,6 +51,7 @@ export function PartRow({
   onLess,
   onMore,
   children,
+  joined = false,
 }: PartRowProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
@@ -72,41 +80,88 @@ export function PartRow({
           and anything see-through would show a bin through the part's name. */}
       <View className="gap-2 bg-surface px-card py-md">
         {/* The name on a line of its own, with the whole width to wrap into.
-            Beside the controls it had about half the row. */}
-        {title}
+            Beside the controls it had about half the row. A joined row puts its
+            calories here, right-aligned like a list row's value, so the pill
+            below has the width a long unit name or a big amount needs. */}
+        {joined ? (
+          <View className="flex-row items-baseline gap-3">
+            <View className="min-w-0 flex-1">{title}</View>
+            <Text variant="bodyStrong" className="shrink-0">
+              {t('logging:detail.partKcal', { kcal: kcal.toLocaleString() })}
+            </Text>
+          </View>
+        ) : (
+          title
+        )}
 
-        <View className="flex-row items-center justify-between gap-3">
-          {/* What it costs. The amount is in the field between the buttons,
+        {joined ? (
+          <View className="flex-row">
+            <View className="max-w-full flex-row items-stretch overflow-hidden rounded-full border-[3px] border-line bg-surface">
+              <Tappable
+                onPress={() => onLess?.()}
+                disabled={onLess === null}
+                accessibilityRole="button"
+                accessibilityLabel={t('logging:detail.lessOf', { name })}
+                accessibilityState={{ disabled: onLess === null }}
+                className={cn(
+                  'min-w-[48px] items-center justify-center',
+                  onLess === null && 'opacity-40',
+                )}
+              >
+                <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
+              </Tappable>
+              <View className="min-h-[44px] min-w-[140px] shrink flex-row items-center justify-center gap-2 border-x-[3px] border-line bg-pandan-soft px-3">
+                {children}
+              </View>
+              <Tappable
+                onPress={() => onMore?.()}
+                disabled={onMore === null}
+                accessibilityRole="button"
+                accessibilityLabel={t('logging:detail.moreOf', { name })}
+                accessibilityState={{ disabled: onMore === null }}
+                className={cn(
+                  'min-w-[48px] items-center justify-center',
+                  onMore === null && 'opacity-40',
+                )}
+              >
+                <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
+              </Tappable>
+            </View>
+          </View>
+        ) : (
+          <View className="flex-row items-center justify-between gap-3">
+            {/* What it costs. The amount is in the field between the buttons,
               because reading it two inches from the control that changes it is
               how the old card ended up truncating its names. */}
-          <Text variant="meta" className="min-w-0 flex-1">
-            {t('logging:detail.partKcal', { kcal: kcal.toLocaleString() })}
-          </Text>
+            <Text variant="meta" className="min-w-0 flex-1">
+              {t('logging:detail.partKcal', { kcal: kcal.toLocaleString() })}
+            </Text>
 
-          <View className="flex-row items-center gap-2">
-            <IconButton
-              size="sm"
-              variant="neutral"
-              accessibilityLabel={t('logging:detail.lessOf', { name })}
-              disabled={onLess === null}
-              onPress={() => onLess?.()}
-            >
-              <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
-            </IconButton>
+            <View className="flex-row items-center gap-2">
+              <IconButton
+                size="sm"
+                variant="neutral"
+                accessibilityLabel={t('logging:detail.lessOf', { name })}
+                disabled={onLess === null}
+                onPress={() => onLess?.()}
+              >
+                <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
+              </IconButton>
 
-            {children}
+              {children}
 
-            <IconButton
-              size="sm"
-              variant="neutral"
-              accessibilityLabel={t('logging:detail.moreOf', { name })}
-              disabled={onMore === null}
-              onPress={() => onMore?.()}
-            >
-              <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
-            </IconButton>
+              <IconButton
+                size="sm"
+                variant="neutral"
+                accessibilityLabel={t('logging:detail.moreOf', { name })}
+                disabled={onMore === null}
+                onPress={() => onMore?.()}
+              >
+                <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
+              </IconButton>
+            </View>
           </View>
-        </View>
+        )}
       </View>
     </SwipeRow>
   )

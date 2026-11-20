@@ -2362,6 +2362,116 @@ two builds at once can see both.
 
 The add path is a staged form, because there is nothing to write until Add.
 
+### Measuring in kitchen units
+
+**A dish can be logged in grams, millilitres, teaspoons, tablespoons and cups,
+as well as in its catalogue portions.** The unit is a pill under the stepper's
+number ("2 tbsp ▾"); it opens one list of the dish's own portions and every
+unit, each line saying what the amount would read as and what it would cost
+("30 ml · 193 kcal"). Ounces and fluid ounces are added for somebody whose unit
+setting is imperial. The stepper counts in the chosen unit: grams by ten, spoons
+by a half, cups by a quarter. Beside the pill, what the amount weighs ("plate
+≈ 300 g", "tbsp ≈ 32 g") wherever that is known and the unit is not already a
+weight: a portion's name alone says nothing about its size.
+
+**A new log opens the way this person last logged that dish**: two spoons of
+peanut butter, 150 g of rice. The quickest calorie trackers remember a usual
+serving (MacroFactor's favourites, Carbon's most used) rather than opening on
+the catalogue default every time. `rememberedPortion` reads it from Past foods,
+newest first, and waits for a refetch in flight, since the cached list does not
+have the meal logged a minute ago. Without a history, a dish whose serving is a
+kitchen measure ("2 tbsp (32 g)") opens on that measure, as 2 tbsp, rather than
+as "1" over a label saying two.
+
+It was a row of portion chips and a segmented row of units, and a design review
+took it apart: two answers to one question, seven imperial units in one row,
+truncated Japanese spoon names. The same pill and list are used for a recipe:
+the ingredient sheet's amount carries the pill (its custom-ingredient form, which
+converts nothing, keeps one segmented row per family), and each ingredient row
+is one joined pill (minus, "2 tbsp ▾", plus) with its calories on the name line.
+Picking a line lands the row on that line's figure, never more than 2% from the
+exact one, and a line that would move the calories by more than that (an eighth
+of a cup stored as 0.13) is greyed out.
+
+**Only what the food can honestly be measured in is offered.** Weight and volume
+are two families, and crossing between them needs the food: a cup of cooked rice
+is about 200 g, a cup of oil 218 g, a cup of cornflakes 30 g. `foodBasis` in
+`lib/measures.ts` works out what one base serving weighs and holds from the
+entry's `serving_grams`/`serving_ml`, the catalogue's weight column, and every
+portion's label divided by its factor. That last one is where densities come
+from: a USDA row at "100 g" with a "1 cup" portion at factor 2.44 says a cup of it
+weighs 244 g. A plate of nasi lemak has a weight and no volume, so it gets grams
+and no cups. A drink quoted in ml gets spoons and cups and no grams. Nothing is
+guessed, for the same reason the scan pipeline does not read cups at all. US
+customary sizes (a 236.6 ml cup), because that is what the catalogue's cup and
+spoon rows were measured in.
+
+**A weight column equal to the volume is not a density.** The catalogue and the
+scan count millilitres as grams in their weight columns (`servingGrams` in
+`_shared/portion.ts` does), so a drink quoted as "Regular (350 ml)" often carries
+350 "g" beside it. Read as a weight, that is a density of exactly 1: grams on
+offer for a drink and a spoon of oil priced as water. `foodBasis` drops a
+column weight within 0.5% of the volume, and believes only a label that
+actually says grams.
+
+**A unit is stored as an ordinary portion, so the diary needed no new
+arithmetic.** `withMeasures` adds portions labelled "100 g", "1 tbsp" or "1 cup"
+with their factor against the base serving, and ids under `measure:` that go to
+`serving_id`. Grams go by the hundred because `serving_factor` is
+`numeric(6, 3)`: a one-gram portion of a 300 g plate is 0.00333, which the column
+stores as 0.003, a tenth light per gram. A build that has never heard of units
+counts these rows exactly as it counts any other; it shows "1.5 × 100 g" where a
+new one shows "150 g" (`measureOf`, then `portionLabel`).
+
+**Picking a unit keeps the amount eaten; picking a portion keeps the count.** Two
+regular plates become two large ones, which is what "Large" means. One 350 g
+plate picked in grams becomes 350 g, not one gram. A spoon or cup count lands on
+a quarter only when one is within 2%, so switching units never moves what was
+eaten by more than a measuring cup would.
+
+**An entry writes down its density before it loses the label that said it.** A
+scanned "Regular (350 ml)" moved into grams keeps only "100 g", and nothing else
+on the row knew it held 350 ml. So the first portion change on an entry with no
+`serving_grams` or `serving_ml` back-fills them from the old label, and new
+entries snapshot both. That is why `food_logs.serving_ml` exists.
+
+An entry that was measured in a unit has also given up the name of the portion
+it started at. With a catalogue row behind it, `withCataloguePortions` brings the
+portions back. Without one (a scan, a typed meal), the base serving is offered as
+"1 serving" at factor 1.
+
+**A unit the column cannot price is not offered.** A factor is three decimals,
+so a teaspoon of a 2 L bottle (0.00246) would be stored as 0.002 and log 19%
+light. `measurePortions` drops any unit its factor would round by more than 2%;
+the bottle keeps millilitres and cups. A unit chip that cannot hold what was
+eaten (1½ cups is 24 tablespoons) is disabled rather than tapped and quietly cut
+short.
+
+**No quantity goes past 20**, though the column takes 100. Every build already in
+a store steps a portion between a quarter and twenty and clamps to that on its
+first tap, so an entry of 30 tbsp opened on one would lose a third the moment its
+minus was pressed. So the unit steppers stop at 20 of what they count (2 kg of
+grams, 20 spoons or cups), `canSwitch` refuses a switch past the control it
+would land in, and `scan-refine`'s `unitQuantity` caps at 20 too.
+
+`food_log_details.grams` multiplies by `serving_factor` as well: it never did,
+which was harmless while `serving_grams` sat on factor-1 rows, and would have
+read 525 g for 150 g of a plate logged in grams once it did not. Nothing read it
+yet.
+
+**Everything else that reads a quantity had to learn that a unit is not a
+serving.** `add_ingredient` refused an entry outside a quarter to twenty
+servings, which 15 g (0.15 of "100 g") and 30 tbsp both are; it now seeds such
+an entry as ONE part of its whole portion. `scan-refine` recognises an entry
+measured in a unit by `isMeasuredServing` (a `measure:` id, or a catalogue row
+that is only a unit, "100 g" or "1 tbsp", which the app steps the same way). Its
+"half" scales inside the column rather than the 0.25-to-10 servings clamp, which
+turned half of 15 g into 25 g, and an adjustment ("no sugar") folds the whole
+amount into one serving rather than clamping 15 g up to a quarter of 100 g. It
+clears `serving_ml` with the rest of the old food's serving. The group board and a chat food card send `quantity` beside
+`serving_label`, so a friend reads "350 g" rather than the bare "100 g" (an
+older app ignores the field and shows the label, as before).
+
 ### The layout
 
 **The plate is the top of the screen, full width, with the chrome floating on
@@ -2706,9 +2816,26 @@ at large.
 millilitre or one of the thing costs, and `amount` is how many went in. That is
 what survives the amount being corrected: 400 ml of santan changed to 250
 reprices with no lookup and no second opinion, because the density was the part
-that was true. `ingredientBasis` in `features/recipes/basis.ts` turns a catalogue
-serving into one: it reads a weight out of the serving label and falls back to
-counting when there is none.
+that was true. `ingredientOptions` in `features/recipes/basis.ts` turns a
+catalogue dish into the units it can go into a pot in, from `foodBasis` (see
+[Measuring in kitchen units](#measuring-in-kitchen-units)): weights where
+something says what a serving weighs, spoons and cups where something says what
+one holds, pieces when the base serving is a thing ("1 plate", "1 bowl (400 g)")
+or nothing says either.
+
+**A spoon is stored as millilitres and shown as a spoon.**
+`recipe_ingredients.display_unit` is the unit the cook measured in, always in the
+stored unit's family (a check constraint): two tablespoons of kicap are `amount`
+29.57, `unit` ml, `display_unit` tbsp. A spoon of something weighed (peanut
+butter, sugar) is written in millilitres at that food's calories per
+millilitre, worked out once from its density while the catalogue row is in hand,
+so the row never needs the food again. A build that predates the column reads
+29.57 ml and costs it the same, and saving there drops the display unit and
+nothing else. The editor offers the other units of the row's family, which only
+relabel it; crossing to grams would need a density the row did not keep. A unit
+picked in the ingredient sheet converts the amount in the field (400 g of milk is
+1.64 cups), and the custom ingredient form does not, since it knows nothing about
+the food but the figures typed for it.
 
 **Two shelves, one grid.** Mine and the community. Which one a tile is on is a
 property of the row: community is somebody else's that is both public and

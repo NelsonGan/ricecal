@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { Platform, TextInput, View } from 'react-native'
 
+import { steppedTo } from '@/lib/measures'
 import { formatPortion } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
@@ -19,6 +20,12 @@ export type StepperProps = {
   /** Unit shown under the value: "plates", "kg", "ml". */
   unit?: string
   /**
+   * Drawn under the value in place of `unit`, for a unit that is itself a
+   * control (the food page's unit picker). `unit` still names the value to a
+   * screen reader.
+   */
+  unitSlot?: ReactNode
+  /**
    * The value is health data or a weight: the app's own number pad is kept out
    * of session replays while this field has it, so the keys pressed do not give
    * away what the masked field hides.
@@ -36,6 +43,11 @@ export type StepperProps = {
   editable?: boolean
   /** Screen-reader name for the number when it can be typed into. */
   editLabel?: string
+  /**
+   * The buttons land on multiples of `step` rather than adding it, for a value
+   * that arrives off the grid (a converted 0.41 cup steps to 0.5, not 0.66).
+   */
+  snapToStep?: boolean
   disabled?: boolean
   accessibilityLabel?: string
   /** Screen-reader names for the two buttons. Pass translated copy. */
@@ -61,9 +73,11 @@ export function Stepper({
   min = 0,
   max = Number.POSITIVE_INFINITY,
   unit,
+  unitSlot,
   format = formatPortion,
   editable = false,
   editLabel,
+  snapToStep = false,
   disabled = false,
   accessibilityLabel,
   decrementLabel,
@@ -71,8 +85,13 @@ export function Stepper({
   className,
   replayMasked = false,
 }: StepperProps) {
-  const atMin = value - step < min
-  const atMax = value + step > max
+  // Where a tap would land, which is the next mark rather than `value ± step`
+  // when snapping: 0.41 cup steps down to the ¼ minimum, and judged by
+  // 0.41 − 0.25 its minus was disabled.
+  const below = snapToStep ? steppedTo(value, step, -1) : value - step
+  const above = snapToStep ? steppedTo(value, step, 1) : value + step
+  const atMin = below < min - 1e-9
+  const atMax = above > max + 1e-9
 
   const colors = useThemeColors()
 
@@ -91,7 +110,8 @@ export function Stepper({
 
   // Re-round after arithmetic: 0.1 + 0.2 is famously not 0.3, and the value
   // shows up on screen.
-  const shift = (delta: number) => onChange(clamp(value + delta))
+  const shift = (delta: number) =>
+    onChange(clamp(snapToStep ? steppedTo(value, step, delta > 0 ? 1 : -1) : value + delta))
 
   /**
    * Focus empties the field, and the old value becomes its placeholder.
@@ -224,7 +244,7 @@ export function Stepper({
             {format(value)}
           </Text>
         )}
-        {unit ? <Text variant="caption">{unit}</Text> : null}
+        {unitSlot ?? (unit ? <Text variant="caption">{unit}</Text> : null)}
       </View>
 
       <IconButton

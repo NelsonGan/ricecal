@@ -1,3 +1,5 @@
+import { SafeAreaProvider } from 'react-native-safe-area-context'
+
 import '@/i18n'
 import type { ReactNode } from 'react'
 import { render, screen, userEvent } from '@/test-utils'
@@ -79,4 +81,122 @@ it('edits the amount in place and exposes replace and delete swipe actions', asy
 
   await user.press(screen.getByRole('button', { name: 'More Rice' }))
   expect(onAmountChange).toHaveBeenCalledWith('rice', 210)
+})
+
+// Two tablespoons of soy sauce are stored as 29.57 ml and read as spoons: the
+// number, the nudge and the typed amount are all in tablespoons.
+const KICAP: EditableRecipeIngredient = {
+  key: 'kicap',
+  name: 'Kicap',
+  amount: 29.57,
+  unit: 'ml',
+  displayUnit: 'tbsp',
+  perUnit: { kcal: 0.6, carbs: 0.1, protein: 0.05, fat: 0 },
+}
+
+it('shows and steps a spoon row in spoons, and stores millilitres', async () => {
+  const onAmountChange = jest.fn()
+  const onUnitChange = jest.fn()
+
+  await render(
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 393, height: 852 },
+        insets: { top: 59, left: 0, right: 0, bottom: 34 },
+      }}
+    >
+      <RecipeIngredientEditor
+        ingredients={[KICAP]}
+        onAmountChange={onAmountChange}
+        onUnitChange={onUnitChange}
+        units="metric"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onReplace={jest.fn()}
+      />
+    </SafeAreaProvider>,
+  )
+
+  expect(screen.getByLabelText('Change how much Kicap, currently 2 tbsp')).toBeOnTheScreen()
+
+  // Half a spoon more is 2.5 tbsp, which is 36.97 ml.
+  await user.press(screen.getByRole('button', { name: 'More Kicap' }))
+  expect(onAmountChange).toHaveBeenCalledWith('kicap', 36.97)
+
+  // Teaspoons are the same family, so the row can be read in them without
+  // being repriced. Back to ml clears the display unit entirely.
+  await user.press(screen.getByRole('button', { name: 'Unit for Kicap, tbsp' }))
+  // Each choice says what the row will read as: two tablespoons are six teaspoons.
+  await user.press(screen.getByText('6 tsp'))
+  expect(onUnitChange).toHaveBeenCalledWith('kicap', 'tsp')
+  // 29.57 ml already reads as 6 tsp, so the amount is left alone: the one call
+  // is the half-spoon above.
+  expect(onAmountChange).toHaveBeenCalledTimes(1)
+})
+
+// A line that rounds ("6½ tbsp" for 97 ml) is what the row reads afterwards.
+it('lands the row on the amount the unit line promised', async () => {
+  const onAmountChange = jest.fn()
+  const onUnitChange = jest.fn()
+  await render(
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 393, height: 852 },
+        insets: { top: 59, left: 0, right: 0, bottom: 34 },
+      }}
+    >
+      <RecipeIngredientEditor
+        ingredients={[{ ...KICAP, amount: 97, displayUnit: 'cup' }]}
+        onAmountChange={onAmountChange}
+        onUnitChange={onUnitChange}
+        units="metric"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onReplace={jest.fn()}
+      />
+    </SafeAreaProvider>,
+  )
+  await user.press(screen.getByRole('button', { name: 'Unit for Kicap, cups' }))
+  await user.press(screen.getByText('6½ tbsp'))
+  expect(onUnitChange).toHaveBeenCalledWith('kicap', 'tbsp')
+  expect(onAmountChange).toHaveBeenCalledWith('kicap', 96.11)
+})
+
+// 10.5 g printed as "11" disagreed with the 10.5 stored. Re-picking grams
+// changes nothing, and kilograms (0.01 kg, 5% less sugar) are not offered.
+it('shows small gram amounts exactly and does not offer a unit that would round them', async () => {
+  const onAmountChange = jest.fn()
+  const onUnitChange = jest.fn()
+  await render(
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 393, height: 852 },
+        insets: { top: 59, left: 0, right: 0, bottom: 34 },
+      }}
+    >
+      <RecipeIngredientEditor
+        ingredients={[
+          {
+            key: 'sugar',
+            name: 'Sugar',
+            amount: 10.5,
+            unit: 'g',
+            perUnit: { kcal: 3.87, carbs: 1, protein: 0, fat: 0 },
+          },
+        ]}
+        onAmountChange={onAmountChange}
+        onUnitChange={onUnitChange}
+        units="metric"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onReplace={jest.fn()}
+      />
+    </SafeAreaProvider>,
+  )
+  expect(screen.getByLabelText('Change how much Sugar, currently 10.5 g')).toBeOnTheScreen()
+  await user.press(screen.getByRole('button', { name: 'Unit for Sugar, g' }))
+  expect(screen.getByRole('radio', { name: '0.01 kg, 39 kcal' })).toBeDisabled()
+  await user.press(screen.getByRole('radio', { name: '10.5 g, 41 kcal' }))
+  expect(onAmountChange).not.toHaveBeenCalled()
+  expect(onUnitChange).not.toHaveBeenCalled()
 })

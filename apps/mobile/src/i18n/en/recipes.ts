@@ -157,6 +157,15 @@ export const recipes = {
       piece_one: 'piece',
       piece_other: 'pieces',
     },
+    /** The sheet the unit beside an amount opens, and that unit read out. */
+    unitTitle: 'Measure in',
+    changeUnit: 'Unit for {{name}}, {{unit}}',
+    /** The rows of the unit picker, by what each measures. Short: they sit beside chips. */
+    unitGroup: {
+      weight: 'Weight',
+      volume: 'Volume',
+      count: 'Count',
+    },
   },
 
   detail: {

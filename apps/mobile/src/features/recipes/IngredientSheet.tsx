@@ -1,16 +1,25 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { Keyboard, View } from 'react-native'
 
-import type { Macros, RecipeIngredientInput, RecipeUnit } from '@/data'
-import { isStorableAmount, isStorablePerUnit, storedAmount, useFood, useFoodSearch } from '@/data'
+import type { Food, Macros, RecipeIngredientInput } from '@/data'
+import {
+  isStorableAmount,
+  isStorablePerUnit,
+  storedAmount,
+  useFood,
+  useFoodSearch,
+  useSettings,
+} from '@/data'
 import { ItemRow } from '@/features/shared'
+import { MeasureList, UnitPill } from '@/features/shared/MeasurePicker'
+import { useMeasureText } from '@/features/shared/useMeasureText'
+import { amountText, unitsFor } from '@/lib/measures'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   Button,
   Card,
-  Chip,
   EmptyState,
   Icon,
   IconButton,
@@ -20,7 +29,16 @@ import {
   Text,
   TextField,
 } from '@/ui'
-import { ingredientBasis, ingredientTotal } from './basis'
+import {
+  convertIngredient,
+  displayUnitFor,
+  type IngredientKey,
+  ingredientOptions,
+  ingredientTotal,
+  storedFrom,
+  storedUnit,
+} from './basis'
+import { UnitGroups, useUnitName } from './UnitGroups'
 
 export type IngredientSheetProps = {
   visible: boolean
@@ -42,13 +60,23 @@ export type IngredientSheetProps = {
  */
 type Panel = 'search' | 'own' | 'amount'
 
-const UNITS: RecipeUnit[] = ['g', 'ml', 'piece']
-
 /**
  * A typed number. The decimal pad shows a comma in comma locales, and
  * `Number('1,5')` is NaN, so the comma is read as the point it means.
  */
 const typedNumber = (text: string) => Number(text.replace(',', '.'))
+
+/**
+ * Opening the unit picker puts the number pad away first: the picker opens
+ * under the field, and with the pad up it opened behind it.
+ */
+const toggleChoosing = (set: (update: (open: boolean) => boolean) => void) => {
+  Keyboard.dismiss()
+  set((open) => !open)
+}
+
+/** The amount, set as large as the figure it is: the field is mostly this number. */
+const AMOUNT_TYPE = 'font-display text-[22px]'
 
 /**
  * Adding one thing to the pot.
@@ -185,52 +213,133 @@ function SearchPanel({ onPick, onOwn }: { onPick: (foodId: string) => void; onOw
 }
 
 /**
- * How much of something went in, and what that much costs. Shared by adding an
- * ingredient and correcting one later, and short because per-unit storage does
- * the work: `perUnit` is what one gram, millilitre or piece is worth, so a new
- * amount reprices with a multiplication and no lookup.
+ * How much of the chosen dish went in, in whichever unit the cook measured it,
+ * and what that much costs.
  *
- * The unit is not editable here, from the same reasoning: `perUnit` was derived
- * against a unit, so re-reading 250 g of santan as 250 pieces would keep a number
- * that means nothing. Changing the unit is removing the row and adding it again.
+ * The amount is prefilled with the serving the catalogue quoted, in the unit it
+ * was quoted in (see `ingredientOptions`), so the calorie figure on the row the
+ * user just tapped is the calorie figure they see here before changing
+ * anything. A picker that opened at zero would make them do the arithmetic
+ * twice.
+ *
+ * Changing the unit converts what is in the field rather than keeping the
+ * number: 400 g of milk becomes 1.64 cups, where keeping "400" would be 400 cups.
  */
 function AmountForm({
-  unit,
-  perUnit,
-  initial,
+  food,
   action,
   onSubmit,
 }: {
-  unit: RecipeUnit
-  perUnit: Macros
-  /** Prefilled, so the figure on screen is the one they just tapped. */
-  initial: number
+  food: Food
   action: string
-  onSubmit: (amount: number) => void
+  onSubmit: (ingredient: RecipeIngredientInput) => void
 }) {
-  const { t } = useTranslation(['recipes', 'common'])
+  const { t } = useTranslation(['recipes', 'common', 'logging'])
+  const unitName = useUnitName()
+  const measureText = useMeasureText()
+  const units = useSettings().data?.units
+  const { choices, initial } = ingredientOptions(food, units)
+
+  // Null until they pick one, like the amount below, so the opening unit and
+  // the opening amount are read from the same render. Frozen at mount, the unit
+  // stayed grams while settings arrived and turned the prefill into ounces:
+  // "3 g" for three ounces.
+  const [picked, setPicked] = useState<IngredientKey | null>(null)
+  /** Whether the unit picker is open under the field. */
+  const [choosing, setChoosing] = useState(false)
   // Null until they touch it, so the field shows the prefill without that
   // prefill becoming a string the moment the component mounts.
   const [amount, setAmount] = useState<string | null>(null)
 
-  const value = amount === null ? initial : typedNumber(amount)
-  const usable = isStorableAmount(value)
-  const line = ingredientTotal(perUnit, usable ? storedAmount(value) : 0)
+  const key = picked ?? initial.key
+  const choice = choices.find((c) => c.key === key) ?? choices[0]
+  const value = amount === null ? initial.amount : typedNumber(amount)
+  const stored = storedFrom(value, choice.key)
+  const usable = Number.isFinite(value) && isStorableAmount(stored)
+  const line = ingredientTotal(choice.perUnit, usable ? storedAmount(stored) : 0)
+
+  const switchTo = (next: IngredientKey) => {
+    const target = choices.find((c) => c.key === next)
+    if (!target || next === choice.key) return
+    setPicked(next)
+    if (Number.isFinite(value) && value > 0) {
+      setAmount(amountText(convertIngredient(value, choice, target)))
+    }
+  }
 
   return (
     <>
       <TextField
         label={t('recipes:ingredient.amount')}
-        value={amount === null ? String(initial) : amount}
-        onChangeText={setAmount}
+        value={amount === null ? amountText(initial.amount) : amount}
+        onChangeText={(text) => {
+          // The unit is pinned at the first keystroke: while nothing was
+          // picked it followed the opening unit, which moves when settings
+          // arrive, and 200 typed as grams became 200 ounces.
+          if (picked === null) setPicked(key)
+          setAmount(text)
+        }}
         keyboardType="decimal-pad"
         selectTextOnFocus
+        inputClassName={AMOUNT_TYPE}
         rightSlot={
-          <Text variant="label" className="text-muted">
-            {t(`recipes:ingredient.unit.${unit}`, { count: value })}
-          </Text>
+          choices.length > 1 ? (
+            <UnitPill
+              label={unitName(choice.key, value)}
+              open={choosing}
+              onPress={() => toggleChoosing(setChoosing)}
+              accessibilityLabel={t('recipes:ingredient.unitTitle')}
+            />
+          ) : (
+            <Text variant="label" className="text-muted">
+              {unitName(choice.key, value)}
+            </Text>
+          )
         }
       />
+
+      {/* Each unit as the amount it would read as and what that costs, the
+          same list the food page and an ingredient row open: picking one
+          converts, so the result is shown before it is picked. */}
+      {choosing ? (
+        <View className="rounded-md border-[3px] border-line bg-surface px-4">
+          <MeasureList
+            choices={choices.map((target) => {
+              const converted =
+                target.key === choice.key || !(value > 0)
+                  ? value
+                  : convertIngredient(value, choice, target)
+              // How much food the converted figure is against the figure in the
+              // field, in base servings: a unit that would round it by more
+              // than 2.5% (10 g as 0.01 kg) is shown but not offered.
+              const eatenNow = value * choice.servings
+              const eatenThen = converted * target.servings
+              return {
+                key: target.key,
+                disabled:
+                  target.key !== choice.key &&
+                  eatenNow > 0 &&
+                  Math.abs(eatenThen - eatenNow) > eatenNow * 0.025,
+                title:
+                  target.key === 'piece'
+                    ? `${amountText(converted)} ${unitName('piece', converted)}`
+                    : measureText.amount(converted, target.key),
+                detail: t('logging:detail.partKcal', {
+                  kcal: ingredientTotal(
+                    target.perUnit,
+                    storedAmount(storedFrom(converted, target.key)),
+                  ).kcal.toLocaleString(),
+                }),
+                selected: target.key === choice.key,
+                onPress: () => {
+                  switchTo(target.key)
+                  setChoosing(false)
+                },
+              }
+            })}
+          />
+        </View>
+      ) : null}
 
       {/* The point of the whole panel: the number moves as the amount is
           typed, so what the button commits is what was being read. */}
@@ -246,21 +355,27 @@ function AmountForm({
         </View>
       </Card>
 
-      <Button fullWidth disabled={!usable} onPress={() => onSubmit(storedAmount(value))}>
+      <Button
+        fullWidth
+        disabled={!usable}
+        onPress={() =>
+          onSubmit({
+            name: food.name,
+            foodId: food.id,
+            amount: storedAmount(stored),
+            unit: choice.unit,
+            displayUnit: displayUnitFor(choice.key),
+            perUnit: choice.perUnit,
+          })
+        }
+      >
         {action}
       </Button>
     </>
   )
 }
 
-/**
- * How much of the chosen dish went in.
- *
- * The amount is prefilled with the serving the catalogue quoted — see
- * `ingredientBasis` — so the calorie figure on the row the user just tapped is
- * the calorie figure they see here before changing anything. A picker that
- * opened at zero would make them do the arithmetic twice.
- */
+/** The chosen dish: its name, a way back to the results, and the amount form. */
 function AmountPanel({
   foodId,
   onBack,
@@ -275,9 +390,8 @@ function AmountPanel({
   const { t } = useTranslation(['recipes', 'logging', 'common'])
   const colors = useThemeColors()
   const { data: food } = useFood(foodId)
-  const basis = food ? ingredientBasis(food) : null
 
-  if (!food || !basis) return null
+  if (!food) return null
 
   return (
     <View className="gap-3">
@@ -293,19 +407,9 @@ function AmountPanel({
       </View>
 
       <AmountForm
-        unit={basis.unit}
-        perUnit={basis.perUnit}
-        initial={basis.amount}
+        food={food}
         action={t(replacing ? 'logging:detail.replacePart' : 'recipes:ingredient.add')}
-        onSubmit={(amount) =>
-          onAdd({
-            name: food.name,
-            foodId: food.id,
-            amount,
-            unit: basis.unit,
-            perUnit: basis.perUnit,
-          })
-        }
+        onSubmit={onAdd}
       />
     </View>
   )
@@ -335,8 +439,11 @@ function CustomPanel({
   const { t } = useTranslation(['recipes', 'logging', 'common'])
   const colors = useThemeColors()
   const [name, setName] = useState('')
+  const units = useSettings().data?.units
   const [amount, setAmount] = useState('100')
-  const [unit, setUnit] = useState<RecipeUnit>('g')
+  const [unit, setUnit] = useState<IngredientKey>('g')
+  const [choosing, setChoosing] = useState(false)
+  const unitName = useUnitName()
   const [kcal, setKcal] = useState('')
   const [carbs, setCarbs] = useState('')
   const [protein, setProtein] = useState('')
@@ -344,8 +451,9 @@ function CustomPanel({
 
   // Rounded as the column will round it, so the figures below are divided by
   // the amount that is actually stored: 50 kcal over 0.006 g divided by 0.006
-  // and stored against 0.01 would come back as 83 kcal.
-  const amountValue = storedAmount(typedNumber(amount))
+  // and stored against 0.01 would come back as 83 kcal. In the stored unit: two
+  // tablespoons are 29.57 ml, and the figures typed for them are per millilitre.
+  const amountValue = storedAmount(storedFrom(typedNumber(amount), unit))
 
   // The figures are typed for the amount beside them — "642 kcal per 100 g" —
   // and stored per unit, because that is what stays true when the amount is
@@ -386,29 +494,37 @@ function CustomPanel({
         autoFocus
       />
 
+      {/* The unit rides on the amount it measures, and opens the picker under
+          it. Picking one does not convert the amount, unlike the catalogue
+          picker: nothing here knows this food's density, and the figures below
+          are typed for whatever the amount is. */}
       <TextField
         label={t('recipes:ingredient.amount')}
         value={amount}
         onChangeText={setAmount}
         keyboardType="decimal-pad"
         selectTextOnFocus
+        inputClassName={AMOUNT_TYPE}
+        rightSlot={
+          <UnitPill
+            label={unitName(unit, typedNumber(amount) || 2)}
+            open={choosing}
+            onPress={() => toggleChoosing(setChoosing)}
+            accessibilityLabel={t('recipes:ingredient.unitTitle')}
+          />
+        }
       />
 
-      {/* The unit gets a row of its own rather than sharing one with the amount.
-          Beside the field the three chips had half a screen between them, and
-          "pieces" wrapped one letter per line. */}
-      <View className="flex-row gap-2">
-        {UNITS.map((value) => (
-          <Chip
-            key={value}
-            className="flex-1"
-            selected={unit === value}
-            onPress={() => setUnit(value)}
-          >
-            {t(`recipes:ingredient.unit.${value}`, { count: 2 })}
-          </Chip>
-        ))}
-      </View>
+      {choosing ? (
+        <UnitGroups
+          keys={[...unitsFor(units, 'recipe'), 'piece']}
+          value={unit}
+          onChange={(next) => {
+            setUnit(next)
+            setChoosing(false)
+          }}
+        />
+      ) : null}
 
       <TextField
         label={t('recipes:ingredient.calories')}
@@ -459,7 +575,8 @@ function CustomPanel({
           onAdd({
             name: name.trim(),
             amount: amountValue,
-            unit,
+            unit: storedUnit(unit),
+            displayUnit: displayUnitFor(unit),
             perUnit: { ...ZERO, ...figures },
           })
         }

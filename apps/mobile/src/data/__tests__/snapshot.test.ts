@@ -8,6 +8,7 @@ import {
   snapshotFromEntry,
   snapshotFromFood,
   withCataloguePortions,
+  withMeasures,
 } from '@/data/snapshot'
 import type { Food } from '@/data/types'
 
@@ -217,4 +218,70 @@ describe('snapshotFromEntry', () => {
     expect(snapshotFromEntry(plain).icon).toBeUndefined()
     expect(snapshotColumns(snapshotFromEntry(plain)).item_icon_set).toBeNull()
   })
+})
+
+describe('withMeasures', () => {
+  const id = 'a3f1c2d4-0000-4000-8000-000000000010'
+  // A curated plate: "1 plate" in the label, 350 g in the weight column.
+  const plate = food({
+    id,
+    name: 'Nasi lemak',
+    servingLabel: '1 plate',
+    servingGrams: 350,
+    servings: [{ id: `${id}:plate`, label: '1 plate', factor: 1 }],
+    macros: { kcal: 650, carbs: 75, protein: 18, fat: 30 },
+  })
+
+  it('adds grams for a dish whose weight is known, and no spoons', () => {
+    const ids = withMeasures(plate).servings.map((s) => s.id)
+    expect(ids).toEqual([`${id}:plate`, 'measure:g', 'measure:oz'])
+  })
+
+  // The round trip that has to hold: logged as 150 g, reopened, and the gram
+  // chip is still the one selected, beside the catalogue's own plate.
+  it('lets an entry logged in grams find its unit among the catalogue portions', () => {
+    const measured = withMeasures(plate)
+    const [grams] = measured.servings.filter((s) => s.id === 'measure:g')
+    const entry = foodFromEntry({
+      foodId: id,
+      foodName: 'Nasi lemak',
+      base: plate.macros,
+      servingId: grams.id,
+      servingLabel: grams.label,
+      servingFactor: grams.factor,
+      baseServingGrams: 350,
+    })
+
+    const reopened = withMeasures(withCataloguePortions(entry, measured))
+    expect(reopened.servings.map((s) => s.id)).toEqual([`${id}:plate`, 'measure:g', 'measure:oz'])
+  })
+
+  // A scanned plate has no catalogue row to return to, and only the chosen
+  // label is stored. Its base serving is still on the row, at factor 1.
+  it('keeps a way back to the serving for a scanned entry moved into grams', () => {
+    const entry = foodFromEntry({
+      foodName: 'Chicken rice',
+      base: { kcal: 600, carbs: 70, protein: 30, fat: 20 },
+      servingId: 'measure:g',
+      servingLabel: '100 g',
+      servingFactor: 0.286,
+      baseServingGrams: 350,
+    })
+    const offered = withMeasures(entry).servings
+    expect(offered.map((s) => s.label)).toEqual(['100 g', '1 serving', '1 oz'])
+  })
+})
+
+// An entry with no serving id already wears ENTRY_SERVING_ID; its base serving
+// sharing that id drew two selected rows and could not be picked.
+it('gives the base serving of a measured entry an id of its own', () => {
+  const entry = foodFromEntry({
+    foodName: 'Chicken rice',
+    base: { kcal: 600, carbs: 70, protein: 30, fat: 20 },
+    servingLabel: '100 g',
+    servingFactor: 0.286,
+    baseServingGrams: 350,
+  })
+  const ids = entry.servings.map((s) => s.id)
+  expect(new Set(ids).size).toBe(ids.length)
 })

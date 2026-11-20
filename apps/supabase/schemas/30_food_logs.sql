@@ -87,6 +87,14 @@ create table public.food_logs (
   serving_label  text not null,
   serving_factor numeric(6, 3) not null,
   serving_grams  numeric(9, 2),
+  -- What one base serving HOLDS, beside what it weighs, when anything knows.
+  -- Together they are the food's density, which is what lets an entry be
+  -- measured in spoons and cups (`foodBasis` in the app). Kept on the row
+  -- because the label it was read from is gone the moment the entry is moved to
+  -- another portion: a scanned "Regular (350 ml)" switched to grams no longer
+  -- says how much a cup of it is. Null is honest, and every build that predates
+  -- it reads and writes the row exactly as before.
+  serving_ml     numeric(9, 2),
 
   quantity     numeric(6, 2) not null default 1 check (quantity > 0 and quantity <= 100),
 

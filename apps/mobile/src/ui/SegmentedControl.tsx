@@ -8,6 +8,8 @@ import { Text } from './Text'
 export type SegmentedOption<T extends string> = {
   value: T
   label: string
+  /** Shown but not pressable, dimmed: a choice that exists and cannot be made now. */
+  disabled?: boolean
 }
 
 export type SegmentedControlProps<T extends string> = {
@@ -59,6 +61,7 @@ export function SegmentedControl<T extends string>({
     >
       {options.map((option) => {
         const selected = option.value === value
+        const disabled = Boolean(option.disabled) && !selected
         return (
           <Squish
             key={option.value}
@@ -70,10 +73,12 @@ export function SegmentedControl<T extends string>({
               'items-center px-1',
               small ? 'py-2' : 'py-3',
               selected ? 'bg-surface' : 'bg-transparent',
+              disabled && 'opacity-40',
             )}
+            disabled={disabled}
             onPress={() => onChange(option.value)}
             accessibilityRole="tab"
-            accessibilityState={{ selected }}
+            accessibilityState={{ selected, disabled }}
           >
             {/* One line, always. Four segments fit across a 393pt screen only
                 at this size, and a wrapped label makes one segment taller than

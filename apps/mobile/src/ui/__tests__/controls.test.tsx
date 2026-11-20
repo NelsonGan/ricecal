@@ -126,6 +126,28 @@ describe('CountBadge', () => {
 })
 
 describe('Stepper', () => {
+  // A converted 0.41 cup steps down to the ¼ minimum. Judged by 0.41 − 0.25 its
+  // minus was disabled, and the only way down was typing.
+  it('snaps an off-grid value to the next mark, and allows a step that lands on the minimum', async () => {
+    const onChange = jest.fn()
+    await render(
+      <Stepper
+        decrementLabel="Decrease"
+        incrementLabel="Increase"
+        value={0.41}
+        onChange={onChange}
+        step={0.25}
+        min={0.25}
+        max={20}
+        snapToStep
+      />,
+    )
+    await userEvent.setup().press(screen.getByLabelText('Decrease'))
+    expect(onChange).toHaveBeenLastCalledWith(0.25)
+    await userEvent.setup().press(screen.getByLabelText('Increase'))
+    expect(onChange).toHaveBeenLastCalledWith(0.5)
+  })
+
   it('formats halves as vulgar fractions', async () => {
     await render(
       <Stepper

@@ -158,6 +158,7 @@ export {
   snapshotFromFood,
   snapshotFromRecipe,
   withCataloguePortions,
+  withMeasures,
 } from './snapshot'
 export {
   type Entitlement,

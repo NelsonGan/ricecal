@@ -17,7 +17,7 @@ import {
   useReportRecipe,
   useSelectedDate,
 } from '@/data'
-import { RecipeSteps, ShareSheet, useCopyRecipe } from '@/features/recipes'
+import { RecipeSteps, ShareSheet, useCopyRecipe, useIngredientMeasure } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
@@ -60,6 +60,7 @@ import {
  */
 export default function RecipeDetailScreen() {
   const { t } = useTranslation(['recipes', 'common'])
+  const ingredientMeasure = useIngredientMeasure()
   const router = useRouter()
   const goBack = useBack('/settings/foods')
   const toast = useToast()
@@ -386,10 +387,7 @@ export default function RecipeDetailScreen() {
                   <Text variant="bodyStrong" className="min-w-0 flex-1" numberOfLines={1}>
                     {item.name}
                   </Text>
-                  <Text variant="meta">
-                    {item.amount}{' '}
-                    {t(`recipes:ingredient.unit.${item.unit}`, { count: item.amount })}
-                  </Text>
+                  <Text variant="meta">{ingredientMeasure(item)}</Text>
                   <View className="flex-row items-baseline gap-1">
                     <Text variant="numeric" className="text-[15px] leading-[20px]">
                       {item.macros.kcal.toLocaleString()}

@@ -10,6 +10,7 @@ import { Card, cn, Icon, IconButton, Text } from '@/ui'
 import { ItemRow, ROW_TILE_COMPACT, ROW_TILE_COMPACT_ICON } from './ItemRow'
 import { MealPhoto } from './MealPhoto'
 import { SwipeRow } from './SwipeRow'
+import { useMeasureText } from './useMeasureText'
 import { Shimmer, useWorkingStatus } from './Working'
 
 export type EntryListProps = {
@@ -148,6 +149,7 @@ function EntryRow({
   onOpenChange?: (open: boolean) => void
 }) {
   const { t } = useTranslation(['logging', 'common'])
+  const measure = useMeasureText()
 
   // A fix-by-typing correction in flight: the entry exists but is being
   // reworked on the server, so its row shows the work instead of stale
@@ -226,6 +228,7 @@ function EntryRow({
     eatenQuantity(entry),
     entry.servingLabel,
     t('logging:detail.servingWord'),
+    measure.amount,
   )
 
   const row = (open?: () => void) => (

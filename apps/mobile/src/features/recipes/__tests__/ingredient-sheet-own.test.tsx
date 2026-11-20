@@ -19,6 +19,7 @@ jest.mock('@/data', () => {
     storedAmount: recipes.storedAmount,
     useFood: () => ({ data: undefined, isPending: false }),
     useFoodSearch: () => ({ data: [], isPending: false, isFetching: false }),
+    useSettings: () => ({ data: { units: 'metric' } }),
   }
 })
 
@@ -87,4 +88,25 @@ it('will not add an amount or a figure the database would refuse', async () => {
   await user.press(add())
 
   expect(onAdd).not.toHaveBeenCalled()
+})
+
+// Two tablespoons of a sauce off its bottle: typed as spoons, stored as the
+// millilitres they are, and shown as spoons again.
+it('stores spoons as millilitres and remembers they were spoons', async () => {
+  await openOwnPanel()
+  await fill('NAME', 'Kicap manis')
+  await fill('PORTION', '2')
+  // The unit rides on the amount field and opens the picker under it.
+  await user.press(screen.getByRole('button', { name: 'Measure in' }))
+  await user.press(screen.getByText('tbsp'))
+  await fill('CALORIES', '60')
+  await user.press(add())
+  expect(onAdd).toHaveBeenCalledWith(
+    expect.objectContaining({
+      amount: 29.57,
+      unit: 'ml',
+      displayUnit: 'tbsp',
+      perUnit: expect.objectContaining({ kcal: 2.0291 }),
+    }),
+  )
 })

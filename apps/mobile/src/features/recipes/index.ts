@@ -8,8 +8,9 @@
  * that previews one number and saves another.
  */
 export {
-  type IngredientBasis,
-  ingredientBasis,
+  type IngredientChoice,
+  type IngredientKey,
+  ingredientOptions,
   ingredientTotal,
   potTotals,
 } from './basis'
@@ -31,3 +32,4 @@ export { ShareSheet, type ShareSheetProps } from './ShareSheet'
 export { StepsField, type StepsFieldProps } from './StepsField'
 export { recipeLink } from './share'
 export { useCopyRecipe } from './useCopyRecipe'
+export { useIngredientMeasure } from './useIngredientMeasure'

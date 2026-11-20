@@ -88,6 +88,40 @@ export const common = {
     lUnit: 'L',
   },
 
+  /**
+   * An amount in a kitchen unit, for an entry or an ingredient measured in one.
+   * One key per unit rather than "{{value}} {{unit}}", for the reason
+   * `volume` gives, and because some languages put the spoon first: Japanese
+   * writes 大さじ2, not 2 大さじ.
+   */
+  measure: {
+    g: '{{value}} g',
+    kg: '{{value}} kg',
+    oz: '{{value}} oz',
+    lb: '{{value}} lb',
+    ml: '{{value}} ml',
+    l: '{{value}} L',
+    tsp: '{{value}} tsp',
+    tbsp: '{{value}} tbsp',
+    cup_one: '{{value}} cup',
+    cup_other: '{{value}} cups',
+    floz: '{{value}} fl oz',
+  },
+  /** The unit on its own, under a stepper's figure or on a chip. */
+  measureUnit: {
+    g: 'g',
+    kg: 'kg',
+    oz: 'oz',
+    lb: 'lb',
+    ml: 'ml',
+    l: 'L',
+    tsp: 'tsp',
+    tbsp: 'tbsp',
+    cup_one: 'cup',
+    cup_other: 'cups',
+    floz: 'fl oz',
+  },
+
   /** Reused counts. i18next picks _one/_other from `count`. */
   count: {
     dayStreak_one: '{{count}} day streak',

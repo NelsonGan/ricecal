@@ -30,6 +30,15 @@ export { PartLine } from './PartLine'
 export { PhotoNotePanel, type PhotoNotePanelProps } from './PhotoNotePanel'
 export { PlateEditor, type PlateEditorProps } from './PlateEditor'
 export { type PartEdits, partChanges, stagedParts } from './parts'
+export {
+  canSwitch,
+  openingPortion,
+  portionChips,
+  portionControl,
+  quantityFor,
+  rememberedPortion,
+  switchedQuantity,
+} from './portion'
 export { QuickAction, type QuickActionProps } from './QuickAction'
 export { ScannedPacket, type ScannedPacketProps } from './ScannedPacket'
 export { TankFigure, type TankFigureProps } from './TankFigure'

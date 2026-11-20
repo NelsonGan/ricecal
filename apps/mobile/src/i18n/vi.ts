@@ -188,6 +188,33 @@ export const vi = {
       lUnit: 'L',
     },
 
+    measure: {
+      g: '{{value}} g',
+      kg: '{{value}} kg',
+      oz: '{{value}} oz',
+      lb: '{{value}} lb',
+      ml: '{{value}} ml',
+      l: '{{value}} L',
+      tsp: '{{value}} thìa cà phê',
+      tbsp: '{{value}} thìa canh',
+      cup_one: '{{value}} cốc',
+      cup_other: '{{value}} cốc',
+      floz: '{{value}} fl oz',
+    },
+    measureUnit: {
+      g: 'g',
+      kg: 'kg',
+      oz: 'oz',
+      lb: 'lb',
+      ml: 'ml',
+      l: 'L',
+      tsp: 'thìa cà phê',
+      tbsp: 'thìa canh',
+      cup_one: 'cốc',
+      cup_other: 'cốc',
+      floz: 'fl oz',
+    },
+
     count: {
       dayStreak_one: 'chuỗi {{count}} ngày',
       dayStreak_other: 'chuỗi {{count}} ngày',
@@ -869,6 +896,8 @@ export const vi = {
       nameField: 'Tên',
       numbersReset: 'Dùng số liệu của ứng dụng',
       servingWord: 'khẩu phần',
+      measureIn: 'Đo bằng',
+      amount: 'Lượng',
       quickFix: {
         halfPortion: 'Nửa khẩu phần',
         noSambal: 'Không sambal',
@@ -1552,6 +1581,13 @@ export const vi = {
         ml: 'ml',
         piece_one: 'cái',
         piece_other: 'cái',
+      },
+      unitTitle: 'Đo bằng',
+      changeUnit: 'Đơn vị cho {{name}}, {{unit}}',
+      unitGroup: {
+        weight: 'Khối lượng',
+        volume: 'Thể tích',
+        count: 'Số lượng',
       },
     },
 

@@ -56,6 +56,7 @@ jest.mock('@/features/recipes', () => ({
   RecipeSteps: () => null,
   ShareSheet: () => null,
   useCopyRecipe: () => ({ copy: jest.fn(), busy: false }),
+  useIngredientMeasure: () => () => '',
 }))
 jest.mock('@/features/shared', () => ({ MealPhoto: () => null }))
 jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))

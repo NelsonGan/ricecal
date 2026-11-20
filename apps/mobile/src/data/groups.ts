@@ -89,6 +89,11 @@ export type BoardEntry = {
   icon_name: string | null
   logged_at: string
   serving_label: string | null
+  /**
+   * How much of that portion was eaten, plate share folded in. Missing from an
+   * older server, where the label is shown on its own as it always was.
+   */
+  quantity?: number
   likes: number
   dislikes: number
   /** The viewer's own reaction: 1, -1 or 0. */
@@ -152,6 +157,8 @@ export type ChatFood = {
   icon_name: string | null
   photo_path: string | null
   serving_label: string | null
+  /** As on a board entry: missing from an older server. */
+  quantity?: number
   logged_at: string
   kcal: number
   carbs_g: number
