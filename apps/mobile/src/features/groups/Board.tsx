@@ -39,6 +39,7 @@ import { track } from '@/lib/analytics'
 import { showingGroupChat } from '@/lib/notifications'
 import { useThemeColors } from '@/theme/useTheme'
 import {
+  AppBar,
   Button,
   CountBadge,
   cn,
@@ -72,8 +73,6 @@ const GAP = 4
 /** The page's side margin. The grid has no card around it, so the tiles get the width. */
 const EDGE = 8
 const MEMBER_COLUMN = 46
-/** Each side of the header: room for its two buttons, so the title centres on the screen. */
-const HEADER_SIDE = 88
 /** Text in a tile is capped so a large Dynamic Type size cannot push it out of a fixed square. */
 const TILE_TEXT = 1.3
 const SKELETON_ROWS = ['a', 'b', 'c', 'd', 'e']
@@ -83,7 +82,7 @@ const SKELETON_ROWS = ['a', 'b', 'c', 'd', 'e']
  * back from the background. Read once per render, a date that changed under a
  * mounted board shifted every page by a day.
  */
-function useToday(): string {
+export function useToday(): string {
   const [today, setToday] = useState(() => dateKey(new Date()))
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-armed for the next midnight each time the date moves
   useEffect(() => {
@@ -103,16 +102,24 @@ function useToday(): string {
   return today
 }
 
-/** The widths the grid works to: narrow phones give up a little of the workout column. */
-function useGrid() {
+/**
+ * The widths a grid works to inside `inner` points: narrow phones give up a
+ * little of the workout column. `width` is the page the grid sits on, which
+ * the pager steps by.
+ */
+function gridFor(width: number, inner: number) {
+  const workout = width < 360 ? 44 : 54
+  const tile = Math.max(0, Math.floor((inner - MEMBER_COLUMN - workout - GAP * 4) / 3))
+  return { width, workout, tile, compact: tile < 70 }
+}
+type Grid = ReturnType<typeof gridFor>
+
+function useGrid(): Grid {
   // The pane's width rather than the window's, which on iPhone Duo open is two
   // panes and a side column. The window's on every other iPhone.
   const width = usePaneWidth()
-  const workout = width < 360 ? 44 : 54
-  const tile = Math.floor((width - EDGE * 2 - MEMBER_COLUMN - workout - GAP * 4) / 3)
-  return useMemo(() => ({ width, workout, tile, compact: tile < 70 }), [width, workout, tile])
+  return useMemo(() => gridFor(width, width - EDGE * 2), [width])
 }
-type Grid = ReturnType<typeof useGrid>
 
 /**
  * First names, unless two people in the group share one: a board of three
@@ -136,16 +143,19 @@ function shortNames(members: readonly BoardMember[]): Map<string, string> {
 /**
  * One group, one page per day. Swiping sideways goes back a day, and the week
  * strip under the header picks any day of the last sixty, the way Today's does.
- * The chat for the day on screen sits in a bar above the tabs and opens its
+ * The chat for the day on screen sits in a bar at the foot and opens its
  * own screen.
  */
 export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack: () => void }) {
   const { t } = useTranslation(['groups', 'common'])
-  const colors = useThemeColors()
   const router = useRouter()
   const viewer = useUserId()
   const grid = useGrid()
   const navInset = useNavInset()
+  const insets = useSafeAreaInsets()
+  // The chat bar's foot, clear of the home indicator on a pushed page, and the
+  // room the last row needs to scroll clear of the bar (its 52pt and a gap).
+  const chatBottom = Math.max(navInset + 8, insets.bottom)
   const focused = useIsFocused()
   const today = useToday()
   const days = useMemo(
@@ -223,7 +233,7 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
           day={item}
           enabled={focused && Math.abs(page - index) <= 1}
           live={focused && page === index}
-          bottomInset={navInset + 76}
+          bottomInset={chatBottom + 68}
           topInset={stripHeight}
           scrollY={scrollY}
           grid={grid}
@@ -231,29 +241,28 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
         />
       </View>
     ),
-    [groupId, focused, index, navInset, grid, openInvite, stripHeight, scrollY],
+    [groupId, focused, index, chatBottom, grid, openInvite, stripHeight, scrollY],
   )
 
   return (
     <View className="flex-1">
-      <View className="pb-2 pt-1" style={{ paddingHorizontal: EDGE }}>
-        {/* Equal sides, so the name sits in the middle of the screen rather
-            than in the middle of whatever the buttons leave. */}
-        <View className="flex-row items-center">
-          <View style={{ width: HEADER_SIDE }} className="flex-row">
-            <IconButton size="sm" variant="ghost" accessibilityLabel={t('back')} onPress={onBack}>
-              <Icon set="ui" name="chevron-left" size={22} tintColor={colors.muted} />
-            </IconButton>
-          </View>
-          <View className="min-w-0 flex-1 items-center">
-            <Text variant="subtitle" numberOfLines={1} maxFontSizeMultiplier={1.3}>
+      {/* The same bar as the chat and the group's settings, the pages either
+          side of this one. */}
+      <AppBar
+        onBack={onBack}
+        backLabel={t('common:action.back')}
+        titleContent={
+          <View className="items-center">
+            <Text variant="label" numberOfLines={1} maxFontSizeMultiplier={1.3}>
               {name ?? ' '}
             </Text>
             {memberCount !== undefined ? (
               <Text variant="micro">{t('members', { count: memberCount })}</Text>
             ) : null}
           </View>
-          <View style={{ width: HEADER_SIDE }} className="flex-row justify-end">
+        }
+        action={
+          <View className="flex-row">
             <IconButton
               size="sm"
               variant="ghost"
@@ -271,8 +280,8 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
               <Icon set="system" name="settings" size={22} />
             </IconButton>
           </View>
-        </View>
-      </View>
+        }
+      />
 
       {/* The strip sits over the board rather than above it, and slides away
           as the board scrolls, so a long board gets the whole screen. Every
@@ -315,7 +324,7 @@ export function GroupBoardScreen({ groupId, onBack }: { groupId: string; onBack:
 
       <ChatBar
         summary={chat.data}
-        bottom={navInset + 8}
+        bottom={chatBottom}
         onPress={() => router.push({ pathname: '/group/chat', params: { id: groupId } })}
       />
       <InviteSheet groupId={groupId} visible={inviteOpen} onClose={() => setInviteOpen(false)} />
@@ -424,12 +433,125 @@ const BoardPage = memo(function BoardPage({
   )
 })
 
+/** The rows the group's card on Social shows: the viewer and the next two. */
+const PREVIEW_ROWS = 3
+/** Each side of the card on Social: its margin (`mx-gutter`) and padding (`p-2`). */
+const PREVIEW_INSET = 20 + 8
+/**
+ * The widest the preview's rows go. On an iPad the card is the screen's width,
+ * and tiles sized to it were bigger than the feed's photos; past this the rows
+ * keep a phone's size and centre in the card.
+ */
+const PREVIEW_MAX = 460
+
+/**
+ * Today's board cut to its first rows, for the group's card on Social. The
+ * server puts the viewer first, so their own day always shows, then the next
+ * two. Every member and every other day is a tap away on the full board: a
+ * group holds twenty, and twenty rows here pushed the feed off the screen.
+ * It sizes its tiles to the card it sits in rather than to the page.
+ */
+export function BoardPreview({
+  groupId,
+  live,
+  onSeeAll,
+  onInvite,
+}: {
+  groupId: string
+  /** Read and poll today's board, while Social is in front and the card in view. */
+  live: boolean
+  onSeeAll: () => void
+  onInvite: () => void
+}) {
+  const { t } = useTranslation('groups')
+  const today = useToday()
+  // A first guess from the pane, the card's margins and padding taken off,
+  // so the rows draw at once; the layout then gives the card's real width.
+  const pane = usePaneWidth()
+  const [inner, setInner] = useState(() => pane - 2 * PREVIEW_INSET)
+  const width = Math.min(inner, PREVIEW_MAX)
+  // The pane decides a narrow phone, as it does for the full board.
+  const grid = useMemo(() => gridFor(pane, width), [pane, width])
+  const board = useGroupBoard(groupId, today, live, live)
+  const [open, setOpen] = useState<Open | null>(null)
+  const onOpen = useCallback((memberId: string, meal: GroupMeal) => setOpen({ memberId, meal }), [])
+  const onClose = useCallback(() => setOpen(null), [])
+  const members = board.data?.members
+  const names = useMemo(() => shortNames(members ?? []), [members])
+  const all = members ?? []
+
+  return (
+    <View onLayout={(event) => setInner(Math.floor(event.nativeEvent.layout.width))}>
+      {!board.data ? (
+        board.isError || board.fetchStatus === 'paused' ? (
+          <QueryNotice
+            error={board.isError}
+            paused={board.fetchStatus === 'paused'}
+            retry={() => board.refetch()}
+          />
+        ) : (
+          <View style={{ width }} className="self-center">
+            <BoardSkeleton grid={grid} rows={PREVIEW_ROWS} />
+          </View>
+        )
+      ) : (
+        <View style={{ gap: GAP, width }} className="self-center">
+          <ColumnHeaders grid={grid} />
+          {all.slice(0, PREVIEW_ROWS).map((member) => (
+            <MemberRow
+              key={member.person.id}
+              groupId={groupId}
+              day={today}
+              member={member}
+              name={names.get(member.person.id) ?? member.person.name}
+              grid={grid}
+              onOpen={onOpen}
+            />
+          ))}
+          {all.length > PREVIEW_ROWS ? (
+            <Tappable
+              className="items-center py-1"
+              onPress={onSeeAll}
+              accessibilityRole="button"
+              hitSlop={{ top: 4, bottom: 4 }}
+            >
+              <Text variant="label" className="text-pandan-ink">
+                {t('seeAll', { total: all.length })}
+              </Text>
+            </Tappable>
+          ) : null}
+          {board.data.group.member_count === 1 ? (
+            <View className="items-center gap-md py-md">
+              <Text variant="meta" className="text-center">
+                {t('inviteFirst')}
+              </Text>
+              <Button
+                size="sm"
+                className="self-center"
+                leftIcon={<Icon set="system" name="user-add" size={18} />}
+                onPress={onInvite}
+              >
+                {t('inviteFriends')}
+              </Button>
+            </View>
+          ) : null}
+        </View>
+      )}
+      <MealSheet
+        meal={open?.meal ?? null}
+        member={open ? (all.find((m) => m.person.id === open.memberId) ?? null) : null}
+        onClose={onClose}
+      />
+    </View>
+  )
+}
+
 /** The board's own shape while it loads: a name and four tiles per row. */
-function BoardSkeleton({ grid }: { grid: Grid }) {
+function BoardSkeleton({ grid, rows = SKELETON_ROWS.length }: { grid: Grid; rows?: number }) {
   return (
     <View style={{ gap: GAP }}>
       <View style={{ height: 22 }} />
-      {SKELETON_ROWS.map((row) => (
+      {SKELETON_ROWS.slice(0, rows).map((row) => (
         <View key={row} className="flex-row items-center" style={{ gap: GAP }}>
           <View className="items-center gap-1" style={{ width: MEMBER_COLUMN }}>
             <Skeleton rounded={false} width={40} height={40} className="rounded-[14px]" />
@@ -906,40 +1028,67 @@ function ChatBar({
   bottom: number
   onPress: () => void
 }) {
-  const { t } = useTranslation('groups')
-  const colors = useThemeColors()
-  const last = summary?.last
-  const unread = summary?.unread ?? 0
   const insets = useSafeAreaInsets()
-  const preview = last ? `${last.author.name.split(' ')[0]}: ${last.body}` : t('chatEmpty')
   return (
     <View
       className="absolute inset-x-0"
       style={{ bottom: Math.max(bottom, insets.bottom), paddingHorizontal: EDGE }}
       pointerEvents="box-none"
     >
-      <Tappable
-        className="min-h-[52px] flex-row items-center gap-3 rounded-tile border border-line bg-surface px-3"
-        style={FLOAT_SHADOW}
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={[t('chat'), unread > 0 ? t('unread', { count: unread }) : null, preview]
-          .filter(Boolean)
-          .join(', ')}
-      >
-        <View>
-          <Icon set="system" name="chat" size={26} />
-          <CountBadge count={unread} className="absolute -right-2 -top-1.5 h-5 min-w-5 px-1" />
-        </View>
-        <Text
-          variant="meta"
-          className={cn('min-w-0 flex-1', unread > 0 && 'text-ink')}
-          numberOfLines={1}
-        >
-          {preview}
-        </Text>
-        <Icon set="ui" name="chevron-up" size={18} tintColor={colors.muted} />
-      </Tappable>
+      <ChatRow summary={summary} onPress={onPress} floating />
     </View>
+  )
+}
+
+/**
+ * The way into the group's chat: its unread count and latest message. It
+ * floats over the foot of the board, and sits at the foot of the group's card
+ * on Social, where it scrolls with the card rather than covering the feed.
+ */
+export function ChatRow({
+  summary,
+  onPress,
+  floating = false,
+}: {
+  summary: ChatSummary | undefined
+  onPress: () => void
+  floating?: boolean
+}) {
+  const { t } = useTranslation('groups')
+  const colors = useThemeColors()
+  const last = summary?.last
+  const unread = summary?.unread ?? 0
+  const preview = last ? `${last.author.name.split(' ')[0]}: ${last.body}` : t('chatEmpty')
+  return (
+    <Tappable
+      className={cn(
+        'min-h-[52px] flex-row items-center gap-3 rounded-tile px-3',
+        floating ? 'border border-line bg-surface' : 'bg-surface-alt',
+      )}
+      style={floating ? FLOAT_SHADOW : undefined}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={[t('chat'), unread > 0 ? t('unread', { count: unread }) : null, preview]
+        .filter(Boolean)
+        .join(', ')}
+    >
+      <View>
+        <Icon set="system" name="chat" size={26} />
+        <CountBadge count={unread} className="absolute -right-2 -top-1.5 h-5 min-w-5 px-1" />
+      </View>
+      <Text
+        variant="meta"
+        className={cn('min-w-0 flex-1', unread > 0 && 'text-ink')}
+        numberOfLines={1}
+      >
+        {preview}
+      </Text>
+      <Icon
+        set="ui"
+        name={floating ? 'chevron-up' : 'chevron-right'}
+        size={18}
+        tintColor={colors.muted}
+      />
+    </Tappable>
   )
 }

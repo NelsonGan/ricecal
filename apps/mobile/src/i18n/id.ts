@@ -15,6 +15,7 @@ export const id = {
     rejectedBody: 'Edit teks atau foto, lalu coba lagi.',
     handleTaken: 'Nama pengguna ini sudah dipakai.',
     feed: 'Linimasa',
+    title: 'Sosial',
     following: 'Mengikuti',
     discover: 'Jelajahi',
     feedShow: 'Tampilkan',
@@ -2318,8 +2319,8 @@ export const id = {
     emptyTitle: 'Makan bareng, tetap di jalur',
     emptyBody: 'Lihat apa yang dimakan teman setiap hari.',
     startGroup: 'Buat grup',
-    pickGroup: 'Pilih grup untuk melihat harinya',
-    back: 'Grup',
+    seeAll: 'Lihat semua ({{total}})',
+    openBoard: 'Buka papan',
     settings: 'Pengaturan grup',
     column: {
       breakfast: 'Sarapan',

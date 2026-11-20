@@ -1,5 +1,5 @@
 /**
- * The Groups tab: friends who see each other's day of food.
+ * Groups, on Social: friends who see each other's day of food.
  *
  * Short on purpose. The board is a grid of small tiles, so a column label or a
  * button that runs long pushes a tile's text off it in every language.
@@ -39,9 +39,10 @@ export const groups = {
   emptyTitle: 'Eat together, stay on track',
   emptyBody: 'See what friends eat each day.',
   startGroup: 'Start a group',
-  /** Beside the list on a window with room for both, before a group is opened. */
-  pickGroup: 'Pick a group to see its day',
-  back: 'Groups',
+  /** Under the first rows of a group's card on Social; opens the full board. */
+  seeAll: 'See all ({{total}})',
+  /** The card's header, read by a screen reader. */
+  openBoard: 'Open board',
   settings: 'Group settings',
   /** The board's column headings: short, since a column is a tile wide. */
   column: {

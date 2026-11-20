@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen } from '@/test-utils'
 import '@/i18n'
 import type { BoardEntry, BoardMember, GroupBoard } from '@/data/groups'
 import { ToastProvider } from '@/ui'
-import { GroupBoardScreen } from '../Board'
+import { BoardPreview, GroupBoardScreen } from '../Board'
 
 const METRICS = {
   frame: { x: 0, y: 0, width: 393, height: 852 },
@@ -242,5 +242,41 @@ describe('the workout tile', () => {
     await fireEvent.press(screen.getByLabelText('Yoga, 30m'))
     expect(mockPush).not.toHaveBeenCalled()
     expect(screen.getByText('Push day · 45m')).toBeOnTheScreen()
+  })
+})
+
+describe('the preview on Social', () => {
+  const preview = (onSeeAll = jest.fn()) => (
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <ToastProvider>
+        <BoardPreview groupId="g1" live onSeeAll={onSeeAll} onInvite={jest.fn()} />
+      </ToastProvider>
+    </SafeAreaProvider>
+  )
+
+  it('shows the viewer and the next two, and the rest behind See all', async () => {
+    const onSeeAll = jest.fn()
+    await render(preview(onSeeAll))
+    expect(screen.getByText('You')).toBeOnTheScreen()
+    expect(screen.getByText('Aisha')).toBeOnTheScreen()
+    expect(screen.getByText('Wei')).toBeOnTheScreen()
+    expect(screen.queryByText('Hafiz')).toBeNull()
+    // Today's board, nudges and all.
+    expect(screen.getByLabelText('Nudge Wei about lunch')).toBeOnTheScreen()
+    await fireEvent.press(screen.getByText('See all (7)'))
+    expect(onSeeAll).toHaveBeenCalled()
+  })
+
+  it('has no See all when everyone fits', async () => {
+    mockBoard.members = mockBoard.members.slice(0, 3)
+    await render(preview())
+    expect(screen.queryByText(/^See all/)).toBeNull()
+  })
+
+  it('asks a group of one to invite friends', async () => {
+    mockBoard.group.member_count = 1
+    mockBoard.members = mockBoard.members.slice(0, 1)
+    await render(preview())
+    expect(screen.getByText('Invite friends to fill the board.')).toBeOnTheScreen()
   })
 })

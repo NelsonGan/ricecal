@@ -29,7 +29,7 @@ export function GroupWorkoutScreen({
   id: string
 }) {
   const { t } = useTranslation(['groups', 'activity', 'workouts', 'common'])
-  const back = useBack('/groups')
+  const back = useBack('/social')
   const query = useGroupWorkout(groupId, source, id)
   const unit = unitFor(useSettings().data?.units)
   const view = query.data

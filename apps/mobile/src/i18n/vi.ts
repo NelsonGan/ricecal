@@ -10,6 +10,7 @@ export const vi = {
     rejectedBody: 'Sửa nội dung hoặc ảnh rồi thử lại.',
     handleTaken: 'Tên người dùng này đã được sử dụng.',
     feed: 'Bảng tin',
+    title: 'Cộng đồng',
     following: 'Đang theo dõi',
     discover: 'Khám phá',
     feedShow: 'Hiển thị',
@@ -2309,8 +2310,8 @@ export const vi = {
     emptyTitle: 'Cùng ăn, cùng giữ nhịp',
     emptyBody: 'Xem bạn bè ăn gì mỗi ngày.',
     startGroup: 'Lập nhóm',
-    pickGroup: 'Chọn một nhóm để xem ngày của nhóm',
-    back: 'Nhóm',
+    seeAll: 'Xem tất cả ({{total}})',
+    openBoard: 'Mở bảng',
     settings: 'Cài đặt nhóm',
     column: {
       breakfast: 'Sáng',

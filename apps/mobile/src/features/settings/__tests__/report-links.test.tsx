@@ -32,6 +32,7 @@ jest.mock('expo-router', () => ({
     navigate: (href: unknown) => mockPush(`navigate ${mockHref(href)}`),
     replace: (href: unknown) => mockPush(`replace ${mockHref(href)}`),
     dismissTo: (href: string) => mockPush(`dismissTo ${href}`),
+    setParams: (params: object) => mockPush(`setParams ${JSON.stringify(params)}`),
   },
   useNavigationContainerRef: () => mockNavigation,
 }))
@@ -160,4 +161,44 @@ it('leaves the thread alone when it is already open, and swaps in another group'
   mockListeners[0]?.(chatPush('g2'))
   expect(mockPush.mock.calls.map(([href]) => href)).toEqual([`replace ${chatHref('g2')}`])
   unmount()
+})
+
+const groupPush = (data: object) => ({
+  notification: { request: { content: { data: { kind: 'group', groupId: 'g1', ...data } } } },
+})
+const boardHref = (id: string) => JSON.stringify({ pathname: '/group/board', params: { id } })
+
+it("opens a nudge on its group's board, and leaves that board alone when it is showing", async () => {
+  const { unmount } = await mount()
+  mockRoute.current = { name: 'today' }
+  mockListeners[0]?.(groupPush({ day: '2026-11-20' }))
+  expect(mockPush.mock.calls.map(([href]) => href)).toEqual([boardHref('g1')])
+
+  mockPush.mockReset()
+  mockRoute.current = { name: 'board', params: { id: 'g1' } }
+  mockListeners[0]?.(groupPush({ day: '2026-11-20' }))
+  expect(mockPush).not.toHaveBeenCalled()
+  unmount()
+})
+
+it('opens an invite on the Groups page with its invites showing', async () => {
+  const { unmount } = await mount()
+  mockListeners[0]?.(groupPush({ invite: true }))
+  expect(mockPush.mock.calls.map(([href]) => href)).toEqual([
+    JSON.stringify({ pathname: '/group', params: { invites: '1' } }),
+  ])
+  unmount()
+})
+
+it('shows a second invite on the Groups page already open rather than pushing another', async () => {
+  const { setGroupsPageOnTop } = jest.requireActual('@/features/groups/store')
+  const { unmount } = await mount()
+  setGroupsPageOnTop(true)
+  try {
+    mockListeners[0]?.(groupPush({ invite: true }))
+    expect(mockPush.mock.calls.map(([href]) => href)).toEqual(['setParams {"invites":"1"}'])
+  } finally {
+    setGroupsPageOnTop(false)
+    unmount()
+  }
 })

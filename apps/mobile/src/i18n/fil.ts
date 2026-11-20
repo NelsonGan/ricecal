@@ -17,6 +17,7 @@ export const fil = {
     rejectedBody: 'Baguhin ang teksto o larawan, saka subukan muli.',
     handleTaken: 'May gumagamit na ng username na ito.',
     feed: 'Feed',
+    title: 'Social',
     following: 'Sinusundan',
     discover: 'Tuklasin',
     feedShow: 'Ipakita',
@@ -2342,8 +2343,8 @@ export const fil = {
     emptyTitle: 'Sabay kumain, sabay sa target',
     emptyBody: 'Tingnan ang kinakain ng mga kaibigan araw-araw.',
     startGroup: 'Gumawa ng grupo',
-    pickGroup: 'Pumili ng grupo para makita ang araw nito',
-    back: 'Mga grupo',
+    seeAll: 'Tingnan lahat ({{total}})',
+    openBoard: 'Buksan ang board',
     settings: 'Settings ng grupo',
     column: {
       breakfast: 'Almusal',

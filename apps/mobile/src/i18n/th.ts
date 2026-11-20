@@ -16,6 +16,7 @@ export const th = {
     rejectedBody: 'แก้ไขข้อความหรือรูปภาพ แล้วลองอีกครั้ง',
     handleTaken: 'ชื่อผู้ใช้นี้ถูกใช้แล้ว',
     feed: 'ฟีด',
+    title: 'โซเชียล',
     following: 'กำลังติดตาม',
     discover: 'สำรวจ',
     feedShow: 'แสดง',
@@ -2286,8 +2287,8 @@ export const th = {
     emptyTitle: 'กินด้วยกัน ไปถึงเป้าด้วยกัน',
     emptyBody: 'ดูว่าเพื่อนกินอะไรในแต่ละวัน',
     startGroup: 'สร้างกลุ่ม',
-    pickGroup: 'เลือกกลุ่มเพื่อดูวันของกลุ่ม',
-    back: 'กลุ่ม',
+    seeAll: 'ดูทั้งหมด ({{total}})',
+    openBoard: 'เปิดบอร์ด',
     settings: 'ตั้งค่ากลุ่ม',
     column: {
       breakfast: 'เช้า',

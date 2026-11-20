@@ -16,6 +16,7 @@ export const ms = {
     rejectedBody: 'Sunting teks atau foto, kemudian cuba lagi.',
     handleTaken: 'Nama pengguna ini sudah digunakan.',
     feed: 'Suapan',
+    title: 'Sosial',
     following: 'Mengikuti',
     discover: 'Teroka',
     feedShow: 'Tunjuk',
@@ -2339,8 +2340,8 @@ export const ms = {
     emptyTitle: 'Makan bersama, kekal di landasan',
     emptyBody: 'Lihat apa yang kawan makan setiap hari.',
     startGroup: 'Mulakan kumpulan',
-    pickGroup: 'Pilih kumpulan untuk melihat harinya',
-    back: 'Kumpulan',
+    seeAll: 'Lihat semua ({{total}})',
+    openBoard: 'Buka papan',
     settings: 'Tetapan kumpulan',
     column: {
       breakfast: 'Sarapan',

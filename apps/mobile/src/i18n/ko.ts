@@ -10,6 +10,7 @@ export const ko = {
     rejectedBody: '글이나 사진을 수정한 뒤 다시 시도하세요.',
     handleTaken: '이미 사용 중인 사용자 이름입니다.',
     feed: '피드',
+    title: '소셜',
     following: '팔로잉',
     discover: '둘러보기',
     feedShow: '표시',
@@ -2293,8 +2294,8 @@ export const ko = {
     emptyTitle: '함께 먹고, 함께 꾸준히',
     emptyBody: '친구들이 매일 무엇을 먹는지 확인하세요.',
     startGroup: '그룹 만들기',
-    pickGroup: '그룹을 고르면 그날의 기록을 볼 수 있어요',
-    back: '그룹',
+    seeAll: '모두 보기 ({{total}})',
+    openBoard: '보드 열기',
     settings: '그룹 설정',
     column: {
       breakfast: '아침',

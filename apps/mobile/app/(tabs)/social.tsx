@@ -11,6 +11,7 @@ import {
   useSocialFeed,
   useSocialUnread,
 } from '@/data/social'
+import { SocialGroups } from '@/features/groups/SocialGroups'
 import { ScreenTitle } from '@/features/shared'
 import { PostCard, SocialList } from '@/features/social/components'
 import {
@@ -26,12 +27,22 @@ import {
   useWindowLayout,
 } from '@/ui'
 
-export default function FeedScreen() {
+/**
+ * Social: the viewer's groups on top, then the feed. It used to be two tabs,
+ * Feed and Groups, and most people only ever opened one of them; together the
+ * group's day is the first thing on screen and the feed is a scroll away.
+ *
+ * The groups and the feed's own tabs and filter head the feed's list rather
+ * than the screen, so they scroll away and the posts get the whole height.
+ */
+export default function SocialScreen() {
   const { t } = useTranslation('social')
   const router = useRouter()
   const viewer = useUserId()
   const [mode, setMode] = useState<'following' | 'discover'>('following')
   const [show, setShow] = useState<SocialFeedShow>('all')
+  // Whether the groups above the feed can be on screen; their card polls only then.
+  const [groupsInView, setGroupsInView] = useState(true)
   // With two panes both feeds are on screen, one in each, and the tabs that
   // switch between them have nothing to do. See `Aside`.
   const { split } = useWindowLayout()
@@ -48,7 +59,7 @@ export default function FeedScreen() {
       header={
         <View className="gap-1">
           <ScreenTitle
-            title={t('feed')}
+            title={t('title')}
             trailing={
               <View className="flex-row items-center">
                 <IconButton
@@ -94,35 +105,52 @@ export default function FeedScreen() {
             // Two panes have no tabs, and the filter covers both feeds, so it
             // sits once above them rather than in each.
             <FeedShowChips value={show} onChange={setShow} inHeader />
-          ) : (
-            <Tabs
-              value={mode}
-              align="center"
-              scrollable
-              accessibilityLabel={t('feed')}
-              options={[
-                { value: 'following', label: t('following') },
-                { value: 'discover', label: t('discover') },
-              ]}
-              onChange={setMode}
-            />
-          )}
+          ) : null}
         </View>
       }
     >
       {split ? (
         <>
-          <FeedColumn key={`following-${show}`} mode="following" show={show} titled />
+          <FeedColumn
+            mode="following"
+            show={show}
+            titled
+            header={<SocialGroups inView={groupsInView} />}
+            onHeaderShown={setGroupsInView}
+          />
           <Aside>
+            {/* Keyed, so the filter (in the header, above both) starts this
+                one at its top; it carries no groups to reload. */}
             <FeedColumn key={`discover-${show}`} mode="discover" show={show} titled />
           </Aside>
         </>
       ) : (
+        // Not keyed by the feed: switching it keeps the list, and the groups
+        // above it, where they are. The tabs are on screen to be tapped, so the
+        // new feed starts right under them.
         <FeedColumn
-          key={`${mode}-${show}`}
           mode={mode}
           show={show}
-          header={<FeedShowChips value={show} onChange={setShow} />}
+          onHeaderShown={setGroupsInView}
+          header={
+            <View>
+              <SocialGroups inView={groupsInView} />
+              <View className="px-gutter pt-sm">
+                <Tabs
+                  value={mode}
+                  align="center"
+                  scrollable
+                  accessibilityLabel={t('feed')}
+                  options={[
+                    { value: 'following', label: t('following') },
+                    { value: 'discover', label: t('discover') },
+                  ]}
+                  onChange={setMode}
+                />
+              </View>
+              <FeedShowChips value={show} onChange={setShow} />
+            </View>
+          }
         />
       )}
     </Screen>
@@ -191,21 +219,24 @@ function FeedShowChips({
 }
 
 /**
- * One feed. Keyed by its mode and filter, so a switch starts the new feed at
- * its top. `titled` names it, for when the two stand side by side and there
- * are no tabs to say which is which.
+ * One feed. The one under the groups is never keyed by its mode or filter: a
+ * switch keeps the list, and the groups above it, where they are. `titled` names it, for when the two
+ * stand side by side and there are no tabs to say which is which. Pulling it
+ * down refreshes the groups drawn above it too.
  */
 function FeedColumn({
   mode,
   show,
   titled = false,
   header,
+  onHeaderShown,
 }: {
   mode: 'following' | 'discover'
   show: SocialFeedShow
   titled?: boolean
   /** Drawn above the first post, scrolling with the list. */
   header?: ReactElement
+  onHeaderShown?: (shown: boolean) => void
 }) {
   const { t } = useTranslation('social')
   const viewer = useUserId()
@@ -223,25 +254,34 @@ function FeedColumn({
     }, [mode, show, queryClient, viewer]),
   )
 
-  const list = (
+  const heading = titled ? (
+    <Text variant="overlineSm" className="px-gutter pb-2 pt-lg">
+      {t(mode)}
+    </Text>
+  ) : null
+  return (
     <SocialList
       query={feed}
+      onRefresh={() =>
+        Promise.all([
+          feed.refetch(),
+          queryClient.refetchQueries({ queryKey: keys.groups(viewer), type: 'active' }),
+        ])
+      }
+      onHeaderShown={onHeaderShown}
       variant="feed"
-      header={header}
+      header={
+        header || heading ? (
+          <View>
+            {header}
+            {heading}
+          </View>
+        ) : undefined
+      }
       rowKey={(post) => post.id}
       renderRow={(post, visible) => <PostCard post={post} visible={visible} />}
       empty={t(mode === 'following' && show === 'all' ? 'emptyFollowing' : 'end')}
       end={t('end')}
     />
-  )
-  if (!titled) return list
-
-  return (
-    <View className="flex-1 gap-2">
-      <Text variant="overlineSm" className="px-gutter">
-        {t(mode)}
-      </Text>
-      {list}
-    </View>
   )
 }

@@ -39,7 +39,7 @@ import { WorkoutsPreview } from './WorkoutsPreview'
 const CTAS = {
   edit_profile: { route: '/settings/account', label: 'social:editProfile' },
   personalisation: { route: '/settings/personalisation', label: 'profile:personalisation.title' },
-  groups: { route: '/groups', label: 'groups:title' },
+  groups: { route: '/social', label: 'groups:title' },
 } as const satisfies Record<AnnouncementCta, { route: Href; label: string }>
 
 /** Each page's picture, drawn from the app's own components. */

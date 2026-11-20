@@ -1,6 +1,6 @@
 import { FREE_GROUPS } from '@ricecal/shared'
 import { useFocusEffect } from 'expo-router'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { RefreshControl, ScrollView, View } from 'react-native'
 import { useEntitlement, useUserId } from '@/data'
@@ -15,7 +15,6 @@ import {
   usePublicGroups,
 } from '@/data/groups'
 import { useRequirePro } from '@/features/paywall'
-import { ScreenTitle } from '@/features/shared'
 import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
 import { ensureNotificationPermission } from '@/lib/notifications'
@@ -23,6 +22,7 @@ import { registerPushToken } from '@/lib/push'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
 import {
+  AppBar,
   AvatarGroup,
   Badge,
   Button,
@@ -33,13 +33,13 @@ import {
   Icon,
   IconButton,
   ProgressBar,
+  Screen,
   SearchField,
   SegmentedControl,
   Sheet,
   Tappable,
   Text,
   TextField,
-  useNavInset,
   useToast,
 } from '@/ui'
 import { type GroupIconChoice, GroupIconPicker } from './IconPicker'
@@ -51,8 +51,24 @@ async function askForPush(userId: string) {
   if (await ensureNotificationPermission()) await registerPushToken(userId)
 }
 
-export function GroupsHome({ onOpen }: { onOpen: (groupId: string) => void }) {
-  const { t } = useTranslation('groups')
+/**
+ * The Groups page, opened from Social: the viewer's groups in full, the
+ * invites waiting, a new group, and the public groups to join.
+ */
+export function GroupsHome({
+  onOpen,
+  onBack,
+  startOpen = false,
+  invitesOpen: invitesAtFirst = false,
+}: {
+  onOpen: (groupId: string) => void
+  onBack: () => void
+  /** Opens the new group sheet whenever it turns true, for Social's "Start a group". */
+  startOpen?: boolean
+  /** Opens the invites whenever it turns true, for an invite's notification. */
+  invitesOpen?: boolean
+}) {
+  const { t } = useTranslation(['groups', 'common'])
   const groups = useMyGroups()
   const invites = useGroupInviteCount()
   const inviteCount = invites.data ?? 0
@@ -62,7 +78,7 @@ export function GroupsHome({ onOpen }: { onOpen: (groupId: string) => void }) {
       void invites.refetch()
     }, [invites.refetch]),
   )
-  const [creating, setCreating] = useState(false)
+  const [creating, setCreating] = useState(startOpen)
   // A free account leads two groups at most, so a third is the paywall before
   // the sheet opens rather than a refusal after it is filled in. Only a known
   // free account is held back; while the answer loads, or offline, the sheet
@@ -74,87 +90,106 @@ export function GroupsHome({ onOpen }: { onOpen: (groupId: string) => void }) {
   const startGroup = () => {
     if (!atLimit || requirePro('new_group')) setCreating(true)
   }
-  const [invitesOpen, setInvitesOpen] = useState(false)
-  const navInset = useNavInset()
+  const [invitesOpen, setInvitesOpen] = useState(invitesAtFirst)
+  useEffect(() => {
+    if (startOpen) setCreating(true)
+  }, [startOpen])
+  useEffect(() => {
+    if (invitesAtFirst) setInvitesOpen(true)
+  }, [invitesAtFirst])
   const list = groups.data ?? []
 
   return (
-    <ScrollView
-      contentContainerClassName="gap-lg px-gutter pt-1"
-      contentContainerStyle={{ paddingBottom: navInset + 24 }}
-      refreshControl={
-        <RefreshControl refreshing={groups.isRefetching} onRefresh={() => void groups.refetch()} />
+    <Screen
+      scroll={false}
+      flush
+      header={
+        <AppBar
+          title={t('title')}
+          onBack={onBack}
+          backLabel={t('common:action.back')}
+          action={
+            <View className="flex-row items-center gap-2">
+              <IconButton
+                size="sm"
+                variant="neutral"
+                accessibilityLabel={inviteCount ? `${t('invites')}, ${inviteCount}` : t('invites')}
+                onPress={() => setInvitesOpen(true)}
+              >
+                <View className="h-6 w-6 items-center justify-center">
+                  <Icon set="ui" name="mail" size={22} />
+                  <CountBadge
+                    count={inviteCount}
+                    className="absolute -right-2.5 -top-2.5 h-5 min-w-5 px-1"
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                  />
+                </View>
+              </IconButton>
+              <IconButton
+                size="sm"
+                variant="primary"
+                accessibilityLabel={t('newGroup')}
+                onPress={startGroup}
+              >
+                <Icon set="ui" name="plus" size={22} />
+              </IconButton>
+            </View>
+          }
+        />
       }
     >
-      <ScreenTitle
-        title={t('title')}
-        trailing={
-          <View className="flex-row items-center gap-2">
-            <IconButton
-              size="sm"
-              variant="neutral"
-              accessibilityLabel={inviteCount ? `${t('invites')}, ${inviteCount}` : t('invites')}
-              onPress={() => setInvitesOpen(true)}
-            >
-              <View className="h-6 w-6 items-center justify-center">
-                <Icon set="ui" name="mail" size={22} />
-                <CountBadge
-                  count={inviteCount}
-                  className="absolute -right-2.5 -top-2.5 h-5 min-w-5 px-1"
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants"
-                />
-              </View>
-            </IconButton>
-            <IconButton
-              size="sm"
-              variant="primary"
-              accessibilityLabel={t('newGroup')}
-              onPress={startGroup}
-            >
-              <Icon set="ui" name="plus" size={22} />
-            </IconButton>
-          </View>
-        }
-      />
-
-      {groups.isLoading ? (
-        <GroupCardSkeleton />
-      ) : !groups.data && (groups.isError || groups.fetchStatus === 'paused') ? (
-        <QueryNotice
-          error={groups.isError}
-          paused={groups.fetchStatus === 'paused'}
-          retry={() => groups.refetch()}
-        />
-      ) : list.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon={{ set: 'food', name: 'rice-bowl' }}
-            title={t('emptyTitle')}
-            description={t('emptyBody')}
-            action={<Button onPress={startGroup}>{t('startGroup')}</Button>}
+      <ScrollView
+        contentContainerClassName="gap-lg px-gutter pb-xl pt-1"
+        refreshControl={
+          <RefreshControl
+            refreshing={groups.isRefetching}
+            onRefresh={() => void groups.refetch()}
           />
-        </Card>
-      ) : (
-        <View className="gap-3">
-          <Text variant="overlineSm">{t('yourGroups')}</Text>
-          {list.map((group) => (
-            <GroupCard key={group.id} group={group} onPress={() => onOpen(group.id)} />
-          ))}
-        </View>
-      )}
-      <PublicGroups onJoined={onOpen} />
+        }
+      >
+        {groups.isLoading ? (
+          <GroupCardSkeleton />
+        ) : !groups.data && (groups.isError || groups.fetchStatus === 'paused') ? (
+          <QueryNotice
+            error={groups.isError}
+            paused={groups.fetchStatus === 'paused'}
+            retry={() => groups.refetch()}
+          />
+        ) : list.length === 0 ? (
+          <Card>
+            <EmptyState
+              icon={{ set: 'food', name: 'rice-bowl' }}
+              title={t('emptyTitle')}
+              description={t('emptyBody')}
+              action={<Button onPress={startGroup}>{t('startGroup')}</Button>}
+            />
+          </Card>
+        ) : (
+          <View className="gap-3">
+            <Text variant="overlineSm">{t('yourGroups')}</Text>
+            {list.map((group) => (
+              <GroupCard key={group.id} group={group} onPress={() => onOpen(group.id)} />
+            ))}
+          </View>
+        )}
+        <PublicGroups onJoined={onOpen} />
 
-      <CreateGroupSheet
-        visible={creating}
-        onClose={() => setCreating(false)}
-        onCreated={(id) => {
-          setCreating(false)
-          onOpen(id)
-        }}
-      />
-      <InvitesSheet visible={invitesOpen} onClose={() => setInvitesOpen(false)} onJoined={onOpen} />
-    </ScrollView>
+        <CreateGroupSheet
+          visible={creating}
+          onClose={() => setCreating(false)}
+          onCreated={(id) => {
+            setCreating(false)
+            onOpen(id)
+          }}
+        />
+        <InvitesSheet
+          visible={invitesOpen}
+          onClose={() => setInvitesOpen(false)}
+          onJoined={onOpen}
+        />
+      </ScrollView>
+    </Screen>
   )
 }
 

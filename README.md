@@ -394,7 +394,7 @@ the diary itself. One return to the app was 29 requests, and 16 after these:
   thirty seconds bought was hearing about another device sooner.
 - **A write refetches what it changed, not what is mounted.** Tabs stay mounted
   once visited, so "active" includes screens nobody is looking at. A meal
-  marks the Feed tab's reads stale (`invalidateEntryPosts`) and the tab
+  marks the feed's reads stale (`invalidateEntryPosts`) and Social
   refetches them when it is next shown; it used to refetch every loaded page
   of the feed on every log and every portion change. A feed that is the tab
   in front still refetches at once, since a scan can finish after its sheet
@@ -405,7 +405,7 @@ the diary itself. One return to the app was 29 requests, and 16 after these:
   neighbouring week so a swipe has its dots, and that page asks once and then
   only goes stale (`useDayMarks` with `onScreen: false`). Subscribed, it
   doubled every refetch of the dots.
-- **A tab behind another reads nothing.** With all five tabs visited, a return
+- **A tab behind another reads nothing.** With every tab visited, a return
   to the app on Today also refetched the Trends charts and every loaded page
   of the feed: nine more requests and 27 KB nobody was looking at. Trends is
   wrapped in `ReadsWhileShown` (`data/while-shown.tsx`), which unsubscribes
@@ -1128,7 +1128,7 @@ same My foods results instead of Today or All foods. `openOwn` and `openCreate`
 sit beside `openPicked`, and the page does not focus its field when any of them
 sent it, since a keyboard would come up under the screen on top.
 
-Five tabs (Today, Feed, Groups, Trends, Me) on the headless `expo-router/ui`
+Four tabs (Today, Social, Trends, Me) on the headless `expo-router/ui`
 Tabs rather than a styled navigator, because `NavBar` and `NavItem` are the
 design system's and a native tab bar cannot be made to look like them.
 
@@ -2911,7 +2911,11 @@ Everyone or Followers. With automatic posting off, only pressing Post creates a 
 does not undo the meal. The source is one committed entry owned by the caller;
 the server records that reference and accepts no client-supplied author or food.
 
-Feed takes the second bottom tab. **My foods** moves into the Nutrition
+The feed is the lower half of Social, the second bottom tab, under the
+viewer's groups (see [Groups](#groups)). Its Following and Discover tabs and
+its filter head the list, below the groups, and scroll away with it; switching
+either keeps the list where it is rather than remounting it, so the groups
+above do not reload. Pulling the feed down refreshes the groups too. **My foods** moves into the Nutrition
 settings card on Me, retaining both the personal and community recipe shelves.
 Existing recipe routes and database contracts survive; the old recipes tab
 route redirects to Settings. Feed and recipes are separate concepts: a post
@@ -3379,10 +3383,30 @@ capacity without measurements.
 
 ## Groups
 
-Up to twenty friends see each other's day of food on one board, so the Groups tab
-is an accountability tool rather than a second feed. It took the tab that
-Workouts had (see [Workouts](#workouts)), and the tab's icon carries the count
-of pending invites.
+Up to twenty friends see each other's day of food on one board, so a group is
+an accountability tool rather than a second feed. Groups had a tab of their
+own, the one Workouts gave up (see [Workouts](#workouts)); they now share
+Social with the feed, above it, and the Social tab's icon carries the count of
+pending invites.
+
+### On Social
+
+Social opens on the viewer's groups: a row of pills to switch group, ending in
+**Groups** (with the invite count), and the chosen group's card. The card is
+the group's name, how many have logged today, the first three rows of today's
+board (`BoardPreview`; the server puts the viewer first) and the chat row. A
+tap on its header or on **See all** pushes the full board (`/group/board`),
+which has every member, the week strip and the sixty days. Three rows, because
+a group holds twenty and the whole board pushed the feed off the screen; the
+tiles are the board's own, so a nudge or a reaction works from the card. The
+preview sizes its tiles to the card rather than to the page. Someone in no
+group gets one card offering to start one.
+
+**Groups** (`/group`) is the old tab's list as a pushed page: every group with
+its details, the invites, a new group and the public groups. Choosing, joining
+or making a group there selects it on Social and goes back; until `my_groups`
+has the new group, the card waits rather than showing another one. The old
+`/feed` and `/groups` paths redirect to Social.
 
 ### The board reads the diary; it copies nothing
 
@@ -3676,17 +3700,20 @@ appended so release 1.0 reads the rest unchanged). A leader with
 company must name a successor to leave; the last member out deletes the group,
 and a deleted account hands its groups on through the same trigger.
 
-### The tab reopens on the last board
+### Social remembers the group
 
-Most people are in one group, so the tab goes straight back to the board it was
-on after a relaunch (`features/groups/store.ts`, kept per account in MMKV) until
-they tap back to the list. A group left elsewhere falls back to the list once
-`my_groups` has loaded. Days change by swiping the board or with the week strip
+Social shows the group last chosen, after a relaunch too
+(`features/groups/store.ts`, kept per account in MMKV); a group left elsewhere
+falls back to the first in `my_groups`. On the full board, days change by swiping the board or with the week strip
 under the header, the same strip Today uses, limited to the board's sixty days;
 each follows the other. Only the day on screen refreshes, every 30 seconds; the
 days either side are fetched once so a swipe lands on a drawn board. The chat
 is live while open (below), and the invite count refreshes every five minutes
-and whenever the tab is shown, since an invite also arrives as a push. The
+and whenever Social is shown, since an invite also arrives as a push. The card
+on Social polls today's board and its chat the same way, but only while Social
+is in front and the card can be on screen (no post below the feed's first is
+the first one showing); scrolled down into the feed, it keeps what it last read
+and catches up when it comes back into view. The
 pager follows the selected date rather than a position, so midnight passing
 under an open board does not move it a day.
 
@@ -3802,8 +3829,9 @@ the app then calls the `groups` edge function with it, which asks Postgres for
 the recipient's devices (`group_push_targets`, service role only), marks the row
 sent so a retried call sends nothing, and posts to Expo in the recipient's
 language. A failed push costs the push and nothing else. Tokens Expo reports as
-`DeviceNotRegistered` are forgotten. A tap opens the Groups tab, on the group's
-board for a nudge and on the list for an invite.
+`DeviceNotRegistered` are forgotten. A tap on a nudge pushes the group's full
+board on the nudge's day and chooses the group on Social, so back lands on its
+card; a tap on an invite opens the Groups page with the invites showing.
 
 A chat message goes the same way: `send_group_message` returns its id and the
 app sends it as kind `message`. `group_message_push_targets` marks the message
@@ -3816,11 +3844,11 @@ makes the tap open the group's thread with the keyboard up (`reply=1`; a chat
 opened by hand leaves it down), and no banner shows while that group's chat or
 board is on screen (`showingGroupChat`). The thread is pushed once over whatever
 is showing, and only after it has slid in does it switch the tab underneath to
-Groups (`showTabUnder`, a jump aimed at the tab navigator, since navigating to
-the tab would pop the chat) and raise the keyboard, so back still lands on the
-board. Navigating to Groups first and then pushing popped anything open, drew
-the board and then the chat, with the keyboard rising mid-push: three
-transitions for one tap. The thread already open is left alone, and another
+Social (`showTabUnder`, a jump aimed at the tab navigator, since navigating to
+the tab would pop the chat) and raise the keyboard, so back lands on the
+group's card. Navigating to the tab first and then pushing popped anything
+open, drew the tab and then the chat, with the keyboard rising mid-push: three
+transitions for one tap. A nudge's board is pushed the same way. The thread already open is left alone, and another
 group's is replaced rather than stacked.
 
 **Nobody is pushed a message they watched arrive.** The groups function answers
@@ -6657,7 +6685,7 @@ names the Apple Watch there and nowhere else: the watch app is iOS only.
 ### Groups
 
 `groups_2026_10` is two pages: the board (a picture of a day of meals with a
-nudge, and a button to the Groups tab) and the chat (a shared meal with
+nudge, and a Groups button that opens Social) and the chat (a shared meal with
 reactions). The pictures carry no words in their bubbles, so they read the
 same in every language.
 
@@ -7950,7 +7978,7 @@ never by its model name.
   tappable sits in the crease. A `footer` CTA stands under the second pane, with
   the content it acts on. The tabs use it: Today (summary | diary, or month |
   the chosen day's diary), Trends (eating and training | weight, water and reviews), Me (account |
-  settings), Feed (Following | Discover) and Groups (list | open board). So do
+  settings) and Social (the groups and Following | Discover). So do
   the pushed pages with more than one card, reflowed into two phone-width
   columns: the paywall (what Pro adds | plans over Subscribe), the meal page
   (picture and portion | nutrition), the settings pages and the workout pages.

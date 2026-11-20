@@ -64,7 +64,7 @@ import {
 
 export function SocialBar({ title, action }: { title: string; action?: ReactNode }) {
   const { t } = useTranslation('social')
-  const back = useBack('/feed')
+  const back = useBack('/social')
   return <AppBar title={title} onBack={back} backLabel={t('back')} action={action} />
 }
 
@@ -1009,7 +1009,7 @@ export const PostCard = memo(function PostCard({
   const viewer = useUserId()
   const ownProfile = useSocialProfile()
   const router = useRouter()
-  const leavePost = useCallback(() => router.dismissTo('/feed'), [router])
+  const leavePost = useCallback(() => router.dismissTo('/social'), [router])
   const likeAction = useSocialTask()
   const followAction = useSocialTask()
   const menuAction = useSocialTask()
@@ -1450,6 +1450,8 @@ export function SocialList<T>({
   variant = 'cards',
   skeleton,
   columns = 1,
+  onRefresh,
+  onHeaderShown,
 }: {
   query: PageQuery<T>
   rowKey: (row: T) => string
@@ -1463,17 +1465,29 @@ export function SocialList<T>({
   /** The loading shape, when the rows are not the variant's usual ones. */
   skeleton?: 'comments'
   columns?: number
+  /** What a pull refreshes, when it is more than the list: Social's groups too. */
+  onRefresh?: () => Promise<unknown>
+  /**
+   * Told whether the header can still be on screen, which is while no row
+   * below the first is the first one showing. Social's group card polls only
+   * then, rather than all the while someone reads the feed far beneath it.
+   */
+  onHeaderShown?: (shown: boolean) => void
 }) {
   const { t } = useTranslation('social')
   const [viewport, setViewport] = useState({ first: 0, last: columns - 1 })
   const [refreshing, setRefreshing] = useState(false)
   const navInset = useNavInset()
+  // The newest callback, read by the viewability handler FlatList keeps from its first render.
+  const headerShown = useRef(onHeaderShown)
+  headerShown.current = onHeaderShown
   const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: ListViewToken[] }) => {
     const indices = viewableItems.flatMap((item) =>
       typeof item.index === 'number' ? [item.index] : [],
     )
     const first = indices.length ? Math.min(...indices) : -1
     const last = indices.length ? Math.max(...indices) : -1
+    headerShown.current?.(first <= 0)
     setViewport((previous) =>
       previous.first === first && previous.last === last ? previous : { first, last },
     )
@@ -1492,7 +1506,7 @@ export function SocialList<T>({
     setRefreshing(true)
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {})
     try {
-      await query.refetch()
+      await (onRefresh ?? query.refetch)()
     } finally {
       setRefreshing(false)
     }

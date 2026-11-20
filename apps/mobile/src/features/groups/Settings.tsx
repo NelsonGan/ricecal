@@ -34,7 +34,7 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
   const viewer = useUserId()
   const colors = useThemeColors()
   const router = useRouter()
-  const back = useBack('/groups')
+  const back = useBack('/social')
   const details = useGroupDetails(groupId)
   const task = useGroupTask()
   const [name, setName] = useState('')
@@ -61,7 +61,8 @@ export function GroupSettingsScreen({ groupId }: { groupId: string }) {
       await task.run({ action: 'leave', groupId, newLeader })
       setLeaving(false)
       setOpenGroup(viewer, null)
-      router.replace('/groups')
+      // Past the board too, which would only say the group is gone.
+      router.dismissTo('/social')
     } catch {
       // The task showed why.
     }

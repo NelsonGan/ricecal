@@ -82,7 +82,7 @@ function Composer({
   const existing = post.data?.author_id === viewer ? post.data : null
   const editingPostId = postId || sourcePostId
   const finishEdit = useBack(
-    editingPostId ? { pathname: '/social/post/[id]', params: { id: editingPostId } } : '/feed',
+    editingPostId ? { pathname: '/social/post/[id]', params: { id: editingPostId } } : '/social',
   )
   useEffect(() => {
     if (existing && !initialized.current) {

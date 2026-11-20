@@ -10,6 +10,7 @@ export const bn = {
     rejectedBody: 'লেখা বা ছবি সম্পাদনা করে আবার চেষ্টা করুন।',
     handleTaken: 'এই ব্যবহারকারীর নাম ইতিমধ্যে ব্যবহৃত হচ্ছে।',
     feed: 'ফিড',
+    title: 'সোশ্যাল',
     following: 'অনুসরণ করছেন',
     discover: 'খুঁজুন',
     feedShow: 'দেখান',
@@ -2295,8 +2296,8 @@ export const bn = {
     emptyTitle: 'একসাথে খান, লক্ষ্যে থাকুন',
     emptyBody: 'দেখুন বন্ধুরা প্রতিদিন কী খায়।',
     startGroup: 'গ্রুপ খুলুন',
-    pickGroup: 'দিনটি দেখতে একটি গ্রুপ বেছে নিন',
-    back: 'গ্রুপ',
+    seeAll: 'সবাইকে দেখুন ({{total}})',
+    openBoard: 'বোর্ড খুলুন',
     settings: 'গ্রুপ সেটিংস',
     column: {
       breakfast: 'সকাল',
