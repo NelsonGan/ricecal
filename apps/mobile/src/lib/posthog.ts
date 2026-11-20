@@ -257,7 +257,8 @@ export function postHogAnalytics(posthog: PostHog): AnalyticsClient {
             )
           } catch {
             // Only a note that they went. MMKV throws from `set` on a phone with
-            // no room left; the cost of not noting it is one repeated `$set`.
+            // no room left; the cost of not noting it is the same `$set` again
+            // on each call until there is room.
           }
         },
         deleteUser() {

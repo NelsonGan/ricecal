@@ -1,5 +1,6 @@
 import { type AnalyticsClient, registerAnalytics, resetAnalyticsForTest } from '../client'
 import {
+  appOpenRecorder,
   claimDailyOpen,
   daysBetween,
   localDay,
@@ -136,18 +137,17 @@ describe('engagement events', () => {
       },
     }
     const morning = new Date(2026, 9, 12, 9)
+    expect(() => recordAppOpen(storage, { freshInstall: true, now: morning })).not.toThrow()
 
-    expect(recordAppOpen(storage, { freshInstall: true, now: morning })).toEqual({
-      firstOpen: false,
-      daily: false,
-      firstDay: true,
-    })
-    recordAppOpen(storage, { freshInstall: true, now: morning })
+    // As startup.ts drives it: the launch of a fresh install, then foregrounds.
+    const record = appOpenRecorder(storage, true)
+    expect(record(morning)).toEqual({ firstOpen: false, daily: false, firstDay: true })
+    record(morning)
     expect(events).toEqual([])
 
     full = false
-    recordAppOpen(storage, { freshInstall: true, now: morning })
-    recordAppOpen(storage, { freshInstall: false, now: new Date(2026, 9, 12, 21) })
+    record(new Date(2026, 9, 12, 10))
+    record(new Date(2026, 9, 12, 21))
     expect(events.map((e) => e.event)).toEqual(['First App Open', 'Daily App Open'])
     expect(events[1].props).toEqual({ active_days: 1, days_since_last_open: null })
   })

@@ -3,7 +3,7 @@ import { createMMKV } from 'react-native-mmkv'
 
 import { registerAnalytics } from './analytics'
 import { sending } from './analytics/client'
-import { recordAppOpen } from './analytics/engagement'
+import { appOpenRecorder } from './analytics/engagement'
 import { configureGa4Collection, ga4CollectionEnabled } from './analytics/ga4'
 import { createAnalyticsProviders, type FirebaseAnalyticsBridge } from './analytics/providers'
 import { registerRevenueAnalytics } from './analytics/revenue'
@@ -168,13 +168,14 @@ async function initAnalytics() {
   registerAnalytics(providers.client)
   void syncPurchaserAnalytics()
 
-  const opened = recordAppOpen(engagementStorage, { freshInstall })
+  const recordAppOpen = appOpenRecorder(engagementStorage, freshInstall)
+  const opened = recordAppOpen()
   if (posthog) startReplayForLaunch(posthog, opened.firstDay)
   foregroundListener?.remove()
   foregroundListener = AppState.addEventListener('change', (state) => {
     if (state !== 'active') return
     void syncPurchaserAnalytics()
-    recordAppOpen(engagementStorage, { freshInstall: false })
+    recordAppOpen()
   })
 }
 

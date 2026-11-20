@@ -98,6 +98,21 @@ export function claimDailyOpen(
 }
 
 /**
+ * `recordAppOpen` for one process: at launch, then on every return to the
+ * foreground. A fresh install's `First App Open` stays owed until a call
+ * manages to write it down, so a launch on a full disk sends it on the first
+ * foreground that can, rather than never.
+ */
+export function appOpenRecorder(storage: EngagementStorage, freshInstall: boolean) {
+  let firstOpenOwed = freshInstall
+  return (now = new Date()) => {
+    const opened = recordAppOpen(storage, { freshInstall: firstOpenOwed, now })
+    if (opened.daily) firstOpenOwed = false
+    return opened
+  }
+}
+
+/**
  * Send `First App Open` when this is a fresh install, then today's
  * `Daily App Open` if it has not gone yet. Call at launch and on every return
  * to the foreground; all but the first call of a day are one storage read.
