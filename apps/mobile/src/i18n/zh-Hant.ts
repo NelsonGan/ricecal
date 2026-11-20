@@ -191,6 +191,33 @@ export const zhHant = {
       lUnit: '公升',
     },
 
+    measure: {
+      g: '{{value}}公克',
+      kg: '{{value}}公斤',
+      oz: '{{value}}盎司',
+      lb: '{{value}}磅',
+      ml: '{{value}} 毫升',
+      l: '{{value}} 公升',
+      tsp: '{{value}}茶匙',
+      tbsp: '{{value}}湯匙',
+      cup_one: '{{value}}杯',
+      cup_other: '{{value}}杯',
+      floz: '{{value}}液量盎司',
+    },
+    measureUnit: {
+      g: '公克',
+      kg: '公斤',
+      oz: '盎司',
+      lb: '磅',
+      ml: '毫升',
+      l: '公升',
+      tsp: '茶匙',
+      tbsp: '湯匙',
+      cup_one: '杯',
+      cup_other: '杯',
+      floz: '液量盎司',
+    },
+
     count: {
       dayStreak_one: '連續 {{count}} 天',
       dayStreak_other: '連續 {{count}} 天',
@@ -877,6 +904,8 @@ export const zhHant = {
       nameField: '名稱',
       numbersReset: '用 App 算的數字',
       servingWord: '份',
+      measureIn: '計量單位',
+      amount: '用量',
       quickFix: {
         halfPortion: '只吃了一半',
         noSambal: '不要參巴醬',
@@ -1552,6 +1581,13 @@ export const zhHant = {
         ml: '毫升',
         piece_one: '個',
         piece_other: '個',
+      },
+      unitTitle: '計量單位',
+      changeUnit: '{{name}}的單位，{{unit}}',
+      unitGroup: {
+        weight: '重量',
+        volume: '容量',
+        count: '數量',
       },
     },
 

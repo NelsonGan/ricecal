@@ -193,6 +193,33 @@ export const id = {
       lUnit: 'L',
     },
 
+    measure: {
+      g: '{{value}} g',
+      kg: '{{value}} kg',
+      oz: '{{value}} oz',
+      lb: '{{value}} lb',
+      ml: '{{value}} ml',
+      l: '{{value}} L',
+      tsp: '{{value}} sdt',
+      tbsp: '{{value}} sdm',
+      cup_one: '{{value}} cangkir',
+      cup_other: '{{value}} cangkir',
+      floz: '{{value}} fl oz',
+    },
+    measureUnit: {
+      g: 'g',
+      kg: 'kg',
+      oz: 'oz',
+      lb: 'lb',
+      ml: 'ml',
+      l: 'L',
+      tsp: 'sdt',
+      tbsp: 'sdm',
+      cup_one: 'cangkir',
+      cup_other: 'cangkir',
+      floz: 'fl oz',
+    },
+
     count: {
       dayStreak_one: 'rentetan {{count}} hari',
       dayStreak_other: 'rentetan {{count}} hari',
@@ -891,6 +918,8 @@ export const id = {
       nameField: 'Nama',
       numbersReset: 'Pakai angka aplikasi',
       servingWord: 'porsi',
+      measureIn: 'Ukur dalam',
+      amount: 'Jumlah',
       quickFix: {
         halfPortion: 'Setengah porsi',
         noSambal: 'Tanpa sambal',
@@ -1573,6 +1602,13 @@ export const id = {
         ml: 'ml',
         piece_one: 'buah',
         piece_other: 'buah',
+      },
+      unitTitle: 'Ukur dalam',
+      changeUnit: 'Satuan untuk {{name}}, {{unit}}',
+      unitGroup: {
+        weight: 'Berat',
+        volume: 'Volume',
+        count: 'Jumlah',
       },
     },
 

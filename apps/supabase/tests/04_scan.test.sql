@@ -23,7 +23,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(58);
+select plan(61);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -469,6 +469,45 @@ select throws_ok(
   'P0001',
   'entry has typed figures',
   'an entry with a typed calorie figure refuses the addition'
+);
+
+reset role;
+
+-- An entry measured in a unit counts that unit, not servings: 15 g of a plate
+-- is 0.15 of its "100 g" portion. That used to be refused as too large to break
+-- down, because a part's own stepper starts at a quarter. It is seeded as ONE
+-- of its whole portion instead, and counts exactly what the entry counted.
+insert into public.food_logs
+  (user_id, log_date, quantity, source, item_name,
+   base_kcal, base_carbs_g, base_protein_g, base_fat_g,
+   serving_id, serving_label, serving_factor, serving_grams)
+values
+  (:'user_b', current_date, 0.15, 'search', 'Nasi lemak',
+   650, 75.0, 22.0, 28.0, 'measure:g', '100 g', 0.286, 350);
+
+select e.id as measured_id from public.food_logs e
+where e.user_id = :'user_b' and e.item_name = 'Nasi lemak' \gset
+
+set local role authenticated;
+
+select lives_ok(
+  format('select public.add_ingredient(%L::uuid, %L, 90, 1, 6, 7)', :'measured_id', 'Fried egg'),
+  'an entry measured in grams can be broken down'
+);
+
+select is(
+  (select quantity from public.food_log_ingredients
+    where food_log_id = :'measured_id'::uuid and position = 0),
+  1.0000,
+  'it is seeded as one of its whole portion'
+);
+
+-- 650 x 0.286 x 0.15 is 27.9 before, and 650 x 0.043 is 27.95 after: the same
+-- 28 kcal, plus the egg.
+select is(
+  (select kcal from public.food_log_details where id = :'measured_id'::uuid),
+  118,
+  'the folded part counts what the entry counted'
 );
 
 reset role;

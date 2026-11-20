@@ -1,3 +1,4 @@
+import { isMeasureUnit, MEASURES, type MeasureUnit } from '@/lib/measures'
 import type {
   Entry,
   Food,
@@ -8,6 +9,7 @@ import type {
   RecipeIngredient,
   RecipeIngredientRow,
   RecipeRow,
+  RecipeUnit,
   Serving,
 } from './types'
 import { fromDbSource } from './types'
@@ -59,9 +61,21 @@ export function toServings(json: FoodDetailsRow['servings']): Serving[] {
   if (!Array.isArray(json)) return []
   return json.flatMap((item) => {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return []
-    const { id, label, factor } = item as Record<string, unknown>
+    const { id, label, factor, grams } = item as Record<string, unknown>
     if (typeof id !== 'string' || typeof label !== 'string') return []
-    return [{ id, label, factor: Number(factor) || 1 }]
+    // The Worker sends each portion's weight, which is what lets a cup or a
+    // spoon of this food be converted to grams. Absent or null is "nobody said".
+    const weight = Number(grams)
+    return [
+      {
+        id,
+        label,
+        factor: Number(factor) || 1,
+        ...(grams !== null && grams !== undefined && Number.isFinite(weight) && weight > 0
+          ? { grams: weight }
+          : {}),
+      },
+    ]
   })
 }
 
@@ -148,6 +162,22 @@ export function toRecipe(row: RecipeRow): Recipe {
   }
 }
 
+/**
+ * The display unit, when there is one and it belongs to the stored unit's
+ * family. The column's check says the same thing; this is the belt to it, since
+ * a spoon read over an amount in grams would show a figure the cook never
+ * measured.
+ */
+export function displayUnitOf(
+  unit: RecipeUnit,
+  value: string | null | undefined,
+): { displayUnit?: MeasureUnit } {
+  if (!isMeasureUnit(value) || value === unit) return {}
+  return MEASURES[value].family === (unit === 'g' ? 'weight' : unit === 'ml' ? 'volume' : null)
+    ? { displayUnit: value }
+    : {}
+}
+
 export function toRecipeIngredient(row: RecipeIngredientRow): RecipeIngredient {
   return {
     id: row.id ?? '',
@@ -155,6 +185,7 @@ export function toRecipeIngredient(row: RecipeIngredientRow): RecipeIngredient {
     foodId: row.food_id ?? undefined,
     amount: Number(row.amount ?? 0),
     unit: row.unit ?? 'g',
+    ...displayUnitOf(row.unit ?? 'g', row.display_unit),
     perUnit: {
       kcal: Number(row.kcal_per_unit ?? 0),
       carbs: Number(row.carbs_g_per_unit ?? 0),
@@ -218,6 +249,7 @@ const ENTRY_COLUMN_NAMES = [
   'base_sugar_g',
   'base_sodium_mg',
   'base_serving_grams',
+  'base_serving_ml',
   'ingredient_count',
   'plate_quantity',
 ] as const satisfies readonly (keyof FoodLogRow)[]
@@ -282,6 +314,10 @@ export function toEntry(row: EntryRow): Entry {
       row.base_serving_grams === null || row.base_serving_grams === undefined
         ? undefined
         : Number(row.base_serving_grams),
+    baseServingMl:
+      row.base_serving_ml === null || row.base_serving_ml === undefined
+        ? undefined
+        : Number(row.base_serving_ml),
 
     // Only the fields that were actually typed. The macros above are what to
     // SHOW; these are what the editor needs to know it must not clear.

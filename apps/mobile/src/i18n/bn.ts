@@ -185,6 +185,33 @@ export const bn = {
       lUnit: 'L',
     },
 
+    measure: {
+      g: '{{value}} g',
+      kg: '{{value}} kg',
+      oz: '{{value}} oz',
+      lb: '{{value}} lb',
+      ml: '{{value}} ml',
+      l: '{{value}} L',
+      tsp: '{{value}} চা চামচ',
+      tbsp: '{{value}} টেবিল চামচ',
+      cup_one: '{{value}} কাপ',
+      cup_other: '{{value}} কাপ',
+      floz: '{{value}} fl oz',
+    },
+    measureUnit: {
+      g: 'g',
+      kg: 'kg',
+      oz: 'oz',
+      lb: 'lb',
+      ml: 'ml',
+      l: 'L',
+      tsp: 'চা চামচ',
+      tbsp: 'টেবিল চামচ',
+      cup_one: 'কাপ',
+      cup_other: 'কাপ',
+      floz: 'fl oz',
+    },
+
     count: {
       dayStreak_one: 'টানা {{count}} দিন',
       dayStreak_other: 'টানা {{count}} দিন',
@@ -872,6 +899,8 @@ export const bn = {
       nameField: 'নাম',
       numbersReset: 'অ্যাপের সংখ্যা ব্যবহার করুন',
       servingWord: 'পরিবেশন',
+      measureIn: 'যে এককে মাপবেন',
+      amount: 'পরিমাণ',
       quickFix: {
         halfPortion: 'অর্ধেক পরিমাণ',
         noSambal: 'সাম্বাল ছাড়া',
@@ -1549,6 +1578,13 @@ export const bn = {
         ml: 'ml',
         piece_one: 'টুকরো',
         piece_other: 'টুকরো',
+      },
+      unitTitle: 'যে এককে মাপবেন',
+      changeUnit: '{{name}}-এর একক, {{unit}}',
+      unitGroup: {
+        weight: 'ওজন',
+        volume: 'আয়তন',
+        count: 'সংখ্যা',
       },
     },
 

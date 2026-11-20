@@ -177,6 +177,9 @@ begin
   entries as materialized (
     select fd.user_id, fd.id, fd.food_name, fd.kcal, fd.carbs_g, fd.protein_g, fd.fat_g,
       fd.photo_path, fd.icon_set, fd.icon_name, fd.logged_at, fd.serving_label,
+      -- How much of the portion was eaten, plate share folded in, so the sheet
+      -- can say "350 g" or "2 × plate" rather than the bare label "100 g".
+      round(fd.quantity * fd.plate_quantity, 2) as eaten,
       private.group_entry_meal(fd.logged_at, fd.log_date, mb.timezone, f.board_meal,
         mb.breakfast_at, mb.lunch_at, mb.dinner_at) as meal
     from members mb
@@ -211,7 +214,7 @@ begin
             'id', e.id, 'meal', e.meal, 'name', e.food_name, 'kcal', e.kcal,
             'carbs_g', e.carbs_g, 'protein_g', e.protein_g, 'fat_g', e.fat_g,
             'photo_path', e.photo_path, 'icon_set', e.icon_set, 'icon_name', e.icon_name,
-            'logged_at', e.logged_at, 'serving_label', e.serving_label,
+            'logged_at', e.logged_at, 'serving_label', e.serving_label, 'quantity', e.eaten,
             'likes', coalesce(r.likes, 0), 'dislikes', coalesce(r.dislikes, 0), 'mine', coalesce(r.mine, 0)
           ) order by e.logged_at, e.id)
           from entries e left join reactions r on r.entry_id = e.id
@@ -323,7 +326,8 @@ begin
   select jsonb_build_object(
     'post_id', p_post_id, 'name', left(d.food_name, 160), 'icon_set', d.icon_set, 'icon_name', d.icon_name,
     'photo_path', d.photo_path,
-    'serving_label', d.serving_label, 'logged_at', d.logged_at,
+    'serving_label', d.serving_label, 'quantity', round(d.quantity * d.plate_quantity, 2),
+    'logged_at', d.logged_at,
     'kcal', d.kcal, 'carbs_g', d.carbs_g, 'protein_g', d.protein_g, 'fat_g', d.fat_g)
   into v_food
   from public.food_log_details d

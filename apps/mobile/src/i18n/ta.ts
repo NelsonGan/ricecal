@@ -188,6 +188,33 @@ export const ta = {
       lUnit: 'L',
     },
 
+    measure: {
+      g: '{{value}} g',
+      kg: '{{value}} kg',
+      oz: '{{value}} oz',
+      lb: '{{value}} lb',
+      ml: '{{value}} ml',
+      l: '{{value}} L',
+      tsp: '{{value}} தேக்கரண்டி',
+      tbsp: '{{value}} மேசைக்கரண்டி',
+      cup_one: '{{value}} கப்',
+      cup_other: '{{value}} கப்',
+      floz: '{{value}} fl oz',
+    },
+    measureUnit: {
+      g: 'g',
+      kg: 'kg',
+      oz: 'oz',
+      lb: 'lb',
+      ml: 'ml',
+      l: 'L',
+      tsp: 'தேக்கரண்டி',
+      tbsp: 'மேசைக்கரண்டி',
+      cup_one: 'கப்',
+      cup_other: 'கப்',
+      floz: 'fl oz',
+    },
+
     count: {
       dayStreak_one: '{{count}} நாள் தொடர்ச்சி',
       dayStreak_other: '{{count}} நாள் தொடர்ச்சி',
@@ -881,6 +908,8 @@ export const ta = {
       nameField: 'பெயர்',
       numbersReset: 'செயலியின் எண்களைப் பயன்படுத்து',
       servingWord: 'பங்கு',
+      measureIn: 'அளவிடும் அலகு',
+      amount: 'அளவு',
       quickFix: {
         halfPortion: 'பாதி அளவு',
         noSambal: 'சம்பால் இல்லை',
@@ -1561,6 +1590,13 @@ export const ta = {
         ml: 'ml',
         piece_one: 'துண்டு',
         piece_other: 'துண்டுகள்',
+      },
+      unitTitle: 'அளவிடும் அலகு',
+      changeUnit: '{{name}} அலகு, {{unit}}',
+      unitGroup: {
+        weight: 'எடை',
+        volume: 'கொள்ளளவு',
+        count: 'எண்ணிக்கை',
       },
     },
 

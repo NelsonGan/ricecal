@@ -51,7 +51,14 @@
 
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
-import { dishIcon, refineQuantity, resolveItem, writeIngredients } from '../_shared/cascade.ts'
+import {
+  dishIcon,
+  isMeasuredServing,
+  refineQuantity,
+  resolveItem,
+  unitQuantity,
+  writeIngredients,
+} from '../_shared/cascade.ts'
 import {
   claimScan,
   createMeter,
@@ -110,6 +117,7 @@ type RefineEntry = {
   base_carbs_g: number | string | null
   base_protein_g: number | string | null
   base_fat_g: number | string | null
+  serving_id: string | null
   serving_label: string | null
   serving_factor: number | null
   food_log_ingredients: Array<{
@@ -199,6 +207,8 @@ async function rebuildFromParts(
       serving_label: '1 serving',
       serving_factor: 1,
       serving_grams: null,
+      // The old food's volume would price spoons of the new one.
+      serving_ml: null,
       quantity: 1,
       display_label: name,
     })
@@ -289,7 +299,7 @@ Deno.serve(async (req: Request) => {
     .select(
       'id, user_id, quantity, plate_quantity, scan_id, display_label, food_id, ' +
         'item_name, base_kcal, base_carbs_g, base_protein_g, base_fat_g, ' +
-        'serving_label, serving_factor, ' +
+        'serving_id, serving_label, serving_factor, ' +
         'food_log_ingredients(id, quantity, grams, serving_label, display_label, item_name)',
     )
     .eq('id', body.food_log_id)
@@ -426,7 +436,13 @@ Deno.serve(async (req: Request) => {
         })
       }
 
-      const quantity = refineQuantity(Number(entry.quantity) * interpretation.factor)
+      // An entry measured in a unit ("100 g", "1 tbsp", written by the app with
+      // a `measure:` id) counts that unit, not servings: 15 g is 0.15 of it and
+      // 2 kg is 20. The servings clamp would turn half of 15 g into 25 g and
+      // double 2 kg into 1 kg, so it is scaled within the column instead.
+      const quantity = isMeasuredServing(entry.serving_id, entry.serving_label)
+        ? unitQuantity(Number(entry.quantity) * interpretation.factor)
+        : refineQuantity(Number(entry.quantity) * interpretation.factor)
       const { error } = await db.from('food_logs').update({ quantity }).eq('id', entry.id)
       if (error) throw error
 
@@ -719,9 +735,16 @@ Deno.serve(async (req: Request) => {
       // count before being added to one portion, which the quantity multiplies
       // again. Added flat, "add a fried egg" to half a plate put half an egg on
       // it.
-      const factor = Number(entry.serving_factor ?? 1)
+      // An entry measured in a unit (15 g, 30 tbsp) counts that unit, and its
+      // quantity is no number of portions: the servings clamp below turned 15 g
+      // into 25 g and 30 tbsp into 10. Its whole amount is folded into the one
+      // serving the adjusted row becomes, and the quantity is 1.
+      const measured = isMeasuredServing(entry.serving_id, entry.serving_label)
+      const factor = Number(entry.serving_factor ?? 1) * (measured ? Number(entry.quantity) : 1)
       const portionKcal = Number(entry.base_kcal ?? 0) * factor
-      const perPortionDelta = interpretation.kcal_delta / Math.max(0.25, Number(entry.quantity))
+      const perPortionDelta = measured
+        ? interpretation.kcal_delta
+        : interpretation.kcal_delta / Math.max(0.25, Number(entry.quantity))
       const target = Math.max(20, Math.round(portionKcal + perPortionDelta))
       const scale = target / Math.max(1, portionKcal)
       const round1 = (value: number) => Math.round(value * 10) / 10
@@ -734,7 +757,7 @@ Deno.serve(async (req: Request) => {
       // The portion collapses to "1 serving" because these numbers are no longer
       // per a catalogue serving that a factor scales: the factor is already in
       // them via `portionKcal`, so a "Half" label would double the discount.
-      const quantity = refineQuantity(Number(entry.quantity))
+      const quantity = measured ? 1 : refineQuantity(Number(entry.quantity))
       const { error: updateError } = await db
         .from('food_logs')
         .update({
@@ -758,6 +781,7 @@ Deno.serve(async (req: Request) => {
           serving_label: '1 serving',
           serving_factor: 1,
           serving_grams: null,
+          serving_ml: null,
           quantity,
           display_label: interpretation.name,
         })
@@ -828,6 +852,9 @@ Deno.serve(async (req: Request) => {
           serving_label: resolved.food.servingLabel,
           serving_factor: 1,
           serving_grams: resolved.food.servingGrams,
+          // Nothing in the catalogue answer states a volume; the app reads one
+          // off the new label next time the entry is opened.
+          serving_ml: null,
           quantity: resolved.quantity,
           // All of it: the corrected dish was described from the meal as eaten
           // (see `plateQuantity`), so its new parts already are what was eaten.

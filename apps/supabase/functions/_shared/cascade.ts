@@ -170,6 +170,35 @@ export const refineQuantity = (q: number): number =>
   Math.round(Math.min(10, Math.max(0.25, q)) * 20) / 20
 
 /**
+ * A refined amount for an entry measured in a unit, where the quantity counts
+ * grams by the hundred or spoons rather than servings. Above zero, two
+ * decimals, and at most 20: the column takes 100, but every app build in a
+ * store steps a quantity up to 20 and clamps to it on the next tap, so the app
+ * never writes more (`stepFor` in its `lib/measures.ts`).
+ */
+export const unitQuantity = (q: number): number =>
+  Math.round(Math.min(20, Math.max(0.01, q)) * 100) / 100
+
+/**
+ * Whether an entry counts a UNIT rather than servings of a dish: grams by the
+ * hundred, spoons, cups. The app's own unit portions carry a `measure:` id, and
+ * a catalogue row that is nothing but a unit ("100 g", "1 tbsp", "1.0 cup") is
+ * stepped as one too, so both are read. The same test as `measureOf` in the
+ * app's `lib/measures.ts`; a portion that only happens to be measured ("2 tbsp
+ * (32 g)") is a portion.
+ */
+export function isMeasuredServing(servingId: string | null, label: string | null): boolean {
+  if (servingId?.startsWith('measure:')) return true
+  const match = (label ?? '')
+    .trim()
+    .toLowerCase()
+    .match(/^(\d+(?:\.0+)?)\s*(g|ml|oz|fl oz|tsp|tbsp|cup)$/)
+  if (!match) return false
+  const block = match[2] === 'g' || match[2] === 'ml' ? 100 : 1
+  return Number(match[1]) === block
+}
+
+/**
  * A query, folded the way the catalogue folds it, or the empty string when
  * nothing is left worth asking about. An approximation of the Worker's own
  * `normalize`: that one decides what matches, this only decides whether a round

@@ -290,8 +290,14 @@ grant execute on function public.fold_plate_quantity to service_role;
 -- Two entries it refuses, both because the addition would not show:
 --   * one whose calorie total the user has typed over — `override_kcal` sits
 --     ABOVE the parts, so the plate would gain a row and not a calorie;
---   * one logged at more than twenty servings, which is past what a part's own
---     portion may be set to, so the seeded parent could never be edited back.
+--   * one whose whole portion cannot be stated as a factor the column holds.
+--
+-- An entry counted outside a part's own range (a quarter to twenty) is seeded as
+-- ONE of its whole portion instead of N of its serving. Entries measured in a
+-- unit are why: 15 g of peanut butter is 0.15 of "100 g" and 30 tbsp is 30 of
+-- "1 tbsp", both ordinary, and both used to be refused here as too large to
+-- break down. Folded, the part counts exactly what the entry counted and its
+-- own stepper starts at one.
 -- ---------------------------------------------------------------------------
 create or replace function public.add_ingredient(
   p_food_log_id   uuid,
@@ -324,6 +330,8 @@ as $$
 declare
   v_entry public.food_logs;
   v_parts integer;
+  v_seed_quantity numeric;
+  v_seed_factor   numeric;
   v_name  text := left(btrim(coalesce(p_name, '')), 120);
   v_label text := left(btrim(coalesce(p_serving_label, '')), 120);
   v_id    uuid;
@@ -360,8 +368,15 @@ begin
     if v_entry.override_kcal is not null then
       raise exception 'entry has typed figures';
     end if;
-    if v_entry.quantity < 0.25 or v_entry.quantity > 20 then
-      raise exception 'entry portion is too large to break down';
+    if v_entry.quantity between 0.25 and 20 then
+      v_seed_quantity := v_entry.quantity;
+      v_seed_factor   := v_entry.serving_factor;
+    else
+      v_seed_quantity := 1;
+      v_seed_factor   := round(v_entry.serving_factor * v_entry.quantity, 3);
+      if v_seed_factor < 0.001 or v_seed_factor >= 1000 then
+        raise exception 'entry portion is too large to break down';
+      end if;
     end if;
 
     insert into public.food_log_ingredients (
@@ -370,21 +385,26 @@ begin
       serving_label, serving_factor, display_label, grams, position
     )
     values (
-      v_entry.id, v_entry.food_id, v_entry.serving_id, v_entry.quantity,
+      v_entry.id, v_entry.food_id,
+      -- A folded part is one of the whole amount, not one "100 g": the entry's
+      -- portion label and id would name a size the part is not.
+      case when v_seed_quantity = v_entry.quantity then v_entry.serving_id end,
+      v_seed_quantity,
       -- The two names copied as the two names, not folded into one. A part
       -- coalesces them exactly as the parent does, so keeping them apart is
       -- what makes the seeded row read back as the entry it came from.
       v_entry.item_name,
       v_entry.base_kcal, v_entry.base_carbs_g, v_entry.base_protein_g, v_entry.base_fat_g,
-      v_entry.serving_label, v_entry.serving_factor,
+      case when v_seed_quantity = v_entry.quantity then v_entry.serving_label end,
+      v_seed_factor,
       v_entry.display_label,
       -- What one of the parent serving weighs, at the factor it was logged at.
       -- Null rather than clamped where that lands outside what the column
       -- accepts: a weight nobody can store is not a weight worth guessing.
       case
         when v_entry.serving_grams is null then null
-        when round(v_entry.serving_grams * v_entry.serving_factor, 1) between 0.1 and 20000
-          then round(v_entry.serving_grams * v_entry.serving_factor, 1)
+        when round(v_entry.serving_grams * v_seed_factor, 1) between 0.1 and 20000
+          then round(v_entry.serving_grams * v_seed_factor, 1)
       end,
       0
     );

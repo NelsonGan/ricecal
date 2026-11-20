@@ -190,6 +190,33 @@ export const th = {
       lUnit: 'ล.',
     },
 
+    measure: {
+      g: '{{value}} ก.',
+      kg: '{{value}} กก.',
+      oz: '{{value}} ออนซ์',
+      lb: '{{value}} ปอนด์',
+      ml: '{{value}} มล.',
+      l: '{{value}} ล.',
+      tsp: '{{value}} ช้อนชา',
+      tbsp: '{{value}} ช้อนโต๊ะ',
+      cup_one: '{{value}} ถ้วย',
+      cup_other: '{{value}} ถ้วย',
+      floz: '{{value}} ออนซ์ของเหลว',
+    },
+    measureUnit: {
+      g: 'ก.',
+      kg: 'กก.',
+      oz: 'ออนซ์',
+      lb: 'ปอนด์',
+      ml: 'มล.',
+      l: 'ล.',
+      tsp: 'ช้อนชา',
+      tbsp: 'ช้อนโต๊ะ',
+      cup_one: 'ถ้วย',
+      cup_other: 'ถ้วย',
+      floz: 'ออนซ์ของเหลว',
+    },
+
     count: {
       dayStreak_one: 'ต่อเนื่อง {{count}} วัน',
       dayStreak_other: 'ต่อเนื่อง {{count}} วัน',
@@ -876,6 +903,8 @@ export const th = {
       nameField: 'ชื่อ',
       numbersReset: 'ใช้ตัวเลขของแอป',
       servingWord: 'ที่',
+      measureIn: 'วัดเป็น',
+      amount: 'ปริมาณ',
       quickFix: {
         halfPortion: 'ครึ่งจาน',
         noSambal: 'ไม่ใส่ซัมบัล',
@@ -1551,6 +1580,13 @@ export const th = {
         ml: 'มล.',
         piece_one: 'ชิ้น',
         piece_other: 'ชิ้น',
+      },
+      unitTitle: 'วัดเป็น',
+      changeUnit: 'หน่วยของ {{name}}, {{unit}}',
+      unitGroup: {
+        weight: 'น้ำหนัก',
+        volume: 'ปริมาตร',
+        count: 'จำนวน',
       },
     },
 

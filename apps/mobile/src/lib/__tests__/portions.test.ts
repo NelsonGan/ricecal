@@ -12,7 +12,8 @@ describe('servingUnit', () => {
   it('keeps a label that reads as a portion', () => {
     expect(servingUnit('1 plate')).toBe('plate')
     expect(servingUnit('1 bowl')).toBe('bowl')
-    expect(servingUnit('1 serving')).toBe('serving')
+    // The app's own English word, left for the caller to translate.
+    expect(servingUnit('1 serving')).toBeNull()
   })
 
   it('drops the count, which the quantity beside it already says', () => {
@@ -85,5 +86,30 @@ describe('eatenQuantity', () => {
     expect(eatenQuantity({ quantity: 0.1, plateQuantity: 3 })).toBe(0.3)
     expect(eatenQuantity({ quantity: 0.25, plateQuantity: 0.03 })).toBe(0.01)
     expect(eatenQuantity({ quantity: 20, plateQuantity: 20 })).toBe(100)
+  })
+})
+
+// A portion that is a unit reads as an amount of it: the diary said
+// "1.5 × 100 g" for what somebody would call 150 g.
+describe('portionLabel with units', () => {
+  const measured = (amount: number, unit: string) => `${amount} ${unit}`
+
+  it('says the amount for a portion that is a unit', () => {
+    expect(portionLabel(1.5, '100 g', 'serving', measured)).toBe('150 g')
+    expect(portionLabel(2, '1 tbsp', 'serving', measured)).toBe('2 tbsp')
+  })
+
+  it('counts a portion that is a thing, as before', () => {
+    expect(portionLabel(2, '1 plate', 'serving', measured)).toBe('2 × plate')
+  })
+})
+
+// Stripped of its count, "2 tbsp (32 g)" read "tbsp" beside a stepper at 1,
+// which anybody reads as one spoon: half of what was logged.
+describe('servingUnit for spoon portions', () => {
+  it('keeps a spoon or cup count that is not one', () => {
+    expect(servingUnit('2 tbsp (32 g)')).toBe('2 tbsp')
+    expect(servingUnit('1/2 cup')).toBe('1/2 cup')
+    expect(servingUnit('1 cup, chopped')).toBe('cup')
   })
 })

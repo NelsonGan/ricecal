@@ -186,6 +186,33 @@ export const ko = {
       lUnit: 'L',
     },
 
+    measure: {
+      g: '{{value}}g',
+      kg: '{{value}}kg',
+      oz: '{{value}}온스',
+      lb: '{{value}}파운드',
+      ml: '{{value}} ml',
+      l: '{{value}} L',
+      tsp: '{{value}}작은술',
+      tbsp: '{{value}}큰술',
+      cup_one: '{{value}}컵',
+      cup_other: '{{value}}컵',
+      floz: '{{value}} 액량 온스',
+    },
+    measureUnit: {
+      g: 'g',
+      kg: 'kg',
+      oz: '온스',
+      lb: '파운드',
+      ml: 'ml',
+      l: 'L',
+      tsp: '작은술',
+      tbsp: '큰술',
+      cup_one: '컵',
+      cup_other: '컵',
+      floz: '액량 온스',
+    },
+
     count: {
       dayStreak_one: '{{count}}일 연속',
       dayStreak_other: '{{count}}일 연속',
@@ -876,6 +903,8 @@ export const ko = {
       nameField: '이름',
       numbersReset: '앱의 수치 사용',
       servingWord: '인분',
+      measureIn: '단위',
+      amount: '양',
       quickFix: {
         halfPortion: '절반만',
         noSambal: '삼발 빼고',
@@ -1555,6 +1584,13 @@ export const ko = {
         ml: 'ml',
         piece_one: '개',
         piece_other: '개',
+      },
+      unitTitle: '단위',
+      changeUnit: '{{name}} 단위, {{unit}}',
+      unitGroup: {
+        weight: '무게',
+        volume: '부피',
+        count: '개수',
       },
     },
 

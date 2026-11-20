@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, View } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
@@ -23,16 +23,20 @@ import {
   useFood,
   useLogFood,
   useMealPhotoUrl,
+  useRecentFoods,
   useRefineEntry,
   useRemoveEntry,
   useSelectedDate,
+  useSettings,
   useTargets,
   useUpdateEntry,
   withCataloguePortions,
+  withMeasures,
 } from '@/data'
 import { socialEntryPost, useSocialEntry } from '@/data/social'
 import {
   type Clock,
+  canSwitch,
   clockOf,
   DetailsSheet,
   dayLabel,
@@ -43,15 +47,31 @@ import {
   MealShareCard,
   NO_FIGURES,
   NutritionSheet,
+  openingPortion,
   PartLine,
+  portionChips,
+  portionControl,
+  quantityFor,
+  rememberedPortion,
   ScannedPacket,
   sameClock,
+  switchedQuantity,
   type TypedFigures,
   useMealShare,
 } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
-import { formatTime, MacroBars, MealPhoto } from '@/features/shared'
+import {
+  formatTime,
+  MacroBars,
+  MealPhoto,
+  type MeasureChoice,
+  MeasureList,
+  measureFigure,
+  UnitPill,
+  useMeasureText,
+} from '@/features/shared'
 import { track } from '@/lib/analytics'
+import { convert, foodBasis, MEASURES, measureOf, roundedFor } from '@/lib/measures'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals, roundHalfUp } from '@/lib/nutrition'
 import { formatPortion, servingUnit } from '@/lib/portions'
@@ -63,13 +83,13 @@ import {
   Aside,
   Button,
   Card,
-  Chip,
   CollapsingAppBar,
   ConfirmSheet,
   Divider,
   Icon,
   IconButton,
   Screen,
+  Sheet,
   Skeleton,
   Stepper,
   Tappable,
@@ -287,11 +307,72 @@ function FoodDetail() {
    *
    * Letting the catalogue win here showed a 108 kcal soy milk as 511.
    */
-  const food = existing
-    ? withCataloguePortions(foodFromEntry(existing), catalogueFood)
-    : awaitingEntry
-      ? null
-      : (catalogueFood ?? null)
+  /**
+   * Both, with the units this dish can be measured in added to its portions.
+   * Measured on BOTH sides of `withCataloguePortions`: an entry logged in
+   * tablespoons only finds its own tablespoon among the catalogue's portions if
+   * the catalogue's have been measured too.
+   */
+  // Memoised: measuring reads every portion's label, and a new `food` on every
+  // render also re-ran every effect that depends on it.
+  const measuredCatalogue = useMemo(
+    () => (catalogueFood ? withMeasures(catalogueFood) : catalogueFood),
+    [catalogueFood],
+  )
+  const food = useMemo(
+    () =>
+      existing
+        ? withMeasures(withCataloguePortions(foodFromEntry(existing), measuredCatalogue))
+        : awaitingEntry
+          ? null
+          : (measuredCatalogue ?? null),
+    [existing, awaitingEntry, measuredCatalogue],
+  )
+  const settings = useSettings()
+  const units = settings.data?.units
+  const measureText = useMeasureText()
+
+  /**
+   * Where a NEW log of a dish opens, decided once, when the food arrives. Not an
+   * entry: it opens on what it was logged at.
+   *
+   * First the way this person last logged it ("2 tbsp", "150 g"), the way the
+   * calorie trackers people find quickest remember a usual serving. Otherwise,
+   * a dish whose serving is a kitchen measure opens on that measure ("2 tbsp
+   * (32 g)" as 2 tbsp). Waits for the history, or the first frame would open on
+   * the default and the remembered portion would never land.
+   */
+  const recent = useRecentFoods()
+  const openedOn = useRef<string>(undefined)
+  useEffect(() => {
+    if (existing || !food || openedOn.current === food.id) return
+    // And for a refetch in flight: the list is invalidated by every log, and
+    // the cached copy, read first, does not have the meal logged a minute ago.
+    if ((recent.isPending || recent.isFetching) && !recent.isPaused && !recent.isError) return
+    // And for the unit system, which decides whether a "3 oz" serving may open
+    // on ounces: decided without it, an imperial phone was read as metric and
+    // the chance was gone by the time settings arrived.
+    if (settings.isPending && !settings.isPaused && !settings.isError) return
+    openedOn.current = food.id
+    const opening =
+      rememberedPortion(food.id, food.servings, recent.data ?? []) ??
+      openingPortion(food.servings, food.servingLabel, units)
+    if (!opening) return
+    setServingId(opening.id)
+    setQuantity(opening.quantity)
+  }, [
+    units,
+    settings.isPending,
+    settings.isPaused,
+    settings.isError,
+    existing,
+    food,
+    recent.isPending,
+    recent.isFetching,
+    recent.isPaused,
+    recent.isError,
+    recent.data,
+  ])
   const refineEntry = useRefineEntry()
 
   const [quantity, setQuantity] = useState(existing?.quantity ?? 1)
@@ -368,6 +449,8 @@ function FoodDetail() {
   // Collapsed by default. Fibre, sugar and salt are the second question about a
   // dish, and for most of the catalogue the answer is "nobody recorded it".
   const [showNutrients, setShowNutrients] = useState(false)
+  /** Whether the sheet of portions and units is open. */
+  const [choosingUnit, setChoosingUnit] = useState(false)
   /**
    * Figures typed by hand, as strings while they are being typed. An empty field
    * is "nothing overridden here" rather than zero: the app's own answer shows
@@ -617,6 +700,83 @@ function FoodDetail() {
   const chosen = servingId || food.servings[0]?.id || ''
   const serving = food.servings.find((option) => option.id === chosen) ?? food.servings[0]
   const factor = (serving?.factor ?? 1) * quantity
+  /** What one serving of this dish weighs and holds, as far as anything says. */
+  const basis = foodBasis(food)
+  /** How the stepper reads this portion: grams for "100 g", a count for "1 plate". */
+  const control = portionControl(serving, quantity)
+  const chips = portionChips(food.servings, units, chosen)
+  /**
+   * What this amount weighs, when anything says and the unit is not already a
+   * weight. Ounces for somebody on imperial.
+   */
+  const weighs = (() => {
+    if (basis.grams === undefined) return null
+    // Nor millilitres, where it is the same figure again: "100 ml ≈ 103 g".
+    if (control.unit && (MEASURES[control.unit].family === 'weight' || control.unit === 'ml')) {
+      return null
+    }
+    const grams = basis.grams * factor
+    const unit = units === 'imperial' ? 'oz' : 'g'
+    const amount = roundedFor(unit, convert(grams, 'g', unit))
+    return amount > 0 ? measureText.amount(amount, unit) : null
+  })()
+  /** The word under the number: "tbsp", "plate", "serving". */
+  const unitWord = control.unit
+    ? measureText.unit(control.unit, control.shown)
+    : (servingUnit(serving?.label) ?? t('logging:detail.servingWord'))
+  /**
+   * The dish's own portions, then the units, each as the amount it would read
+   * as once picked and what that would cost: "350 g · 650 kcal". Rounding a
+   * conversion shows here, before it is made, rather than as a calorie that
+   * moves afterwards.
+   */
+  const measureChoices: MeasureChoice[] = [
+    ...chips.portions,
+    ...chips.measures.map(({ serving: option }) => option),
+  ].map((option) => {
+    const next = option.id === chosen ? quantity : switchedQuantity(serving, quantity, option)
+    const measure = measureOf(option.label)
+    const portionWord =
+      servingUnit(option.label) === null && /serving/i.test(option.label)
+        ? t('logging:detail.servingWord')
+        : option.label
+    return {
+      key: option.id,
+      title: measure
+        ? measureText.amount(roundHalfUp(next * measure.block, 2), measure.unit)
+        : next === 1
+          ? portionWord
+          : // "1.4 × plate", not "1.4 × 1 plate": the label's own count of one
+            // is the thing being multiplied.
+            `${formatPortion(next)} × ${portionWord.replace(/^1(\.0+)?\s+/, '')}`,
+      detail: t('logging:detail.partKcal', {
+        kcal: Math.round(food.macros.kcal * option.factor * next).toLocaleString(),
+      }),
+      selected: option.id === chosen,
+      disabled: !canSwitch(serving, quantity, option),
+      onPress: () => {
+        pickPortion(option)
+        setChoosingUnit(false)
+      },
+    }
+  })
+
+  /**
+   * A chip tapped. Between two of the dish's portions the count stays, which is
+   * what choosing "Large" has always meant; into or out of a unit the amount
+   * eaten stays, so picking "g" on a 350 g plate shows 350 g rather than 1 g.
+   */
+  const pickPortion = (option: (typeof food.servings)[number]) => {
+    // The portion in use, picked again, is no change. Converting it to itself
+    // would still round it: 1.49 tbsp re-picked became 1.5.
+    if (option.id === chosen) return
+    // A choice made, so the opening portion must not land on top of it.
+    openedOn.current = food.id
+    const next = switchedQuantity(serving, quantity, option)
+    setServingId(option.id)
+    setQuantity(next)
+    schedulePortion({ quantity: next, servingId: option.id })
+  }
   // What this much of the catalogue row costs. The same arithmetic the view
   // does for a saved entry, so the preview while composing and the row that
   // results from it agree.
@@ -938,6 +1098,16 @@ function FoodDetail() {
             servingId: next.servingId,
             servingLabel: option?.label ?? existing.servingLabel,
             servingFactor: option?.factor ?? existing.servingFactor,
+            // The old label may be the only thing that said what a serving
+            // weighs or holds ("Regular (350 ml)"), and it is about to be
+            // replaced. Written down first, so the entry can still be measured
+            // in spoons when it is opened again.
+            ...(existing.baseServingGrams === undefined && basis.grams !== undefined
+              ? { servingGrams: Math.round(basis.grams * 100) / 100 }
+              : {}),
+            ...(existing.baseServingMl === undefined && basis.ml !== undefined
+              ? { servingMl: Math.round(basis.ml * 100) / 100 }
+              : {}),
           }
         : {}),
     })
@@ -1351,7 +1521,7 @@ function FoodDetail() {
           this is the belt to that braces. */}
         <Card>
           <Stepper
-            value={hasPlate ? plateQuantity : quantity}
+            value={hasPlate ? plateQuantity : control.shown}
             onChange={(next) => {
               if (hasPlate) {
                 // Hundredths, which is what `plate_quantity` stores: a typed
@@ -1360,49 +1530,83 @@ function FoodDetail() {
                 setPlateQuantity(portion)
                 schedulePortion({ plateQuantity: portion })
               } else {
-                setQuantity(next)
-                schedulePortion({ quantity: next, servingId: chosen })
+                // The stepper counts in the unit (155 g); the row stores how
+                // many of the portion that is (1.55 × 100 g).
+                const portion = quantityFor(serving, next)
+                // A choice made: the remembered portion, if it is still on its
+                // way, must not overwrite it.
+                openedOn.current = food.id
+                setQuantity(portion)
+                schedulePortion({ quantity: portion, servingId: chosen })
               }
             }}
-            // Quarters, matching the parts of a broken-down plate: a portion
-            // is the same kind of quantity either way, and two controls moving
-            // by different amounts is a thing to discover rather than use.
-            min={0.25}
-            max={20}
-            step={0.25}
+            // Quarters of a portion, matching the parts of a broken-down plate:
+            // a portion is the same kind of quantity either way. A unit moves the
+            // way its measuring tool does instead: grams by ten, spoons by half.
+            min={hasPlate ? 0.25 : control.min}
+            max={hasPlate ? 20 : control.max}
+            step={hasPlate ? 0.25 : control.step}
+            snapToStep={!hasPlate && control.unit !== null}
+            format={
+              !hasPlate && control.unit
+                ? (value) => measureFigure(control.unit ?? 'g', value)
+                : undefined
+            }
             // And for the amounts quarters cannot express — 0.3 of a tub — the
             // number itself is a field.
             editable
-            editLabel={t('logging:detail.typeServings')}
-            accessibilityLabel={t('logging:detail.servings')}
+            // The pad's heading says what the digits are: "Amount, g" when the
+            // stepper counts a unit, where a typed 1 is one gram, not a plate.
+            editLabel={
+              !hasPlate && control.unit
+                ? `${t('logging:detail.amount')}, ${unitWord}`
+                : t('logging:detail.typeServings')
+            }
+            accessibilityLabel={t(
+              !hasPlate && control.unit ? 'logging:detail.amount' : 'logging:detail.servings',
+            )}
             decrementLabel={t('common:a11y.decrease')}
             incrementLabel={t('common:a11y.increase')}
             // The unit is the serving the user picked below, not a generic
             // "pieces" — a plate and a piece are different amounts of food. A
             // plate of parts has no serving to name, and one of it is the plate.
-            unit={
-              hasPlate
-                ? t('logging:detail.servingWord')
-                : (servingUnit(serving?.label) ?? t('logging:detail.servingWord'))
+            unit={hasPlate ? t('logging:detail.servingWord') : unitWord}
+            // THE UNIT IS THE PICKER, worn under the number it measures. It was
+            // a row of portion chips and a row of unit segments, which were two
+            // answers to one question, and seven imperial units or Japanese
+            // spoon names did not fit a segmented row. Opens every portion and
+            // unit as the amount it would read as, with what it would cost.
+            unitSlot={
+              hasPlate ? undefined : (
+                <View className="mt-1 flex-row items-center gap-2">
+                  {measureChoices.length > 1 ? (
+                    <UnitPill
+                      size="sm"
+                      label={unitWord}
+                      open={choosingUnit}
+                      onPress={() => setChoosingUnit(true)}
+                      accessibilityLabel={t('logging:detail.measureIn')}
+                    />
+                  ) : (
+                    <Text variant="caption">{unitWord}</Text>
+                  )}
+                  {/* What the amount weighs, beside a unit that is not a weight:
+                      "plate · ≈ 350 g", "tbsp · ≈ 32 g". A portion's name alone
+                      says nothing about its size. */}
+                  {weighs ? <Text variant="caption">≈ {weighs}</Text> : null}
+                </View>
+              )
             }
           />
 
-          {hasPlate ? null : (
-            <View className="flex-row flex-wrap gap-2">
-              {food.servings.map((option) => (
-                <Chip
-                  key={option.id}
-                  selected={option.id === chosen}
-                  onPress={() => {
-                    setServingId(option.id)
-                    schedulePortion({ quantity, servingId: option.id })
-                  }}
-                >
-                  {option.label}
-                </Chip>
-              ))}
-            </View>
-          )}
+          <Sheet
+            visible={choosingUnit}
+            onClose={() => setChoosingUnit(false)}
+            title={t('logging:detail.measureIn')}
+            closeLabel={t('common:action.close')}
+          >
+            <MeasureList choices={measureChoices} />
+          </Sheet>
         </Card>
       </View>
 

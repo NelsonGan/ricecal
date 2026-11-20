@@ -186,6 +186,33 @@ export const hi = {
       lUnit: 'L',
     },
 
+    measure: {
+      g: '{{value}} g',
+      kg: '{{value}} kg',
+      oz: '{{value}} oz',
+      lb: '{{value}} lb',
+      ml: '{{value}} ml',
+      l: '{{value}} L',
+      tsp: '{{value}} छोटा चम्मच',
+      tbsp: '{{value}} बड़ा चम्मच',
+      cup_one: '{{value}} कप',
+      cup_other: '{{value}} कप',
+      floz: '{{value}} fl oz',
+    },
+    measureUnit: {
+      g: 'g',
+      kg: 'kg',
+      oz: 'oz',
+      lb: 'lb',
+      ml: 'ml',
+      l: 'L',
+      tsp: 'छोटा चम्मच',
+      tbsp: 'बड़ा चम्मच',
+      cup_one: 'कप',
+      cup_other: 'कप',
+      floz: 'fl oz',
+    },
+
     count: {
       dayStreak_one: '{{count}} दिन लगातार',
       dayStreak_other: '{{count}} दिन लगातार',
@@ -874,6 +901,8 @@ export const hi = {
       nameField: 'नाम',
       numbersReset: 'ऐप के आंकड़े इस्तेमाल करें',
       servingWord: 'हिस्सा',
+      measureIn: 'इसमें मापें',
+      amount: 'मात्रा',
       quickFix: {
         halfPortion: 'आधा हिस्सा',
         noSambal: 'सांबल नहीं',
@@ -1553,6 +1582,13 @@ export const hi = {
         ml: 'ml',
         piece_one: 'नग',
         piece_other: 'नग',
+      },
+      unitTitle: 'इसमें मापें',
+      changeUnit: '{{name}} की इकाई, {{unit}}',
+      unitGroup: {
+        weight: 'वज़न',
+        volume: 'आयतन',
+        count: 'गिनती',
       },
     },
 

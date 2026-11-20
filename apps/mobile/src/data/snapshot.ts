@@ -14,6 +14,7 @@
  * chosen portion's figures in `base` counts the portion twice, silently.
  */
 
+import { foodBasis, MEASURE_ID, measureOf, measurePortions } from '@/lib/measures'
 import type { ExtraNutrients, Food, IconRef, Macros, Place, Recipe } from './types'
 
 export type LogSnapshot = {
@@ -38,6 +39,8 @@ export type LogSnapshot = {
   servingFactor: number
   /** What one base serving weighs, when anything knows. */
   servingGrams?: number
+  /** What one base serving holds, when anything knows. See `food_logs.serving_ml`. */
+  servingMl?: number
 }
 
 /**
@@ -47,7 +50,9 @@ export type LogSnapshot = {
  * else, so this is where they stop.
  */
 function catalogueId(id: string | undefined): string | undefined {
-  if (!id || id === ENTRY_FOOD_ID || id === ENTRY_SERVING_ID) return undefined
+  if (!id || id === ENTRY_FOOD_ID || id === ENTRY_SERVING_ID || id === ENTRY_BASE_SERVING_ID) {
+    return undefined
+  }
   return packetCode(id) === undefined ? id : undefined
 }
 
@@ -59,6 +64,9 @@ function catalogueId(id: string | undefined): string | undefined {
  */
 export function snapshotFromFood(food: Food, servingId?: string): LogSnapshot {
   const serving = food.servings.find((s) => s.id === servingId) ?? food.servings[0]
+  // Written down now, while the labels that say it are in hand: an entry keeps
+  // only the portion it was logged at, and "1 cup (244 g)" is the density.
+  const basis = foodBasis(food)
   return {
     // The placeholders minted for routing — `foodFromEntry`'s, and the scanned
     // packet's — are for a `[id]` segment and a controlled selection, and
@@ -74,7 +82,8 @@ export function snapshotFromFood(food: Food, servingId?: string): LogSnapshot {
     extras: food.extras,
     servingLabel: serving?.label ?? food.servingLabel,
     servingFactor: serving?.factor ?? 1,
-    servingGrams: food.servingGrams,
+    servingGrams: food.servingGrams ?? basis.grams,
+    servingMl: basis.ml,
   }
 }
 
@@ -115,6 +124,7 @@ export function snapshotFromEntry(entry: {
   servingLabel: string
   servingFactor: number
   baseServingGrams?: number
+  baseServingMl?: number
 }): LogSnapshot {
   return {
     foodId: entry.foodId,
@@ -134,6 +144,7 @@ export function snapshotFromEntry(entry: {
     servingLabel: entry.servingLabel,
     servingFactor: entry.servingFactor,
     servingGrams: entry.baseServingGrams,
+    servingMl: entry.baseServingMl,
   }
 }
 
@@ -159,6 +170,7 @@ export function foodFromEntry(entry: {
   servingLabel: string
   servingFactor: number
   baseServingGrams?: number
+  baseServingMl?: number
 }): Food {
   return {
     // The screen keys its portion picker off the serving id, so this row needs
@@ -175,6 +187,16 @@ export function foodFromEntry(entry: {
         label: entry.servingLabel,
         factor: entry.servingFactor,
       },
+      // An entry measured in a unit has given up the name of the portion it was
+      // first logged at: only the chosen label is stored. Its base is still
+      // there, at factor 1, so it is offered back as a plain serving rather than
+      // leaving a scanned plate logged in grams with no way back to "a plate".
+      // Its own id: an entry with no `serving_id` already wears
+      // ENTRY_SERVING_ID, and two portions sharing it drew two selected rows
+      // and made this one impossible to pick.
+      ...(isMeasured(entry) && entry.servingFactor !== 1
+        ? [{ id: ENTRY_BASE_SERVING_ID, label: '1 serving', factor: 1 }]
+        : []),
     ],
     macros: entry.base,
     extras: entry.baseExtras ?? {},
@@ -182,6 +204,7 @@ export function foodFromEntry(entry: {
     // and a verified badge over them would be the app vouching for its guess.
     verified: false,
     servingGrams: entry.baseServingGrams,
+    servingMl: entry.baseServingMl,
   }
 }
 
@@ -216,6 +239,24 @@ export function withCataloguePortions(entry: Food, catalogue: Food | null | unde
     : entry
 }
 
+const isMeasured = (entry: { servingId?: string; servingLabel: string }) =>
+  Boolean(entry.servingId?.startsWith(MEASURE_ID)) || measureOf(entry.servingLabel) !== null
+
+/**
+ * A food with the units it can be measured in added to its portions: grams
+ * wherever something says what a serving weighs, and millilitres, spoons and
+ * cups wherever something says how much one holds. See `foodBasis` for where
+ * those come from and why nothing is guessed.
+ *
+ * Applied to both sides of `withCataloguePortions`, so an entry logged in
+ * tablespoons finds its own tablespoon among the catalogue's and keeps the
+ * other portions on offer.
+ */
+export function withMeasures(food: Food): Food {
+  const added = measurePortions(food.servings, foodBasis(food))
+  return added.length ? { ...food, servings: [...food.servings, ...added] } : food
+}
+
 /**
  * The id a route carries for an entry with no catalogue food behind it. A `[id]`
  * segment cannot be empty or `undefined`, and this is deliberately not a
@@ -226,6 +267,9 @@ export const ENTRY_FOOD_ID = 'entry'
 
 /** The same, for the single portion `foodFromEntry` synthesises. */
 export const ENTRY_SERVING_ID = 'entry:base'
+
+/** The base serving offered back to an entry measured in a unit. */
+export const ENTRY_BASE_SERVING_ID = 'entry:serving'
 
 /**
  * The id a scanned packet travels under. A packaged product lives in D1's
@@ -265,5 +309,6 @@ export function snapshotColumns(snapshot: LogSnapshot) {
     serving_label: snapshot.servingLabel,
     serving_factor: snapshot.servingFactor,
     serving_grams: snapshot.servingGrams ?? null,
+    serving_ml: snapshot.servingMl ?? null,
   }
 }

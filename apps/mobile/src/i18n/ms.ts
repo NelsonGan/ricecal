@@ -194,6 +194,33 @@ export const ms = {
       lUnit: 'L',
     },
 
+    measure: {
+      g: '{{value}} g',
+      kg: '{{value}} kg',
+      oz: '{{value}} oz',
+      lb: '{{value}} lb',
+      ml: '{{value}} ml',
+      l: '{{value}} L',
+      tsp: '{{value}} sudu teh',
+      tbsp: '{{value}} sudu besar',
+      cup_one: '{{value}} cawan',
+      cup_other: '{{value}} cawan',
+      floz: '{{value}} fl oz',
+    },
+    measureUnit: {
+      g: 'g',
+      kg: 'kg',
+      oz: 'oz',
+      lb: 'lb',
+      ml: 'ml',
+      l: 'L',
+      tsp: 'sudu teh',
+      tbsp: 'sudu besar',
+      cup_one: 'cawan',
+      cup_other: 'cawan',
+      floz: 'fl oz',
+    },
+
     count: {
       dayStreak_one: 'rentetan {{count}} hari',
       dayStreak_other: 'rentetan {{count}} hari',
@@ -902,6 +929,8 @@ export const ms = {
       nameField: 'Nama',
       numbersReset: 'Guna angka apl',
       servingWord: 'bahagian',
+      measureIn: 'Ukur dalam',
+      amount: 'Jumlah',
       quickFix: {
         halfPortion: 'Separuh bahagian',
         noSambal: 'Tiada sambal',
@@ -1587,6 +1616,13 @@ export const ms = {
         ml: 'ml',
         piece_one: 'biji',
         piece_other: 'biji',
+      },
+      unitTitle: 'Ukur dalam',
+      changeUnit: 'Unit untuk {{name}}, {{unit}}',
+      unitGroup: {
+        weight: 'Berat',
+        volume: 'Isi padu',
+        count: 'Bilangan',
       },
     },
 

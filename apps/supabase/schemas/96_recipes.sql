@@ -34,7 +34,10 @@ select
   round(i.kcal_per_unit      * i.amount)::integer    as kcal,
   round(i.carbs_g_per_unit   * i.amount, 1)::numeric as carbs_g,
   round(i.protein_g_per_unit * i.amount, 1)::numeric as protein_g,
-  round(i.fat_g_per_unit     * i.amount, 1)::numeric as fat_g
+  round(i.fat_g_per_unit     * i.amount, 1)::numeric as fat_g,
+  -- Last, so the view only ever grows at the end and the functions returning
+  -- its rows keep their shape.
+  i.display_unit
 from public.recipe_ingredients i;
 
 grant select on public.recipe_ingredient_details to authenticated, service_role;
@@ -348,11 +351,11 @@ begin
   returning id into v_new;
 
   insert into public.recipe_ingredients (
-    recipe_id, name, food_id, amount, unit,
+    recipe_id, name, food_id, amount, unit, display_unit,
     kcal_per_unit, carbs_g_per_unit, protein_g_per_unit, fat_g_per_unit, position
   )
   select
-    v_new, i.name, i.food_id, i.amount, i.unit,
+    v_new, i.name, i.food_id, i.amount, i.unit, i.display_unit,
     i.kcal_per_unit, i.carbs_g_per_unit, i.protein_g_per_unit, i.fat_g_per_unit,
     i.position
   from public.recipe_ingredients i
@@ -449,11 +452,11 @@ begin
   returning id into v_new;
 
   insert into public.recipe_ingredients (
-    recipe_id, name, food_id, amount, unit,
+    recipe_id, name, food_id, amount, unit, display_unit,
     kcal_per_unit, carbs_g_per_unit, protein_g_per_unit, fat_g_per_unit, position
   )
   select
-    v_new, i.name, i.food_id, i.amount, i.unit,
+    v_new, i.name, i.food_id, i.amount, i.unit, i.display_unit,
     i.kcal_per_unit, i.carbs_g_per_unit, i.protein_g_per_unit, i.fat_g_per_unit,
     i.position
   from public.recipe_ingredients i

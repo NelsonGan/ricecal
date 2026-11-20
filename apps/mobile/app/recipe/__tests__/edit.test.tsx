@@ -26,6 +26,7 @@ jest.mock('@/data', () => ({
   useReadRecipe: () => ({ mutateAsync: mockRead }),
   useRecipe: () => ({ data: undefined }),
   useRecipeIngredients: () => ({ data: undefined }),
+  useSettings: () => ({ data: { units: 'metric' } }),
   useSaveRecipe: () => ({ mutateAsync: jest.fn(), isPending: false }),
 }))
 

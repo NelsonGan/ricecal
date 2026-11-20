@@ -169,6 +169,22 @@ create table public.recipe_ingredients (
   amount        numeric(9, 2) not null check (amount > 0 and amount <= 100000),
   unit          public.recipe_unit not null default 'g',
 
+  -- The unit the cook measured in, when it is not the one the amount is stored
+  -- in: two tablespoons of soy sauce are stored as 29.57 ml and shown as 2 tbsp.
+  -- Display only. `amount` stays in grams or millilitres and every figure is
+  -- still `amount x per_unit`, so a build that has never heard of this column
+  -- reads, costs and edits the row exactly as before (and shows 29.57 ml).
+  --
+  -- A spoon of something weighed is not expressible here, and that is the
+  -- point: crossing from grams to spoons needs the food's density, which is
+  -- baked into `*_per_unit` when the row is written in millilitres instead.
+  -- Null is the stored unit itself.
+  display_unit  text check (
+    display_unit is null
+    or (unit = 'g' and display_unit in ('g', 'kg', 'oz', 'lb'))
+    or (unit = 'ml' and display_unit in ('ml', 'l', 'tsp', 'tbsp', 'cup', 'floz'))
+  ),
+
   -- Per one unit. See the header.
   kcal_per_unit      numeric(10, 4) not null check (kcal_per_unit >= 0),
   carbs_g_per_unit   numeric(10, 4) not null default 0 check (carbs_g_per_unit >= 0),

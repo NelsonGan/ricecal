@@ -17,8 +17,10 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useUserId } from '@/data'
 import { type BoardEntry, type BoardMember, GROUP_MEALS, type GroupMeal } from '@/data/groups'
+import { useMeasureText } from '@/features/shared/useMeasureText'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
+import { portionLabel } from '@/lib/portions'
 import { cn, Icon, SegmentedControl, Sheet, Tappable, Text } from '@/ui'
 import { EntryPicture, MEAL_TINT, useGroupTask } from './parts'
 
@@ -128,8 +130,20 @@ function EntryRow({
   ownerId: string
   isSelf: boolean
 }) {
-  const { t } = useTranslation(['groups', 'common'])
+  const { t } = useTranslation(['groups', 'common', 'logging'])
+  const measure = useMeasureText()
   const task = useGroupTask()
+  // How much, as the diary says it: "350 g", "2 × plate". An older server sends
+  // no quantity, and then the label stands on its own as it always did.
+  const portion =
+    entry.serving_label && entry.quantity !== undefined
+      ? portionLabel(
+          entry.quantity,
+          entry.serving_label,
+          t('logging:detail.servingWord'),
+          measure.amount,
+        )
+      : entry.serving_label
   const meals = GROUP_MEALS.map((meal) => ({ value: meal, label: t(`common:meal.${meal}`) }))
   // A photo opens to the card's full width, so a friend's plate can be seen
   // rather than guessed at from a thumbnail; the figures stay under it. A
@@ -174,7 +188,7 @@ function EntryRow({
             {entry.name}
           </Text>
           <Text variant="meta" numberOfLines={1}>
-            {[entry.serving_label, format(parseISO(entry.logged_at), datePattern('time'))]
+            {[portion, format(parseISO(entry.logged_at), datePattern('time'))]
               .filter(Boolean)
               .join(' · ')}
           </Text>

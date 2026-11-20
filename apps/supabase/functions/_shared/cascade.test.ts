@@ -12,6 +12,7 @@ import {
   clampQuantity,
   componentCandidates,
   dishIcon,
+  isMeasuredServing,
   measuredQuantity,
   oneArticleGrams,
   priceRow,
@@ -19,6 +20,7 @@ import {
   type Resolved,
   resolveItem,
   type SearchRow,
+  unitQuantity,
 } from './cascade.ts'
 import type { Meter } from './entitlement.ts'
 import type { NutritionLabel, VisionItem } from './llm.ts'
@@ -665,4 +667,25 @@ Deno.test('a search that never got an answer is not a miss', async () => {
 Deno.test('a part or a count that never got an answer is not a miss', async () => {
   eq((await missesFor(timedOut, plate, 2)).length, 0, 'parts')
   eq((await missesFor(timedOut, dumplings)).length, 0, 'count')
+})
+
+// An entry the app measured in a unit counts grams by the hundred or spoons, so
+// "half" of 15 g is 7.5 g and "double" 500 g is 1 kg. The servings clamp made
+// the first 25 g.
+Deno.test('unitQuantity scales a measured entry inside the column, not the servings clamp', () => {
+  eq(unitQuantity(0.15 * 0.5), 0.08, 'half of 15 g')
+  eq(unitQuantity(5 * 2), 10, 'double 500 g')
+  eq(unitQuantity(300), 20, 'the ceiling every store build steps to')
+  eq(unitQuantity(0), 0.01, 'never nothing')
+})
+
+// The app steps both its own unit portions and a catalogue row that is only a
+// unit as amounts of that unit, so the refine has to recognise both.
+Deno.test('isMeasuredServing reads the app ids and the bare unit labels', () => {
+  eq(isMeasuredServing('measure:g', '100 g'), true, 'the app measure id')
+  eq(isMeasuredServing('food:100g', '100 g'), true, 'a catalogue 100 g row')
+  eq(isMeasuredServing('food:tbsp', '1.0 Tbsp'), true, 'a catalogue tablespoon')
+  eq(isMeasuredServing('food:pb', '2 tbsp (32 g)'), false, 'a portion that is measured')
+  eq(isMeasuredServing('food:plate', '1 plate'), false, 'a plate')
+  eq(isMeasuredServing(null, '250 ml'), false, 'a 250 ml glass is a portion')
 })

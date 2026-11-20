@@ -497,6 +497,7 @@ export type Database = {
           serving_grams: number | null
           serving_id: string | null
           serving_label: string
+          serving_ml: number | null
           source: Database['public']['Enums']['entry_source']
           suggested_edits: Json | null
           updated_at: string
@@ -538,6 +539,7 @@ export type Database = {
           serving_grams?: number | null
           serving_id?: string | null
           serving_label: string
+          serving_ml?: number | null
           source?: Database['public']['Enums']['entry_source']
           suggested_edits?: Json | null
           updated_at?: string
@@ -579,6 +581,7 @@ export type Database = {
           serving_grams?: number | null
           serving_id?: string | null
           serving_label?: string
+          serving_ml?: number | null
           source?: Database['public']['Enums']['entry_source']
           suggested_edits?: Json | null
           updated_at?: string
@@ -1605,6 +1608,7 @@ export type Database = {
           amount: number
           carbs_g_per_unit: number
           created_at: string
+          display_unit: string | null
           fat_g_per_unit: number
           food_id: string | null
           id: string
@@ -1620,6 +1624,7 @@ export type Database = {
           amount: number
           carbs_g_per_unit?: number
           created_at?: string
+          display_unit?: string | null
           fat_g_per_unit?: number
           food_id?: string | null
           id?: string
@@ -1635,6 +1640,7 @@ export type Database = {
           amount?: number
           carbs_g_per_unit?: number
           created_at?: string
+          display_unit?: string | null
           fat_g_per_unit?: number
           food_id?: string | null
           id?: string
@@ -2792,6 +2798,7 @@ export type Database = {
           base_kcal: number | null
           base_protein_g: number | null
           base_serving_grams: number | null
+          base_serving_ml: number | null
           base_sodium_mg: number | null
           base_sugar_g: number | null
           carbs_g: number | null
@@ -2946,6 +2953,7 @@ export type Database = {
           amount: number | null
           carbs_g: number | null
           carbs_g_per_unit: number | null
+          display_unit: string | null
           fat_g: number | null
           fat_g_per_unit: number | null
           food_id: string | null
@@ -2963,6 +2971,7 @@ export type Database = {
           amount?: number | null
           carbs_g?: never
           carbs_g_per_unit?: number | null
+          display_unit?: string | null
           fat_g?: never
           fat_g_per_unit?: number | null
           food_id?: string | null
@@ -2980,6 +2989,7 @@ export type Database = {
           amount?: number | null
           carbs_g?: never
           carbs_g_per_unit?: number | null
+          display_unit?: string | null
           fat_g?: never
           fat_g_per_unit?: number | null
           food_id?: string | null
@@ -3729,6 +3739,7 @@ export type Database = {
           amount: number | null
           carbs_g: number | null
           carbs_g_per_unit: number | null
+          display_unit: string | null
           fat_g: number | null
           fat_g_per_unit: number | null
           food_id: string | null

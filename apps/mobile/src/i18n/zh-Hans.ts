@@ -191,6 +191,33 @@ export const zhHans = {
       lUnit: '升',
     },
 
+    measure: {
+      g: '{{value}}克',
+      kg: '{{value}}公斤',
+      oz: '{{value}}盎司',
+      lb: '{{value}}磅',
+      ml: '{{value}} 毫升',
+      l: '{{value}} 升',
+      tsp: '{{value}}茶匙',
+      tbsp: '{{value}}汤匙',
+      cup_one: '{{value}}杯',
+      cup_other: '{{value}}杯',
+      floz: '{{value}}液量盎司',
+    },
+    measureUnit: {
+      g: '克',
+      kg: '公斤',
+      oz: '盎司',
+      lb: '磅',
+      ml: '毫升',
+      l: '升',
+      tsp: '茶匙',
+      tbsp: '汤匙',
+      cup_one: '杯',
+      cup_other: '杯',
+      floz: '液量盎司',
+    },
+
     count: {
       dayStreak_one: '连续 {{count}} 天',
       dayStreak_other: '连续 {{count}} 天',
@@ -877,6 +904,8 @@ export const zhHans = {
       nameField: '名称',
       numbersReset: '用应用算的数字',
       servingWord: '份',
+      measureIn: '计量单位',
+      amount: '用量',
       quickFix: {
         halfPortion: '只吃了一半',
         noSambal: '不要参峇酱',
@@ -1552,6 +1581,13 @@ export const zhHans = {
         ml: '毫升',
         piece_one: '个',
         piece_other: '个',
+      },
+      unitTitle: '计量单位',
+      changeUnit: '{{name}}的单位，{{unit}}',
+      unitGroup: {
+        weight: '重量',
+        volume: '容量',
+        count: '数量',
       },
     },
 

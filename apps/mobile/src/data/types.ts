@@ -1,4 +1,5 @@
 import type { Database, Enums, Tables } from '@/lib/database.types'
+import type { MeasureUnit } from '@/lib/measures'
 import type { IconProps } from '@/ui'
 
 /**
@@ -99,6 +100,8 @@ export type Serving = {
   label: string
   /** Multiplier against the food's base macros. */
   factor: number
+  /** What this portion weighs, when the catalogue said. See `foodBasis`. */
+  grams?: number
 }
 
 export type Food = {
@@ -122,6 +125,12 @@ export type Food = {
    * millilitres counted as grams — the same convention the whole app uses.
    */
   servingGrams?: number
+  /**
+   * What one base serving holds, when something said. Only an entry carries it
+   * (`food_logs.serving_ml`); a catalogue row's volume is read off its labels.
+   * See `foodBasis`.
+   */
+  servingMl?: number
   /** GTIN-14. Present only for a packaged product with a barcode on it. */
   barcode?: string
   /**
@@ -202,6 +211,8 @@ export type Entry = {
   base: Macros
   baseExtras?: ExtraNutrients
   baseServingGrams?: number
+  /** What one base serving holds, in ml, when anything knew. */
+  baseServingMl?: number
 
   /** Set when this entry came from a photo scan. */
   scanId?: string
@@ -230,6 +241,12 @@ export type RecipeIngredient = {
   foodId?: string
   amount: number
   unit: RecipeUnit
+  /**
+   * The unit the cook measured in, when it is not `unit`: two tablespoons of
+   * soy sauce are `amount` 29.57 `ml`, shown as 2 tbsp. Always the same family
+   * as `unit`. See `recipe_ingredients.display_unit`.
+   */
+  displayUnit?: MeasureUnit
   perUnit: Macros
   macros: Macros
   position: number
