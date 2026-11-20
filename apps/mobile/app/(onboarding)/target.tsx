@@ -22,6 +22,7 @@ import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { computeTargets, goalDate } from '@/lib/nutrition'
 import { ReplayMask } from '@/lib/replay-mask'
+import { fromKg, UNIT_KEY, unitFor } from '@/lib/units'
 import { Button, FormCard, FormRow, Screen, Text } from '@/ui'
 
 /**
@@ -47,6 +48,8 @@ export default function TargetStep() {
   const { session } = useSession()
 
   const body = planBody(draft)
+  // The goal weight in the units chosen on setup, as the basics step showed it.
+  const weightUnit = unitFor(draft.units ?? 'metric')
   const weightKg = body.weightKg
   const targetWeightKg = body.targetWeightKg ?? weightKg
 
@@ -193,7 +196,7 @@ export default function TargetStep() {
           value={
             <ReplayMask>
               <Text variant="bodyStrong">
-                {`${targetWeightKg.toFixed(1)} ${t('common:unit.kg')}`}
+                {`${fromKg(targetWeightKg, weightUnit).toFixed(1)} ${t(UNIT_KEY[weightUnit])}`}
               </Text>
             </ReplayMask>
           }

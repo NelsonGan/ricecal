@@ -13,9 +13,6 @@ export const onboarding = {
     unitsTitle: 'UNITS',
     metric: 'Metric',
     imperial: 'Imperial',
-    /** Named as the fields they turn into, because the next screen is where they land. */
-    metricNote: 'Centimetres and kilograms.',
-    imperialNote: 'Feet, inches and pounds.',
   },
 
   welcome: {

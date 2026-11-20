@@ -463,8 +463,6 @@ export const th = {
       unitsTitle: 'หน่วย',
       metric: 'เมตริก',
       imperial: 'อิมพีเรียล',
-      metricNote: 'เซนติเมตรและกิโลกรัม',
-      imperialNote: 'ฟุต นิ้ว และปอนด์',
     },
 
     welcome: {

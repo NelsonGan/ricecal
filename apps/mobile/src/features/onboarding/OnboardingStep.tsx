@@ -2,24 +2,9 @@ import type { ReactNode } from 'react'
 import { View } from 'react-native'
 
 import { track } from '@/lib/analytics'
-import { Button, type ButtonVariant, Screen, type StepProgressTone } from '@/ui'
+import { Button, Screen } from '@/ui'
 import { type StepArt, StepHeader } from './StepHeader'
 import { type OnboardingStepName, stepNumber, TOTAL_STEPS } from './steps'
-
-/**
- * The accent a step wears. Every step in the flow is pandan now: the four
- * colours used to rotate per screen, and twelve screens of rotating buttons
- * read as twelve different apps rather than one flow. The prop stays for a
- * screen outside the flow that borrows the frame.
- */
-export type Accent = StepProgressTone
-
-const accentButton: Record<Accent, ButtonVariant> = {
-  pandan: 'primary',
-  kaya: 'kaya',
-  water: 'water',
-  hibiscus: 'danger',
-}
 
 export type OnboardingStepProps = {
   /**
@@ -33,7 +18,6 @@ export type OnboardingStepProps = {
    * renumbers itself the day a question is added.
    */
   name: OnboardingStepName
-  accent?: Accent
   title: string
   subtitle?: string
   /** The small drawing over the heading. */
@@ -56,16 +40,14 @@ export type OnboardingStepProps = {
 /**
  * The frame every onboarding question shares: progress, heading, body, CTA.
  *
- * The accent is a prop rather than derived from `step` so a screen that is
- * reachable out of order — Create account after Explore first, say — still
- * carries the colour the design gives it.
+ * One colour, pandan, on every step. The steps used to rotate four accents,
+ * which read as several apps rather than one flow.
  *
  * `Screen`'s footer keeps the CTA above the keyboard, which matters on the two
  * steps that have a text field.
  */
 export function OnboardingStep({
   name,
-  accent = 'pandan',
   title,
   subtitle,
   art,
@@ -103,7 +85,7 @@ export function OnboardingStep({
         <StepHeader
           step={step}
           total={TOTAL_STEPS}
-          tone={accent}
+          tone="pandan"
           onBack={onBack}
           title={title}
           subtitle={subtitle}
@@ -112,12 +94,7 @@ export function OnboardingStep({
       }
       footer={
         <View className="gap-1.5">
-          <Button
-            variant={accentButton[accent]}
-            fullWidth
-            onPress={advance}
-            disabled={primaryDisabled}
-          >
+          <Button fullWidth onPress={advance} disabled={primaryDisabled}>
             {primaryLabel}
           </Button>
           {secondaryLabel && onSecondary ? (

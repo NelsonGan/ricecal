@@ -476,8 +476,6 @@ export const fil = {
       unitsTitle: 'MGA UNIT',
       metric: 'Metric',
       imperial: 'Imperial',
-      metricNote: 'Sentimetro at kilo.',
-      imperialNote: 'Talampakan, pulgada at libra.',
     },
 
     welcome: {

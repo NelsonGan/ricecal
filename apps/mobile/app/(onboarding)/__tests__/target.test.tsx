@@ -178,3 +178,12 @@ it('puts the budget back under the formula', async () => {
   expect(screen.getByLabelText('Protein')).toHaveDisplayValue('104')
   expect(saved().targets).toBeUndefined()
 })
+
+it('shows the goal weight in the units chosen on setup', async () => {
+  seed({ ...BODY, units: 'imperial', targetWeightKg: 68 })
+  await render(<TargetStep />)
+
+  // 68 kg is 149.9 lb, the figure the basics step showed for the same target.
+  expect(screen.getByText('149.9 lb')).toBeTruthy()
+  expect(screen.queryByText('68.0 kg')).toBeNull()
+})

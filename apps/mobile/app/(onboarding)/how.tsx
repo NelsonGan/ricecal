@@ -51,7 +51,10 @@ export default function HowStep() {
       primaryLabel={t('common:action.continue')}
       onPrimary={() => router.push('/(onboarding)/setup')}
     >
-      <View accessible accessibilityLabel={`${SAMPLE.name}, ${SAMPLE.kcal} kcal`}>
+      <View
+        accessible
+        accessibilityLabel={`${SAMPLE.name}, ${SAMPLE.kcal} ${t('common:unit.kcal')}`}
+      >
         <View className="h-[190px] overflow-hidden rounded-card">
           <Image
             source={ONBOARDING_ART.nasiLemak}
@@ -80,17 +83,25 @@ export default function HowStep() {
           <View className="gap-2">
             <Macro
               label={t('common:macro.carbs')}
+              unit={t('common:unit.gram')}
               grams={SAMPLE.carbs}
               of={DAY.carbs}
               tone="kaya"
             />
             <Macro
               label={t('common:macro.protein')}
+              unit={t('common:unit.gram')}
               grams={SAMPLE.protein}
               of={DAY.protein}
               tone="hibiscus"
             />
-            <Macro label={t('common:macro.fat')} grams={SAMPLE.fat} of={DAY.fat} tone="teh" />
+            <Macro
+              label={t('common:macro.fat')}
+              unit={t('common:unit.gram')}
+              grams={SAMPLE.fat}
+              of={DAY.fat}
+              tone="teh"
+            />
           </View>
         </View>
       </View>
@@ -101,7 +112,7 @@ export default function HowStep() {
             key={dish.name}
             className="min-w-0 flex-1 flex-row items-center gap-1.5 rounded-sm border-2 border-line bg-surface px-2 py-2"
             accessible
-            accessibilityLabel={`${dish.name}, ${dish.kcal} kcal`}
+            accessibilityLabel={`${dish.name}, ${dish.kcal} ${t('common:unit.kcal')}`}
           >
             <Icon {...dish.icon} size={30} />
             <View className="min-w-0 flex-1">
@@ -121,21 +132,32 @@ export default function HowStep() {
   )
 }
 
+/**
+ * One macro: its name, its grams, its bar. The grams are their own text so a
+ * long translated name ("たんぱく質") can only truncate itself, never the figure
+ * the row exists to show.
+ */
 function Macro({
   label,
+  unit,
   grams,
   of,
   tone,
 }: {
   label: string
+  unit: string
   grams: number
   of: number
   tone: 'kaya' | 'hibiscus' | 'teh'
 }) {
   return (
-    <View className="flex-row items-center gap-3">
-      <Text variant="meta" className="w-[92px]" numberOfLines={1}>
-        {label} {grams}g
+    <View className="flex-row items-center gap-2">
+      <Text variant="meta" className="w-[76px]" numberOfLines={1}>
+        {label}
+      </Text>
+      <Text variant="label" className="w-[40px] text-right">
+        {grams}
+        {unit}
       </Text>
       <ProgressBar value={grams / of} tone={tone} height={8} className="flex-1" />
     </View>

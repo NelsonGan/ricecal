@@ -462,8 +462,6 @@ export const ko = {
       unitsTitle: '단위',
       metric: '미터법',
       imperial: '야드파운드법',
-      metricNote: '센티미터와 킬로그램.',
-      imperialNote: '피트, 인치, 파운드.',
     },
 
     welcome: {

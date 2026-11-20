@@ -467,8 +467,6 @@ export const ta = {
       unitsTitle: 'அலகுகள்',
       metric: 'மெட்ரிக்',
       imperial: 'இம்பீரியல்',
-      metricNote: 'சென்டிமீட்டரும் கிலோகிராமும்.',
-      imperialNote: 'அடி, அங்குலம், பவுண்டு.',
     },
 
     welcome: {

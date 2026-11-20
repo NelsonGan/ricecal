@@ -3,7 +3,8 @@ import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { OnboardingStep } from '@/features/onboarding'
+import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
+import { fromKg, UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { Icon, Text } from '@/ui'
 
@@ -15,10 +16,22 @@ const BENCH = require('../../assets/exercises/barbell-bench-press.webp')
  */
 const EXERCISE = 'Bench Press (Barbell)'
 const SETS = [
-  { id: 'set-1', previous: '40 × 8', kg: '42.5', reps: '8' },
-  { id: 'set-2', previous: '40 × 8', kg: '42.5', reps: '8' },
-  { id: 'set-3', previous: '40 × 7', kg: '42.5', reps: '7' },
+  { id: 'set-1', previousKg: 40, previousReps: 8, kg: 42.5, reps: 8 },
+  { id: 'set-2', previousKg: 40, previousReps: 8, kg: 42.5, reps: 8 },
+  { id: 'set-3', previousKg: 40, previousReps: 7, kg: 42.5, reps: 7 },
 ]
+
+/** The session's total, in kilograms like every weight the app stores. */
+const VOLUME_KG = 1318
+
+/**
+ * A sample weight in the units chosen on setup. Pounds round to the nearest
+ * five, which is what a bar loaded with pound plates can actually hold.
+ */
+function weight(kg: number, unit: WeightUnit): string {
+  const value = unit === 'lb' ? Math.round(fromKg(kg, 'lb') / 5) * 5 : kg
+  return value.toLocaleString()
+}
 
 /**
  * A showcase between the questions: the workout logger, drawn from its own
@@ -30,12 +43,20 @@ const SETS = [
  */
 export default function WorkoutsStep() {
   const { t } = useTranslation(['onboarding', 'workouts', 'common'])
+  const { draft } = useOnboardingDraft()
+  // Asked two screens back; a sample in kilograms right after choosing pounds
+  // would be the first thing in the flow to ignore the answer.
+  const unit = unitFor(draft.units ?? 'metric')
+  const unitLabel = t(UNIT_KEY[unit])
   const router = useRouter()
   const colors = useThemeColors()
 
   const stats = [
     { label: t('workouts:logger.duration'), value: '38:04' },
-    { label: t('workouts:logger.volume'), value: '1,318 kg' },
+    {
+      label: t('workouts:logger.volume'),
+      value: `${Math.round(fromKg(VOLUME_KG, unit)).toLocaleString()} ${unitLabel}`,
+    },
     { label: t('workouts:logger.sets'), value: '5' },
   ]
 
@@ -99,10 +120,10 @@ export default function WorkoutsStep() {
                 {index + 1}
               </Text>
               <Text variant="meta" className="flex-1">
-                {set.previous}
+                {`${weight(set.previousKg, unit)} × ${set.previousReps}`}
               </Text>
               <Text variant="label" className="w-16 text-right">
-                {set.kg} kg
+                {weight(set.kg, unit)} {unitLabel}
               </Text>
               <Text variant="label" className="w-6 text-right">
                 {set.reps}

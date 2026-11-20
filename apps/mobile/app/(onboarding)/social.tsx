@@ -37,7 +37,7 @@ export default function SocialStep() {
       <View
         className="gap-3 rounded-tile border-2 border-line bg-surface p-3.5"
         accessible
-        accessibilityLabel={`${POST.author}, ${POST.dish}, ${POST.kcal} kcal`}
+        accessibilityLabel={`${POST.author}, ${POST.dish}, ${POST.kcal} ${t('common:unit.kcal')}`}
       >
         <View className="flex-row items-center gap-2.5">
           <Avatar name={POST.author} fallback="initial" size="xs" tone="pandan" />

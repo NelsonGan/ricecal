@@ -115,7 +115,7 @@ export default function Welcome() {
       <View
         className="mt-6 gap-3 rounded-tile border-2 border-line bg-surface p-4"
         accessible
-        accessibilityLabel={`${t('common:date.today')}: ${MEALS.map((meal) => `${meal.name}, ${meal.kcal} kcal`).join('; ')}; ${t('workouts.routine')}, ${workoutLine}. ${(BUDGET - EATEN).toLocaleString()} kcal left.`}
+        accessibilityLabel={`${t('common:date.today')}: ${MEALS.map((meal) => `${meal.name}, ${meal.kcal} ${t('common:unit.kcal')}`).join('; ')}; ${t('workouts.routine')}, ${workoutLine}. ${(BUDGET - EATEN).toLocaleString()} ${t('logging:today.kcalLeft')}`}
       >
         <View className="flex-row items-center gap-4">
           <CalorieRing

@@ -460,8 +460,6 @@ export const hi = {
       unitsTitle: 'इकाई',
       metric: 'मीट्रिक',
       imperial: 'इंपीरियल',
-      metricNote: 'सेंटीमीटर और किलोग्राम।',
-      imperialNote: 'फुट, इंच और पाउंड।',
     },
 
     welcome: {

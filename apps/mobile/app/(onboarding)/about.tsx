@@ -290,8 +290,13 @@ export default function AboutStep() {
                   format={(value) => `${value.toFixed(1)} ${t(UNIT_KEY[weightUnit])}`}
                 />
               </ReplayMask>
+              {/* Continue waits on the target, so the card says what it is
+                  waiting for: the weight first, then a drag. Without the
+                  second line a typed weight left a dash and a dead button. */}
               {weightKg == null ? (
                 <Text variant="meta">{t('about.targetWeightLocked')}</Text>
+              ) : targetWeightKg == null ? (
+                <Text variant="meta">{t('about.targetWeightHint')}</Text>
               ) : null}
             </>
           }

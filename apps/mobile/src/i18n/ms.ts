@@ -475,8 +475,6 @@ export const ms = {
       unitsTitle: 'UNIT',
       metric: 'Metrik',
       imperial: 'Imperial',
-      metricNote: 'Sentimeter dan kilogram.',
-      imperialNote: 'Kaki, inci dan paun.',
     },
 
     welcome: {

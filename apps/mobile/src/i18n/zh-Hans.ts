@@ -464,8 +464,6 @@ export const zhHans = {
       unitsTitle: '单位',
       metric: '公制',
       imperial: '英制',
-      metricNote: '厘米和公斤。',
-      imperialNote: '英尺、英寸和磅。',
     },
 
     welcome: {

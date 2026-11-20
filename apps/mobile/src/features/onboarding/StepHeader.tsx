@@ -64,10 +64,11 @@ export function StepHeader({
   const colors = useThemeColors()
 
   /**
-   * While somebody is typing, the header keeps only the bar and the question.
-   * It is pinned above the scroll area, and with the drawing and a three-line
-   * subtitle (the password step's names the address) it left so little room
-   * over the keyboard that the second field sat under the button.
+   * While somebody is typing, the header drops its drawing. It is pinned above
+   * the scroll area, and with the drawing and a three-line subtitle it left so
+   * little room over the keyboard that the password step's second field sat
+   * under the button. The subtitle stays: on the code and password steps it is
+   * the line naming the address, which is what somebody typing a code checks.
    */
   const keyboardUp = useKeyboardState((state) => state.isVisible)
   const padUp = useNumpadOpen()
@@ -120,7 +121,7 @@ export function StepHeader({
           <Text variant="title" className="text-[26px] leading-[32px]">
             {title}
           </Text>
-          {subtitle && !typing ? (
+          {subtitle ? (
             <Text variant="meta" className="text-[16px] leading-[22px]">
               {subtitle}
             </Text>

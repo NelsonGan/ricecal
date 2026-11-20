@@ -464,8 +464,6 @@ export const vi = {
       unitsTitle: 'ĐƠN VỊ',
       metric: 'Hệ mét',
       imperial: 'Hệ Anh',
-      metricNote: 'Xăng ti mét và ki lô gam.',
-      imperialNote: 'Foot, inch và pound.',
     },
 
     welcome: {

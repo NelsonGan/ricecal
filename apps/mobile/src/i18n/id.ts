@@ -471,8 +471,6 @@ export const id = {
       unitsTitle: 'SATUAN',
       metric: 'Metrik',
       imperial: 'Imperial',
-      metricNote: 'Sentimeter dan kilogram.',
-      imperialNote: 'Kaki, inci dan pon.',
     },
 
     welcome: {

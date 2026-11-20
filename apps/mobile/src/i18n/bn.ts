@@ -458,8 +458,6 @@ export const bn = {
       unitsTitle: 'একক',
       metric: 'মেট্রিক',
       imperial: 'ইম্পেরিয়াল',
-      metricNote: 'সেন্টিমিটার আর কিলোগ্রাম।',
-      imperialNote: 'ফুট, ইঞ্চি আর পাউন্ড।',
     },
 
     welcome: {

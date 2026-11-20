@@ -467,8 +467,6 @@ export const ja = {
       unitsTitle: '単位',
       metric: 'メートル法',
       imperial: 'ヤード・ポンド法',
-      metricNote: 'センチメートルとキログラム。',
-      imperialNote: 'フィート、インチ、ポンド。',
     },
 
     welcome: {

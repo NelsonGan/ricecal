@@ -1,8 +1,10 @@
 import { render as rntlRender, screen, userEvent } from '@testing-library/react-native'
 import type { ReactElement, ReactNode } from 'react'
+import { createMMKV } from 'react-native-mmkv'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import '@/i18n'
+import { type OnboardingDraft, OnboardingDraftProvider } from '@/features/onboarding'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 import HowStep from '../how'
 import SocialStep from '../social'
@@ -29,7 +31,9 @@ function Providers({ children }: { children: ReactNode }) {
         insets: { top: 47, left: 0, right: 0, bottom: 34 },
       }}
     >
-      <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider>
+        <OnboardingDraftProvider userId={null}>{children}</OnboardingDraftProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   )
 }
@@ -37,8 +41,12 @@ function Providers({ children }: { children: ReactNode }) {
 const render = (ui: ReactElement) => rntlRender(ui, { wrapper: Providers })
 const user = userEvent.setup()
 
+const store = createMMKV({ id: 'ricecal-onboarding' })
+const seed = (draft: OnboardingDraft) => store.set('draft', JSON.stringify(draft))
+
 beforeEach(() => {
   jest.clearAllMocks()
+  store.clearAll()
 })
 
 it.each([
@@ -57,4 +65,13 @@ it('shows a real scan on the first step', async () => {
 
   expect(screen.getByText('Snap it. We count it.')).toBeTruthy()
   expect(screen.getByText('Nasi lemak ayam')).toBeTruthy()
+})
+
+it('shows the sample workout in the units chosen on setup', async () => {
+  seed({ units: 'imperial' })
+  await render(<WorkoutsStep />)
+
+  // 42.5 kg on the bar, to the nearest five pounds.
+  expect(screen.getAllByText('95 lb')).toHaveLength(3)
+  expect(screen.queryByText(/ kg$/)).toBeNull()
 })

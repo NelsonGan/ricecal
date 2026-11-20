@@ -2,42 +2,12 @@ import { View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, type IconProps, Squish, Text } from '@/ui'
-import type { Accent } from './OnboardingStep'
-
-const selectedStyles: Record<Accent, { border: string; fill: string; slab: string; dot: string }> =
-  {
-    pandan: {
-      border: 'border-pandan',
-      fill: 'bg-pandan-soft',
-      slab: 'bg-pandan-soft-line',
-      dot: 'bg-pandan',
-    },
-    kaya: {
-      border: 'border-kaya',
-      fill: 'bg-kaya-soft',
-      slab: 'bg-kaya-soft-line',
-      dot: 'bg-kaya',
-    },
-    water: {
-      border: 'border-water',
-      fill: 'bg-water-soft',
-      slab: 'bg-water-soft-line',
-      dot: 'bg-water',
-    },
-    hibiscus: {
-      border: 'border-hibiscus',
-      fill: 'bg-hibiscus-soft',
-      slab: 'bg-hibiscus-soft-line',
-      dot: 'bg-hibiscus',
-    },
-  }
 
 export type ChoiceCardProps = {
   title: string
   description?: string
   selected: boolean
   onPress: () => void
-  accent?: Accent
   /**
    * A drawing of the answer, at the LEADING edge.
    *
@@ -55,7 +25,8 @@ export type ChoiceCardProps = {
  * A radio option rendered as a card.
  *
  * `Radio` from the design system is the right control for a compact list; this
- * is the onboarding variant, where each option is a full-width squishy card.
+ * is the onboarding variant, where each option is a full-width squishy card in
+ * pandan, the flow's one colour.
  * Same role and same state to a screen reader.
  */
 export function ChoiceCard({
@@ -63,11 +34,9 @@ export function ChoiceCard({
   description,
   selected,
   onPress,
-  accent = 'pandan',
   icon,
   className,
 }: ChoiceCardProps) {
-  const tone = selectedStyles[accent]
   const colors = useThemeColors()
 
   return (
@@ -75,19 +44,20 @@ export function ChoiceCard({
       depth={3}
       radius={20}
       containerClassName={className}
-      slabClassName={selected ? tone.slab : 'bg-line'}
+      slabClassName={selected ? 'bg-pandan-soft-line' : 'bg-line'}
       className={cn(
         'flex-row items-center gap-3 border-2 px-3.5 py-3',
-        selected ? `${tone.border} ${tone.fill}` : 'border-line bg-surface',
+        selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
       )}
       onPress={onPress}
       accessibilityRole="radio"
       accessibilityState={{ selected }}
       accessibilityLabel={description ? `${title}. ${description}` : title}
     >
-      {/* 44, AND THE NUMBER IS THE iPHONE SE. The drawing is taller than the two
-          lines of text, so it sets the card's height, and four of these plus a
-          heading and a footer is the whole of a small screen. Decorative: the
+      {/* 36: the drawing is taller than the two lines of text, so it sets the
+          card's height, and four of these plus a heading and a footer is the
+          whole of a small screen. At 44 the fourth option had about 13pt to
+          spare on an iPhone SE; 36 leaves room for larger text. Decorative: the
           card carries one accessibility label for the whole row. */}
       {icon ? <Icon {...icon} size={36} /> : null}
 
@@ -99,7 +69,7 @@ export function ChoiceCard({
       <View
         className={cn(
           'h-[22px] w-[22px] items-center justify-center rounded-full',
-          selected ? tone.dot : 'border-2 border-line-strong',
+          selected ? 'bg-pandan' : 'border-2 border-line-strong',
         )}
       >
         {selected ? <Icon set="ui" name="check" size={12} tintColor={colors.onPandan} /> : null}

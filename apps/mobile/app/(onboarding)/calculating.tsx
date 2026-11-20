@@ -82,6 +82,30 @@ const INNER_GAP = 7
 /** Degrees left empty between two macro segments, so three colours read as three. */
 const SEGMENT_GAP = 7
 
+/**
+ * The two rings' boxes, fixed, so the UI-thread mappers that close over them
+ * are built once rather than on every render of the screen.
+ */
+const OUTER_BOX = {
+  x: THICKNESS / 2,
+  y: THICKNESS / 2,
+  width: RING - THICKNESS,
+  height: RING - THICKNESS,
+}
+const INNER_INSET = THICKNESS + INNER_GAP + INNER / 2
+const INNER_BOX = {
+  x: INNER_INSET,
+  y: INNER_INSET,
+  width: RING - INNER_INSET * 2,
+  height: RING - INNER_INSET * 2,
+}
+/**
+ * How far a round cap reaches past the end of an arc, in degrees on the inner
+ * ring. Without taking it off each segment, the caps filled most of the gap
+ * and the three colours touched.
+ */
+const CAP_DEGREES = ((INNER / 2 / (INNER_BOX.width / 2)) * 180) / Math.PI
+
 /** The ease the count and the fill share, so the number and the ring arrive together. */
 const easeOut = (x: number) => 1 - (1 - x) ** 3
 
@@ -101,8 +125,6 @@ export default function CalculatingStep() {
 
   /** How many lines are done. */
   const [done, setDone] = useState(0)
-  /** The figure in the middle of the ring, counted on the JS thread. */
-  const [shown, setShown] = useState(reduceMotion ? budget.kcal : 0)
 
   /**
    * Read through a ref, so the timeline is booked exactly once. With the router
@@ -126,30 +148,6 @@ export default function CalculatingStep() {
       for (const timer of timers) clearTimeout(timer)
     }
   }, [])
-
-  /**
-   * The count. A frame loop rather than an animated text node, because the
-   * figure is about thirty state updates over a second on a screen that draws
-   * nothing else, and a plain `Text` keeps the app's own type and its
-   * accessibility. Rounded to tens until the last frame, so the digits roll
-   * rather than flicker.
-   */
-  useEffect(() => {
-    if (reduceMotion) {
-      setShown(budget.kcal)
-      return
-    }
-    let frame = 0
-    const started = Date.now() + START_MS
-    const step = () => {
-      const progress = Math.min(1, Math.max(0, (Date.now() - started) / COUNT_MS))
-      const value = budget.kcal * easeOut(progress)
-      setShown(progress < 1 ? Math.round(value / 10) * 10 : budget.kcal)
-      if (progress < 1) frame = requestAnimationFrame(step)
-    }
-    frame = requestAnimationFrame(step)
-    return () => cancelAnimationFrame(frame)
-  }, [budget.kcal, reduceMotion])
 
   /** The calorie ring's fill, on the UI thread, on the same curve as the count. */
   const fill = useSharedValue(reduceMotion ? 1 : 0)
@@ -179,19 +177,14 @@ export default function CalculatingStep() {
 
   const ringStyle = useAnimatedStyle(() => ({ transform: [{ scale: breath.value }] }))
 
-  const outer = THICKNESS / 2
-  const outerBox = { x: outer, y: outer, width: RING - THICKNESS, height: RING - THICKNESS }
-  const inner = THICKNESS + INNER_GAP + INNER / 2
-  const innerBox = { x: inner, y: inner, width: RING - inner * 2, height: RING - inner * 2 }
-
-  const track = Skia.PathBuilder.Make().addArc(outerBox, 0, 360).detach()
-  const innerTrack = Skia.PathBuilder.Make().addArc(innerBox, 0, 360).detach()
+  const track = useMemo(() => Skia.PathBuilder.Make().addArc(OUTER_BOX, 0, 360).detach(), [])
+  const innerTrack = useMemo(() => Skia.PathBuilder.Make().addArc(INNER_BOX, 0, 360).detach(), [])
 
   // Rebuilt per frame on the UI thread, which keeps the fill off the JS thread.
   // A sweep of zero would draw a dot under the round cap, so it starts at a hair.
   const arc = useDerivedValue(() =>
     Skia.PathBuilder.Make()
-      .addArc(outerBox, -90, Math.max(0.01, fill.value * 360))
+      .addArc(OUTER_BOX, -90, Math.max(0.01, fill.value * 360))
       .detach(),
   )
 
@@ -205,16 +198,17 @@ export default function CalculatingStep() {
     const usable = 360 - SEGMENT_GAP * 3
     let start = -90 + SEGMENT_GAP / 2
     return energy.map((value) => {
-      const sweep = (value / total) * usable
-      const segment = { start, sweep }
-      start += sweep + SEGMENT_GAP
+      const share = (value / total) * usable
+      // Trimmed by a cap at each end, so the gap that shows is the gap asked for.
+      const segment = { start: start + CAP_DEGREES, sweep: share - CAP_DEGREES * 2 }
+      start += share + SEGMENT_GAP
       return segment
     })
   }, [budget])
 
-  const carbs = useSegment(innerBox, segments[0], 0, split)
-  const protein = useSegment(innerBox, segments[1], 1, split)
-  const fat = useSegment(innerBox, segments[2], 2, split)
+  const carbs = useSegment(segments[0], 0, split)
+  const protein = useSegment(segments[1], 1, split)
+  const fat = useSegment(segments[2], 2, split)
 
   return (
     <Screen scroll={false}>
@@ -264,9 +258,7 @@ export default function CalculatingStep() {
               accessible
               accessibilityLabel={`${budget.kcal.toLocaleString()} ${t('onboarding:target.perDay')}`}
             >
-              <Text className="font-display text-[38px] leading-[44px] text-heading">
-                {shown.toLocaleString()}
-              </Text>
+              <CountUp to={budget.kcal} reduceMotion={reduceMotion} />
               <Text variant="overlineSm" className="text-muted">
                 {t('onboarding:target.perDay')}
               </Text>
@@ -300,20 +292,61 @@ export default function CalculatingStep() {
 
 /**
  * One macro segment, drawn from nothing to its share once `split` reaches its
- * index. A sweep of zero is no path at all rather than a dot under the cap.
+ * index. A segment with no share (a budget edited to 0 g of fat) is no path at
+ * all, rather than a dot under the round cap.
  */
 function useSegment(
-  box: { x: number; y: number; width: number; height: number },
   segment: { start: number; sweep: number },
   index: number,
   split: SharedValue<number>,
 ) {
+  const { start, sweep } = segment
   return useDerivedValue(() => {
     const drawn = Math.min(1, Math.max(0, split.value - index))
     const path = Skia.PathBuilder.Make()
-    if (drawn > 0) path.addArc(box, segment.start, segment.sweep * drawn)
+    if (drawn > 0 && sweep > 0) path.addArc(INNER_BOX, start, sweep * drawn)
     return path.detach()
   })
+}
+
+/**
+ * The figure in the middle of the ring, counting up on the JS thread.
+ *
+ * Its own component so the count re-renders a line of text and nothing else:
+ * in the screen, each of its sixty-odd frames rebuilt the whole tree.
+ */
+function CountUp({ to, reduceMotion }: { to: number; reduceMotion: boolean }) {
+  const [shown, setShown] = useState(reduceMotion ? to : 0)
+
+  /**
+   * A frame loop rather than an animated text node: a plain `Text` keeps the
+   * app's own type and its accessibility, and in a component this small a
+   * frame is one line of text. Rounded to tens until the last frame, so the
+   * digits roll rather than flicker, and React skips the frames where the
+   * rounded figure has not moved.
+   */
+  useEffect(() => {
+    if (reduceMotion) {
+      setShown(to)
+      return
+    }
+    let frame = 0
+    const started = Date.now() + START_MS
+    const step = () => {
+      const progress = Math.min(1, Math.max(0, (Date.now() - started) / COUNT_MS))
+      const value = to * easeOut(progress)
+      setShown(progress < 1 ? Math.round(value / 10) * 10 : to)
+      if (progress < 1) frame = requestAnimationFrame(step)
+    }
+    frame = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frame)
+  }, [to, reduceMotion])
+
+  return (
+    <Text className="font-display text-[38px] leading-[44px] text-heading">
+      {shown.toLocaleString()}
+    </Text>
+  )
 }
 
 /**
