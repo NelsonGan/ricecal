@@ -1,8 +1,10 @@
 import { render as rntlRender, screen, waitFor } from '@testing-library/react-native'
 import type { ReactElement, ReactNode } from 'react'
+import { createMMKV } from 'react-native-mmkv'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import '@/i18n'
+import { type OnboardingDraft, OnboardingDraftProvider } from '@/features/onboarding'
 import { ThemeProvider } from '@/theme/ThemeProvider'
 import Calculating from '../calculating'
 
@@ -53,7 +55,9 @@ function Providers({ children }: { children: ReactNode }) {
         insets: { top: 47, left: 0, right: 0, bottom: 34 },
       }}
     >
-      <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider>
+        <OnboardingDraftProvider userId={null}>{children}</OnboardingDraftProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   )
 }
@@ -76,8 +80,13 @@ const PAST_THE_TALLY = { timeout: 8000, interval: 100 }
  */
 const REAL_TIMEOUT_MS = 20_000
 
+/** The same store the provider reads, so a test can arrange an edited budget. */
+const store = createMMKV({ id: 'ricecal-onboarding' })
+const seed = (draft: OnboardingDraft) => store.set('draft', JSON.stringify(draft))
+
 beforeEach(() => {
   jest.clearAllMocks()
+  store.clearAll()
   jest.useFakeTimers()
 })
 
@@ -121,3 +130,23 @@ it('drops its timer when it goes away', async () => {
   // top of the stack instead — the target screen, straight back to itself.
   expect(mockReplace).not.toHaveBeenCalled()
 })
+
+it(
+  'counts up to the budget the next screen opens on',
+  async () => {
+    // An edited budget, so the figure can only have come from the draft.
+    seed({
+      heightCm: 170,
+      weightKg: 65,
+      age: 30,
+      sex: 'female',
+      targetWeightKg: 60,
+      activity: 'light',
+      targets: { kcal: 1800, carbs: 203, protein: 104, fat: 46 },
+    })
+    await render(<Calculating />)
+
+    await waitFor(() => expect(screen.getByText('1,800')).toBeTruthy(), PAST_THE_TALLY)
+  },
+  REAL_TIMEOUT_MS,
+)

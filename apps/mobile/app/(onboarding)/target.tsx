@@ -4,7 +4,13 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useSession } from '@/data'
-import { StepHeader, stepNumber, TOTAL_STEPS, useOnboardingDraft } from '@/features/onboarding'
+import {
+  planBody,
+  StepHeader,
+  stepNumber,
+  TOTAL_STEPS,
+  useOnboardingDraft,
+} from '@/features/onboarding'
 import {
   BudgetEditor,
   type BudgetFields,
@@ -40,22 +46,9 @@ export default function TargetStep() {
   const { draft, patch } = useOnboardingDraft()
   const { session } = useSession()
 
-  // Defaults that only matter if a screen was skipped, which the Continue gates
-  // do not allow. Present so the arithmetic below cannot divide by nothing.
-  const weightKg = draft.weightKg ?? 65
-  const targetWeightKg = draft.targetWeightKg ?? weightKg
-  const body = {
-    sex: draft.sex ?? 'female',
-    weightKg,
-    heightCm: draft.heightCm ?? 164,
-    age: draft.age ?? 29,
-    activity: draft.activity ?? 'light',
-    // The gap between this and `weightKg` IS the plan, so it has to be here and
-    // not only in the footnote below. `finish` writes it to the profile and the
-    // trigger runs the same arithmetic against it — leaving it out is how this
-    // screen would promise a budget the account then quietly disagrees with.
-    targetWeightKg,
-  }
+  const body = planBody(draft)
+  const weightKg = body.weightKg
+  const targetWeightKg = body.targetWeightKg ?? weightKg
 
   const recommended = computeTargets(body)
   // From the same body as the budget, so the date and the number on the ring
@@ -79,7 +72,6 @@ export default function TargetStep() {
     draft.targets ? budgetFields(draft.targets) : undefined,
   )
   const shown = fields ?? budgetFields(recommended)
-  const budget = readBudget(shown, recommended)
 
   /**
    * Written to the draft on every keystroke rather than on the way out.

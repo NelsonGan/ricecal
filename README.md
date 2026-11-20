@@ -1007,7 +1007,11 @@ one continuous progress bar. The welcome screen wears it too, with the app mark
 as its drawing and no bar. The steps used to rotate four accent colours, draw
 twelve segmented marks and give some steps a subtitle and others none, which
 read as several apps rather than one flow. The calculating beat is the one step
-without a drawing, because its ring is the picture.
+without a drawing, because its ring is the picture: it counts up to the person's
+own budget (`planBudget`, the figure the target step then opens on) while the
+ring fills, then draws the carbs, protein and fat split inside it, and settles
+with a success haptic. It used to count a percentage of nothing in thirds under
+a spinning segment.
 
 The header keeps only the bar and the title while a keyboard or the number pad
 is up (`StepHeader` reads both). It is pinned above the scroll area, and with

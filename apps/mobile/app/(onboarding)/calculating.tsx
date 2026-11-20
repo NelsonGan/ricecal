@@ -1,21 +1,31 @@
 import { Canvas, Path, Skia } from '@shopify/react-native-skia'
+import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import Animated, {
   Easing,
   FadeIn,
+  type SharedValue,
   useAnimatedStyle,
   useDerivedValue,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withRepeat,
+  withSequence,
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
 
-import { StepHeader, stepNumber, TOTAL_STEPS } from '@/features/onboarding'
+import {
+  planBudget,
+  StepHeader,
+  stepNumber,
+  TOTAL_STEPS,
+  useOnboardingDraft,
+} from '@/features/onboarding'
 import { useThemeColors } from '@/theme/useTheme'
 import { cn, Icon, Screen, Text } from '@/ui'
 
@@ -31,91 +41,180 @@ import { cn, Icon, Screen, Text } from '@/ui'
  * explanation is the more annoying failure.
  *
  * A ring rather than a spinner, because this wait is not indefinite: three things
- * are being worked out and the screen knows which one it is on. The shape is also
- * the shape of the answer, since the next screen opens on a calorie ring.
+ * are being worked out and the screen knows which one it is on. The ring counts
+ * up to the person's own daily budget, then draws the carbs, protein and fat
+ * split inside it in the colours every macro bar in the app uses, so what the
+ * animation shows is what the three lines say.
  *
  * `replace` rather than `push`: the back chevron from the target screen belongs
  * on the last question, and a screen that immediately advances is a trap.
  */
 
-/** How long each line holds before the next one starts. */
-const TICK_MS = 700
-
-/** The pause after the last tick, so the final check is seen and not merely drawn. */
-const SETTLE_MS = 450
+/**
+ * The timeline, in milliseconds from mount. Each phase is what its line says:
+ * the calorie figure counts up as the ring fills, the macro split draws itself
+ * inside it, then the whole ring settles while "matching your food" lands.
+ * About two and a half seconds, which is what the screen took before.
+ */
+/**
+ * Held until the screen has slid in. Started on mount, the count ran under the
+ * push transition and the first frame anybody saw already read 1,460 of 1,580.
+ */
+const START_MS = 350
+const COUNT_MS = 1100
+const SPLIT_MS = 800
+const SETTLE_MS = 500
+/** When each of the three lines ticks, and when the screen leaves. */
+const TICKS = [
+  START_MS + COUNT_MS,
+  START_MS + COUNT_MS + SPLIT_MS,
+  START_MS + COUNT_MS + SPLIT_MS + SETTLE_MS,
+] as const
+const LEAVE_MS = TICKS[2] + 450
 
 const LINES = ['budget', 'macros', 'catalogue'] as const
 
-const RING = 172
+const RING = 184
 const THICKNESS = 14
-/** How much of the circle the sweep covers. Short enough to read as a pointer. */
-const SWEEP_DEGREES = 68
+/** The macro ring sits inside the calorie ring, thinner, with a hairline between. */
+const INNER = 7
+const INNER_GAP = 7
+/** Degrees left empty between two macro segments, so three colours read as three. */
+const SEGMENT_GAP = 7
+
+/** The ease the count and the fill share, so the number and the ring arrive together. */
+const easeOut = (x: number) => 1 - (1 - x) ** 3
 
 export default function CalculatingStep() {
   const { t } = useTranslation(['onboarding', 'common'])
   const router = useRouter()
   const colors = useThemeColors()
-
-  /** How many lines are done. Counts past the last one, which is the cue to leave. */
-  const [done, setDone] = useState(0)
-
-  useEffect(() => {
-    // One timer at a time rather than an interval, so the last gap can be
-    // longer than the others and the cleanup has exactly one handle to clear.
-    const timer = setTimeout(
-      () => {
-        if (done < LINES.length) {
-          setDone((count) => count + 1)
-          return
-        }
-        router.replace('/(onboarding)/target')
-      },
-      done < LINES.length ? TICK_MS : SETTLE_MS,
-    )
-
-    return () => clearTimeout(timer)
-  }, [done, router])
-
-  const inset = THICKNESS / 2
-  const box = { x: inset, y: inset, width: RING - THICKNESS, height: RING - THICKNESS }
+  const reduceMotion = useReducedMotion()
+  const { draft } = useOnboardingDraft()
 
   /**
-   * The fill, driven by the tally rather than by a clock.
-   *
-   * It travels a third of the ring per line and eases in, so the motion between
-   * two steps is longer than the gap that produced it — the ring is still
-   * moving when the next line lands, which is what stops three ticks 700ms
-   * apart reading as three separate stutters.
+   * The figure the next screen opens on. It used to count a percentage of
+   * nothing in thirds (0, 33, 67, 100); counting up to the person's own budget
+   * is the one thing this beat can show that a spinner cannot.
    */
-  const filled = useSharedValue(0)
+  const budget = useMemo(() => planBudget(draft), [draft])
+
+  /** How many lines are done. */
+  const [done, setDone] = useState(0)
+  /** The figure in the middle of the ring, counted on the JS thread. */
+  const [shown, setShown] = useState(reduceMotion ? budget.kcal : 0)
+
+  /**
+   * Read through a ref, so the timeline is booked exactly once. With the router
+   * in the effect's dependencies, a router that is a new object on a render
+   * (a test's, at least) re-booked every timer on each frame of the count.
+   */
+  const routerRef = useRef(router)
+  routerRef.current = router
+
+  // The tally and the exit, booked once. Every timer is cleared on unmount, so
+  // a screen that goes away early cannot navigate whatever replaced it.
   useEffect(() => {
-    filled.value = withTiming(done / LINES.length, {
-      duration: 620,
-      easing: Easing.bezier(0.2, 0.8, 0.2, 1),
-    })
-  }, [done, filled])
+    const timers = [
+      ...TICKS.map((at, index) => setTimeout(() => setDone(index + 1), at)),
+      setTimeout(() => {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+      }, TICKS[2]),
+      setTimeout(() => routerRef.current.replace('/(onboarding)/target'), LEAVE_MS),
+    ]
+    return () => {
+      for (const timer of timers) clearTimeout(timer)
+    }
+  }, [])
 
-  /** The one part that turns for its own sake: proof the screen is alive. */
-  const spin = useSharedValue(0)
+  /**
+   * The count. A frame loop rather than an animated text node, because the
+   * figure is about thirty state updates over a second on a screen that draws
+   * nothing else, and a plain `Text` keeps the app's own type and its
+   * accessibility. Rounded to tens until the last frame, so the digits roll
+   * rather than flicker.
+   */
   useEffect(() => {
-    spin.value = withRepeat(withTiming(1, { duration: 1600, easing: Easing.linear }), -1, false)
-  }, [spin])
+    if (reduceMotion) {
+      setShown(budget.kcal)
+      return
+    }
+    let frame = 0
+    const started = Date.now() + START_MS
+    const step = () => {
+      const progress = Math.min(1, Math.max(0, (Date.now() - started) / COUNT_MS))
+      const value = budget.kcal * easeOut(progress)
+      setShown(progress < 1 ? Math.round(value / 10) * 10 : budget.kcal)
+      if (progress < 1) frame = requestAnimationFrame(step)
+    }
+    frame = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frame)
+  }, [budget.kcal, reduceMotion])
 
-  const spinStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${spin.value * 360}deg` }],
-  }))
+  /** The calorie ring's fill, on the UI thread, on the same curve as the count. */
+  const fill = useSharedValue(reduceMotion ? 1 : 0)
+  /** The macro split, 0 to 3: each whole number is one segment fully drawn. */
+  const split = useSharedValue(reduceMotion ? 3 : 0)
+  /** The settle: one soft breath of the whole ring when the last line lands. */
+  const breath = useSharedValue(1)
 
-  const track = Skia.PathBuilder.Make().addArc(box, 0, 360).detach()
-  const sweep = Skia.PathBuilder.Make().addArc(box, -90, SWEEP_DEGREES).detach()
+  useEffect(() => {
+    if (reduceMotion) return
+    fill.value = withDelay(
+      START_MS,
+      withTiming(1, { duration: COUNT_MS, easing: Easing.out(Easing.cubic) }),
+    )
+    split.value = withDelay(
+      START_MS + COUNT_MS,
+      withTiming(3, { duration: SPLIT_MS, easing: Easing.inOut(Easing.quad) }),
+    )
+    breath.value = withDelay(
+      TICKS[1],
+      withSequence(
+        withTiming(1.045, { duration: 220, easing: Easing.out(Easing.quad) }),
+        withSpring(1, { damping: 9, stiffness: 160 }),
+      ),
+    )
+  }, [fill, split, breath, reduceMotion])
+
+  const ringStyle = useAnimatedStyle(() => ({ transform: [{ scale: breath.value }] }))
+
+  const outer = THICKNESS / 2
+  const outerBox = { x: outer, y: outer, width: RING - THICKNESS, height: RING - THICKNESS }
+  const inner = THICKNESS + INNER_GAP + INNER / 2
+  const innerBox = { x: inner, y: inner, width: RING - inner * 2, height: RING - inner * 2 }
+
+  const track = Skia.PathBuilder.Make().addArc(outerBox, 0, 360).detach()
+  const innerTrack = Skia.PathBuilder.Make().addArc(innerBox, 0, 360).detach()
 
   // Rebuilt per frame on the UI thread, which keeps the fill off the JS thread.
+  // A sweep of zero would draw a dot under the round cap, so it starts at a hair.
   const arc = useDerivedValue(() =>
     Skia.PathBuilder.Make()
-      .addArc(box, -90, filled.value * 360)
+      .addArc(outerBox, -90, Math.max(0.01, fill.value * 360))
       .detach(),
   )
 
-  const percent = Math.round((done / LINES.length) * 100)
+  /**
+   * The three macros as shares of the budget's energy, in the order and the
+   * colours every macro bar in the app uses: carbs, protein, fat.
+   */
+  const segments = useMemo(() => {
+    const energy = [budget.carbs * 4, budget.protein * 4, budget.fat * 9]
+    const total = energy.reduce((sum, value) => sum + value, 0) || 1
+    const usable = 360 - SEGMENT_GAP * 3
+    let start = -90 + SEGMENT_GAP / 2
+    return energy.map((value) => {
+      const sweep = (value / total) * usable
+      const segment = { start, sweep }
+      start += sweep + SEGMENT_GAP
+      return segment
+    })
+  }, [budget])
+
+  const carbs = useSegment(innerBox, segments[0], 0, split)
+  const protein = useSegment(innerBox, segments[1], 1, split)
+  const fat = useSegment(innerBox, segments[2], 2, split)
 
   return (
     <Screen scroll={false}>
@@ -123,7 +222,10 @@ export default function CalculatingStep() {
 
       <View className="flex-1 justify-center gap-9">
         <View className="items-center gap-5">
-          <View style={{ width: RING, height: RING }} className="items-center justify-center">
+          <Animated.View
+            style={[{ width: RING, height: RING }, ringStyle]}
+            className="items-center justify-center"
+          >
             <Canvas style={{ width: RING, height: RING }}>
               <Path path={track} style="stroke" strokeWidth={THICKNESS} color={colors.track} />
               <Path
@@ -133,43 +235,52 @@ export default function CalculatingStep() {
                 strokeCap="round"
                 color={colors.pandan}
               />
+              <Path path={innerTrack} style="stroke" strokeWidth={INNER} color={colors.track} />
+              <Path
+                path={carbs}
+                style="stroke"
+                strokeWidth={INNER}
+                strokeCap="round"
+                color={colors.kaya}
+              />
+              <Path
+                path={protein}
+                style="stroke"
+                strokeWidth={INNER}
+                strokeCap="round"
+                color={colors.hibiscus}
+              />
+              <Path
+                path={fat}
+                style="stroke"
+                strokeWidth={INNER}
+                strokeCap="round"
+                color={colors.teh}
+              />
             </Canvas>
 
-            {/* A second canvas on top rather than a third path in the first
-                one: the sweep is the only thing rotating, and rotating the
-                whole canvas would take the fill with it. */}
-            <Animated.View
-              style={[{ position: 'absolute', width: RING, height: RING }, spinStyle]}
-              pointerEvents="none"
+            <View
+              className="absolute items-center"
+              accessible
+              accessibilityLabel={`${budget.kcal.toLocaleString()} ${t('onboarding:target.perDay')}`}
             >
-              <Canvas style={{ width: RING, height: RING }}>
-                <Path
-                  path={sweep}
-                  style="stroke"
-                  strokeWidth={THICKNESS}
-                  strokeCap="round"
-                  color={colors.kaya}
-                  opacity={0.9}
-                />
-              </Canvas>
-            </Animated.View>
-
-            <View className="absolute items-center">
-              <Text className="font-display text-[40px] leading-[46px] text-heading">
-                {percent}
+              <Text className="font-display text-[38px] leading-[44px] text-heading">
+                {shown.toLocaleString()}
               </Text>
               <Text variant="overlineSm" className="text-muted">
-                %
+                {t('onboarding:target.perDay')}
               </Text>
             </View>
-          </View>
+          </Animated.View>
 
-          <Text variant="title" className="text-center">
-            {t('onboarding:calculating.title')}
-          </Text>
-          <Text className="text-center text-[16px] leading-[24px]">
-            {t('onboarding:calculating.subtitle')}
-          </Text>
+          <View className="items-center gap-1.5">
+            <Text variant="title" className="text-center text-[26px] leading-[32px]">
+              {t('onboarding:calculating.title')}
+            </Text>
+            <Text variant="meta" className="text-center text-[16px] leading-[22px]">
+              {t('onboarding:calculating.subtitle')}
+            </Text>
+          </View>
         </View>
 
         <View className="gap-3.5">
@@ -185,6 +296,24 @@ export default function CalculatingStep() {
       </View>
     </Screen>
   )
+}
+
+/**
+ * One macro segment, drawn from nothing to its share once `split` reaches its
+ * index. A sweep of zero is no path at all rather than a dot under the cap.
+ */
+function useSegment(
+  box: { x: number; y: number; width: number; height: number },
+  segment: { start: number; sweep: number },
+  index: number,
+  split: SharedValue<number>,
+) {
+  return useDerivedValue(() => {
+    const drawn = Math.min(1, Math.max(0, split.value - index))
+    const path = Skia.PathBuilder.Make()
+    if (drawn > 0) path.addArc(box, segment.start, segment.sweep * drawn)
+    return path.detach()
+  })
 }
 
 /**
