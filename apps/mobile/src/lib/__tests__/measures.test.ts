@@ -62,6 +62,14 @@ describe('labelQuantities', () => {
     expect(labelQuantities('355 ml (12 oz)')).toEqual({ ml: expect.closeTo(354.9, 1) })
     expect(labelQuantities('8 oz (227 g)').g).toBe(227)
   })
+
+  // A weight beside a volume is the density itself, not a second volume.
+  it('keeps an oz that disagrees with the volume beside it a weight', () => {
+    const found = labelQuantities('1/4 cup (1 oz)')
+    expect(found.g).toBeCloseTo(28.35, 1)
+    expect(found.ml).toBeCloseTo(59.15, 1)
+    expect(labelQuantities('1 cup (4 oz)').g).toBeCloseTo(113.4, 1)
+  })
 })
 
 describe('foodBasis', () => {

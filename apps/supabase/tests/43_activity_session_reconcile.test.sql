@@ -170,10 +170,13 @@ values
 on conflict (user_id, provider, external_id) do update set active_kcal = excluded.active_kcal;
 select is((select count(*)::integer from public.activity_sessions where user_id = auth.uid() and started_at = '2026-11-17 01:00:00+00'), 1,
   'and the other is not added beside it, so it is not shared again');
+-- Whichever copy took the row over, the store then keeps only the other one.
+select case external_id when 'N1' then 'N2' else 'N1' end as survivor
+from public.activity_sessions where id = 'a0000000-0000-0000-0000-000000000007' \gset
 select is(public.reconcile_activity_sessions('apple_health', '2026-11-13', '2026-11-20',
-  '[{"external_id":"N2","started_at":"2026-11-17T01:00:00.000Z","kind":"walk","source_name":"iPad"}]'), 1,
+  format('[{"external_id":"%s","started_at":"2026-11-17T01:00:00.000Z","kind":"walk","source_name":"iPad"}]', :'survivor')::jsonb), 1,
   'once the store drops the old copy the row follows the survivor');
-select is((select id::text from public.activity_sessions where external_id = 'N2'), 'a0000000-0000-0000-0000-000000000007',
+select is((select id::text from public.activity_sessions where external_id = :'survivor'), 'a0000000-0000-0000-0000-000000000007',
   'still the original row');
 
 -- A run across the window's first midnight, which the store's read returns.

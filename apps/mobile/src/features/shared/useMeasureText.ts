@@ -25,7 +25,7 @@ export function measureFigure(unit: MeasureUnit, amount: number): string {
  * cup" rather than "¾ cups", where i18next's English rules call anything but
  * exactly 1 plural.
  */
-const pluralCount = (amount: number) => (amount > 0 && amount < 1 ? 1 : amount)
+export const pluralCount = (amount: number) => (amount > 0 && amount < 1 ? 1 : amount)
 
 /**
  * Amounts and unit names in the language the app is read in. A hook rather than

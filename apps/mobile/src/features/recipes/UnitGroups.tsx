@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { useMeasureText } from '@/features/shared/useMeasureText'
+import { pluralCount, useMeasureText } from '@/features/shared/useMeasureText'
 import { MEASURES } from '@/lib/measures'
 import { SegmentedControl, Text } from '@/ui'
 import type { IngredientKey } from './basis'
@@ -11,7 +11,9 @@ export function useUnitName() {
   const { t } = useTranslation('recipes')
   const measure = useMeasureText()
   return (key: IngredientKey, count: number) =>
-    key === 'piece' ? t('ingredient.unit.piece', { count }) : measure.unit(key, count)
+    key === 'piece'
+      ? t('ingredient.unit.piece', { count: pluralCount(count) })
+      : measure.unit(key, count)
 }
 
 type Group = 'weight' | 'volume' | 'count'
