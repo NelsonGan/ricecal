@@ -1030,8 +1030,8 @@ heading, which made four short numbers the heaviest screen in the flow.
 screen reader when the row already draws it.
 
 **The welcome sample and the three showcases are pictures, not demos.**
-`welcome` draws a sample of today (a photographed plate, a drink and the ring of
-what is left), and `how`, `workouts` and `social` draw a sample scan, a workout
+`welcome` draws a sample of today (a photographed plate, a drink, a walk and
+the ring of what is left), and `how`, `workouts` and `social` draw a sample scan, a workout
 and a post, all from the app's own parts with fixed
 sample figures, and nothing on them can be pressed except Continue. The camera
 needs a permission this flow has not asked for, and a feed needs an account.
