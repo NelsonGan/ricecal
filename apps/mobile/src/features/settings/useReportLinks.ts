@@ -69,35 +69,40 @@ export function useReportLinks(): void {
         return
       }
       // A nudge, an invite or a chat message from a group, the pushes that come
-      // from a server. It opens the Groups tab on that group's board, or on the
-      // list for an invite, which waits behind the envelope there. A message
-      // opens the group's thread over the board, so going back lands on the
-      // board, with the keyboard up: a tapped message is one to answer.
+      // from a server. A nudge opens that group's board on the day it was
+      // about, and an invite the Groups page with its invites open. A message
+      // opens the group's thread, so going back lands on the group's card on
+      // Social, with the keyboard up: a tapped message is one to answer.
       if (kind === 'group') {
         const data = response?.notification.request.content.data
         const groupId = typeof data?.groupId === 'string' ? data.groupId : null
         const day = typeof data?.day === 'string' ? data.day : undefined
+        // Chosen on Social too, so back from the board or the chat lands on it.
         if (userId && groupId && !data?.invite) setOpenGroup(userId, groupId, day)
-        if (userId && data?.invite) setOpenGroup(userId, null)
         track('Notification Opened', {
           kind: data?.invite ? 'group_invite' : data?.chat ? 'group_message' : 'group_nudge',
         })
-        // A message opens its thread in one push over whatever is showing; the
-        // chat puts the Groups tab under itself once it has slid in. Switching
-        // to Groups first popped anything open, drew the board, and then
-        // pushed the chat over it, three transitions for one tap. The thread
-        // already open is left as it is, and another group's is swapped.
-        if (data?.chat && groupId) {
-          const chat = { pathname: '/group/chat', params: { id: groupId, reply: '1' } } as const
-          const route = (navigation.isReady() ? navigation.getCurrentRoute() : undefined) as
-            | { name: string; params?: { id?: string } }
-            | undefined
-          const showing = route?.name === 'chat' ? route.params?.id : undefined
-          if (!showing) router.push(chat)
-          else if (showing !== groupId) router.replace(chat)
+        if (data?.invite) {
+          router.push({ pathname: '/group', params: { invites: '1' } })
           return
         }
-        router.navigate('/groups')
+        if (!groupId) return
+        // The thread or the board opens in one push over whatever is showing,
+        // and puts Social under itself once it has slid in. Switching tabs
+        // first popped anything open, drew the tab, and then pushed over it,
+        // three transitions for one tap. The same screen already open for this
+        // group is left as it is (a board takes the new day from the store),
+        // and another group's is swapped.
+        const screen = data?.chat
+          ? ({ pathname: '/group/chat', params: { id: groupId, reply: '1' } } as const)
+          : ({ pathname: '/group/board', params: { id: groupId } } as const)
+        const route = (navigation.isReady() ? navigation.getCurrentRoute() : undefined) as
+          | { name: string; params?: { id?: string } }
+          | undefined
+        const name = data?.chat ? 'chat' : 'board'
+        const showing = route?.name === name ? route.params?.id : undefined
+        if (!showing) router.push(screen)
+        else if (showing !== groupId) router.replace(screen)
         return
       }
       // The warning before a free account's meal photos are swept, from the

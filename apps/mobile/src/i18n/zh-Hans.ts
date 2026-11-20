@@ -17,6 +17,7 @@ export const zhHans = {
     rejectedBody: '请修改文字或照片后重试。',
     handleTaken: '此用户名已被使用。',
     feed: '动态',
+    title: '社交',
     following: '关注中',
     discover: '发现',
     feedShow: '显示',
@@ -2286,8 +2287,8 @@ export const zhHans = {
     emptyTitle: '一起吃，一起坚持',
     emptyBody: '看看朋友们每天吃了什么。',
     startGroup: '创建小组',
-    pickGroup: '选择一个小组，看看当天的情况',
-    back: '小组',
+    seeAll: '查看全部（{{total}}）',
+    openBoard: '打开小组看板',
     settings: '小组设置',
     column: {
       breakfast: '早餐',

@@ -16,6 +16,7 @@ export const zhHant = {
     rejectedBody: '請修改文字或照片後重試。',
     handleTaken: '此用戶名稱已被使用。',
     feed: '動態',
+    title: '社交',
     following: '追蹤中',
     discover: '探索',
     feedShow: '顯示',
@@ -2286,8 +2287,8 @@ export const zhHant = {
     emptyTitle: '一起吃，一起堅持',
     emptyBody: '看看朋友們每天吃了什麼。',
     startGroup: '建立小組',
-    pickGroup: '選擇一個小組，看看當天的情況',
-    back: '小組',
+    seeAll: '查看全部（{{total}}）',
+    openBoard: '打開小組看板',
     settings: '小組設定',
     column: {
       breakfast: '早餐',

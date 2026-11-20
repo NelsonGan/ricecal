@@ -51,10 +51,10 @@ import {
 export const unstable_settings = { anchor: 'today' }
 
 /**
- * Five tabs across the full width of a floating bar. Workouts is not one of
+ * Four tabs across the full width of a floating bar. Workouts is not one of
  * them: it is a page, opened from a tile beside the water on Today and from
- * Me, which gave its place to Groups without crowding the bar to six. The add
- * button floats over Today alone, where logging happens. See `NavBar`.
+ * Me. Social holds both the feed and the groups, which were a tab each. The
+ * add button floats over Today alone, where logging happens. See `NavBar`.
  *
  * Still the headless `expo-router/ui` tabs rather than a styled navigator,
  * because `NavBar` / `NavItem` are the design system's and a native tab bar
@@ -108,7 +108,7 @@ function SignedInTabs() {
   // most when its screen is not the one on top.
   useWorkoutOutbox()
   // Groups: this phone's push token for nudges and invites, and the invite
-  // count the tab carries.
+  // count the Social tab carries.
   usePushRegistration(userId)
   const inviteCount = useGroupInviteCount().data ?? 0
 
@@ -122,14 +122,10 @@ function SignedInTabs() {
               <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
             </TabTrigger>
 
-            <TabTrigger name="feed" href="/feed" asChild>
-              <NavItem label={t('social:feed')} icon={{ set: 'system', name: 'users-group' }} />
-            </TabTrigger>
-
-            <TabTrigger name="groups" href="/groups" asChild>
+            <TabTrigger name="social" href="/social" asChild>
               <NavItem
-                label={t('groups:title')}
-                icon={{ set: 'system', name: 'groups' }}
+                label={t('social:title')}
+                icon={{ set: 'system', name: 'users-group' }}
                 badge={inviteCount}
                 badgeLabel={t('groups:invites')}
               />

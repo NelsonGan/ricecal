@@ -161,3 +161,30 @@ it('leaves the thread alone when it is already open, and swaps in another group'
   expect(mockPush.mock.calls.map(([href]) => href)).toEqual([`replace ${chatHref('g2')}`])
   unmount()
 })
+
+const groupPush = (data: object) => ({
+  notification: { request: { content: { data: { kind: 'group', groupId: 'g1', ...data } } } },
+})
+const boardHref = (id: string) => JSON.stringify({ pathname: '/group/board', params: { id } })
+
+it("opens a nudge on its group's board, and leaves that board alone when it is showing", async () => {
+  const { unmount } = await mount()
+  mockRoute.current = { name: 'today' }
+  mockListeners[0]?.(groupPush({ day: '2026-11-20' }))
+  expect(mockPush.mock.calls.map(([href]) => href)).toEqual([boardHref('g1')])
+
+  mockPush.mockReset()
+  mockRoute.current = { name: 'board', params: { id: 'g1' } }
+  mockListeners[0]?.(groupPush({ day: '2026-11-20' }))
+  expect(mockPush).not.toHaveBeenCalled()
+  unmount()
+})
+
+it('opens an invite on the Groups page with its invites showing', async () => {
+  const { unmount } = await mount()
+  mockListeners[0]?.(groupPush({ invite: true }))
+  expect(mockPush.mock.calls.map(([href]) => href)).toEqual([
+    JSON.stringify({ pathname: '/group', params: { invites: '1' } }),
+  ])
+  unmount()
+})

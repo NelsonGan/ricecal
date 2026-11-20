@@ -64,7 +64,7 @@ import {
 
 export function SocialBar({ title, action }: { title: string; action?: ReactNode }) {
   const { t } = useTranslation('social')
-  const back = useBack('/feed')
+  const back = useBack('/social')
   return <AppBar title={title} onBack={back} backLabel={t('back')} action={action} />
 }
 
@@ -1009,7 +1009,7 @@ export const PostCard = memo(function PostCard({
   const viewer = useUserId()
   const ownProfile = useSocialProfile()
   const router = useRouter()
-  const leavePost = useCallback(() => router.dismissTo('/feed'), [router])
+  const leavePost = useCallback(() => router.dismissTo('/social'), [router])
   const likeAction = useSocialTask()
   const followAction = useSocialTask()
   const menuAction = useSocialTask()

@@ -11,6 +11,7 @@ import {
   useSocialFeed,
   useSocialUnread,
 } from '@/data/social'
+import { SocialGroups } from '@/features/groups/SocialGroups'
 import { ScreenTitle } from '@/features/shared'
 import { PostCard, SocialList } from '@/features/social/components'
 import {
@@ -26,7 +27,15 @@ import {
   useWindowLayout,
 } from '@/ui'
 
-export default function FeedScreen() {
+/**
+ * Social: the viewer's groups on top, then the feed. It used to be two tabs,
+ * Feed and Groups, and most people only ever opened one of them; together the
+ * group's day is the first thing on screen and the feed is a scroll away.
+ *
+ * The groups and the feed's own tabs and filter head the feed's list rather
+ * than the screen, so they scroll away and the posts get the whole height.
+ */
+export default function SocialScreen() {
   const { t } = useTranslation('social')
   const router = useRouter()
   const viewer = useUserId()
@@ -48,7 +57,7 @@ export default function FeedScreen() {
       header={
         <View className="gap-1">
           <ScreenTitle
-            title={t('feed')}
+            title={t('title')}
             trailing={
               <View className="flex-row items-center">
                 <IconButton
@@ -94,35 +103,49 @@ export default function FeedScreen() {
             // Two panes have no tabs, and the filter covers both feeds, so it
             // sits once above them rather than in each.
             <FeedShowChips value={show} onChange={setShow} inHeader />
-          ) : (
-            <Tabs
-              value={mode}
-              align="center"
-              scrollable
-              accessibilityLabel={t('feed')}
-              options={[
-                { value: 'following', label: t('following') },
-                { value: 'discover', label: t('discover') },
-              ]}
-              onChange={setMode}
-            />
-          )}
+          ) : null}
         </View>
       }
     >
       {split ? (
         <>
-          <FeedColumn key={`following-${show}`} mode="following" show={show} titled />
+          <FeedColumn
+            key={`following-${show}`}
+            mode="following"
+            show={show}
+            titled
+            header={<SocialGroups />}
+          />
           <Aside>
             <FeedColumn key={`discover-${show}`} mode="discover" show={show} titled />
           </Aside>
         </>
       ) : (
+        // Not keyed by the feed: switching it keeps the list, and the groups
+        // above it, where they are. The tabs are on screen to be tapped, so the
+        // new feed starts right under them.
         <FeedColumn
-          key={`${mode}-${show}`}
           mode={mode}
           show={show}
-          header={<FeedShowChips value={show} onChange={setShow} />}
+          header={
+            <View>
+              <SocialGroups />
+              <View className="px-gutter pt-sm">
+                <Tabs
+                  value={mode}
+                  align="center"
+                  scrollable
+                  accessibilityLabel={t('feed')}
+                  options={[
+                    { value: 'following', label: t('following') },
+                    { value: 'discover', label: t('discover') },
+                  ]}
+                  onChange={setMode}
+                />
+              </View>
+              <FeedShowChips value={show} onChange={setShow} />
+            </View>
+          }
         />
       )}
     </Screen>
@@ -191,9 +214,9 @@ function FeedShowChips({
 }
 
 /**
- * One feed. Keyed by its mode and filter, so a switch starts the new feed at
- * its top. `titled` names it, for when the two stand side by side and there
- * are no tabs to say which is which.
+ * One feed. `titled` names it, for when the two stand side by side and there
+ * are no tabs to say which is which. Pulling it down refreshes the groups
+ * drawn above it too.
  */
 function FeedColumn({
   mode,
@@ -211,6 +234,25 @@ function FeedColumn({
   const viewer = useUserId()
   const feed = useSocialFeed(mode, show, useIsFocused())
   const queryClient = useQueryClient()
+  // The feed with a pull that refreshes the groups above it as well. Named
+  // field by field: spreading the query would read, and so subscribe to,
+  // every field it has.
+  const query = {
+    data: feed.data,
+    isPending: feed.isPending,
+    isError: feed.isError,
+    isFetching: feed.isFetching,
+    isFetchingNextPage: feed.isFetchingNextPage,
+    isFetchNextPageError: feed.isFetchNextPageError,
+    hasNextPage: feed.hasNextPage,
+    fetchStatus: feed.fetchStatus,
+    fetchNextPage: feed.fetchNextPage,
+    refetch: () =>
+      Promise.all([
+        feed.refetch(),
+        queryClient.refetchQueries({ queryKey: keys.groups(viewer), type: 'active' }),
+      ]),
+  }
   useFocusEffect(
     useCallback(() => {
       // A food can publish while this tab is mounted behind the diary. Only when
@@ -223,25 +265,27 @@ function FeedColumn({
     }, [mode, show, queryClient, viewer]),
   )
 
-  const list = (
+  const heading = titled ? (
+    <Text variant="overlineSm" className="px-gutter pb-2 pt-lg">
+      {t(mode)}
+    </Text>
+  ) : null
+  return (
     <SocialList
-      query={feed}
+      query={query}
       variant="feed"
-      header={header}
+      header={
+        header || heading ? (
+          <View>
+            {header}
+            {heading}
+          </View>
+        ) : undefined
+      }
       rowKey={(post) => post.id}
       renderRow={(post, visible) => <PostCard post={post} visible={visible} />}
       empty={t(mode === 'following' && show === 'all' ? 'emptyFollowing' : 'end')}
       end={t('end')}
     />
-  )
-  if (!titled) return list
-
-  return (
-    <View className="flex-1 gap-2">
-      <Text variant="overlineSm" className="px-gutter">
-        {t(mode)}
-      </Text>
-      {list}
-    </View>
   )
 }

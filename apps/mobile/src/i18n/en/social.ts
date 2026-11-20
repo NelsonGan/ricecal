@@ -2,6 +2,8 @@ export const social = {
   rejectedBody: 'Edit the text or photo, then try again.',
   handleTaken: 'This handle is taken.',
   feed: 'Feed',
+  /** The tab and its title: the viewer's groups, then the feed. */
+  title: 'Social',
   following: 'Following',
   discover: 'Discover',
   feedShow: 'Show',

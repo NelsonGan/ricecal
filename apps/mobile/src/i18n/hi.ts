@@ -10,6 +10,7 @@ export const hi = {
     rejectedBody: 'लिखा हुआ या फ़ोटो बदलकर फिर कोशिश करें।',
     handleTaken: 'यह यूज़रनेम पहले से इस्तेमाल में है।',
     feed: 'फ़ीड',
+    title: 'सोशल',
     following: 'फ़ॉलो कर रहे हैं',
     discover: 'खोजें',
     feedShow: 'दिखाएं',
@@ -2290,8 +2291,8 @@ export const hi = {
     emptyTitle: 'साथ खाएँ, लक्ष्य पर टिकें',
     emptyBody: 'देखें दोस्त हर दिन क्या खाते हैं।',
     startGroup: 'समूह बनाएँ',
-    pickGroup: 'उसका दिन देखने के लिए कोई समूह चुनें',
-    back: 'समूह',
+    seeAll: 'सभी देखें ({{total}})',
+    openBoard: 'बोर्ड खोलें',
     settings: 'समूह सेटिंग',
     column: {
       breakfast: 'नाश्ता',

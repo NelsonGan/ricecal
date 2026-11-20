@@ -10,6 +10,7 @@ export const ja = {
     rejectedBody: '文章や写真を修正して、もう一度お試しください。',
     handleTaken: 'このユーザー名は使用されています。',
     feed: 'フィード',
+    title: 'ソーシャル',
     following: 'フォロー中',
     discover: '見つける',
     feedShow: '表示',
@@ -2307,8 +2308,8 @@ export const ja = {
     emptyTitle: '一緒に食べて、一緒に続ける',
     emptyBody: '友だちが毎日何を食べたか見てみよう。',
     startGroup: 'グループを作る',
-    pickGroup: 'グループを選ぶと、その日の様子が見られます',
-    back: 'グループ',
+    seeAll: 'すべて見る（{{total}}）',
+    openBoard: 'ボードを開く',
     settings: 'グループ設定',
     column: {
       breakfast: '朝食',

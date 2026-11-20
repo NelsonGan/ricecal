@@ -190,7 +190,7 @@ export function ChatScreen({
   reply?: boolean
 }) {
   const { t } = useTranslation(['groups', 'common', 'social'])
-  const back = useBack('/groups')
+  const back = useBack('/social')
   const viewer = useUserId()
   const name = useMyGroups().data?.find((group) => group.id === groupId)?.name ?? ''
   const focused = useIsFocused()
@@ -243,8 +243,8 @@ export function ChatScreen({
   useFocusEffect(useCallback(() => showingGroupChat(groupId), [groupId]))
 
   // Once the screen has slid in: a chat opened from its notification, which
-  // is pushed over whatever tab was showing, puts the Groups tab under itself
-  // so back lands on the board, and only then brings up the keyboard. The
+  // is pushed over whatever tab was showing, puts Social under itself so back
+  // lands on the group's card, and only then brings up the keyboard. The
   // keyboard rising during the push, and the board drawn under it, were the
   // dropped frames of opening a chat from a notification.
   const navigation = useNavigation()
@@ -253,7 +253,7 @@ export function ChatScreen({
     const settle = () => {
       if (settled) return
       settled = true
-      showTabUnder(navigation as unknown as Parameters<typeof showTabUnder>[0], 'groups')
+      showTabUnder(navigation as unknown as Parameters<typeof showTabUnder>[0], 'social')
       if (reply) field.current?.focus()
     }
     const unsubscribe = navigation.addListener('transitionEnd' as never, settle)
