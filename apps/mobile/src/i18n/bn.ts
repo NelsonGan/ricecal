@@ -304,6 +304,9 @@ export const bn = {
       zonesTitle: 'হৃৎস্পন্দনের স্তর',
 
       missing: 'এই ব্যায়ামটি আর আপনার হেলথ অ্যাপে নেই।',
+      delete: 'ব্যায়াম মুছুন',
+      deleteTitle: 'এই ব্যায়ামটি মুছবেন?',
+      deleteBody: 'শুধু এখান থেকে মুছবে। {{provider}}-এ এটি থেকে যাবে।',
     },
 
     settings: {

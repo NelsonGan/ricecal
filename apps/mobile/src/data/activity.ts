@@ -13,7 +13,7 @@ import {
   unwrap,
   unwrapMaybe,
 } from './client'
-import { keys } from './keys'
+import { invalidateGroupBoards, keys } from './keys'
 import { useUserId } from './session'
 
 /**
@@ -261,6 +261,27 @@ export function useActivitySession(id: string | undefined) {
           .maybeSingle(),
       )
       return row ? toSession(row) : null
+    },
+  })
+}
+
+/**
+ * Remove one synced workout. Only from RiceCal: the store keeps it, so the
+ * server remembers the removal and the sync skips it from then on, including
+ * a copy an app such as Garmin Connect re-saves under a new id.
+ */
+export function useDeleteActivitySession() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.rpc('delete_activity_session', { p_id: id })
+      if (error) throw error
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: keys.activitySessionsAll(userId) })
+      invalidateGroupBoards(queryClient, userId)
     },
   })
 }

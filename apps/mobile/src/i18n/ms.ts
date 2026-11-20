@@ -315,6 +315,9 @@ export const ms = {
       zonesTitle: 'ZON KADAR DENYUTAN',
 
       missing: 'Senaman ini sudah tiada dalam apl kesihatan anda.',
+      delete: 'Padam senaman',
+      deleteTitle: 'Padam senaman ini?',
+      deleteBody: 'Dipadam di sini sahaja. {{provider}} masih menyimpannya.',
     },
 
     settings: {

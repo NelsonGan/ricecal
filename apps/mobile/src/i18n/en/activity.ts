@@ -119,6 +119,9 @@ export const activity = {
     zonesTitle: 'HEART RATE ZONES',
 
     missing: 'This workout is no longer in your health app.',
+    delete: 'Delete workout',
+    deleteTitle: 'Delete this workout?',
+    deleteBody: 'Only removed here. {{provider}} keeps it.',
   },
 
   settings: {

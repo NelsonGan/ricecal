@@ -532,6 +532,7 @@ auth.users
        └── health_connections  which health store, and how far back it has read
             ├── activity_days ───── one day of movement, keyed by local date
             ├── activity_sessions  one workout, keyed by the store's own id
+            ├── activity_session_dismissals  synced workouts the user deleted
             └── activity_hours ──── steps by local hour, month plus timezone buffer
 
 food_scan_items       what the model claimed, and where it landed
@@ -621,7 +622,8 @@ the day the user thinks it does, which is why the day is stored and not derived.
 server is the previous day for the first eight hours of every Malaysian morning.
 
 **`activity_sessions` is keyed by the health store's own id**, because two
-badminton games can start in the same minute.
+badminton games can start in the same minute. Some apps change that id when
+they re-save a workout; see "Syncing" for how a pass converges anyway.
 
 **`meal_times.at` is a `time`, not a timestamp**, because "08:00 in the user's
 own clock" stays true when they fly somewhere else.
@@ -4654,6 +4656,15 @@ layout and `workoutMetrics.ts` owns the sport-specific measurement choices.
 With large text, supporting measurements stack and the decorative illustration
 gives its space to the figures. Zone names can wrap instead of truncating.
 
+The app bar's delete removes a synced workout from RiceCal only, and says the
+store keeps it. The store still holds it and the sync re-reads a week on every
+foreground, so `delete_activity_session` records the removal in
+`activity_session_dismissals`, and a `before insert` trigger on
+`activity_sessions` skips any insert matching it by id, or by provider, start
+and kind (Garmin re-saves the same run under a new id). Skipped rather than
+refused, so an old binary's batch upsert still lands the rest. The budget is
+unchanged by a delete: it reads the day's active energy, not the sessions.
+
 For local UI verification, `pnpm workouts:seed --user <local-account-uuid>`
 inserts all 19 sports plus 11 data variants into that account across six days.
 Use `--date yyyy-MM-dd` to choose the last day. The script connects only to
@@ -4704,6 +4715,19 @@ targets and the charts. `invalidateAfterSync` is the list:
 | days and hours | the day's movement, the week strip's dots |
 | workouts | the session lists, the group boards |
 | weigh-ins | the weigh-ins, the targets, the charts, the dots |
+
+**A workout's id is the store's, and some apps change it.** Garmin Connect
+deletes and re-saves each of its workouts in Apple Health on later syncs, under a
+new `HKWorkout.uuid`, and the upsert alone kept every copy: one run showed four
+times on Today, and each copy was shared to the person's groups as it landed.
+So before it upserts, a pass sends `reconcile_activity_sessions` the identity
+(id, start, kind) of every workout the store returned for the chunk. A stored
+row the store no longer has, starting at the same moment as a new id of the same
+kind, takes the new id, so the upsert updates it and it keeps its row id, group
+card and reactions. Any other row lying wholly inside the window that the store
+no longer has is deleted. An empty read deletes nothing, since a refused
+permission reads as no workouts. A failed reconcile does not stop the upsert,
+and any rows it changed count as a change to the workouts.
 
 Weigh-ins have a second witness: `sync_weight_readings` answers with how many
 readings changed a row, and any at all counts as changed. The same reading can

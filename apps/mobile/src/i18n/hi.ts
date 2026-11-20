@@ -306,6 +306,9 @@ export const hi = {
       zonesTitle: 'हृदय गति ज़ोन',
 
       missing: 'यह वर्कआउट अब आपके हेल्थ ऐप में नहीं है।',
+      delete: 'वर्कआउट हटाएं',
+      deleteTitle: 'यह वर्कआउट हटाएं?',
+      deleteBody: 'सिर्फ़ यहां से हटेगा। {{provider}} में यह बना रहेगा।',
     },
 
     settings: {

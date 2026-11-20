@@ -314,6 +314,9 @@ export const id = {
       zonesTitle: 'ZONA DETAK JANTUNG',
 
       missing: 'Olahraga ini sudah tidak ada di aplikasi kesehatanmu.',
+      delete: 'Hapus olahraga',
+      deleteTitle: 'Hapus olahraga ini?',
+      deleteBody: 'Hanya dihapus di sini. {{provider}} tetap menyimpannya.',
     },
 
     settings: {
