@@ -454,6 +454,7 @@ export const bn = {
   onboarding: {
     setup: {
       title: 'ভাষা ও একক',
+      subtitle: 'দুটোই পরে আমি অংশে বদলাতে পারবেন।',
       unitsTitle: 'একক',
       metric: 'মেট্রিক',
       imperial: 'ইম্পেরিয়াল',
@@ -514,6 +515,7 @@ export const bn = {
 
     activity: {
       title: 'আপনার দিন কতটা সচল?',
+      subtitle: 'আপনার সাধারণ দিনের সবচেয়ে কাছেরটি বেছে নিন।',
       sedentary: { title: 'বেশিরভাগ সময় বসে', subtitle: 'অফিস, গাড়ি চালানো, পড়াশোনা' },
       light: { title: 'একটু সচল', subtitle: 'কিছুটা হাঁটা, হালকা ঘরের কাজ' },
       onFeet: { title: 'বেশিরভাগ সময় দাঁড়িয়ে', subtitle: 'দোকান, নার্সিং, নির্মাণ কাজ' },
@@ -522,6 +524,7 @@ export const bn = {
 
     source: {
       title: 'আমাদের কথা কোথায় শুনলেন?',
+      subtitle: 'মাত্র একটি ট্যাপ। এতে আমরা বাড়তে পারি।',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -547,6 +550,7 @@ export const bn = {
 
     target: {
       title: 'আপনার দৈনিক হিসাব',
+      subtitle: 'আপনার উত্তর থেকে হিসাব করা। যেকোনো সংখ্যা বদলান।',
       perDay: 'দিনে KCAL',
       goalWeight: 'লক্ষ্য ওজন',
       goalBy: 'পৌঁছানোর সম্ভাব্য দিন',

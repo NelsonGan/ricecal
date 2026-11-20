@@ -981,7 +981,7 @@ top rather than resuming.
 ### The flow
 
 ```
-welcome                          the concept in one line over a picture of it,
+welcome                          the concept in one line over a sample of today,
                                  and the fork for a returning user
 1 how                            a sample scan: a real plate and the entry it makes
 2 setup                          the language, and the units everything after it
@@ -1001,19 +1001,38 @@ welcome                          the concept in one line over a picture of it,
   paywall/intro                  the offer, with "Maybe later" leading to Today
 ```
 
-**Every step wears the same frame.** A small drawing over the heading, one
-short line under it, pandan throughout and one continuous progress bar. The
-three steps with a picture of their own (the calculating ring, the budget ring
-and the account screen's bowl) skip the drawing rather than stack two. The
-steps used to rotate four accent colours and draw twelve segmented marks, which
-read as several apps rather than one flow. The drawings are the `scenes` and
-`body` icons plus three made for this flow (a globe, three friends, a
-megaphone) in `assets/onboarding/`, beside the welcome picture and the two
-photos the showcases use. They are not in `assets/icons` because that registry
-is generated from the design system's source set.
+**Every step wears the same frame.** A small drawing over the heading, a title
+and a one-line subtitle on every step without exception, pandan throughout and
+one continuous progress bar. The welcome screen wears it too, with the app mark
+as its drawing and no bar. The steps used to rotate four accent colours, draw
+twelve segmented marks and give some steps a subtitle and others none, which
+read as several apps rather than one flow. The calculating beat is the one step
+without a drawing, because its ring is the picture.
 
-**The three showcases are pictures, not demos.** `how`, `workouts` and `social`
-draw a sample scan, a workout and a post from the app's own parts with fixed
+The header keeps only the bar and the title while a keyboard or the number pad
+is up (`StepHeader` reads both). It is pinned above the scroll area, and with
+the drawing and the password step's three-line subtitle it left so little room
+that the confirm field sat under the button.
+
+The drawings are the `scenes` and `body` icons plus six made for this flow (a
+globe, three friends, a megaphone, a cloud, a key, an envelope) in
+`assets/onboarding/`, beside the two photos the showcases use. They are not in
+`assets/icons` because that registry is generated from the design system's
+source set.
+
+**Answers go in a card of rows.** `FormCard` and `FormRow` in `src/ui/Form.tsx`
+put a label on the left and a small control on the right, with `TextField`,
+`Select` and `SegmentedControl` at `size="sm"`. Setup, the basics, the plan
+(`BudgetEditor`'s `compact`) and the two permission lists all use it. The basics
+used to be four full-width boxes in 26pt display type, each under its own
+heading, which made four short numbers the heaviest screen in the flow.
+`TextField`'s `hideLabel` keeps the label for the number pad's header and for a
+screen reader when the row already draws it.
+
+**The welcome sample and the three showcases are pictures, not demos.**
+`welcome` draws a sample of today (a photographed plate, a drink and the ring of
+what is left), and `how`, `workouts` and `social` draw a sample scan, a workout
+and a post, all from the app's own parts with fixed
 sample figures, and nothing on them can be pressed except Continue. The camera
 needs a permission this flow has not asked for, and a feed needs an account.
 Food, exercise and people's names on them are written in the component in the

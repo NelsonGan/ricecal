@@ -146,7 +146,9 @@ export default function SignInScreen() {
               total={total}
               tone="pandan"
               onBack={() => router.dismissTo('/(onboarding)/target')}
+              art={{ art: 'cloud' }}
               title={title}
+              subtitle={t('onboarding:account.subtitle')}
             />
           ) : (
             <AppBar
@@ -163,14 +165,19 @@ export default function SignInScreen() {
         </Button>
       }
     >
-      <View className="items-center gap-3 pb-2 pt-6">
-        <Icon set="food" name="rice-bowl" size={96} />
-        <Text variant="meta" className="text-center">
-          {mode === 'sign-up'
-            ? t('onboarding:account.subtitle')
-            : t('onboarding:account.signInSubtitle')}
-        </Text>
-      </View>
+      {/* Inside the flow the header carries the drawing and the line, the
+          same as every other step. Signing in from the welcome screen is not
+          a step, so it keeps its own picture and line under an app bar. */}
+      {showProgress ? null : (
+        <View className="items-center gap-3 pb-2 pt-6">
+          <Icon set="food" name="rice-bowl" size={96} />
+          <Text variant="meta" className="text-center">
+            {mode === 'sign-up'
+              ? t('onboarding:account.subtitle')
+              : t('onboarding:account.signInSubtitle')}
+          </Text>
+        </View>
+      )}
 
       {appleReady ? (
         <ProviderButton

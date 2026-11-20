@@ -18,6 +18,17 @@ import Welcome from '../welcome'
 
 const mockPush = jest.fn()
 
+/**
+ * The sample day's ring, as the number in it. Skia's jest setup does not mock
+ * `PathBuilder`, which `CalorieRing` calls during render.
+ */
+jest.mock('@/ui/CalorieRing', () => {
+  const { Text: RNText } = require('react-native')
+  return {
+    CalorieRing: ({ centerLabel }: { centerLabel: string }) => <RNText>{centerLabel}</RNText>,
+  }
+})
+
 jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn(), back: jest.fn() }),
 }))
@@ -58,4 +69,12 @@ it('sends a returning user to the sign-in side of the account screen', async () 
     pathname: '/sign-in',
     params: { mode: 'sign-in' },
   })
+})
+
+it('shows what the app is for: a meal on today and what is left', async () => {
+  await render(<Welcome />)
+
+  expect(screen.getByText('Nasi lemak ayam')).toBeTruthy()
+  // 1,880 less the 644 plate and the 120 drink.
+  expect(screen.getByText('1,116')).toBeTruthy()
 })

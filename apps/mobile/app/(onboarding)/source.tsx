@@ -103,6 +103,7 @@ export default function SourceStep() {
       name="source"
       art={{ art: 'megaphone' }}
       title={t('source.title')}
+      subtitle={t('source.subtitle')}
       // `dismissTo` rather than `back()`, as everywhere in this flow — see the
       // note on `about`.
       onBack={() => router.dismissTo('/(onboarding)/social')}

@@ -6,7 +6,7 @@ import { View } from 'react-native'
 import { type Meal, useSession, useUpdateMealTime } from '@/data'
 import { FactRow, OnboardingStep } from '@/features/onboarding'
 import { ensureNotificationPermission } from '@/lib/notifications'
-import { Card, Text, useToast } from '@/ui'
+import { FormCard, Text, useToast } from '@/ui'
 
 /**
  * Enable notifications: the one ask that has to do something.
@@ -132,22 +132,26 @@ function NotificationsStep() {
           smaller type, which is how a permission ask ends up being three
           paragraphs long. The third row stays, because "and nothing else" is
           the one thing here nobody expects and every other tracker gets wrong. */}
-      <Card>
-        <View className="gap-4">
+      <FormCard>
+        <View className="py-3.5">
           <FactRow
             icon={{ set: 'system', name: 'bell-active' }}
             title={t('onboarding:notifications.meals')}
           />
+        </View>
+        <View className="py-3.5">
           <FactRow
             icon={{ set: 'system', name: 'camera' }}
             title={t('onboarding:notifications.scans')}
           />
+        </View>
+        <View className="py-3.5">
           <FactRow
             icon={{ set: 'system', name: 'bell-off' }}
             title={t('onboarding:notifications.nothingElse')}
           />
         </View>
-      </Card>
+      </FormCard>
 
       <Text variant="meta" className="px-0.5 text-center">
         {t('onboarding:notifications.promise')}

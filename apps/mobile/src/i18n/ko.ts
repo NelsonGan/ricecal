@@ -458,6 +458,7 @@ export const ko = {
   onboarding: {
     setup: {
       title: '언어와 단위',
+      subtitle: '둘 다 나중에 내 정보에서 바꿀 수 있어요.',
       unitsTitle: '단위',
       metric: '미터법',
       imperial: '야드파운드법',
@@ -518,6 +519,7 @@ export const ko = {
 
     activity: {
       title: '하루를 얼마나 활동적으로 보내나요?',
+      subtitle: '평소 하루와 가장 가까운 것을 골라 주세요.',
       sedentary: { title: '대부분 앉아 있음', subtitle: '사무, 운전, 공부' },
       light: { title: '가볍게 활동', subtitle: '조금 걷고 가벼운 집안일' },
       onFeet: { title: '주로 서 있음', subtitle: '판매, 간호, 현장 작업' },
@@ -526,6 +528,7 @@ export const ko = {
 
     source: {
       title: '어떻게 알게 되셨나요?',
+      subtitle: '한 번만 탭하면 저희에게 큰 도움이 돼요.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -551,6 +554,7 @@ export const ko = {
 
     target: {
       title: '하루 예산',
+      subtitle: '답변으로 계산했어요. 어떤 숫자든 바꿀 수 있어요.',
       perDay: '하루 KCAL',
       goalWeight: '목표 몸무게',
       goalBy: '도달 예상',

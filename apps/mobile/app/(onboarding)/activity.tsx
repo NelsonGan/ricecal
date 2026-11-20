@@ -31,6 +31,7 @@ export default function ActivityStep() {
       name="activity"
       art={{ set: 'scenes', name: 'sneakers' }}
       title={t('activity.title')}
+      subtitle={t('activity.subtitle')}
       // `dismissTo` rather than `back()` on every step of this flow — see the
       // note on `about`, which is deep-linked by two redirects and so cannot
       // assume there is anything under it to pop.

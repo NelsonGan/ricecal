@@ -463,6 +463,7 @@ export const ta = {
   onboarding: {
     setup: {
       title: 'மொழி மற்றும் அளவீடுகள்',
+      subtitle: 'இரண்டையும் பின்னர் நான் பகுதியில் மாற்றலாம்.',
       unitsTitle: 'அலகுகள்',
       metric: 'மெட்ரிக்',
       imperial: 'இம்பீரியல்',
@@ -523,6 +524,7 @@ export const ta = {
 
     activity: {
       title: 'உங்கள் நாள் எவ்வளவு சுறுசுறுப்பானது?',
+      subtitle: 'உங்கள் வழக்கமான நாளுக்கு மிக அருகில் உள்ளதைத் தேர்ந்தெடுங்கள்.',
       sedentary: { title: 'பெரும்பாலும் அமர்ந்தே', subtitle: 'அலுவலகம், வாகனம், படிப்பு' },
       light: { title: 'சிறிது சுறுசுறுப்பு', subtitle: 'கொஞ்சம் நடை, இலகுவான வீட்டு வேலை' },
       onFeet: { title: 'பெரும்பாலும் நின்றே', subtitle: 'கடை, செவிலியம், தளப் பணி' },
@@ -531,6 +533,7 @@ export const ta = {
 
     source: {
       title: 'எங்களைப் பற்றி எங்கே கேள்விப்பட்டீர்கள்?',
+      subtitle: 'ஒரே தட்டு. நாங்கள் வளர இது உதவும்.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -556,6 +559,7 @@ export const ta = {
 
     target: {
       title: 'உங்கள் தினசரி வரவு',
+      subtitle: 'உங்கள் பதில்களிலிருந்து கணக்கிடப்பட்டது. எந்த எண்ணையும் மாற்றலாம்.',
       perDay: 'நாளுக்கு KCAL',
       goalWeight: 'இலக்கு எடை',
       goalBy: 'எதிர்பார்க்கும் நாள்',

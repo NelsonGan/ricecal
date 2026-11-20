@@ -1,6 +1,7 @@
 import { Image } from 'expo-image'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import { useKeyboardState } from 'react-native-keyboard-controller'
 
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -11,6 +12,7 @@ import {
   StepProgress,
   type StepProgressTone,
   Text,
+  useNumpadOpen,
 } from '@/ui'
 import { ONBOARDING_ART, type OnboardingArtName } from './art'
 
@@ -20,8 +22,8 @@ import { ONBOARDING_ART, type OnboardingArtName } from './art'
  */
 export type StepArt = IconProps | { art: OnboardingArtName }
 
-/** 56, which reads as a picture over a 28pt heading without pushing it down a small phone. */
-const ART_SIZE = 56
+/** 48: a picture over the heading, small enough that the answers start high on the screen. */
+const ART_SIZE = 48
 
 export type StepHeaderProps = {
   /** 1-based, matching `stepNumber()`. */
@@ -61,6 +63,16 @@ export function StepHeader({
   const { t } = useTranslation('common')
   const colors = useThemeColors()
 
+  /**
+   * While somebody is typing, the header keeps only the bar and the question.
+   * It is pinned above the scroll area, and with the drawing and a three-line
+   * subtitle (the password step's names the address) it left so little room
+   * over the keyboard that the second field sat under the button.
+   */
+  const keyboardUp = useKeyboardState((state) => state.isVisible)
+  const padUp = useNumpadOpen()
+  const typing = keyboardUp || padUp
+
   return (
     <View className={cn(title && 'gap-stack', className)}>
       <View className="flex-row items-center gap-3">
@@ -91,8 +103,8 @@ export function StepHeader({
 
       {title ? (
         <View className="gap-1.5 pt-3">
-          {art ? (
-            <View className="pb-1.5">
+          {art && !typing ? (
+            <View className="pb-1">
               {'art' in art ? (
                 <Image
                   source={ONBOARDING_ART[art.art]}
@@ -105,8 +117,10 @@ export function StepHeader({
               )}
             </View>
           ) : null}
-          <Text variant="title">{title}</Text>
-          {subtitle ? (
+          <Text variant="title" className="text-[26px] leading-[32px]">
+            {title}
+          </Text>
+          {subtitle && !typing ? (
             <Text variant="meta" className="text-[16px] leading-[22px]">
               {subtitle}
             </Text>

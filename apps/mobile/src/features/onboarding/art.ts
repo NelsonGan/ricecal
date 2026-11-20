@@ -7,10 +7,12 @@
  * showcase is meant to look like what a scan and a post actually look like.
  */
 export const ONBOARDING_ART = {
-  hero: require('../../../assets/onboarding/hero.jpg'),
   globe: require('../../../assets/onboarding/globe.png'),
   friends: require('../../../assets/onboarding/friends.png'),
   megaphone: require('../../../assets/onboarding/megaphone.png'),
+  cloud: require('../../../assets/onboarding/cloud.png'),
+  key: require('../../../assets/onboarding/key.png'),
+  envelope: require('../../../assets/onboarding/envelope.png'),
   nasiLemak: require('../../../assets/onboarding/nasi-lemak.jpg'),
   laksa: require('../../../assets/onboarding/laksa.jpg'),
 } as const

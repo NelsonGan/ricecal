@@ -231,12 +231,23 @@ export default function PasswordScreen() {
 
   const signingUp = mode === 'sign-up'
   const title = t(signingUp ? 'auth:password.signUpTitle' : 'auth:password.signInTitle')
+  const subtitle = t(signingUp ? 'auth:password.signUpSubtitle' : 'auth:password.signInSubtitle', {
+    email,
+  })
 
   return (
     <Screen
       header={
         showProgress ? (
-          <StepHeader step={step} total={total} tone="pandan" onBack={back} title={title} />
+          <StepHeader
+            step={step}
+            total={total}
+            tone="pandan"
+            onBack={back}
+            art={{ art: 'key' }}
+            title={title}
+            subtitle={subtitle}
+          />
         ) : (
           <AppBar title={title} onBack={back} backLabel={t('common:a11y.back')} />
         )
@@ -247,13 +258,12 @@ export default function PasswordScreen() {
         </Button>
       }
     >
-      <View className="pb-2 pt-6">
-        <Text variant="meta">
-          {t(signingUp ? 'auth:password.signUpSubtitle' : 'auth:password.signInSubtitle', {
-            email,
-          })}
-        </Text>
-      </View>
+      {/* In the flow, the header says it, as every step's header does. */}
+      {showProgress ? null : (
+        <View className="pb-2 pt-6">
+          <Text variant="meta">{subtitle}</Text>
+        </View>
+      )}
 
       {maybeExisting ? <Alert tone="info" title={t('auth:password.maybeExisting')} /> : null}
 

@@ -26,7 +26,7 @@ const LOGOS = {
 
 export type BrandLogo = keyof typeof LOGOS
 
-const MARK = 36
+const MARK = 28
 
 export type SourceOptionProps = {
   label: string
@@ -52,14 +52,14 @@ export type SourceOptionProps = {
 export function SourceOption({ label, selected, onPress, logo, icon }: SourceOptionProps) {
   return (
     <Squish
-      depth={5}
+      depth={3}
       radius={20}
       // `basis-[47%]` with `grow`, so two fit a row and a lone last tile
       // stretches rather than sitting half-width beside a gap.
       containerClassName="basis-[47%] grow"
       slabClassName={selected ? 'bg-pandan-soft-line' : 'bg-line'}
       className={cn(
-        'h-[74px] flex-row items-center gap-3 border-[3px] px-3.5',
+        'h-[56px] flex-row items-center gap-2.5 border-2 px-3',
         selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
       )}
       onPress={onPress}
@@ -70,7 +70,7 @@ export function SourceOption({ label, selected, onPress, logo, icon }: SourceOpt
       {logo ? (
         <Image
           source={LOGOS[logo]}
-          style={{ width: MARK, height: MARK, borderRadius: 10 }}
+          style={{ width: MARK, height: MARK, borderRadius: 8 }}
           contentFit="cover"
           accessible={false}
         />

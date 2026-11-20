@@ -460,6 +460,7 @@ export const zhHant = {
   onboarding: {
     setup: {
       title: '語言和單位',
+      subtitle: '之後可以在「我的」裡更改。',
       unitsTitle: '單位',
       metric: '公制',
       imperial: '英制',
@@ -520,6 +521,7 @@ export const zhHant = {
 
     activity: {
       title: '你平常一天有多活躍？',
+      subtitle: '選最接近你平常一天的。',
       sedentary: { title: '大多坐著', subtitle: '辦公、開車、唸書' },
       light: { title: '輕度活動', subtitle: '會走走路，做點家事' },
       onFeet: { title: '常常站著', subtitle: '零售、護理、工地' },
@@ -528,6 +530,7 @@ export const zhHant = {
 
     source: {
       title: '你是怎麼知道我們的？',
+      subtitle: '點一下就好，能幫助我們成長。',
       xiaohongshu: '小紅書',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -553,6 +556,7 @@ export const zhHant = {
 
     target: {
       title: '你的每日額度',
+      subtitle: '根據你的回答計算。任何數字都可以改。',
       perDay: '大卡每天',
       goalWeight: '目標體重',
       goalBy: '預計達成',

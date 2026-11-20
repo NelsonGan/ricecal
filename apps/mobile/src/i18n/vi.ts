@@ -460,6 +460,7 @@ export const vi = {
   onboarding: {
     setup: {
       title: 'Ngôn ngữ và đơn vị',
+      subtitle: 'Bạn có thể đổi cả hai sau trong mục Tôi.',
       unitsTitle: 'ĐƠN VỊ',
       metric: 'Hệ mét',
       imperial: 'Hệ Anh',
@@ -520,6 +521,7 @@ export const vi = {
 
     activity: {
       title: 'Một ngày của bạn vận động thế nào?',
+      subtitle: 'Chọn mức gần nhất với một ngày bình thường.',
       sedentary: { title: 'Chủ yếu ngồi', subtitle: 'Văn phòng, lái xe, học' },
       light: { title: 'Vận động nhẹ', subtitle: 'Đi bộ chút ít, việc nhà nhẹ' },
       onFeet: { title: 'Đứng cả ngày', subtitle: 'Bán hàng, điều dưỡng, công trường' },
@@ -528,6 +530,7 @@ export const vi = {
 
     source: {
       title: 'Bạn biết tới chúng tôi từ đâu?',
+      subtitle: 'Chỉ một chạm. Giúp chúng tôi phát triển.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -553,6 +556,7 @@ export const vi = {
 
     target: {
       title: 'Hạn mức hằng ngày của bạn',
+      subtitle: 'Tính từ câu trả lời của bạn. Sửa con số nào cũng được.',
       perDay: 'KCAL MỖI NGÀY',
       goalWeight: 'CÂN NẶNG ĐÍCH',
       goalBy: 'DỰ KIẾN ĐẠT',

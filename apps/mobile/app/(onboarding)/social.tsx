@@ -35,7 +35,7 @@ export default function SocialStep() {
       onPrimary={() => router.push('/(onboarding)/source')}
     >
       <View
-        className="gap-3 rounded-card border-2 border-line bg-surface p-3.5"
+        className="gap-3 rounded-tile border-2 border-line bg-surface p-3.5"
         accessible
         accessibilityLabel={`${POST.author}, ${POST.dish}, ${POST.kcal} kcal`}
       >
@@ -72,7 +72,7 @@ export default function SocialStep() {
       </View>
 
       <View
-        className="flex-row items-center gap-3 rounded-card border-2 border-line bg-surface p-3.5"
+        className="flex-row items-center gap-3 rounded-tile border-2 border-line bg-surface p-3.5"
         accessible
       >
         <View className="min-w-0 flex-1 gap-0.5">

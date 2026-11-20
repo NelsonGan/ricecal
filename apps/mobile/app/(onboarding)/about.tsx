@@ -1,7 +1,6 @@
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
 
 import type { Sex } from '@/data'
 import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
@@ -17,7 +16,10 @@ import {
   unitFor,
   type WeightUnit,
 } from '@/lib/units'
-import { Card, SegmentedControl, Slider, Text, TextField } from '@/ui'
+import { FormCard, FormRow, SegmentedControl, Slider, Text, TextField } from '@/ui'
+
+/** Room for a four-digit answer and its unit, and no more. */
+const FIELD_WIDTH = 'w-[124px]'
 
 /**
  * About you, and nothing on this screen starts answered.
@@ -152,142 +154,149 @@ export default function AboutStep() {
       primaryDisabled={!ready || targetWeightKg == null}
       onPrimary={save}
     >
-      {/*
-        Imperial takes two rows, metric one.
+      {/* One card of rows, a label on the left and a small box on the right.
+          Each answer used to be its own full-width box with a heading over it,
+          in 26pt display type, which made four short numbers the heaviest
+          screen in the flow. The fields keep their labels for the number
+          pad's header and for a screen reader; the row draws them once. */}
+      <FormCard>
+        <FormRow label={t('about.height')}>
+          {inFeet ? (
+            <>
+              <TextField
+                size="sm"
+                hideLabel
+                containerClassName="w-[76px]"
+                label={t('about.height')}
+                keyboardType="number-pad"
+                placeholder={t('about.feetPlaceholder')}
+                value={fields.feet}
+                onChangeText={(feet) => setFields((current) => ({ ...current, feet }))}
+                onBlur={settleHeight}
+                rightSlot={<Text variant="caption">{t('about.feet')}</Text>}
+              />
+              <TextField
+                size="sm"
+                hideLabel
+                containerClassName="w-[76px]"
+                label={t('about.inchesLabel')}
+                keyboardType="number-pad"
+                placeholder={t('about.inchesPlaceholder')}
+                value={fields.inches}
+                onChangeText={(inches) => setFields((current) => ({ ...current, inches }))}
+                onBlur={settleHeight}
+                rightSlot={<Text variant="caption">{t('about.inches')}</Text>}
+              />
+            </>
+          ) : (
+            <TextField
+              size="sm"
+              hideLabel
+              containerClassName={FIELD_WIDTH}
+              label={t('about.height')}
+              keyboardType="number-pad"
+              placeholder={t('about.heightPlaceholder')}
+              value={fields.height}
+              onChangeText={(height) => setFields((current) => ({ ...current, height }))}
+              onBlur={settle('height', HEIGHT_RANGE)}
+              rightSlot={<Text variant="caption">{t('common:unit.cm')}</Text>}
+            />
+          )}
+        </FormRow>
 
-        Feet and inches are two boxes, because nobody knows their height in
-        inches — and three boxes across one row leaves each about a quarter of a
-        phone, which is not enough for a two-character unit beside a digit. The
-        pair gets its own row and the weight gets the next.
-      */}
-      {inFeet ? (
-        <View className="flex-row gap-3">
-          <TextField
-            containerClassName="flex-1"
-            label={t('about.height')}
-            keyboardType="number-pad"
-            placeholder={t('about.feetPlaceholder')}
-            value={fields.feet}
-            onChangeText={(feet) => setFields((current) => ({ ...current, feet }))}
-            onBlur={settleHeight}
-            inputClassName="font-display text-[26px]"
-            rightSlot={<Text variant="caption">{t('about.feet')}</Text>}
-          />
-          <TextField
-            containerClassName="flex-1"
-            label={t('about.inchesLabel')}
-            keyboardType="number-pad"
-            placeholder={t('about.inchesPlaceholder')}
-            value={fields.inches}
-            onChangeText={(inches) => setFields((current) => ({ ...current, inches }))}
-            onBlur={settleHeight}
-            inputClassName="font-display text-[26px]"
-            rightSlot={<Text variant="caption">{t('about.inches')}</Text>}
-          />
-        </View>
-      ) : null}
-
-      <View className="flex-row gap-3">
-        {inFeet ? null : (
-          <TextField
-            containerClassName="flex-1"
-            label={t('about.height')}
-            keyboardType="number-pad"
-            placeholder={t('about.heightPlaceholder')}
-            value={fields.height}
-            onChangeText={(height) => setFields((current) => ({ ...current, height }))}
-            onBlur={settle('height', HEIGHT_RANGE)}
-            inputClassName="font-display text-[26px]"
-            rightSlot={<Text variant="caption">{t('common:unit.cm')}</Text>}
-          />
-        )}
-        {/* The weight is kept out of replays; the mask takes the field's share. */}
-        <ReplayMask style={{ flex: 1 }}>
-          <TextField
-            containerClassName="flex-1"
-            label={t('about.weight')}
-            replayMasked
-            keyboardType="decimal-pad"
-            placeholder={inFeet ? t('about.weightPlaceholderLb') : t('about.weightPlaceholder')}
-            value={fields.weight}
-            onChangeText={(weight) => setFields((current) => ({ ...current, weight }))}
-            onBlur={settle('weight', bounds(WEIGHT_RANGE, weightUnit))}
-            inputClassName="font-display text-[26px]"
-            rightSlot={<Text variant="caption">{t(UNIT_KEY[weightUnit])}</Text>}
-          />
-        </ReplayMask>
-      </View>
-
-      {/* A field rather than the stepper it replaced. A stepper cannot be empty:
-          it either shows a number nobody chose or a dash with arrows either
-          side of nothing, and the first is exactly what this screen is trying
-          to stop doing. */}
-      <TextField
-        label={t('about.age')}
-        keyboardType="number-pad"
-        placeholder={t('about.agePlaceholder')}
-        value={fields.age}
-        onChangeText={(next) => setFields((current) => ({ ...current, age: next }))}
-        onBlur={settle('age', AGE_RANGE)}
-        inputClassName="font-display text-[26px]"
-        rightSlot={<Text variant="caption">{t('about.years')}</Text>}
-      />
-
-      {/* Asked because the budget cannot be computed without it: Mifflin-St
-          Jeor branches on sex, and `compute_targets()` returns nothing at all
-          while the column is null. */}
-      <Card title={t('about.sex')}>
-        <SegmentedControl
-          options={[
-            { value: 'female', label: t('about.female') },
-            { value: 'male', label: t('about.male') },
-          ]}
-          value={sex}
-          onChange={(next) => patch({ sex: next as Sex })}
-          accessibilityLabel={t('about.sex')}
-        />
-      </Card>
-
-      <Card
-        title={t('about.targetWeight')}
-        action={
+        <FormRow label={t('about.weight')}>
+          {/* The weight is kept out of replays; the mask takes the field's place. */}
           <ReplayMask>
-            <Text className="font-display text-[24px] leading-[29px] text-heading">
-              {targetWeightKg != null
-                ? `${fromKg(targetWeightKg, weightUnit).toFixed(1)} ${t(UNIT_KEY[weightUnit])}`
-                : t('about.targetWeightUnset')}
-            </Text>
+            <TextField
+              size="sm"
+              hideLabel
+              containerClassName={FIELD_WIDTH}
+              label={t('about.weight')}
+              replayMasked
+              keyboardType="decimal-pad"
+              placeholder={inFeet ? t('about.weightPlaceholderLb') : t('about.weightPlaceholder')}
+              value={fields.weight}
+              onChangeText={(weight) => setFields((current) => ({ ...current, weight }))}
+              onBlur={settle('weight', bounds(WEIGHT_RANGE, weightUnit))}
+              rightSlot={<Text variant="caption">{t(UNIT_KEY[weightUnit])}</Text>}
+            />
           </ReplayMask>
-        }
-      >
-        <ReplayMask>
-          <Slider
-            value={fromKg(targetPreview, weightUnit)}
-            // `Slider` reports every frame of a drag, which is why this writes to
-            // the draft and not to the network: the same handler against a profile
-            // update was a request, and a budget recompute, per frame.
-            onChange={(next) => patch({ targetWeightKg: toKg(next, weightUnit) })}
-            min={fromKg(targetRange.min, weightUnit)}
-            max={fromKg(targetRange.max, weightUnit)}
-            // Half a kilogram is a scale's precision; half a pound is finer than
-            // anybody aims a slider, so imperial steps a whole one.
-            step={weightUnit === 'lb' ? 1 : 0.5}
-            // Nothing to measure a target against until the weight above exists,
-            // and a thumb sitting at 40 kg is a suggestion rather than a blank.
-            disabled={weightKg == null}
-            // The card already says TARGET WEIGHT; a second label under it would
-            // be the same words twice.
-            accessibilityLabel={t('about.targetWeight')}
-            format={(value) => `${value.toFixed(1)} ${t(UNIT_KEY[weightUnit])}`}
-          />
-        </ReplayMask>
+        </FormRow>
 
-        {targetWeightKg == null ? (
-          <Text variant="meta">
-            {weightKg == null ? t('about.targetWeightLocked') : t('about.targetWeightHint')}
-          </Text>
-        ) : null}
-      </Card>
+        {/* A field rather than a stepper. A stepper cannot be empty: it either
+            shows a number nobody chose or a dash with arrows either side of
+            nothing, and the first is what this screen is trying to stop. */}
+        <FormRow label={t('about.age')}>
+          <TextField
+            size="sm"
+            hideLabel
+            containerClassName={FIELD_WIDTH}
+            label={t('about.age')}
+            keyboardType="number-pad"
+            placeholder={t('about.agePlaceholder')}
+            value={fields.age}
+            onChangeText={(next) => setFields((current) => ({ ...current, age: next }))}
+            onBlur={settle('age', AGE_RANGE)}
+            rightSlot={<Text variant="caption">{t('about.years')}</Text>}
+          />
+        </FormRow>
+
+        {/* Asked because the budget cannot be computed without it: Mifflin-St
+            Jeor branches on sex, and `compute_targets()` returns nothing at all
+            while the column is null. */}
+        <FormRow label={t('about.sex')}>
+          <SegmentedControl
+            size="sm"
+            className="w-[176px]"
+            options={[
+              { value: 'female', label: t('about.female') },
+              { value: 'male', label: t('about.male') },
+            ]}
+            value={sex}
+            onChange={(next) => patch({ sex: next as Sex })}
+            accessibilityLabel={t('about.sex')}
+          />
+        </FormRow>
+      </FormCard>
+
+      <FormCard>
+        <FormRow
+          label={t('about.targetWeight')}
+          value={
+            <ReplayMask>
+              <Text variant="bodyStrong">
+                {targetWeightKg != null
+                  ? `${fromKg(targetWeightKg, weightUnit).toFixed(1)} ${t(UNIT_KEY[weightUnit])}`
+                  : t('about.targetWeightUnset')}
+              </Text>
+            </ReplayMask>
+          }
+          below={
+            <>
+              <ReplayMask>
+                <Slider
+                  value={fromKg(targetPreview, weightUnit)}
+                  // `Slider` reports every frame of a drag, which is why this
+                  // writes to the draft and not to the network.
+                  onChange={(next) => patch({ targetWeightKg: toKg(next, weightUnit) })}
+                  min={fromKg(targetRange.min, weightUnit)}
+                  max={fromKg(targetRange.max, weightUnit)}
+                  // Half a kilogram is a scale's precision; half a pound is finer
+                  // than anybody aims a slider, so imperial steps a whole one.
+                  step={weightUnit === 'lb' ? 1 : 0.5}
+                  // Nothing to measure a target against until the weight exists.
+                  disabled={weightKg == null}
+                  accessibilityLabel={t('about.targetWeight')}
+                  format={(value) => `${value.toFixed(1)} ${t(UNIT_KEY[weightUnit])}`}
+                />
+              </ReplayMask>
+              {weightKg == null ? (
+                <Text variant="meta">{t('about.targetWeightLocked')}</Text>
+              ) : null}
+            </>
+          }
+        />
+      </FormCard>
     </OnboardingStep>
   )
 }

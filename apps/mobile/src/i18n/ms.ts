@@ -471,6 +471,7 @@ export const ms = {
   onboarding: {
     setup: {
       title: 'Bahasa dan unit',
+      subtitle: 'Anda boleh tukar kedua-duanya kemudian dalam Saya.',
       unitsTitle: 'UNIT',
       metric: 'Metrik',
       imperial: 'Imperial',
@@ -531,6 +532,7 @@ export const ms = {
 
     activity: {
       title: 'Sesibuk mana hari anda?',
+      subtitle: 'Pilih yang paling dekat dengan hari biasa anda.',
       sedentary: { title: 'Kebanyakannya duduk', subtitle: 'Pejabat, memandu, belajar' },
       light: { title: 'Aktif sedikit', subtitle: 'Sedikit berjalan, kerja rumah ringan' },
       onFeet: {
@@ -542,6 +544,7 @@ export const ms = {
 
     source: {
       title: 'Dari mana anda dengar tentang kami?',
+      subtitle: 'Satu ketik. Ia membantu kami berkembang.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -567,6 +570,7 @@ export const ms = {
 
     target: {
       title: 'Bajet harian anda',
+      subtitle: 'Dikira daripada jawapan anda. Tukar mana-mana angka.',
       perDay: 'KCAL SEHARI',
       goalWeight: 'BERAT SASARAN',
       goalBy: 'DIJANGKA MENJELANG',

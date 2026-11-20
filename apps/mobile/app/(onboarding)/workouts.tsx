@@ -50,7 +50,7 @@ export default function WorkoutsStep() {
       onPrimary={() => router.push('/(onboarding)/social')}
     >
       <View
-        className="gap-3.5 rounded-card border-2 border-line bg-surface p-4"
+        className="gap-3.5 rounded-tile border-2 border-line bg-surface p-4"
         accessible
         accessibilityLabel={`${t('workouts.routine')}, ${EXERCISE}`}
       >
@@ -71,7 +71,7 @@ export default function WorkoutsStep() {
         </View>
 
         <View className="flex-row items-center gap-3">
-          <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-sm bg-exercise-tile">
+          <View className="h-[48px] w-[48px] items-center justify-center overflow-hidden rounded-sm bg-exercise-tile">
             <Image source={BENCH} style={{ width: 44, height: 44 }} contentFit="contain" />
           </View>
           <View className="min-w-0 flex-1 gap-1">

@@ -459,6 +459,7 @@ export const th = {
   onboarding: {
     setup: {
       title: 'ภาษาและหน่วย',
+      subtitle: 'เปลี่ยนได้ทั้งสองอย่างในภายหลังที่หน้า ฉัน',
       unitsTitle: 'หน่วย',
       metric: 'เมตริก',
       imperial: 'อิมพีเรียล',
@@ -519,6 +520,7 @@ export const th = {
 
     activity: {
       title: 'วันหนึ่งของคุณขยับแค่ไหน',
+      subtitle: 'เลือกแบบที่ใกล้เคียงวันปกติของคุณที่สุด',
       sedentary: { title: 'นั่งเป็นส่วนใหญ่', subtitle: 'ออฟฟิศ ขับรถ เรียน' },
       light: { title: 'ขยับเล็กน้อย', subtitle: 'เดินบ้าง งานบ้านเบาๆ' },
       onFeet: { title: 'ยืนทั้งวัน', subtitle: 'ค้าปลีก พยาบาล งานไซต์' },
@@ -527,6 +529,7 @@ export const th = {
 
     source: {
       title: 'คุณรู้จักเราจากไหน',
+      subtitle: 'แตะครั้งเดียว ช่วยให้เราเติบโต',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -552,6 +555,7 @@ export const th = {
 
     target: {
       title: 'โควตาต่อวันของคุณ',
+      subtitle: 'คำนวณจากคำตอบของคุณ แก้ตัวเลขไหนก็ได้',
       perDay: 'แคลต่อวัน',
       goalWeight: 'น้ำหนักเป้าหมาย',
       goalBy: 'คาดว่าถึงเมื่อ',

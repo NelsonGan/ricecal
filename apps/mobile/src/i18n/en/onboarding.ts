@@ -9,6 +9,7 @@ export const onboarding = {
    */
   setup: {
     title: 'Language and units',
+    subtitle: 'You can change both later in Me.',
     unitsTitle: 'UNITS',
     metric: 'Metric',
     imperial: 'Imperial',
@@ -105,6 +106,7 @@ export const onboarding = {
 
   activity: {
     title: 'How active is your day?',
+    subtitle: 'Pick the closest to a normal day.',
     sedentary: { title: 'Mostly sitting', subtitle: 'Office, driving, study' },
     light: { title: 'Lightly active', subtitle: 'Some walking, light chores' },
     onFeet: { title: 'On my feet', subtitle: 'Retail, nursing, site work' },
@@ -113,6 +115,7 @@ export const onboarding = {
 
   source: {
     title: 'Where did you hear about us?',
+    subtitle: 'One tap. It helps us grow.',
     xiaohongshu: 'XiaoHongShu',
     instagram: 'Instagram',
     tiktok: 'TikTok',
@@ -148,6 +151,7 @@ export const onboarding = {
 
   target: {
     title: 'Your daily budget',
+    subtitle: 'Worked out from your answers. Change any figure.',
     perDay: 'KCAL A DAY',
     /** The plan, as two tiles rather than a sentence. */
     goalWeight: 'GOAL WEIGHT',

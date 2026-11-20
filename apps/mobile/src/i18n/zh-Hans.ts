@@ -460,6 +460,7 @@ export const zhHans = {
   onboarding: {
     setup: {
       title: '语言和单位',
+      subtitle: '之后可以在“我的”里更改。',
       unitsTitle: '单位',
       metric: '公制',
       imperial: '英制',
@@ -520,6 +521,7 @@ export const zhHans = {
 
     activity: {
       title: '你平常一天有多活跃？',
+      subtitle: '选最接近你平常一天的。',
       sedentary: { title: '大多坐着', subtitle: '办公、开车、念书' },
       light: { title: '轻度活动', subtitle: '会走走路，做点家务' },
       onFeet: { title: '常常站着', subtitle: '零售、护理、工地' },
@@ -528,6 +530,7 @@ export const zhHans = {
 
     source: {
       title: '你是怎么知道我们的？',
+      subtitle: '点一下就好，能帮助我们成长。',
       xiaohongshu: '小红书',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -553,6 +556,7 @@ export const zhHans = {
 
     target: {
       title: '你的每日额度',
+      subtitle: '根据你的回答计算。任何数字都可以改。',
       perDay: '千卡每天',
       goalWeight: '目标体重',
       goalBy: '预计达成',

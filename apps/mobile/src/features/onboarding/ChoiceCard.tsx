@@ -72,12 +72,12 @@ export function ChoiceCard({
 
   return (
     <Squish
-      depth={4}
-      radius={22}
+      depth={3}
+      radius={20}
       containerClassName={className}
       slabClassName={selected ? tone.slab : 'bg-line'}
       className={cn(
-        'flex-row items-center gap-3.5 border-[3px] px-4 py-3.5',
+        'flex-row items-center gap-3 border-2 px-3.5 py-3',
         selected ? `${tone.border} ${tone.fill}` : 'border-line bg-surface',
       )}
       onPress={onPress}
@@ -89,7 +89,7 @@ export function ChoiceCard({
           lines of text, so it sets the card's height, and four of these plus a
           heading and a footer is the whole of a small screen. Decorative: the
           card carries one accessibility label for the whole row. */}
-      {icon ? <Icon {...icon} size={44} /> : null}
+      {icon ? <Icon {...icon} size={36} /> : null}
 
       <View className="min-w-0 flex-1 gap-0.5">
         <Text variant="bodyStrong">{title}</Text>
@@ -98,11 +98,11 @@ export function ChoiceCard({
 
       <View
         className={cn(
-          'h-[26px] w-[26px] items-center justify-center rounded-full',
-          selected ? tone.dot : 'border-[3px] border-line',
+          'h-[22px] w-[22px] items-center justify-center rounded-full',
+          selected ? tone.dot : 'border-2 border-line-strong',
         )}
       >
-        {selected ? <Icon set="ui" name="check" size={14} tintColor={colors.onPandan} /> : null}
+        {selected ? <Icon set="ui" name="check" size={12} tintColor={colors.onPandan} /> : null}
       </View>
     </Squish>
   )

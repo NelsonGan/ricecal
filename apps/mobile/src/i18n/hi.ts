@@ -456,6 +456,7 @@ export const hi = {
   onboarding: {
     setup: {
       title: 'भाषा और इकाइयाँ',
+      subtitle: 'दोनों को बाद में मैं में बदल सकते हैं।',
       unitsTitle: 'इकाई',
       metric: 'मीट्रिक',
       imperial: 'इंपीरियल',
@@ -516,6 +517,7 @@ export const hi = {
 
     activity: {
       title: 'आपका दिन कितना सक्रिय रहता है?',
+      subtitle: 'अपने आम दिन के सबसे करीब वाला चुनें।',
       sedentary: { title: 'ज़्यादातर बैठे हुए', subtitle: 'दफ़्तर, ड्राइविंग, पढ़ाई' },
       light: { title: 'थोड़े सक्रिय', subtitle: 'कुछ चलना, हल्के घर के काम' },
       onFeet: { title: 'ज़्यादातर खड़े', subtitle: 'दुकान, नर्सिंग, साइट का काम' },
@@ -524,6 +526,7 @@ export const hi = {
 
     source: {
       title: 'हमारे बारे में कहां सुना?',
+      subtitle: 'बस एक टैप। इससे हमें बढ़ने में मदद मिलती है।',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -549,6 +552,7 @@ export const hi = {
 
     target: {
       title: 'आपका रोज़ का हिसाब',
+      subtitle: 'आपके जवाबों से निकाला गया। कोई भी आंकड़ा बदलें।',
       perDay: 'रोज़ KCAL',
       goalWeight: 'लक्ष्य वज़न',
       goalBy: 'अनुमानित तारीख़',

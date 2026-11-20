@@ -472,6 +472,7 @@ export const fil = {
   onboarding: {
     setup: {
       title: 'Wika at mga yunit',
+      subtitle: 'Puwede mong palitan ang dalawa mamaya sa Ako.',
       unitsTitle: 'MGA UNIT',
       metric: 'Metric',
       imperial: 'Imperial',
@@ -532,6 +533,7 @@ export const fil = {
 
     activity: {
       title: 'Gaano ka-aktibo ang araw mo?',
+      subtitle: 'Piliin ang pinakamalapit sa karaniwang araw mo.',
       sedentary: { title: 'Madalas nakaupo', subtitle: 'Opisina, pagmamaneho, pag-aaral' },
       light: { title: 'Bahagyang aktibo', subtitle: 'May kaunting lakad, magaan na gawaing bahay' },
       onFeet: { title: 'Palaging nakatayo', subtitle: 'Tindahan, nursing, konstruksyon' },
@@ -540,6 +542,7 @@ export const fil = {
 
     source: {
       title: 'Saan mo kami narinig?',
+      subtitle: 'Isang tap lang. Nakakatulong ito sa amin.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -565,6 +568,7 @@ export const fil = {
 
     target: {
       title: 'Ang badyet mo kada araw',
+      subtitle: 'Batay sa mga sagot mo. Palitan ang kahit anong numero.',
       perDay: 'KCAL KADA ARAW',
       goalWeight: 'TIMBANG NA LAYUNIN',
       goalBy: 'INAASAHANG MAABOT',

@@ -467,6 +467,7 @@ export const id = {
   onboarding: {
     setup: {
       title: 'Bahasa dan satuan',
+      subtitle: 'Keduanya bisa diubah nanti di Saya.',
       unitsTitle: 'SATUAN',
       metric: 'Metrik',
       imperial: 'Imperial',
@@ -528,6 +529,7 @@ export const id = {
 
     activity: {
       title: 'Seberapa aktif harimu?',
+      subtitle: 'Pilih yang paling mirip dengan hari biasamu.',
       sedentary: { title: 'Kebanyakan duduk', subtitle: 'Kantor, menyetir, belajar' },
       light: { title: 'Sedikit aktif', subtitle: 'Sedikit jalan, pekerjaan rumah ringan' },
       onFeet: { title: 'Banyak berdiri', subtitle: 'Ritel, perawat, lapangan' },
@@ -536,6 +538,7 @@ export const id = {
 
     source: {
       title: 'Dari mana kamu tahu tentang kami?',
+      subtitle: 'Sekali ketuk. Ini membantu kami berkembang.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -561,6 +564,7 @@ export const id = {
 
     target: {
       title: 'Jatah harianmu',
+      subtitle: 'Dihitung dari jawabanmu. Ubah angka mana saja.',
       perDay: 'KKAL PER HARI',
       goalWeight: 'BERAT TUJUAN',
       goalBy: 'DIPERKIRAKAN',

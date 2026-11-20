@@ -76,6 +76,7 @@ export {
 export { Dialog, type DialogAction, type DialogProps } from './Dialog'
 export { Divided, Divider, type DividerProps } from './Divider'
 export { EmptyState, type EmptyStateProps } from './EmptyState'
+export { FormCard, FormRow } from './Form'
 export { Icon, type IconProps, type IconSet, icons } from './Icon'
 export {
   IconButton,
@@ -94,6 +95,7 @@ export {
   type NumpadProviderProps,
   type NumpadTools,
   useNumpadField,
+  useNumpadOpen,
   useNumpadZone,
 } from './Numpad'
 export {
