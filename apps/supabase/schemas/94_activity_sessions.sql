@@ -18,14 +18,17 @@
 -- What the person removed, so the next sync does not bring it back. The store
 -- still holds it, and the sync re-reads a week on every foreground.
 --
--- `started_at` and `kind` match a rewrite as well as the id: a removed Garmin
--- run comes back under a new id the next time Connect syncs.
+-- The start, kind and source match a rewrite as well as the id: a removed
+-- Garmin run comes back under a new id the next time Connect syncs. The source
+-- is part of it so that removing Garmin's copy of a run leaves the Apple Watch's
+-- recording of the same moment alone.
 create table public.activity_session_dismissals (
   user_id      uuid not null references auth.users (id) on delete cascade,
   provider     public.health_provider not null,
   external_id  text not null check (char_length(external_id) between 1 and 200),
   kind         text not null check (char_length(kind) between 1 and 60),
   started_at   timestamptz not null,
+  source_name  text check (char_length(source_name) <= 120),
   created_at   timestamptz not null default now(),
   primary key (user_id, provider, external_id)
 );
@@ -38,15 +41,43 @@ alter table public.activity_session_dismissals enable row level security;
 create policy "Server only" on public.activity_session_dismissals as restrictive
   for all to anon, authenticated using (false) with check (false);
 
--- Written only by `delete_activity_session`, read only by the trigger. The app
--- has no reason to see the list.
+-- Written only by `delete_activity_session`, read only by the trigger and the
+-- reconcile. The app has no reason to see the list.
 revoke all on public.activity_session_dismissals from public, anon, authenticated;
 grant select, insert, update, delete on public.activity_session_dismissals to service_role;
+
+
+-- Whether a workout the store reported is one the person removed.
+create or replace function private.activity_dismissed(
+  p_user uuid, p_provider public.health_provider, p_external_id text,
+  p_started_at timestamptz, p_kind text, p_source text
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.activity_session_dismissals d
+    where d.user_id = p_user and d.provider = p_provider
+      and (d.external_id = p_external_id
+        or (d.started_at = p_started_at and d.kind = p_kind
+            and d.source_name is not distinct from p_source))
+  );
+$$;
+
+revoke execute on function private.activity_dismissed(uuid, public.health_provider, text, timestamptz, text, text)
+  from public, anon, authenticated;
 
 
 -- A removed workout's insert is skipped rather than refused. A refusal would
 -- fail the whole batch of a sync, old binaries' included, for as long as the
 -- workout stays in the read window.
+--
+-- A row already stored under the same id goes ahead: a BEFORE INSERT trigger
+-- also fires for an upsert that will become an update, and skipping it would
+-- freeze a copy the person kept (another copy of a run they removed one of).
 create or replace function private.skip_dismissed_activity()
 returns trigger
 language plpgsql
@@ -55,11 +86,13 @@ set search_path = ''
 as $$
 begin
   if exists (
-    select 1 from public.activity_session_dismissals d
-    where d.user_id = new.user_id and d.provider = new.provider
-      and (d.external_id = new.external_id
-        or (d.started_at = new.started_at and d.kind = new.kind))
+    select 1 from public.activity_sessions a
+    where a.user_id = new.user_id and a.provider = new.provider and a.external_id = new.external_id
   ) then
+    return new;
+  end if;
+  if private.activity_dismissed(new.user_id, new.provider, new.external_id,
+                                new.started_at, new.kind, new.source_name) then
     return null;
   end if;
   return new;
@@ -68,8 +101,8 @@ $$;
 
 revoke execute on function private.skip_dismissed_activity() from public, anon, authenticated;
 
--- Named to sort before `group_share_activity`, an AFTER trigger in any case:
--- a skipped row is never shared.
+-- Never shared: `group_share_activity` is an AFTER trigger, and a skipped row
+-- is never inserted.
 create trigger activity_sessions_skip_dismissed
   before insert on public.activity_sessions
   for each row execute function private.skip_dismissed_activity();
@@ -78,18 +111,23 @@ create trigger activity_sessions_skip_dismissed
 -- Called by a sync pass before it upserts what it read, with the identity of
 -- every workout the store returned for the window.
 --
---   * A row whose id the store no longer has, but which starts at the same
---     moment as a new id of the same kind, is the same workout re-saved. It
---     takes the new id, so the upsert that follows updates it: the row keeps
---     its id, its group card and its reactions, and nothing is shared again.
---   * Any other row in the window whose id the store no longer has was deleted
---     there, and is deleted here.
+-- It only ever acts on stored rows that are another copy of a workout the
+-- store returned: same start, same kind, an id the store did not return.
 --
--- Only rows lying wholly inside the window are touched. Both stores return a
--- workout that overlaps the window, so every such row was in the read.
+--   * When the returned workout is not stored yet, the oldest such copy takes
+--     its id, so the upsert that follows updates it: the row keeps its id, its
+--     group card and its reactions, and nothing is shared again. Not for a
+--     workout the person removed, whose copies go with the next step.
+--   * Any copy left over is deleted. Garmin Connect deletes and re-saves its
+--     workouts in Apple Health under a new id, and an upsert alone kept every
+--     copy: one run showed four times on Today.
 --
--- An empty list removes nothing. An unavailable store or a refused permission
--- reads as no workouts, and that is not a week with none in it.
+-- A row the read did not mention at all is left alone. Absence proves nothing:
+-- a second phone on the same provider has its own store, a new phone's Health
+-- may still be downloading, Health Connect hides what is older than 30 days
+-- before the grant, and Garmin's delete can land a pass before its re-save.
+-- Deleting the person's workouts on any of those is far worse than a workout
+-- deleted in Health lingering here, where it can now be deleted by hand.
 create or replace function public.reconcile_activity_sessions(
   p_provider public.health_provider,
   p_from     timestamptz,
@@ -99,7 +137,9 @@ create or replace function public.reconcile_activity_sessions(
 )
 returns integer
 language plpgsql
-security invoker
+-- Definer, to consult the removed list the app cannot read. Every statement
+-- below is scoped to `auth.uid()`, never to an argument.
+security definer
 set search_path = ''
 as $$
 declare
@@ -139,13 +179,15 @@ begin
   from jsonb_to_recordset(p_sessions) as s(external_id text);
 
   for v_new in
-    select distinct s.external_id, s.started_at, s.kind
-    from jsonb_to_recordset(p_sessions) as s(external_id text, started_at timestamptz, kind text)
+    select distinct s.external_id, s.started_at, s.kind, s.source_name
+    from jsonb_to_recordset(p_sessions) as s(external_id text, started_at timestamptz, kind text, source_name text)
     where not exists (
       select 1 from public.activity_sessions a
       where a.user_id = v_user and a.provider = p_provider and a.external_id = s.external_id
     )
   loop
+    continue when private.activity_dismissed(v_user, p_provider, v_new.external_id,
+                                             v_new.started_at, v_new.kind, v_new.source_name);
     update public.activity_sessions a
        set external_id = v_new.external_id
      where a.id = (
@@ -163,7 +205,11 @@ begin
   delete from public.activity_sessions a
   where a.user_id = v_user and a.provider = p_provider
     and a.started_at >= p_from and a.ended_at <= p_to
-    and a.external_id <> all (v_seen);
+    and a.external_id <> all (v_seen)
+    and exists (
+      select 1 from jsonb_to_recordset(p_sessions) as s(started_at timestamptz, kind text)
+      where s.started_at = a.started_at and s.kind = a.kind
+    );
   get diagnostics v_deleted = row_count;
 
   return v_rekeyed + v_deleted;
@@ -197,8 +243,8 @@ begin
     return false;
   end if;
 
-  insert into public.activity_session_dismissals (user_id, provider, external_id, kind, started_at)
-  values (v_user, v_row.provider, v_row.external_id, v_row.kind, v_row.started_at)
+  insert into public.activity_session_dismissals (user_id, provider, external_id, kind, started_at, source_name)
+  values (v_user, v_row.provider, v_row.external_id, v_row.kind, v_row.started_at, v_row.source_name)
   on conflict (user_id, provider, external_id) do nothing;
 
   return true;

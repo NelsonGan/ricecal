@@ -4660,10 +4660,14 @@ The app bar's delete removes a synced workout from RiceCal only, and says the
 store keeps it. The store still holds it and the sync re-reads a week on every
 foreground, so `delete_activity_session` records the removal in
 `activity_session_dismissals`, and a `before insert` trigger on
-`activity_sessions` skips any insert matching it by id, or by provider, start
-and kind (Garmin re-saves the same run under a new id). Skipped rather than
-refused, so an old binary's batch upsert still lands the rest. The budget is
-unchanged by a delete: it reads the day's active energy, not the sessions.
+`activity_sessions` skips any new insert matching it by id, or by provider,
+start, kind and source (Garmin re-saves the same run under a new id; the source
+keeps a watch's recording of the same moment). An upsert onto a row already
+stored is let through, so the copy a person kept still updates. Skipped rather
+than refused, so an old binary's batch upsert still lands the rest, and the
+reconcile never hands a removed workout's re-save a leftover copy's row. The
+budget is unchanged by a delete: it reads the day's active energy, not the
+sessions.
 
 For local UI verification, `pnpm workouts:seed --user <local-account-uuid>`
 inserts all 19 sports plus 11 data variants into that account across six days.
@@ -4721,12 +4725,19 @@ deletes and re-saves each of its workouts in Apple Health on later syncs, under 
 new `HKWorkout.uuid`, and the upsert alone kept every copy: one run showed four
 times on Today, and each copy was shared to the person's groups as it landed.
 So before it upserts, a pass sends `reconcile_activity_sessions` the identity
-(id, start, kind) of every workout the store returned for the chunk. A stored
-row the store no longer has, starting at the same moment as a new id of the same
-kind, takes the new id, so the upsert updates it and it keeps its row id, group
-card and reactions. Any other row lying wholly inside the window that the store
-no longer has is deleted. An empty read deletes nothing, since a refused
-permission reads as no workouts. A failed reconcile does not stop the upsert,
+(id, start, kind, source) of every workout the store returned for the chunk,
+within the same bounds the providers read (`lib/health/window.ts`). It acts only
+on stored rows that are another copy of a returned workout: same start and kind,
+an id the store did not return. A returned workout not yet stored takes over the
+oldest such copy, so the upsert updates it and it keeps its row id, group card
+and reactions; the copies left over are deleted.
+
+**A workout the read does not mention is never deleted.** Absence proves
+nothing: a second phone on the same provider has its own store, a new phone's
+Health may still be downloading, Health Connect hides what is older than 30 days
+before the grant, and Garmin's delete can land a pass before its re-save. So a
+workout deleted in Health lingers here until it is deleted on its own page. A
+failed reconcile is reported (`health_reconcile`) and does not stop the upsert,
 and any rows it changed count as a change to the workouts.
 
 Weigh-ins have a second witness: `sync_weight_readings` answers with how many
@@ -7491,7 +7502,7 @@ is recording.
 | --- | --- | --- |
 | Uncaught JavaScript errors and unhandled rejections | `errorTracking.autocapture` in `posthog.ts` | Fatal errors are handed to the native SDK, which persists them before the process dies |
 | Native crashes | `nativeCrashes` (iOS signals and Mach exceptions; Android Java/Kotlin), `androidNdkCrashes` | Through `@posthog/react-native-plugin`, reported on the next launch. These reports carry no `app_variant` (the native layer sends them before JavaScript registers it), so tell an internal build's native crash apart by `$app_version` and `$app_build` |
-| Caught errors | `reportError(error, context)` from `src/lib/errors.ts` | Analytics provider failures (`analytics_provider`, `analytics_operation`); context is short scalars only |
+| Caught errors | `reportError(error, context)` from `src/lib/errors.ts` | Analytics provider failures (`analytics_provider`, `analytics_operation`); a health sync's workout reconcile refused by the server (`scope: health_reconcile`, `provider`), which leaves that pass's duplicates in place; announcement seen-marks (`scope: announcement_seen`, `id`); context is short scalars only |
 | Warnings | `reportMessage(text)` | The captcha diagnostics in `features/auth/turnstile.tsx`, sent with `$exception_level: warning` |
 | A host that stays silent while the phone says it is online | `reportNetworkFailure` in `src/lib/network.ts`, called from the Supabase client's `guardedFetch` | Warning `[network] could not reach <host>`, filed when a request sent after a lost one is lost too, with no answer from that host in between (`noteResponse`) and within five minutes. Once per host per launch, never while offline. Context: `network_path` (first three segments, no query string), `network_reason` (the platform's own text from the error Expo's `fetch` threw, native frame removed), `network_type`, `network_reachable`, `network_down_ms` (since the first lost request) |
 | Edge functions | Their own logs | The functions are not instrumented for errors; their model calls are, as AI events |

@@ -275,13 +275,22 @@ export function useDeleteActivitySession() {
   const queryClient = useQueryClient()
 
   return useMutation({
+    // False when it was already gone, which is the outcome asked for.
     mutationFn: async (id: string) => {
       const { error } = await supabase.rpc('delete_activity_session', { p_id: id })
       if (error) throw error
     },
+    onSuccess: (_result, id) => {
+      // Its own page's cache lives outside the `activity` prefix, and a stale
+      // list or board opening it again would show it with a delete button.
+      queryClient.removeQueries({ queryKey: keys.activitySession(id) })
+    },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: keys.activitySessionsAll(userId) })
       invalidateGroupBoards(queryClient, userId)
+      // A review counts the period's sessions. Stale, not refetched: none is
+      // usually on screen.
+      queryClient.invalidateQueries({ queryKey: keys.reviewsAll(userId), refetchType: 'none' })
     },
   })
 }

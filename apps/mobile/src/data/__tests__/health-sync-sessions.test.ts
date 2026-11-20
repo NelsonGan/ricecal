@@ -86,14 +86,46 @@ it('reconciles the window before upserting what was read', async () => {
     p_from: window.from,
     p_to: window.to,
     p_sessions: [
-      { external_id: '6B78A821', started_at: '2026-11-16T13:55:29.000Z', kind: 'run' },
-      { external_id: 'BROKEN', started_at: '2026-11-16T13:55:29.000Z', kind: 'run' },
+      {
+        external_id: '6B78A821',
+        started_at: '2026-11-16T13:55:29.000Z',
+        kind: 'run',
+        source_name: 'Connect',
+      },
+      {
+        external_id: 'BROKEN',
+        started_at: '2026-11-16T13:55:29.000Z',
+        kind: 'run',
+        source_name: 'Connect',
+      },
     ],
     p_user_id: 'account-a',
   })
   expect(order.indexOf('reconcile_activity_sessions')).toBeLessThan(order.indexOf('upsert'))
-  // Copies removed refetch the lists even when the reading itself is unchanged.
   expect(result.changed.workouts).toBe(true)
+})
+
+it('copies removed refetch the lists even when the reading is unchanged', async () => {
+  let removed = 0
+  supabase.rpc.mockImplementation(async (name: string) => ({
+    data: name === 'reconcile_activity_sessions' ? removed : 0,
+    error: null,
+  }))
+  const pass = () =>
+    syncRange(
+      new QueryClient(),
+      'account-unchanged',
+      { ...demoHealth, read: jest.fn().mockResolvedValue(reading([run()])) },
+      '2026-11-14',
+      '2026-11-20',
+    )
+
+  await pass()
+  // The same reading again, with nothing to tidy: nothing to refetch.
+  expect((await pass()).changed.workouts).toBe(false)
+  // The same reading again, but the server removed three copies.
+  removed = 3
+  expect((await pass()).changed.workouts).toBe(true)
 })
 
 it('an empty read asks nothing to be removed', async () => {

@@ -15,8 +15,8 @@ export default function WorkoutScreen() {
   const { data, isPending } = useActivitySession(id)
   const remove = useDeleteActivitySession()
   // Held while the delete runs, as on a logged workout's page: the delete
-  // refetches this query to nothing, and "no longer in your health app"
-  // flashed up under the closing dialog.
+  // drops this query, and "no longer in your health app" would flash up under
+  // the closing dialog.
   const [deleting, setDeleting] = useState<ActivitySession | null>(null)
   const session = deleting ?? data
   const confirmDelete = useDeleteConfirm({

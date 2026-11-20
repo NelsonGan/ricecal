@@ -149,10 +149,11 @@ export const keys = {
    * of a period. `reviewPeriods` is shared between Trends, the list and a
    * story's comparison chart.
    *
-   * No `reviewsAll`, unlike every other area here: a review covers a period
-   * that has ended, so only a backdated meal can move one, and the
-   * thirty-second stale time already covers that.
+   * `reviewsAll` is for the rare write that reaches back into a period that
+   * has ended, such as deleting an old synced workout. A backdated meal can
+   * move one too, and the thirty-second stale time already covers that.
    */
+  reviewsAll: (userId: string) => ['reviews', userId] as const,
   reviewPeriods: (userId: string, kind: string) => ['reviews', userId, kind, 'periods'] as const,
   reviewSummary: (userId: string, kind: string, start: string) =>
     ['reviews', userId, kind, start, 'summary'] as const,

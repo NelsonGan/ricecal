@@ -6,6 +6,7 @@ import { createMMKV } from 'react-native-mmkv'
 
 import { setPersonProps, track } from '@/lib/analytics'
 import type { TablesInsert } from '@/lib/database.types'
+import { reportError } from '@/lib/errors'
 import type {
   AccessResult,
   ActivityDayReading,
@@ -15,7 +16,7 @@ import type {
   ProviderId,
   WorkoutReading,
 } from '@/lib/health'
-import { providerFor } from '@/lib/health'
+import { endOf, providerFor, startOf } from '@/lib/health'
 import { ageFrom, basalRate } from '@/lib/nutrition'
 import { supabase } from '@/lib/supabase'
 import { daysAgo, type HealthConnection, toConnection } from './activity'
@@ -243,19 +244,9 @@ export function sessionBatches(
   return byShape(rows)
 }
 
-/**
- * The instants a chunk's workouts were read between: local midnight on its
- * first day to local midnight after its last, which is what both providers ask
- * their store for.
- */
+/** The instants a chunk's workouts were read between, as the providers ask. */
 export function workoutWindow(from: string, to: string): { from: string; to: string } {
-  const start = (date: string) => {
-    const [year, month, day] = date.split('-').map(Number)
-    return new Date(year, month - 1, day, 0, 0, 0, 0)
-  }
-  const end = start(to)
-  end.setDate(end.getDate() + 1)
-  return { from: start(from).toISOString(), to: end.toISOString() }
+  return { from: startOf(from).toISOString(), to: endOf(to).toISOString() }
 }
 
 /**
@@ -269,6 +260,8 @@ export function workoutIdentities(workouts: readonly WorkoutReading[]) {
     external_id: workout.externalId,
     started_at: workout.startedAt,
     kind: workout.kind,
+    // As `sessionBatches` stores it, since a removed workout is matched on it.
+    source_name: clip(workout.sourceName),
   }))
 }
 
@@ -295,10 +288,10 @@ async function persist(
 
   const sessions = async (): Promise<number> => {
     // Before the upsert, so a workout an app re-saved under a new id (Garmin
-    // Connect does, on every sync) takes over its old row instead of adding a
-    // copy, and a workout deleted in the store goes here too. An upsert alone
-    // only ever adds: one run showed four times on Today. A failure here costs
-    // only that tidying, so the upsert still goes ahead.
+    // Connect does, on later syncs) takes over its old row instead of adding a
+    // copy, and leftover copies go. An upsert alone only ever adds: one run
+    // showed four times on Today. A failure costs only that tidying, so it is
+    // reported and the upsert still goes ahead.
     let reconciled = 0
     if (reading.workouts.length > 0) {
       const span = workoutWindow(window.from, window.to)
@@ -309,7 +302,8 @@ async function persist(
         p_sessions: workoutIdentities(reading.workouts),
         p_user_id: userId,
       })
-      if (!error && typeof data === 'number') reconciled = data
+      if (error) reportError(error, { scope: 'health_reconcile', provider })
+      else if (typeof data === 'number') reconciled = data
     }
 
     // One request per row shape. See `sessionBatches` for why there can be more

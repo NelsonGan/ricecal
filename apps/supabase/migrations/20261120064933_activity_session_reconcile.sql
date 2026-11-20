@@ -4,6 +4,29 @@
 
 SET check_function_bodies = false;
 
+CREATE FUNCTION private.activity_dismissed (
+  p_user        uuid,
+  p_provider    public.health_provider,
+  p_external_id text,
+  p_started_at  timestamp with time zone,
+  p_kind        text,
+  p_source      text
+)
+  RETURNS boolean
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+  select exists (
+    select 1 from public.activity_session_dismissals d
+    where d.user_id = p_user and d.provider = p_provider
+      and (d.external_id = p_external_id
+        or (d.started_at = p_started_at and d.kind = p_kind
+            and d.source_name is not distinct from p_source))
+  );
+$function$;
+
 CREATE FUNCTION private.skip_dismissed_activity()
   RETURNS TRIGGER
   LANGUAGE plpgsql
@@ -12,11 +35,13 @@ CREATE FUNCTION private.skip_dismissed_activity()
   AS $function$
 begin
   if exists (
-    select 1 from public.activity_session_dismissals d
-    where d.user_id = new.user_id and d.provider = new.provider
-      and (d.external_id = new.external_id
-        or (d.started_at = new.started_at and d.kind = new.kind))
+    select 1 from public.activity_sessions a
+    where a.user_id = new.user_id and a.provider = new.provider and a.external_id = new.external_id
   ) then
+    return new;
+  end if;
+  if private.activity_dismissed(new.user_id, new.provider, new.external_id,
+                                new.started_at, new.kind, new.source_name) then
     return null;
   end if;
   return new;
@@ -46,8 +71,8 @@ begin
     return false;
   end if;
 
-  insert into public.activity_session_dismissals (user_id, provider, external_id, kind, started_at)
-  values (v_user, v_row.provider, v_row.external_id, v_row.kind, v_row.started_at)
+  insert into public.activity_session_dismissals (user_id, provider, external_id, kind, started_at, source_name)
+  values (v_user, v_row.provider, v_row.external_id, v_row.kind, v_row.started_at, v_row.source_name)
   on conflict (user_id, provider, external_id) do nothing;
 
   return true;
@@ -69,6 +94,7 @@ CREATE FUNCTION public.reconcile_activity_sessions (
 )
   RETURNS integer
   LANGUAGE plpgsql
+  SECURITY DEFINER
   SET search_path TO ''
   AS $function$
 declare
@@ -108,13 +134,15 @@ begin
   from jsonb_to_recordset(p_sessions) as s(external_id text);
 
   for v_new in
-    select distinct s.external_id, s.started_at, s.kind
-    from jsonb_to_recordset(p_sessions) as s(external_id text, started_at timestamptz, kind text)
+    select distinct s.external_id, s.started_at, s.kind, s.source_name
+    from jsonb_to_recordset(p_sessions) as s(external_id text, started_at timestamptz, kind text, source_name text)
     where not exists (
       select 1 from public.activity_sessions a
       where a.user_id = v_user and a.provider = p_provider and a.external_id = s.external_id
     )
   loop
+    continue when private.activity_dismissed(v_user, p_provider, v_new.external_id,
+                                             v_new.started_at, v_new.kind, v_new.source_name);
     update public.activity_sessions a
        set external_id = v_new.external_id
      where a.id = (
@@ -132,7 +160,11 @@ begin
   delete from public.activity_sessions a
   where a.user_id = v_user and a.provider = p_provider
     and a.started_at >= p_from and a.ended_at <= p_to
-    and a.external_id <> all (v_seen);
+    and a.external_id <> all (v_seen)
+    and exists (
+      select 1 from jsonb_to_recordset(p_sessions) as s(started_at timestamptz, kind text)
+      where s.started_at = a.started_at and s.kind = a.kind
+    );
   get diagnostics v_deleted = row_count;
 
   return v_rekeyed + v_deleted;
@@ -149,6 +181,7 @@ CREATE TABLE public.activity_session_dismissals (
   external_id text                     NOT NULL,
   kind        text                     NOT NULL,
   started_at  timestamp with time zone NOT NULL,
+  source_name text,
   created_at  timestamp with time zone DEFAULT now() NOT NULL
 );
 
@@ -163,6 +196,9 @@ ALTER TABLE public.activity_session_dismissals
 
 ALTER TABLE public.activity_session_dismissals
   ADD CONSTRAINT activity_session_dismissals_pkey PRIMARY KEY (user_id, PROVIDER, external_id);
+
+ALTER TABLE public.activity_session_dismissals
+  ADD CONSTRAINT activity_session_dismissals_source_name_check CHECK (char_length(source_name) <= 120);
 
 ALTER TABLE public.activity_session_dismissals
   ADD CONSTRAINT activity_session_dismissals_user_id_fkey FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE;
@@ -183,6 +219,7 @@ CREATE TRIGGER activity_sessions_skip_dismissed
   EXECUTE FUNCTION private.skip_dismissed_activity();
 -- Hand-written: the diff emits the grants a function or table ends up with,
 -- not the revokes that shaped them (README, "Things a diff cannot see").
+revoke execute on function private.activity_dismissed(uuid, public.health_provider, text, timestamptz, text, text) from public, anon, authenticated;
 revoke execute on function private.skip_dismissed_activity() from public, anon, authenticated;
 revoke execute on function public.reconcile_activity_sessions(public.health_provider, timestamptz, timestamptz, jsonb, uuid) from public, anon;
 revoke execute on function public.delete_activity_session(uuid) from public, anon;
