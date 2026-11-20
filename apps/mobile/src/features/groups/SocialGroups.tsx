@@ -49,8 +49,9 @@ export function SocialGroups({ inView }: { inView: boolean }) {
   const [askedFor, setAskedFor] = useState<string | null>(null)
   const missing = Boolean(remembered) && !chosen
   // Idle, not merely not fetching: offline the refetch pauses, and a paused
-  // list proves nothing about the group.
-  const settled = Boolean(groups.data) && groups.fetchStatus === 'idle'
+  // list proves nothing about the group. Nor does a failed refetch, which goes
+  // idle too and keeps the old list.
+  const settled = Boolean(groups.data) && groups.fetchStatus === 'idle' && !groups.isError
   const { refetch } = groups
   useEffect(() => {
     if (missing && settled && askedFor !== remembered) {

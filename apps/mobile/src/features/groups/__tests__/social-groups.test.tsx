@@ -13,6 +13,7 @@ const METRICS = {
 const mockPush = jest.fn()
 let mockGroups: GroupSummary[] = []
 let mockFetching = false
+let mockError = false
 const mockRefetch = jest.fn()
 
 jest.mock('@/data/groups', () => ({
@@ -20,7 +21,7 @@ jest.mock('@/data/groups', () => ({
   useMyGroups: () => ({
     data: mockGroups,
     isLoading: false,
-    isError: false,
+    isError: mockError,
     isFetching: mockFetching,
     fetchStatus: mockFetching ? 'fetching' : 'idle',
     refetch: mockRefetch,
@@ -69,6 +70,7 @@ beforeEach(() => {
   mockPush.mockClear()
   mockRefetch.mockReset()
   mockFetching = false
+  mockError = false
   setOpenGroup('me', null)
   mockGroups = [group('g1', 'Test Two'), group('g2', 'Makan Buddies')]
 })
@@ -134,4 +136,27 @@ it('waits for a group just made rather than showing another, and falls back once
   mockFetching = false
   await view.rerender(social())
   expect(screen.getByText('board g1')).toBeOnTheScreen()
+})
+
+it('keeps a group a notification opened when asking for it fails', async () => {
+  // The refetch that should prove the group gone failed instead (a timeout or a
+  // 5xx, with the connection up). React Query keeps the old list and goes idle,
+  // which is not an answer: the group stays chosen for the next fetch.
+  setOpenGroup('me', 'joined-elsewhere')
+  mockRefetch.mockImplementation(() => {
+    mockFetching = true
+  })
+  const view = await render(social())
+  expect(mockRefetch).toHaveBeenCalledTimes(1)
+  await view.rerender(social())
+
+  mockFetching = false
+  mockError = true
+  await view.rerender(social())
+  expect(screen.getByText('board g1')).toBeOnTheScreen()
+
+  mockError = false
+  mockGroups = [...mockGroups, group('joined-elsewhere', 'Lunch Club')]
+  await view.rerender(social())
+  expect(screen.getByText('board joined-elsewhere')).toBeOnTheScreen()
 })
