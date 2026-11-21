@@ -1528,6 +1528,8 @@ export const ja = {
     },
 
     empty: {
+      mineTitle: 'まだレシピがありません',
+      mineBody: 'よく作る料理を保存しておくと、ワンタップで記録できます。',
       communityTitle: 'まだ共有はありません',
       communityBody: '自分のレシピをメニューから共有しましょう。',
     },

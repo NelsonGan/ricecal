@@ -1523,6 +1523,8 @@ export const ko = {
     },
 
     empty: {
+      mineTitle: '아직 레시피가 없습니다',
+      mineBody: '자주 만드는 요리를 저장해 두면 탭 한 번으로 기록할 수 있어요.',
       communityTitle: '아직 공유된 것이 없습니다',
       communityBody: '내 레시피를 메뉴에서 공유해 보세요.',
     },

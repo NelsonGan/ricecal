@@ -113,9 +113,18 @@ beforeEach(() => {
   mockUseRecipes.mockReturnValue({ data: [RECIPE, QUICK], isPending: false })
 })
 
-/** Simulate iOS reporting that the open sheet modal is on screen. */
-async function finishShowing() {
-  const modal = screen.getByTestId('sheet-modal')
+/** Find the open sheet modal containing a heading. */
+function findSheetModal(title: string) {
+  const modal = screen
+    .getAllByTestId('sheet-modal')
+    .find((candidate) => within(candidate).queryByText(title))
+  if (!modal) throw new Error(`Expected open sheet modal with title "${title}"`)
+  return modal
+}
+
+/** Simulate iOS reporting that the sheet modal with `title` is on screen. */
+async function finishShowing(title: string) {
+  const modal = findSheetModal(title)
   await act(async () => {
     modal.props.onShow?.()
   })
@@ -141,23 +150,14 @@ it('keeps the answer on screen while the same shelf refetches', async () => {
   mockUseRecipes.mockReturnValue({ data: [], isPending: false, isFetching: true })
   await render(<RecipesTab />)
 
-  // An empty shelf of your own is the Add card, not skeletons.
-  expect(screen.getByText('Add a recipe')).toBeTruthy()
+  // An empty shelf of your own shows the empty state, not skeletons.
+  expect(screen.getByText('No recipes yet')).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Add a recipe' })).toBeTruthy()
 })
 
-it('steps the Add card aside once the shelf has a few recipes', async () => {
-  mockUseRecipes.mockReturnValue({
-    data: [1, 2, 3, 4].map((n) => ({ ...RECIPE, id: `r${n}`, name: `Recipe ${n}` })),
-    isPending: false,
-  })
+it('shows no inline Add card over recipes and has no filter row', async () => {
   await render(<RecipesTab />)
-
   expect(screen.queryByText('Add a recipe')).toBeNull()
-})
-
-it('keeps the Add card to your own shelf, and has no filter row', async () => {
-  await render(<RecipesTab />)
-  expect(screen.getByText('Add a recipe')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Favourites' })).toBeNull()
 
   await user.press(screen.getByRole('tab', { name: 'Community' }))
@@ -179,32 +179,51 @@ it('logs one serving from the card into today, not the day the diary is on', asy
   )
 })
 
-it('opens the form directly for Write it', async () => {
+async function openAddSheet() {
+  await user.press(screen.getByRole('button', { name: 'New recipe' }))
+  expect(await screen.findByText('Add a recipe')).toBeTruthy()
+  return findSheetModal('Add a recipe')
+}
+
+it('opens the form directly when Write it is picked from the plus sheet', async () => {
   await render(<RecipesTab />)
 
-  await user.press(screen.getByRole('button', { name: 'Write it' }))
+  const addModal = await openAddSheet()
+  await user.press(within(addModal).getByRole('button', { name: 'Write it' }))
+  expect(mockPush).not.toHaveBeenCalled()
+
+  await finishDismissing(addModal)
   expect(mockPush).toHaveBeenCalledWith('/recipe/edit')
 })
 
-it('opens Describe over the tab, stays on the tab on close, and hands off on submit', async () => {
+it('chains plus sheet into Describe over the tab, stays on the tab on close, and hands off on submit', async () => {
   await render(<RecipesTab />)
 
-  await user.press(screen.getByRole('button', { name: 'Describe' }))
+  const firstAdd = await openAddSheet()
+  await user.press(within(firstAdd).getByRole('button', { name: 'Describe' }))
+  expect(screen.queryByText('Describe it')).toBeNull()
+  await waitFor(() => expect(screen.queryByText('Add a recipe')).toBeNull())
+  await finishDismissing(firstAdd)
+
   expect(mockRequirePro).toHaveBeenCalledWith('read_recipe')
-  const firstModal = await finishShowing()
   expect(await screen.findByText('Describe it')).toBeTruthy()
+  const firstModal = await finishShowing('Describe it')
   expect(mockPush).not.toHaveBeenCalled()
 
   // Closing the sheet leaves the user on the Recipes tab with no navigation.
-  await user.press(screen.getByRole('button', { name: 'Close' }))
+  await user.press(within(firstModal).getByRole('button', { name: 'Close' }))
   await waitFor(() => expect(screen.queryByText('Describe it')).toBeNull())
   await finishDismissing(firstModal)
   expect(mockPush).not.toHaveBeenCalled()
-  expect(screen.getByText('Add a recipe')).toBeTruthy()
+  expect(screen.getByText('Kari ayam')).toBeTruthy()
 
   // Submitting stages the description and pushes `/recipe/edit?read=1` after dismissal.
-  await user.press(screen.getByRole('button', { name: 'Describe' }))
-  const secondModal = await finishShowing()
+  const secondAdd = await openAddSheet()
+  await user.press(within(secondAdd).getByRole('button', { name: 'Describe' }))
+  await waitFor(() => expect(screen.queryByText('Add a recipe')).toBeNull())
+  await finishDismissing(secondAdd)
+  expect(await screen.findByText('Describe it')).toBeTruthy()
+  const secondModal = await finishShowing('Describe it')
   const field = await screen.findByPlaceholderText(/Kari ayam/)
   await fireEvent.changeText(field, 'Chicken curry, feeds four')
   await user.press(screen.getByRole('button', { name: 'Fill in the form' }))
@@ -215,50 +234,36 @@ it('opens Describe over the tab, stays on the tab on close, and hands off on sub
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/recipe/edit', params: { read: '1' } })
 })
 
-it('opens Photo over the tab, stays on the tab on close, and hands off a capture', async () => {
+it('chains plus sheet into Photo over the tab, stays on the tab on close, and hands off a capture', async () => {
   await render(<RecipesTab />)
 
-  await user.press(screen.getByRole('button', { name: 'Photo' }))
+  const firstAdd = await openAddSheet()
+  await user.press(within(firstAdd).getByRole('button', { name: 'Photo' }))
+  await waitFor(() => expect(screen.queryByText('Add a recipe')).toBeNull())
+  await finishDismissing(firstAdd)
   expect(mockRequirePro).toHaveBeenCalledWith('read_recipe')
   expect(await screen.findByText('Fill it in from a photo')).toBeTruthy()
   expect(mockPush).not.toHaveBeenCalled()
 
   // Closing the photo sheet returns directly to the Recipes tab with no navigation.
-  const firstModal = screen.getByTestId('sheet-modal')
-  await user.press(screen.getByRole('button', { name: 'Close' }))
+  const firstModal = findSheetModal('Fill it in from a photo')
+  await user.press(within(firstModal).getByRole('button', { name: 'Close' }))
   await waitFor(() => expect(screen.queryByText('Fill it in from a photo')).toBeNull())
   await finishDismissing(firstModal)
   expect(mockPush).not.toHaveBeenCalled()
-  expect(screen.getByText('Add a recipe')).toBeTruthy()
+  expect(screen.getByText('Kari ayam')).toBeTruthy()
 
   // Capturing stages the photo and opens `/recipe/edit?read=1` after dismissal.
-  await user.press(screen.getByRole('button', { name: 'Photo' }))
+  const secondAdd = await openAddSheet()
+  await user.press(within(secondAdd).getByRole('button', { name: 'Photo' }))
+  await waitFor(() => expect(screen.queryByText('Add a recipe')).toBeNull())
+  await finishDismissing(secondAdd)
   expect(await screen.findByText('Fill it in from a photo')).toBeTruthy()
-  const secondModal = screen.getByTestId('sheet-modal')
-  await user.press(screen.getByRole('button', { name: 'Capture photo' }))
+  const secondModal = findSheetModal('Fill it in from a photo')
+  await user.press(within(secondModal).getByRole('button', { name: 'Capture photo' }))
   await finishDismissing(secondModal)
   expect(peekRecipeRead()).toEqual({ kind: 'photo', uri: 'file:///recipe.jpg' })
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/recipe/edit', params: { read: '1' } })
-})
-
-it('opens the three-way menu in a sheet from the header plus button and chains into Describe', async () => {
-  mockUseRecipes.mockReturnValue({
-    data: [1, 2, 3, 4].map((n) => ({ ...RECIPE, id: `r${n}`, name: `Recipe ${n}` })),
-    isPending: false,
-  })
-  await render(<RecipesTab />)
-  expect(screen.queryByText('Add a recipe')).toBeNull()
-
-  await user.press(screen.getByRole('button', { name: 'New recipe' }))
-  expect(await screen.findByText('Add a recipe')).toBeTruthy()
-
-  const addModal = screen.getByTestId('sheet-modal')
-  await user.press(within(addModal).getByRole('button', { name: 'Describe' }))
-  expect(screen.queryByText('Describe it')).toBeNull()
-
-  await finishDismissing(addModal)
-  expect(await screen.findByText('Describe it')).toBeTruthy()
-  expect(mockPush).not.toHaveBeenCalled()
 })
 
 it('shows no price and no quick log on a recipe with nothing in it yet', async () => {

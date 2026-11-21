@@ -1520,6 +1520,8 @@ export const zhHans = {
     },
 
     empty: {
+      mineTitle: '还没有食谱',
+      mineBody: '保存常做的菜肴，一键即可记录。',
       communityTitle: '还没有人分享',
       communityBody: '从你的食谱菜单里分享一个吧。',
     },

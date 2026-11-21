@@ -1520,6 +1520,8 @@ export const zhHant = {
     },
 
     empty: {
+      mineTitle: '還沒有食譜',
+      mineBody: '儲存常做的菜餚，一鍵即可記錄。',
       communityTitle: '還沒有人分享',
       communityBody: '從你的食譜選單分享一個吧。',
     },

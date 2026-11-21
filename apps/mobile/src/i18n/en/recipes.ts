@@ -55,6 +55,8 @@ export const recipes = {
   },
 
   empty: {
+    mineTitle: 'No recipes yet',
+    mineBody: 'Save the dishes you cook often to log them in one tap.',
     communityTitle: 'Nothing shared yet',
     communityBody: 'Share one of yours from its menu.',
   },

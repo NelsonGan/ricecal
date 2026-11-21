@@ -1554,6 +1554,8 @@ export const fil = {
     },
 
     empty: {
+      mineTitle: 'Wala pang resipi',
+      mineBody: 'I-save ang mga ulam na madalas mong niluluto para ma-log sa isang tap.',
       communityTitle: 'Wala pang ibinabahagi',
       communityBody: 'Ibahagi ang isa sa iyo mula sa menu nito.',
     },

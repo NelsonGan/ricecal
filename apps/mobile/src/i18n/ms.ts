@@ -1554,6 +1554,8 @@ export const ms = {
     },
 
     empty: {
+      mineTitle: 'Belum ada resipi',
+      mineBody: 'Simpan hidangan yang kerap anda masak untuk log dengan satu ketikan.',
       communityTitle: 'Belum ada yang dikongsi',
       communityBody: 'Kongsi resipi anda dari menunya.',
     },

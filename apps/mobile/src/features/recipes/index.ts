@@ -9,12 +9,10 @@
  */
 
 export {
-  AddRecipeCard,
-  type AddRecipeCardProps,
   AddRecipeTiles,
   type AddRecipeTilesProps,
   type RecipeStart,
-} from './AddRecipeCard'
+} from './AddRecipeTiles'
 export {
   type IngredientChoice,
   type IngredientKey,

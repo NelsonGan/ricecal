@@ -7,7 +7,6 @@ import { type Recipe, type RecipeShelf, useRecipeQuota, useRecipes } from '@/dat
 import { InlineCamera } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import {
-  AddRecipeCard,
   AddRecipeTiles,
   DescribeRecipePanel,
   RecipeCard,
@@ -20,6 +19,7 @@ import { ScreenTitle } from '@/features/shared'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
 import {
+  Button,
   EmptyState,
   Icon,
   IconButton,
@@ -35,18 +35,15 @@ const SHELVES: RecipeShelf[] = ['mine', 'community']
 
 const SKELETON_CARDS = ['c1', 'c2', 'c3', 'c4'] as const
 
-/** How many recipes your shelf holds before the Add card steps aside. */
-const ADD_CARD_UNTIL = 4
-
 /**
  * The Recipes tab: everything this account cooks, and what other people share.
  *
  * It used to be "My foods", a row in Settings, and it was a shelf of tiles with a
  * calorie figure under each. People who cook asked for a recipe box, so the tab
  * reads like one: the picture and the time first (the meta line under each
- * card), the three ways to write one in at the top of your own shelf, and the
- * one-tap log still on every card, because logging what you cooked is what the
- * rest of the app is for.
+ * card), the plus button opening the three ways to add a recipe in a sheet, and
+ * the one-tap log still on every card, because logging what you cooked is what
+ * the rest of the app is for.
  *
  * There was a row of filter chips (favourites, under 30 minutes, meal tags)
  * under the shelf control. It made the top of the tab busy for a shelf most
@@ -95,12 +92,6 @@ export default function RecipesTab() {
   // does not blink the grid into skeletons and back.
   const loading = isPending
   const searched = activeQuery.trim().length > 0
-  /**
-   * The three ways in, while your shelf is still short. Past a few recipes it
-   * was most of the first screen on every visit, and the plus in the bar opens
-   * the same three choices in a sheet.
-   */
-  const showAdd = shelf === 'mine' && !searched && !loading && recipes.length < ADD_CARD_UNTIL
   // Not while the entitlement is still loading: until it lands every account
   // looks free, and a Pro user saw "0 of 3 free" flash past.
   const freeQuota =
@@ -238,8 +229,6 @@ export default function RecipesTab() {
         />
       ) : null}
 
-      {showAdd ? <AddRecipeCard onStart={startNew} free={freeQuota} /> : null}
-
       {/* The wait holds the grid's two-column shape, so the answer landing does
           not jump a stack of rows into wide cards. */}
       {loading ? (
@@ -263,9 +252,14 @@ export default function RecipesTab() {
             description={t('recipes:search.noneBody')}
             icon={{ set: 'ui', name: 'search' }}
           />
-        ) : showAdd ? null : (
-          // Your own empty shelf has the Add card above, which already says
-          // everything an empty state would.
+        ) : shelf === 'mine' ? (
+          <EmptyState
+            title={t('recipes:empty.mineTitle')}
+            description={t('recipes:empty.mineBody')}
+            icon={{ set: 'food', name: 'cooking-pot' }}
+            action={<Button onPress={openAddSheet}>{t('recipes:add.title')}</Button>}
+          />
+        ) : (
           <EmptyState
             title={t('recipes:empty.communityTitle')}
             description={t('recipes:empty.communityBody')}
