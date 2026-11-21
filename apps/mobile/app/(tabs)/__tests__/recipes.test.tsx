@@ -18,7 +18,8 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/data', () => ({
-  RECIPE_TAGS: ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink'],
+  isRecipeTag: jest.requireActual('@/data/types').isRecipeTag,
+  RECIPE_TAGS: jest.requireActual('@/data/types').RECIPE_TAGS,
   snapshotFromRecipe: (recipe: { name: string }) => ({ name: recipe.name }),
   storedImageSource: () => undefined,
   useLogFood: () => ({ mutate: mockLog, isPending: false }),
@@ -85,7 +86,7 @@ const user = userEvent.setup()
 beforeEach(() => {
   jest.clearAllMocks()
   mockRequirePro.mockReturnValue(true)
-  mockUseRecipes.mockReturnValue({ data: [RECIPE, QUICK], isFetching: false })
+  mockUseRecipes.mockReturnValue({ data: [RECIPE, QUICK], isPending: false })
 })
 
 it('shows each recipe with its time and servings', async () => {
@@ -96,16 +97,24 @@ it('shows each recipe with its time and servings', async () => {
   expect(screen.getByText('10 min · 1 serving')).toBeTruthy()
 })
 
-it('narrows by meal on the server and by time on the phone', async () => {
+it('narrows by meal, by time and by star on the server, before its row limit', async () => {
   await render(<RecipesTab />)
 
   await user.press(screen.getByRole('button', { name: 'Dinner' }))
   expect(mockUseRecipes).toHaveBeenLastCalledWith('mine', '', { tag: 'dinner' })
 
   await user.press(screen.getByRole('button', { name: 'Under 30 min' }))
-  expect(mockUseRecipes).toHaveBeenLastCalledWith('mine', '', {})
-  expect(screen.queryByText('Kari ayam')).toBeNull()
-  expect(screen.getByText('Telur dadar')).toBeTruthy()
+  expect(mockUseRecipes).toHaveBeenLastCalledWith('mine', '', { quick: true })
+
+  await user.press(screen.getByRole('button', { name: 'Favourites' }))
+  expect(mockUseRecipes).toHaveBeenLastCalledWith('mine', '', { favourites: true })
+})
+
+it('keeps the answer on screen while the same shelf refetches', async () => {
+  mockUseRecipes.mockReturnValue({ data: [], isPending: false, isFetching: true })
+  await render(<RecipesTab />)
+
+  expect(screen.getByText('No recipes yet')).toBeTruthy()
 })
 
 it('offers favourites on your own shelf only', async () => {

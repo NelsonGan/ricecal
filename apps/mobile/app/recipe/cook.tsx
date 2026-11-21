@@ -1,22 +1,18 @@
 import { useKeepAwake } from 'expo-keep-awake'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import {
-  snapshotFromRecipe,
-  useLogFood,
-  useRecipe,
-  useRecipeIngredients,
-  useSelectedDate,
-} from '@/data'
+import { useLogFood, useRecipe, useRecipeIngredients, useSelectedDate } from '@/data'
 import {
   IngredientChecklist,
   ingredientsInStep,
+  recipeLog,
   scaleIngredient,
   splitSteps,
   useIngredientMeasure,
+  useTickedIngredients,
 } from '@/features/recipes'
 import { useBack } from '@/lib/navigation'
 import {
@@ -48,7 +44,6 @@ import {
 export default function CookModeScreen() {
   useKeepAwake('recipe-cook')
   const { t } = useTranslation(['recipes', 'common'])
-  const router = useRouter()
   const toast = useToast()
   const params = useLocalSearchParams<{ id: string; servings?: string }>()
   const goBack = useBack(params.id ? `/recipe/${params.id}` : '/recipes')
@@ -62,7 +57,7 @@ export default function CookModeScreen() {
   const [index, setIndex] = useState(0)
   const [finished, setFinished] = useState(false)
   const [showIngredients, setShowIngredients] = useState(false)
-  const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set())
+  const [ticked, toggleTick] = useTickedIngredients()
 
   const header = (
     <AppBar
@@ -128,25 +123,15 @@ export default function CookModeScreen() {
   const last = index >= steps.length - 1
   const needed = ingredientsInStep(step, ingredients)
 
+  // `goBack` rather than `router.back()`: cook mode can be the first screen in
+  // the stack (a link, or a cold start restoring the route), and a GO_BACK with
+  // no history would leave the cook on this page with a log button that logs
+  // again on every tap.
   const logServing = () => {
-    logFood.mutate({
-      snapshot: snapshotFromRecipe(recipe),
-      quantity: 1,
-      logDate: selectedDate,
-      source: 'quickAdd',
-      method: 'recipe',
-    })
+    logFood.mutate(recipeLog(recipe, 1, selectedDate))
     toast.show({ title: t('recipes:detail.added'), tone: 'success' })
-    router.back()
+    goBack()
   }
-
-  const toggleTick = (id: string) =>
-    setTicked((current) => {
-      const next = new Set(current)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
 
   if (finished) {
     return (
@@ -154,7 +139,7 @@ export default function CookModeScreen() {
         header={header}
         footer={
           <View className="flex-row gap-2.5">
-            <Button className="flex-1" variant="secondary" onPress={() => router.back()}>
+            <Button className="flex-1" variant="secondary" onPress={() => goBack()}>
               {t('recipes:cook.finishedSkip')}
             </Button>
             <Button className="flex-1" loading={logFood.isPending} onPress={logServing}>

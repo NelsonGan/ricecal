@@ -4,12 +4,11 @@ import { useTranslation } from 'react-i18next'
 import { Keyboard, ScrollView, type TextInputInstance, View } from 'react-native'
 
 import {
+  isRecipeTag,
   RECIPE_TAGS,
   type Recipe,
   type RecipeQueryFilter,
   type RecipeShelf,
-  type RecipeTag,
-  snapshotFromRecipe,
   useLogFood,
   useRecipeQuota,
   useRecipes,
@@ -18,10 +17,10 @@ import {
 import { useRequirePro } from '@/features/paywall'
 import {
   AddRecipeCard,
-  matchesFilter,
   RecipeCard,
   type RecipeFilter,
   type RecipeStart,
+  recipeLog,
 } from '@/features/recipes'
 import { ScreenTitle } from '@/features/shared'
 import { useDebouncedValue } from '@/lib/use-debounce'
@@ -42,9 +41,6 @@ const SHELVES: RecipeShelf[] = ['mine', 'community']
 
 const SKELETON_CARDS = ['c1', 'c2', 'c3', 'c4'] as const
 
-const isTag = (value: string): value is RecipeTag =>
-  (RECIPE_TAGS as readonly string[]).includes(value)
-
 /**
  * The Recipes tab: everything this account cooks, and what other people share.
  *
@@ -56,8 +52,8 @@ const isTag = (value: string): value is RecipeTag =>
  * the rest of the app is for.
  *
  * The shelf and the chips are two questions, whose and which, so they are two
- * controls. A tag and the favourites narrow the query itself; "quick" is prep
- * plus cook, which the API cannot sum, so it filters what came back.
+ * controls. Every chip narrows the query itself, before its row limit, so a
+ * quick dinner at row 150 is still found.
  */
 export default function RecipesTab() {
   const { t } = useTranslation(['recipes', 'common'])
@@ -80,13 +76,19 @@ export default function RecipesTab() {
   const activeQuery = searchOpen && query.trim().length > 0 ? debounced : ''
 
   const serverFilter: RecipeQueryFilter =
-    filter === 'favourites' ? { favourites: true } : isTag(filter) ? { tag: filter } : {}
-  const { data: rows = [], isFetching } = useRecipes(shelf, activeQuery, serverFilter)
-  const recipes = filter === 'quick' ? rows.filter((row) => matchesFilter(row, 'quick')) : rows
+    filter === 'favourites'
+      ? { favourites: true }
+      : filter === 'quick'
+        ? { quick: true }
+        : isRecipeTag(filter)
+          ? { tag: filter }
+          : {}
+  const { data: recipes = [], isPending } = useRecipes(shelf, activeQuery, serverFilter)
 
-  // Only while there is nothing to show. Skeletons over a list that already has
-  // rows in it makes a refetch look like a reload.
-  const loading = isFetching && recipes.length === 0
+  // Only while this shelf and chip have never answered. A background refetch
+  // keeps what is on screen, an empty answer included, so logging from a card
+  // does not blink the grid into skeletons and back.
+  const loading = isPending
   const searched = activeQuery.trim().length > 0
   const narrowed = searched || filter !== 'all'
 
@@ -126,20 +128,11 @@ export default function RecipesTab() {
    * detail screen gives: logging a pot reaches no model and costs nothing.
    */
   const logOne = (recipe: Recipe) => {
-    logFood.mutate(
-      {
-        snapshot: snapshotFromRecipe(recipe),
-        quantity: 1,
-        logDate: selectedDate,
-        source: 'quickAdd',
-        method: 'recipe',
-      },
-      {
-        onSuccess: () =>
-          toast.show({ title: t('recipes:card.logged', { name: recipe.name }), tone: 'success' }),
-        onError: () => toast.show({ title: t('recipes:edit.saveFailed'), tone: 'error' }),
-      },
-    )
+    logFood.mutate(recipeLog(recipe, 1, selectedDate), {
+      onSuccess: () =>
+        toast.show({ title: t('recipes:card.logged', { name: recipe.name }), tone: 'success' }),
+      onError: () => toast.show({ title: t('recipes:edit.saveFailed'), tone: 'error' }),
+    })
   }
 
   return (

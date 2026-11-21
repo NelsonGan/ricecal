@@ -1,4 +1,7 @@
-import type { Recipe, RecipeIngredientInput, RecipeTag } from '@/data'
+import type { LogInput, Recipe, RecipeIngredientInput, RecipeTag } from '@/data'
+// The module itself rather than the `@/data` barrel, which would pull in the
+// client and the router and make this file anything but pure.
+import { snapshotFromRecipe } from '@/data/snapshot'
 
 /**
  * The cook's side of a recipe: how long it takes, how much of each thing goes
@@ -29,22 +32,25 @@ export function scaleIngredient<T extends Pick<RecipeIngredientInput, 'amount'>>
 }
 
 /**
- * The chips over the Recipes shelf. `all` keeps everything; `favourites` and
- * `quick` read the row; the rest are meal tags.
+ * The chips over the Recipes shelf: everything, the owner's favourites, quick
+ * ones (`QUICK_RECIPE_MINUTES`), or one meal tag. Each one is a server filter;
+ * see `RecipeQueryFilter`.
  */
 export type RecipeFilter = 'all' | 'favourites' | 'quick' | RecipeTag
 
-/** What "quick" means: on the table in half an hour, prep included. */
-export const QUICK_MINUTES = 30
-
-export function matchesFilter(recipe: Recipe, filter: RecipeFilter): boolean {
-  if (filter === 'all') return true
-  if (filter === 'favourites') return recipe.isFavourite
-  if (filter === 'quick') {
-    const total = totalMinutes(recipe)
-    return total != null && total <= QUICK_MINUTES
+/**
+ * Servings of a recipe as a diary entry. One builder for the card's plus, the
+ * recipe's own sheet and the end of cook mode, so the three cannot drift on
+ * where the entry says it came from.
+ */
+export function recipeLog(recipe: Recipe, quantity: number, logDate: string): LogInput {
+  return {
+    snapshot: snapshotFromRecipe(recipe),
+    quantity,
+    logDate,
+    source: 'quickAdd',
+    method: 'recipe',
   }
-  return recipe.tags.includes(filter)
 }
 
 /**

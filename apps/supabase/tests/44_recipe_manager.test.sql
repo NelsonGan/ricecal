@@ -11,7 +11,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(17);
 
 \set cook   'c0c0c0c0-0000-4000-8000-000000000001'
 \set reader 'c0c0c0c0-0000-4000-8000-000000000002'
@@ -47,10 +47,10 @@ select id as recipe_id, share_slug as slug
   from public.recipes where name = 'rm-fixture-kari' \gset
 
 select results_eq(
-  format($$select prep_minutes::int, cook_minutes::int, tags, source_url, is_favourite
+  format($$select prep_minutes::int, cook_minutes::int, tags, source_url, is_favourite, total_minutes
              from public.recipe_details where id = %L$$, :'recipe_id'),
-  $$values (20, 50, '{lunch,dinner}'::text[], 'https://www.instagram.com/reel/abc'::text, true)$$,
-  'the owner reads every new column back through the view'
+  $$values (20, 50, '{lunch,dinner}'::text[], 'https://www.instagram.com/reel/abc'::text, true, 70)$$,
+  'the owner reads every new column back through the view, and prep plus cook'
 );
 
 select lives_ok(
@@ -106,10 +106,27 @@ select is(
   'the source link is nulled for anybody but its owner'
 );
 
+-- Starred again as the cook, below, so this proves the reader's view hides it.
+reset role;
+update public.recipes set is_favourite = true where id = :'recipe_id';
+set local role authenticated;
+
+select is(
+  (select is_favourite from public.recipe_details where id = :'recipe_id'),
+  false,
+  'and so is the cook''s star, which would otherwise draw on the reader''s card'
+);
+
+select is(
+  (select total_minutes from public.recipe_details where id = :'recipe_id'),
+  65,
+  'the reader gets the total time, for the quick filter'
+);
+
 select is(
   (select source_url from public.get_shared_recipe(:'slug')),
   null,
-  'and through a shared link too'
+  'a shared link nulls the source link too'
 );
 
 select is(
@@ -118,14 +135,20 @@ select is(
   'a shared link carries the times'
 );
 
+select is(
+  (select is_favourite from public.get_shared_recipe(:'slug')),
+  false,
+  'and not the cook''s star'
+);
+
 select lives_ok(
-  format($$update public.recipes set is_favourite = true where id = %L$$, :'recipe_id'),
-  'starring somebody else''s recipe is not an error'
+  format($$update public.recipes set cook_minutes = 1 where id = %L$$, :'recipe_id'),
+  'writing somebody else''s recipe is not an error'
 );
 reset role;
 select is(
-  (select is_favourite from public.recipes where id = :'recipe_id'),
-  false,
+  (select cook_minutes::int from public.recipes where id = :'recipe_id'),
+  45,
   'but it changes nothing: the update policy is own-only'
 );
 

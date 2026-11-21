@@ -9,11 +9,10 @@ import type {
   RecipeIngredient,
   RecipeIngredientRow,
   RecipeRow,
-  RecipeTag,
   RecipeUnit,
   Serving,
 } from './types'
-import { fromDbSource, RECIPE_TAGS } from './types'
+import { fromDbSource, isRecipeTag } from './types'
 
 /**
  * Row shapes to domain shapes.
@@ -165,9 +164,7 @@ export function toRecipe(row: RecipeRow): Recipe {
     cookMinutes: row.cook_minutes ?? undefined,
     // Filtered, so a key a newer build wrote is dropped here rather than drawn
     // as a chip with no words on it.
-    tags: (row.tags ?? []).filter((tag): tag is RecipeTag =>
-      (RECIPE_TAGS as readonly string[]).includes(tag),
-    ),
+    tags: (row.tags ?? []).filter(isRecipeTag),
     sourceUrl: row.source_url ?? undefined,
     isFavourite: row.is_favourite ?? false,
   }

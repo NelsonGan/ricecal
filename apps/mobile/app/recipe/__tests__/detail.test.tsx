@@ -72,9 +72,11 @@ jest.mock('@/features/recipes', () => ({
   IngredientChecklist: () => null,
   RecipeStats: () => null,
   RecipeSteps: () => null,
+  recipeLog: jest.fn(),
   sourceHost: (url: string) => url,
   ShareSheet: () => null,
   useCopyRecipe: () => ({ copy: jest.fn(), busy: false }),
+  useTickedIngredients: () => [new Set(), jest.fn()],
 }))
 jest.mock('@/features/shared', () => ({ MealPhoto: () => null }))
 jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))

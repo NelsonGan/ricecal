@@ -98,6 +98,7 @@ export {
   isStorableAmount,
   isStorablePerUnit,
   type PublishResult,
+  QUICK_RECIPE_MINUTES,
   type RecipeIngredientInput,
   type RecipeInput,
   type RecipeQueryFilter,

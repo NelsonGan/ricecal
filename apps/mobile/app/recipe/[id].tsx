@@ -7,7 +7,6 @@ import { View } from 'react-native'
 import {
   REPORT_REASONS,
   type ReportReason,
-  snapshotFromRecipe,
   storedImageSource,
   useBlockAuthor,
   useDeleteRecipe,
@@ -23,9 +22,11 @@ import {
   IngredientChecklist,
   RecipeStats,
   RecipeSteps,
+  recipeLog,
   ShareSheet,
   sourceHost,
   useCopyRecipe,
+  useTickedIngredients,
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
@@ -99,7 +100,7 @@ export default function RecipeDetailScreen() {
    */
   const [cookingFor, setCookingFor] = useState<number | null>(null)
   /** Ingredients already in the pot. This visit only; see `IngredientChecklist`. */
-  const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set())
+  const [ticked, toggleTick] = useTickedIngredients()
   /**
    * How many servings are being logged. The chips in the log sheet are
    * shortcuts to values of it.
@@ -219,13 +220,7 @@ export default function RecipeDetailScreen() {
     // it is free for the same reason searching the catalogue is. What a free
     // account is limited on is how many recipes it may KEEP, which is checked
     // where one is created rather than where one is logged.
-    logFood.mutate({
-      snapshot: snapshotFromRecipe(recipe),
-      quantity,
-      logDate: selectedDate,
-      source: 'quickAdd',
-      method: 'recipe',
-    })
+    logFood.mutate(recipeLog(recipe, quantity, selectedDate))
     setLogging(false)
     toast.show({ title: t('recipes:detail.added'), tone: 'success' })
   }
@@ -234,14 +229,6 @@ export default function RecipeDetailScreen() {
     const newId = await copyRecipe({ recipeId: recipe.id, shareSlug: sharedSlug })
     if (newId) router.replace({ pathname: '/recipe/[id]', params: { id: newId } })
   }
-
-  const toggleTick = (ingredientId: string) =>
-    setTicked((current) => {
-      const next = new Set(current)
-      if (next.has(ingredientId)) next.delete(ingredientId)
-      else next.add(ingredientId)
-      return next
-    })
 
   const startCooking = () =>
     router.push({

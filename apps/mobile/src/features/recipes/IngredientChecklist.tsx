@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -14,6 +15,23 @@ export type IngredientChecklistProps = {
   cooking: number
   ticked: ReadonlySet<string>
   onToggle: (id: string) => void
+}
+
+/**
+ * Which ingredients are already in the pot, and a toggle for one. Shared by the
+ * recipe page and cook mode, which each keep their own: a tick is about one
+ * visit to the stove.
+ */
+export function useTickedIngredients() {
+  const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set())
+  const toggle = (id: string) =>
+    setTicked((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  return [ticked, toggle] as const
 }
 
 /**

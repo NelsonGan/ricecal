@@ -39,17 +39,20 @@ export type RecipeShelf = 'mine' | 'community'
 
 const RECIPE_COLUMNS = '*'
 
+/** What "quick" means on the Recipes tab: on the table in half an hour, prep included. */
+export const QUICK_RECIPE_MINUTES = 30
+
 /**
- * What the Recipes tab's chips narrow a shelf to on the server: one meal tag,
- * or the owner's favourites. "Quick" is not here, because prep plus cook is a
- * sum PostgREST cannot filter on; the tab filters that one itself.
+ * What the Recipes tab's chips narrow a shelf to, on the server and before the
+ * row limit: one meal tag, the owner's favourites, or quick ones
+ * (`recipe_details.total_minutes`, prep plus cook).
  */
-export type RecipeQueryFilter = { tag?: RecipeTag; favourites?: boolean }
+export type RecipeQueryFilter = { tag?: RecipeTag; favourites?: boolean; quick?: boolean }
 
 export function useRecipes(shelf: RecipeShelf, query = '', filter: RecipeQueryFilter = {}) {
   const userId = useUserId()
   const needle = query.trim()
-  const filterKey = filter.favourites ? 'favourites' : (filter.tag ?? '')
+  const filterKey = filter.favourites ? 'favourites' : filter.quick ? 'quick' : (filter.tag ?? '')
 
   return useQuery({
     queryKey: keys.recipes(userId, shelf, needle, filterKey),
@@ -79,6 +82,7 @@ export function useRecipes(shelf: RecipeShelf, query = '', filter: RecipeQueryFi
       if (needle) request = request.ilike('name', `%${needle}%`)
       if (filter.tag) request = request.contains('tags', [filter.tag])
       if (filter.favourites) request = request.eq('is_favourite', true)
+      if (filter.quick) request = request.lte('total_minutes', QUICK_RECIPE_MINUTES)
 
       return unwrap(await request.limit(100)).map(toRecipe)
     },
@@ -426,6 +430,9 @@ export function useSaveRecipe() {
   })
 }
 
+/** Every single-recipe query, by row id or by share slug: `keys.recipe`'s prefix. */
+const RECIPE_PREFIX = ['recipe'] as const
+
 /**
  * Star one of your own recipes, or take the star off. Optimistic, because a
  * heart that waits a round trip to fill reads as a missed tap; the shelves and
@@ -446,9 +453,16 @@ export function useFavouriteRecipe() {
           .select('id'),
       )
     },
-    onMutate: ({ id, favourite }) => {
-      queryClient.setQueryData<Recipe | null>(keys.recipe(id), (current) =>
-        current ? { ...current, isFavourite: favourite } : current,
+    onMutate: async ({ id, favourite }) => {
+      // A refetch already in flight would land after this and put the old star
+      // back. And the recipe is cached under whatever opened it, the row id or
+      // a share link's slug, so every single-recipe query is matched by its row.
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey: keys.recipesAll(userId) }),
+        queryClient.cancelQueries({ queryKey: RECIPE_PREFIX }),
+      ])
+      queryClient.setQueriesData<Recipe | null>({ queryKey: RECIPE_PREFIX }, (current) =>
+        current?.id === id ? { ...current, isFavourite: favourite } : current,
       )
       queryClient.setQueriesData<Recipe[]>({ queryKey: keys.recipesAll(userId) }, (current) =>
         Array.isArray(current)
@@ -458,9 +472,9 @@ export function useFavouriteRecipe() {
           : current,
       )
     },
-    onSettled: (_data, _error, { id }) => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.recipe(id) })
+      queryClient.invalidateQueries({ queryKey: RECIPE_PREFIX })
     },
   })
 }

@@ -1,9 +1,9 @@
 import type { Recipe } from '@/data'
 import {
   ingredientsInStep,
-  matchesFilter,
   normaliseSourceUrl,
   parseMinutes,
+  recipeLog,
   scaleIngredient,
   sourceHost,
   totalMinutes,
@@ -34,18 +34,22 @@ describe('scaleIngredient', () => {
   })
 })
 
-describe('matchesFilter', () => {
-  it('reads quick as prep plus cook, and never guesses an untimed recipe', () => {
-    expect(matchesFilter({ ...base, prepMinutes: 10, cookMinutes: 20 }, 'quick')).toBe(true)
-    expect(matchesFilter({ ...base, prepMinutes: 10, cookMinutes: 21 }, 'quick')).toBe(false)
-    expect(matchesFilter(base, 'quick')).toBe(false)
-  })
-
-  it('keeps tags and favourites', () => {
-    expect(matchesFilter({ ...base, tags: ['dinner'] }, 'dinner')).toBe(true)
-    expect(matchesFilter({ ...base, tags: ['lunch'] }, 'dinner')).toBe(false)
-    expect(matchesFilter({ ...base, isFavourite: true }, 'favourites')).toBe(true)
-    expect(matchesFilter(base, 'all')).toBe(true)
+describe('recipeLog', () => {
+  it('logs servings of the pot as a recipe entry on the given day', () => {
+    const recipe = {
+      ...base,
+      id: 'r1',
+      name: 'Kari ayam',
+      perServing: { kcal: 512, carbs: 30, protein: 17, fat: 8 },
+    } as Recipe
+    expect(recipeLog(recipe, 2, '2026-11-21')).toEqual(
+      expect.objectContaining({
+        quantity: 2,
+        logDate: '2026-11-21',
+        source: 'quickAdd',
+        method: 'recipe',
+      }),
+    )
   })
 })
 

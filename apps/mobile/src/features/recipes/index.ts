@@ -19,17 +19,20 @@ export {
 export {
   ingredientsInStep,
   MAX_MINUTES,
-  matchesFilter,
   normaliseSourceUrl,
   parseMinutes,
-  QUICK_MINUTES,
   type RecipeFilter,
+  recipeLog,
   scaleIngredient,
   sourceHost,
   totalMinutes,
 } from './cooking'
 export { DescribeRecipePanel, type DescribeRecipePanelProps } from './DescribeRecipePanel'
-export { IngredientChecklist, type IngredientChecklistProps } from './IngredientChecklist'
+export {
+  IngredientChecklist,
+  type IngredientChecklistProps,
+  useTickedIngredients,
+} from './IngredientChecklist'
 export {
   IngredientSheet,
   type IngredientSheetProps,

@@ -319,6 +319,9 @@ export type Recipe = {
 export const RECIPE_TAGS = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink'] as const
 export type RecipeTag = (typeof RECIPE_TAGS)[number]
 
+export const isRecipeTag = (value: string): value is RecipeTag =>
+  (RECIPE_TAGS as readonly string[]).includes(value)
+
 export type Targets = {
   kcal: number
   carbs: number

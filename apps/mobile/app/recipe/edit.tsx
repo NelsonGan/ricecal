@@ -426,19 +426,23 @@ export default function RecipeFormScreen() {
     router.replace({ pathname: '/recipe/[id]', params: { id: result.id } })
   }
 
+  /**
+   * The manual form is one branch of the new-recipe chooser, so its chevron
+   * returns there without throwing away anything already typed. Not when the
+   * tab's "Write it" tile opened the form directly: that cook never saw the
+   * chooser, and backing into it would be a page they did not come from. The
+   * cross is the boundary that confirms before leaving the screen.
+   */
+  const formCanGoBack = !recipeId && start !== 'manual' && mode === 'form' && !reading
+
   const leave = () => {
-    // The manual form is one branch of the new-food chooser, so its chevron
-    // returns there without throwing away anything already typed. The chooser's
-    // own cross remains the boundary that confirms before leaving the screen.
-    if (!recipeId && mode === 'form' && !reading) {
+    if (formCanGoBack) {
       setMode('choose')
       return
     }
     if (dirty) setLeaving(true)
     else goBack()
   }
-
-  const formCanGoBack = !recipeId && mode === 'form' && !reading
 
   return (
     <Screen

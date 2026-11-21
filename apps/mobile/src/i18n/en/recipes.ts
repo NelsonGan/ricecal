@@ -121,7 +121,6 @@ export const recipes = {
     title: 'Edit recipe',
     name: 'NAME',
     namePlaceholder: 'What do you call it?',
-    picture: 'PICTURE',
     changePicture: 'Change the picture',
     /**
      * The one choice in this form that throws something away: a drawing over a
@@ -130,7 +129,6 @@ export const recipes = {
     replacePhotoTitle: 'Use a drawing instead?',
     replacePhotoBody: 'The photo of this recipe will be removed.',
     replacePhotoConfirm: 'Use the drawing',
-    servings: 'HOW MANY SERVINGS',
     /** The details card: three short rows under the picture. */
     servingsRow: 'Servings',
     prep: 'Prep time',
@@ -170,9 +168,6 @@ export const recipes = {
      * has just met is a ceiling they want to know the size of.
      */
     limitReached: 'A free account keeps {{count}} recipes of its own. Pro has no limit.',
-    /** The totals card under the ingredient list. */
-    totalLabel: 'Per serving, {{count}}',
-    totalWhole: 'Whole pot {{kcal}} kcal',
     discardTitle: 'Leave without saving?',
     discardBody: 'The changes you made here will be lost.',
     discardConfirm: 'Discard',
@@ -255,7 +250,6 @@ export const recipes = {
     stepsFrom: 'HOW {{name}} COOKS IT',
     noSteps: 'No steps written down.',
     noIngredients: 'No ingredients written down.',
-    ingredients: 'INGREDIENTS',
     addToDay: 'Add to today',
     added: 'Added to your day',
     saveCopy: 'Save to my recipes',
