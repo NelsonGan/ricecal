@@ -45,8 +45,7 @@
     {
       "binding": "DB",
       "database_name": "ricecal-d1-places",
-      // Filled in from `wrangler d1 create ricecal-d1-places` before merge.
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_id": "4c3bb5c4-d001-4e65-875a-a1e071b00fd5"
     }
   ],
   // D1 has no TTL, so a daily cron deletes the counters of days that are over.
