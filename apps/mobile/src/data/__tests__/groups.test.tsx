@@ -450,6 +450,7 @@ describe('one thread, a page at a time', () => {
       p_before_id: 'm100',
       p_limit: THREAD_PAGE,
       p_events: true,
+      p_dislikes: true,
     })
     await act(async () => older.settle({ data: run(90, 10), error: null }))
     await waitFor(() => expect(ids(client)?.[0]).toBe('m90'))
@@ -766,11 +767,15 @@ it("leaves a broadcast to the viewer's own send while it is on its way", async (
 })
 
 describe("the viewer's own like line", () => {
-  const liked = (id: string, entryId = 'e1'): GroupMessage => ({
+  const liked = (
+    id: string,
+    entryId = 'e1',
+    kind: 'liked' | 'disliked' = 'liked',
+  ): GroupMessage => ({
     ...message(id, true, 5),
     body: 'Chicken rice',
     event: {
-      kind: 'liked',
+      kind,
       food: {
         entry_id: entryId,
         name: 'Chicken rice',
@@ -800,6 +805,7 @@ describe("the viewer's own like line", () => {
       p_group_id: 'g1',
       p_limit: CATCH_UP,
       p_events: true,
+      p_dislikes: true,
     })
   })
 
@@ -839,6 +845,42 @@ describe("the viewer's own like line", () => {
       await result.current.mutateAsync({ action: 'react', entryId: 'e1', value: 0 })
     })
     await waitFor(() => expect(ids(client)).toEqual(['m1', 'l2']))
+  })
+
+  it('swaps a like line for a dislike line, and keeps a dislike line through a dislike', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(
+      messagesKey,
+      thread(message('m1'), liked('l1'), liked('d2', 'e2', 'disliked')),
+    )
+    mockRpc.mockReturnValue(response(null))
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    await act(async () => {
+      await result.current.mutateAsync({ action: 'react', entryId: 'e1', value: -1 })
+    })
+    await waitFor(() => expect(ids(client)).toEqual(['m1', 'd2']))
+    await act(async () => {
+      await result.current.mutateAsync({ action: 'react', entryId: 'e2', value: -1 })
+    })
+    expect(ids(client)).toEqual(['m1', 'd2'])
+  })
+
+  it('takes a dislike line out when the dislike is taken back or turned into a like', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(
+      messagesKey,
+      thread(message('m1'), liked('d1', 'e1', 'disliked'), liked('d2', 'e2', 'disliked')),
+    )
+    mockRpc.mockReturnValue(response(null))
+    const { result } = await renderHook(() => useGroupAction(), { wrapper })
+    await act(async () => {
+      await result.current.mutateAsync({ action: 'react', entryId: 'e1', value: 0 })
+    })
+    await waitFor(() => expect(ids(client)).toEqual(['m1', 'd2']))
+    await act(async () => {
+      await result.current.mutateAsync({ action: 'react', entryId: 'e2', value: 1 })
+    })
+    await waitFor(() => expect(ids(client)).toEqual(['m1']))
   })
 
   /**
@@ -1194,6 +1236,7 @@ describe('replies, food and reactions', () => {
       p_group_id: 'g1',
       p_limit: CATCH_UP,
       p_events: true,
+      p_dislikes: true,
     })
     expect(mockRpc).toHaveBeenCalledTimes(1)
 
@@ -1230,6 +1273,7 @@ describe('replies, food and reactions', () => {
       p_before_id: 'm1',
       p_limit: 1,
       p_events: true,
+      p_dislikes: true,
     })
     expect(ids(client)).toHaveLength(THREAD_PAGE + 2)
   })

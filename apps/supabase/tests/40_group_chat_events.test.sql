@@ -1,4 +1,4 @@
--- Joins and likes as quiet lines in a group's chat, foods of one's own
+-- Joins, likes and dislikes as quiet lines in a group's chat, foods of one's own
 -- (recipes) shared into it, who reacted to a message, the per-group switch for
 -- sharing one's own foods and workouts, and a photo added to a meal after it
 -- was posted. Access is asserted as a client role.
@@ -131,16 +131,38 @@ set local role authenticated;
 select public.set_group_reaction(:'meal', -1::smallint);
 reset role;
 select is((select count(*)::int from public.group_messages where event = 'liked' and entry_id = :'meal'), 0,
-  'turning it into a dislike takes the line away, and a dislike is never told');
+  'turning it into a dislike takes the like line away');
+select is((select count(*)::int from public.group_messages where event = 'disliked' and entry_id = :'meal'
+  and group_id = (select id from g) and author_id = :'ben'), 1, 'and writes a dislike line in its place');
+select is((select count(*)::int from public.group_messages where event = 'disliked' and group_id = :'other_group'), 0,
+  'again only in a group the two share');
 set local role authenticated;
+select is((select count(*)::int from jsonb_array_elements(public.group_messages((select id from g), p_events => true)) e
+  where e->'event'->>'kind' = 'disliked'), 0,
+  'an app from before dislike lines, which would draw one as a like, is never sent one');
+create temp table disliked as
+  select e from jsonb_array_elements(public.group_messages((select id from g), p_events => true, p_dislikes => true)) e
+  where e->'event'->>'kind' = 'disliked';
+select is((select count(*)::int from disliked), 1, 'an app that asks gets the dislike line');
+select is((select e->'event'->'food'->>'name' from disliked), 'Nasi lemak', 'naming the food');
+select is((select e->'event'->'food'->'owner'->>'id' from disliked), :'ana', 'and whose it is');
 select public.set_group_reaction(:'meal', 1::smallint);
 reset role;
 select is((select count(*)::int from public.group_messages where event = 'liked' and entry_id = :'meal'), 1, 'liking again tells again');
+select is((select count(*)::int from public.group_messages where event = 'disliked' and entry_id = :'meal'), 0,
+  'taking the dislike line away');
 set local role authenticated;
+select public.set_group_reaction(:'meal', -1::smallint);
+select public.set_group_reaction(:'meal', 0::smallint);
+reset role;
+select is((select count(*)::int from public.group_messages where entry_id = :'meal' and event is not null), 0,
+  'and taking a dislike back leaves no line at all');
+set local role authenticated;
+select public.set_group_reaction(:'meal', 1::smallint);
 select public.set_group_reaction(:'meal', 0::smallint);
 reset role;
 select is((select count(*)::int from public.group_messages where event = 'liked' and entry_id = :'meal'), 0,
-  'and taking the like back takes it away');
+  'nor taking a like back');
 
 -- Who reacted to a message.
 set local role authenticated;

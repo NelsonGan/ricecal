@@ -163,20 +163,23 @@ create table public.group_messages (
   -- members its share slug, the same bearer credential a link carries.
   recipe_id   uuid references public.recipes(id) on delete cascade,
   -- Something that happened rather than something said, drawn as a quiet line
-  -- in the middle of the thread: `joined` (the author joined the group) or
-  -- `liked` (the author liked `entry_id`, a fellow member's food). Written only
-  -- by triggers, never pushed, never unread, and left out of the thread for an
-  -- app that does not ask for them (group_messages' `p_events`).
-  event       text check (event in ('joined', 'liked')),
+  -- in the middle of the thread: `joined` (the author joined the group),
+  -- `liked` or `disliked` (the author liked or disliked `entry_id`, a fellow
+  -- member's food). Written only by triggers, never pushed, never unread, and
+  -- left out of the thread for an app that does not ask for them
+  -- (group_messages' `p_events`, and `p_dislikes` for a dislike, which an app
+  -- from before it would draw as a like).
+  event       text check (event in ('joined', 'liked', 'disliked')),
   entry_id    uuid references public.food_logs(id) on delete cascade,
   unique (author_id, request_id),
   -- A message shares one thing at most.
   constraint group_messages_one_share check (num_nonnulls(post_id, workout_id, activity_id, recipe_id) <= 1),
-  -- An event shares nothing and answers nothing; only a like names a food.
+  -- An event shares nothing and answers nothing; only a like or a dislike
+  -- names a food.
   constraint group_messages_event_shape check (
     (event is null and entry_id is null)
     or (event is not null and num_nonnulls(post_id, workout_id, activity_id, recipe_id) = 0
-        and (entry_id is not null) = (event = 'liked'))
+        and (entry_id is not null) = (event in ('liked', 'disliked')))
   )
 );
 -- The thread's order, which group_messages pages through by (created_at, id).
@@ -425,23 +428,33 @@ $$;
 create trigger group_member_joined after insert on public.group_members
   for each row execute function private.group_member_joined();
 
--- A like on a fellow member's food, as a quiet line in the chat of every group
--- the two share, since the board of each counts it. Taking the like back, or
--- turning it into a dislike, takes the line away. Dislikes are never told.
--- One line per like per group: the request id is derived from the three.
+-- A like or a dislike of a fellow member's food, as a quiet line in the chat
+-- of every group the two share, since the board of each counts it. Taking it
+-- back takes the line away, and changing it swaps the line for the other kind.
+-- One line per vote per group: the request id is derived from the kind, the
+-- food and the group.
 create or replace function private.group_reaction_event()
 returns trigger language plpgsql security definer set search_path = '' as $$
-declare v_entry uuid := coalesce(new.entry_id, old.entry_id); v_user uuid := coalesce(new.user_id, old.user_id);
+declare
+  v_entry uuid := coalesce(new.entry_id, old.entry_id);
+  v_user uuid := coalesce(new.user_id, old.user_id);
+  v_old text := case when tg_op <> 'INSERT' then
+    case old.value when 1 then 'liked' when -1 then 'disliked' end end;
+  v_new text := case when tg_op <> 'DELETE' then
+    case new.value when 1 then 'liked' when -1 then 'disliked' end end;
 begin
+  if v_old is not distinct from v_new then
+    return null;
+  end if;
   begin
-    if tg_op <> 'INSERT' and old.value = 1 and (tg_op = 'DELETE' or new.value <> 1) then
+    if v_old is not null then
       delete from public.group_messages m
-      where m.entry_id = v_entry and m.author_id = v_user and m.event = 'liked';
+      where m.entry_id = v_entry and m.author_id = v_user and m.event = v_old;
     end if;
-    if tg_op <> 'DELETE' and new.value = 1 and (tg_op = 'INSERT' or old.value <> 1) then
+    if v_new is not null then
       insert into public.group_messages(group_id, author_id, body, request_id, event, entry_id)
       select a.group_id, v_user, left(coalesce(nullif(btrim(coalesce(f.display_label, f.item_name)), ''), 'food'), 160),
-        md5('liked:' || v_entry::text || ':' || a.group_id::text)::uuid, 'liked', v_entry
+        md5(v_new || ':' || v_entry::text || ':' || a.group_id::text)::uuid, v_new, v_entry
       from public.food_logs f
       join public.group_members b on b.user_id = f.user_id
       join public.group_members a on a.group_id = b.group_id and a.user_id = v_user
@@ -449,7 +462,7 @@ begin
       on conflict (author_id, request_id) do nothing;
     end if;
   exception when others then
-    raise warning 'group like event skipped: %', sqlerrm;
+    raise warning 'group vote event skipped: %', sqlerrm;
   end;
   return null;
 end;
