@@ -42,6 +42,31 @@ export function useBack(fallback: Href): () => void {
 }
 
 /**
+ * Close the nested stack this screen belongs to, every page of it, back to
+ * whatever opened it; `fallback` when nothing did (a link opened cold).
+ *
+ * For a screen inside a group with a layout of its own, such as `recipe/`.
+ * Its pages are one entry on the root stack, so this pops that entry and the
+ * screen underneath keeps its params: the log search its query, a chat its
+ * place. `dismissAll` would not do it, since the group's own stack answers the
+ * pop to top and stays; and `replace` with a tab swapped the group for a second
+ * copy of the tab bar, every hook in it running twice.
+ */
+export function useCloseStack(fallback: Href): () => void {
+  const navigation = useNavigation()
+  const router = useRouter()
+
+  return useCallback(() => {
+    const stack = navigation.getParent()
+    if (stack?.canGoBack()) {
+      stack.goBack()
+      return
+    }
+    router.replace(fallback)
+  }, [navigation, router, fallback])
+}
+
+/**
  * Close every stacked modal and land on `fallback`.
  *
  * What the logging flow needs at the end: the picker, the camera and the food

@@ -601,9 +601,12 @@ function PlaceTile({
         <Cover entry={cover} size={48} />
       </View>
       <View className="px-2.5 py-2">
-        <Text variant="label" numberOfLines={1}>
-          {group.name}
-        </Text>
+        {/* Where somebody eats is their location history: kept out of replays. */}
+        <ReplayMask>
+          <Text variant="label" numberOfLines={1}>
+            {group.name}
+          </Text>
+        </ReplayMask>
         <Text variant="caption" numberOfLines={1}>
           {caption}
         </Text>
@@ -636,9 +639,11 @@ function PlaceCard({
           <Cover entry={coverEntry(group.entries)} size={34} />
         </View>
         <View className="min-w-0 flex-1">
-          <Text variant="heading" numberOfLines={1}>
-            {group.name}
-          </Text>
+          <ReplayMask>
+            <Text variant="heading" numberOfLines={1}>
+              {group.name}
+            </Text>
+          </ReplayMask>
           <Text variant="meta" numberOfLines={1}>
             {`${t('places:meals', { count: group.entries.length })} · ${count(group.kcal)} ${t(
               'common:unit.kcal',

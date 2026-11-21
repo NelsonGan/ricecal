@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { type Recipe, useLogFood, useRemoveEntry, useSelectedDate } from '@/data'
@@ -30,6 +31,15 @@ export function useLogRecipe() {
   const toast = useToast()
   const logFood = useLogFood()
   const removeEntry = useRemoveEntry()
+  // `onLogged` navigates, and a promise settles even after the page is gone:
+  // a slow insert would otherwise pop whatever screen the user moved on to.
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
 
   const log = (recipe: Recipe, quantity: number, logDate: string, onLogged?: () => void) => {
     // `mutateAsync`, not `mutate` with callbacks: those fire for the latest
@@ -45,7 +55,7 @@ export function useLogRecipe() {
             onPress: () => removeEntry.mutate({ id: row.id, logDate, source: 'quickAdd' }),
           },
         })
-        onLogged?.()
+        if (mounted.current) onLogged?.()
       },
       () => toast.show({ title: t('recipes:edit.saveFailed'), tone: 'error' }),
     )

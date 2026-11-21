@@ -76,7 +76,7 @@ const SECTIONS: LegalSection[] = [
           "Photographs of meals you choose to scan, and the ingredient breakdown produced from them.",
           "Foods you write, including their ingredients, steps and serving counts. One stays private unless you choose to publish it.",
           "Water, day notes, weigh-ins and the streak worked out from your logging.",
-          "Where a meal was eaten, only if you turn on Locations in the app: the spot’s coordinates, its name and address, and the map service’s identifier for the place. Only you can see it; it is never shared with a group or the feed.",
+          "Where a meal was eaten, only if you turn on Locations in the app: the spot’s coordinates, its name, address and kind of place, and the map service’s identifier for it. Only you can see it; it is never shared with a group or the feed.",
         ],
       },
       { kind: "h3", text: "Health and activity, only if you connect it" },
@@ -115,7 +115,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: "ul",
         items: [
-          "Your location, unless you turn on Locations. Then RiceCal asks for access while the app is in use, and reads where the phone is only to tag a meal you log for today or to centre a map you open. It never reads your location in the background, and session recordings hide places and maps.",
+          "Your location, unless you turn on Locations. Then RiceCal asks for access while the app is in use, and reads where the phone is only while you log a meal for today or have a map open. It never reads your location in the background, and session recordings hide places and maps.",
           "Your contacts, your calendar, your microphone recordings or your camera roll at large. The camera is used only for the plate you point it at and the barcode you scan.",
           "Payment card details.",
           "Special category data beyond the health and body figures listed above, which you provide or connect yourself.",

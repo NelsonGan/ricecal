@@ -93,7 +93,7 @@ jest.mock('@/features/recipes', () => ({
 jest.mock('@/features/shared', () => ({ MealPhoto: () => null }))
 jest.mock('@/lib/navigation', () => ({
   useBack: () => jest.fn(),
-  useDismissTo: () => mockLeave,
+  useCloseStack: () => mockLeave,
 }))
 
 function renderScreen() {

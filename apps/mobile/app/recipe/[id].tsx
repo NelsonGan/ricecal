@@ -29,7 +29,7 @@ import {
   useTickedIngredients,
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
-import { useBack, useDismissTo } from '@/lib/navigation'
+import { useBack, useCloseStack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -76,9 +76,9 @@ export default function RecipeDetailScreen() {
   const { t } = useTranslation(['recipes', 'common'])
   const router = useRouter()
   const goBack = useBack('/recipes')
-  // Away from a recipe that is gone or hidden. A `replace` here swapped this
-  // page for a second tab bar on the root stack, since the Recipes list is a tab.
-  const leave = useDismissTo('/recipes')
+  // Away from a recipe that is gone or hidden, back to what opened it: the
+  // Recipes tab, a group chat, the log search.
+  const leave = useCloseStack('/recipes')
   const toast = useToast()
   const colors = useThemeColors()
 
