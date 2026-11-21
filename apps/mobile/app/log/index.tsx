@@ -202,7 +202,7 @@ function LogSheet() {
    * An object rather than the uri, because a device with no camera takes a shot
    * whose uri is undefined and that is still a shot.
    */
-  const [shot, setShot] = useState<{ uri: string | undefined } | null>(null)
+  const [shot, setShot] = useState<{ uri: string | undefined; picked: boolean } | null>(null)
   /**
    * On unless the user turned it off. Unknown counts as on: the setting's
    * default is on, and a sheet that skipped the question while the row was
@@ -210,8 +210,8 @@ function LogSheet() {
    */
   const askForNote = settings?.photo_note_prompt !== false
 
-  const snapShot = (photoUri: string | undefined, note?: string) => {
-    snapFood({ photoUri, logDate: selectedDate, note })
+  const snapShot = (photoUri: string | undefined, picked: boolean, note?: string) => {
+    snapFood({ photoUri, logDate: selectedDate, note, picked })
     goBack()
   }
 
@@ -443,8 +443,8 @@ function LogSheet() {
       {panel === 'camera' && shot ? (
         <PhotoNotePanel
           photoUri={shot.uri}
-          onLog={(note) => snapShot(shot.uri, note || undefined)}
-          onSkip={() => snapShot(shot.uri)}
+          onLog={(note) => snapShot(shot.uri, shot.picked, note || undefined)}
+          onSkip={() => snapShot(shot.uri, shot.picked)}
           onRetake={() => setShot(null)}
         />
       ) : null}
@@ -537,7 +537,7 @@ function LogSheet() {
               ) : undefined
             }
             mode={captureMode}
-            onCapture={(photoUri) => {
+            onCapture={(photoUri, from) => {
               // The ceiling arriving before the request. The count is still the
               // server's and it still refuses, but the panel is already drawing
               // "0 scans left" from that figure, so sending the photograph spends
@@ -564,10 +564,10 @@ function LogSheet() {
               // is sent. Not for the packet handoff: that shot is of a
               // nutrition panel, which answers for itself.
               if (askForNote && !barcode) {
-                setShot({ uri: photoUri })
+                setShot({ uri: photoUri, picked: from === 'library' })
                 return
               }
-              snapFood({ photoUri, logDate: selectedDate, barcode })
+              snapFood({ photoUri, logDate: selectedDate, barcode, picked: from === 'library' })
               goBack()
             }}
             onScanned={(code) => openFood(packetFoodId(code))}

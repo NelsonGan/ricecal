@@ -142,6 +142,17 @@
         }
       ],
       "react-native-health-connect",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "If you turn on Locations, RiceCal uses your location to tag a meal with where you ate it and to find places near you. Locations stay in your own diary.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
+      ],
       "./plugins/withWidgets",
       "./plugins/withWatch"
     ],

@@ -8,6 +8,7 @@ import { View } from 'react-native'
 // imports `@/data`, which pulls the whole router and half the native modules in
 // behind a single string constant.
 import { DISCORD_INVITE } from '@/features/settings/discord'
+import { holdFloor } from '@/lib/floor'
 import {
   type RatingRequest,
   ratingDisliked,
@@ -54,6 +55,12 @@ export function RatePromptSheet() {
   // what makes a second request a second sheet rather than a re-render of this
   // one holding the first one's trigger.
   const close = useCallback(() => setRequest(null), [])
+
+  // Held while up, so another one-time sheet waits its turn (`lib/floor.ts`).
+  useEffect(() => {
+    holdFloor('rating', request !== null)
+    return () => holdFloor('rating', false)
+  }, [request])
 
   /**
    * CLOSE FIRST, then hand over. The store's own dialog is presented by the OS

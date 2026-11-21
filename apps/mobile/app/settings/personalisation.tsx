@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import { type Meal, useMealTimes, useSettings, useUpdateMealTime, useUpdateSettings } from '@/data'
+import { LocationsSettingsCard } from '@/features/places'
 import { ToggleRow } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import {
@@ -145,6 +146,10 @@ export default function PersonalisationScreen() {
             />
           )}
         </Card>
+
+        {/* Where meals were eaten (README: Meal locations). About how this
+            person logs, like the photo note above it, and per phone. */}
+        <LocationsSettingsCard />
       </Aside>
 
       <Sheet

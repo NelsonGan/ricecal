@@ -13,6 +13,8 @@ export type MealPhotoProps = {
    */
   dimmed?: boolean
   accessibilityLabel?: string
+  /** The picture has drawn (a map marker redraws until it has). */
+  onLoad?: () => void
 }
 
 /**
@@ -27,7 +29,7 @@ export type MealPhotoProps = {
  * Keep decoded pictures in memory beside the disk copy, and draw them as soon
  * as the bytes are ready.
  */
-export function MealPhoto({ source, dimmed = false, accessibilityLabel }: MealPhotoProps) {
+export function MealPhoto({ source, dimmed = false, accessibilityLabel, onLoad }: MealPhotoProps) {
   return (
     <Image
       source={source}
@@ -42,6 +44,7 @@ export function MealPhoto({ source, dimmed = false, accessibilityLabel }: MealPh
       // A signed URI can already be cached. A fade delays that hit too.
       transition={0}
       accessibilityLabel={accessibilityLabel}
+      onLoad={onLoad}
     />
   )
 }

@@ -17,6 +17,7 @@ import {
   useDayLog,
   useDeleteActivitySession,
   useDeleteWorkout,
+  useHasLocatedEntries,
   usePendingSnaps,
   useRemoveEntry,
   useSelectedDate,
@@ -24,6 +25,7 @@ import {
   useSettings,
   useStreak,
   useTargets,
+  useUserId,
   useWorkoutsOn,
   type WorkoutSummary,
 } from '@/data'
@@ -39,6 +41,7 @@ import {
 import { AnnouncementCard, useAnnouncementOffer } from '@/features/news'
 import { useProNudge } from '@/features/paywall'
 import { usePhotoRemovalNotice } from '@/features/photoRemovals/usePhotoRemovalNotice'
+import { LocationsOffer } from '@/features/places'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
 import {
@@ -52,6 +55,7 @@ import {
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
 import { useOnline } from '@/lib/online'
+import { useLocationsPreference } from '@/lib/places'
 import { ReplayMask } from '@/lib/replay-mask'
 import { DEFAULT_WATER_ML } from '@/lib/water'
 import {
@@ -135,7 +139,15 @@ function LaunchOffers() {
   useProNudge()
   usePhotoRemovalNotice()
   const { announcement, close } = useAnnouncementOffer()
-  return <AnnouncementCard announcement={announcement} source="launch" onClose={close} />
+  return (
+    <>
+      <AnnouncementCard announcement={announcement} source="launch" onClose={close} />
+      {/* Not a launch offer like the others: it waits for a meal logged on this
+          phone. Here because it appears over this screen, and it stands aside
+          for whatever the two above put up. */}
+      <LocationsOffer />
+    </>
+  )
 }
 
 /**
@@ -146,7 +158,7 @@ function LaunchOffers() {
  * placeholder is worse than no ring.
  */
 function TodayContent() {
-  const { t } = useTranslation(['logging', 'common', 'social', 'workouts', 'activity'])
+  const { t } = useTranslation(['logging', 'common', 'social', 'workouts', 'activity', 'places'])
   const router = useRouter()
   const focused = useIsFocused()
   const toast = useToast()
@@ -368,6 +380,13 @@ function TodayContent() {
    * what it is.
    */
   const [calendar, setCalendar] = useState(false)
+  // The food map's way in (README: Meal locations): while Locations is on, or
+  // once any meal has a place, so turning Locations off never hides a map of
+  // places already saved. One row's id, asked only when off.
+  const userId = useUserId()
+  const { enabled: locationsOn } = useLocationsPreference(userId)
+  const anyLocated = useHasLocatedEntries({ enabled: !locationsOn })
+  const showMap = locationsOn || anyLocated.data === true
   /**
    * The month the grid is showing. Seeded from the strip's day and re-seeded
    * each time the calendar opens, or coming back a week later would land on
@@ -564,27 +583,42 @@ function TodayContent() {
       <ScreenTitle
         title={title}
         leading={
-          /* The view toggle goes BEFORE the date, because it is a control about
-             what the date is showing rather than a report on it: the whole
-             screen under the heading changes when it is pressed. The streak, on
-             the other side, only ever reports. */
-          <IconButton
-            /* Smaller than the 44pt floor so it stands the same height as the
+          <View className="flex-row items-center gap-2">
+            {/* The view toggle goes BEFORE the date, because it is a control
+                about what the date is showing rather than a report on it: the
+                whole screen under the heading changes when it is pressed. The
+                streak, on the other side, only ever reports. */}
+            <IconButton
+              /* Smaller than the 44pt floor so it stands the same height as the
                streak badge opposite it: a 44pt square beside a 38pt pill reads
                as two controls that were placed separately. The touch target is
                taken back to 44 with `hitSlop`, so the floor is moved rather than
                waived. */
-            size="xs"
-            hitSlop={3}
-            onPress={() => showCalendar(!calendar)}
-            accessibilityLabel={t(
-              calendar ? 'logging:calendar.showDay' : 'logging:calendar.showMonth',
-            )}
-          >
-            {/* The icon is the view being OFFERED, not the one on screen. A
+              size="xs"
+              hitSlop={3}
+              onPress={() => showCalendar(!calendar)}
+              accessibilityLabel={t(
+                calendar ? 'logging:calendar.showDay' : 'logging:calendar.showMonth',
+              )}
+            >
+              {/* The icon is the view being OFFERED, not the one on screen. A
                 toggle that shows its own state has to be read twice. */}
-            <Icon set="ui" name={calendar ? 'list-view' : 'calendar-view'} size={19} />
-          </IconButton>
+              <Icon set="ui" name={calendar ? 'list-view' : 'calendar-view'} size={19} />
+            </IconButton>
+            {/* The food map, beside the view toggle and the same size: another
+                way of looking at what was eaten. Only once there is something
+                to put on it, or Locations is on and there soon will be. */}
+            {showMap ? (
+              <IconButton
+                size="xs"
+                hitSlop={3}
+                onPress={() => router.push('/food-map')}
+                accessibilityLabel={t('places:mapTitle')}
+              >
+                <Icon set="ui" name="map" size={21} />
+              </IconButton>
+            ) : null}
+          </View>
         }
         trailing={
           // Nothing at all until the count is known: "0 day streak" is a

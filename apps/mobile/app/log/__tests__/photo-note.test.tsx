@@ -96,6 +96,7 @@ it('asks for a note after the shutter and sends it with the photo', async () => 
 
   expect(mockSnap).toHaveBeenCalledWith({
     photoUri: 'file:///plate.jpg',
+    picked: false,
     logDate: '2026-10-03',
     note: 'beef',
   })
@@ -109,6 +110,7 @@ it('sends the photo alone on Skip', async () => {
 
   expect(mockSnap).toHaveBeenCalledWith({
     photoUri: 'file:///plate.jpg',
+    picked: false,
     logDate: '2026-10-03',
     note: undefined,
   })
@@ -130,6 +132,7 @@ it('scans at the shutter when the setting is off', async () => {
 
   expect(mockSnap).toHaveBeenCalledWith({
     photoUri: 'file:///plate.jpg',
+    picked: false,
     logDate: '2026-10-03',
     barcode: undefined,
   })
@@ -144,6 +147,7 @@ it('does not ask about a nutrition panel shot for an unknown packet', async () =
 
   expect(mockSnap).toHaveBeenCalledWith({
     photoUri: 'file:///plate.jpg',
+    picked: false,
     logDate: '2026-10-03',
     barcode: '9556001234567',
   })

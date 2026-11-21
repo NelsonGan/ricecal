@@ -10,6 +10,7 @@
 export {
   askForRating,
   type RatingRequest,
+  ratingAskBooked,
   ratingDisliked,
   ratingDismissed,
   ratingFeedbackOpened,

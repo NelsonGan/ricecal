@@ -1,0 +1,57 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ricecal-places",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "observability": { "enabled": true },
+  // Place search for meal locations (README: The places Worker). A route on
+  // our own domain, like the catalogue's and for the same reason: a route
+  // needs only Workers edit, where a custom domain would also need DNS edit.
+  // `places` is a proxied AAAA to the discard prefix `100::`, made once by
+  // hand; the route answers before an origin is ever chosen.
+  "routes": [{ "pattern": "places.ricecal.app/*", "zone_name": "ricecal.app" }],
+  "workers_dev": false,
+  // Explicit, because it defaults to `workers_dev` and preview URLs are where
+  // `versions upload --preview-alias` serves a version uploaded by hand.
+  "preview_urls": true,
+  "vars": {
+    // Which project's JWTs to accept: the same check as the catalogue Worker.
+    "SUPABASE_URL": "https://wgybijmprafqkshmmxdl.supabase.co",
+    // The team's Maps key ("Money2Time Maps", Maps enabled). Apple's Maps
+    // Server API allows 25,000 calls a day for the whole developer team, so
+    // RiceCal and Money2Time share that day; edge-cache hits cost none.
+    "APPLE_MAPS_KEY_ID": "566492L2DK",
+    "APPLE_TEAM_ID": "A9QF26PBRS",
+    // Searches per user per UTC day that reach Apple. A search is about one
+    // call per pause in typing.
+    "PLACES_DAILY_LIMIT": "200",
+    // The same per address, whatever accounts it signs in as; higher because a
+    // shared network is many people.
+    "PLACES_ADDRESS_DAILY_LIMIT": "1000"
+  },
+  // Searches per signed-in user per minute. Typing searches as it pauses, so a
+  // burst of a few a second is normal; this stops one account scripting the
+  // shared quota away. Its own namespace, so it can never spend the
+  // catalogue's (1001, 1002).
+  "ratelimits": [
+    {
+      "name": "PLACES_RL",
+      "namespace_id": "1003",
+      "simple": { "limit": 60, "period": 60 }
+    }
+  ],
+  // Daily counts only (schema: apps/cloudflare/d1/places/schema.sql).
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "ricecal-d1-places",
+      "database_id": "4c3bb5c4-d001-4e65-875a-a1e071b00fd5"
+    }
+  ],
+  // D1 has no TTL, so a daily cron deletes the counters of days that are over.
+  "triggers": { "crons": ["0 3 * * *"] }
+  // Secret, set with `wrangler secret put APPLE_MAPS_PRIVATE_KEY` and never
+  // committed: the Maps key's .p8, PEM text. Without it every search answers
+  // `not_configured` and the app says place search is unavailable; the phone's
+  // own geocoder still names the current location.
+}

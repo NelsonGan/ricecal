@@ -189,7 +189,15 @@ select
   plate.portion                          as plate_quantity,
   -- What one base serving holds, for measuring the entry in spoons. Last for
   -- the reason above.
-  e.serving_ml                           as base_serving_ml
+  e.serving_ml                           as base_serving_ml,
+  -- Where it was eaten (README: Meal locations). Last for the same reason, and
+  -- named as on the table: `place` above is the kind of stall, not this.
+  e.latitude,
+  e.longitude,
+  e.location_name,
+  e.location_address,
+  e.location_id,
+  e.location_category
 from public.food_logs e
 -- The breakdown, added up once per entry. It was four correlated subqueries,
 -- one per macro, and the portion needs a fifth question of the same rows:

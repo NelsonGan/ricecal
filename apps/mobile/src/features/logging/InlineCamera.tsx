@@ -107,7 +107,8 @@ export type InlineCameraProps = {
    * One is starting a new entry from a photo; the other is putting a picture on an
    * entry that already exists.
    */
-  onCapture: (photoUri: string | undefined) => void
+  /** `library` is a photo picked rather than taken: it was not taken here, now. */
+  onCapture: (photoUri: string | undefined, from: 'camera' | 'library') => void
   /**
    * A code was read. Whether anything knows it is not this camera's business —
    * the page it is handed to does the lookup and owns every way that can turn
@@ -287,7 +288,7 @@ export function InlineCamera({
       ? await camera.current?.takePictureAsync({ quality: 0.6 }).catch(() => undefined)
       : undefined
     setCapturing(false)
-    onCapture(photo?.uri)
+    onCapture(photo?.uri, 'camera')
   }
 
   // The picker rejects when iOS cannot hand the photo over, most often a HEIC
@@ -308,7 +309,7 @@ export function InlineCamera({
       return
     }
     if (result.canceled) return
-    onCapture(result.assets[0]?.uri)
+    onCapture(result.assets[0]?.uri, 'library')
   }
 
   /**

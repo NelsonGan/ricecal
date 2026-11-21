@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import {
   ENTRY_FOOD_ID,
+  type EntryLocation,
   type EntryPatch,
   foodFromEntry,
   type IconRef,
@@ -30,6 +31,7 @@ import {
   useSettings,
   useTargets,
   useUpdateEntry,
+  useUserId,
   withCataloguePortions,
   withMeasures,
 } from '@/data'
@@ -60,6 +62,7 @@ import {
   useMealShare,
 } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
+import { LocationCard, PlacePickerSheet, type PlaceSource } from '@/features/places'
 import {
   formatTime,
   MacroBars,
@@ -74,6 +77,7 @@ import { track } from '@/lib/analytics'
 import { convert, foodBasis, MEASURES, measureOf, roundedFor } from '@/lib/measures'
 import { useBack, useDismissTo } from '@/lib/navigation'
 import { entryTotals, roundHalfUp } from '@/lib/nutrition'
+import { autoTagLocation, autoTagWanted, useLocationsPreference } from '@/lib/places'
 import { formatPortion, servingUnit } from '@/lib/portions'
 import { SessionGate } from '@/lib/SessionGate'
 import { spacing } from '@/theme/tokens'
@@ -634,6 +638,41 @@ function FoodDetail() {
     photographLabel()
   })
 
+  /**
+   * WHERE IT WAS EATEN (README: Meal locations). On the edit path the row's own
+   * place, saved by the picker the moment one is chosen, like every other
+   * section here. On the add path a draft: the automatic tag fetched as the
+   * page opens, so the user sees where the meal is about to be filed and can
+   * change or remove it before Add.
+   *
+   * `undefined` on the add path is "nobody has touched it": Add then leaves the
+   * tag to the data layer, which applies it after the insert if the fix had
+   * not landed yet. `null` is a removal and is sent as one.
+   */
+  const userId = useUserId()
+  const { enabled: locationsOn } = useLocationsPreference(userId)
+  const [pickingPlace, setPickingPlace] = useState(false)
+  /** How the draft place was chosen, for the event Add sends. */
+  const draftSource = useRef<PlaceSource | undefined>(undefined)
+  const [draftLocation, setDraftLocation] = useState<EntryLocation | null | undefined>(undefined)
+  const [autoLocation, setAutoLocation] = useState<EntryLocation | null | undefined>(undefined)
+  const composeTagged = !existing && !awaitingEntry && autoTagWanted(userId, selectedDate)
+  useEffect(() => {
+    if (!composeTagged) return
+    let live = true
+    void autoTagLocation(userId, selectedDate, { preview: true }).then((place) => {
+      if (live) setAutoLocation(place)
+    })
+    return () => {
+      live = false
+    }
+  }, [composeTagged, userId, selectedDate])
+  const composeLocation = draftLocation === undefined ? (autoLocation ?? null) : draftLocation
+  const shownLocation = existing ? (existing.location ?? null) : composeLocation
+  // The card shows while Locations is on, and on any entry that already has a
+  // place, so turning Locations off never hides a place somebody saved.
+  const showLocation = locationsOn || Boolean(existing?.location)
+
   if (!food) {
     /**
      * A scanned packet, before the answer and when the answer is nothing.
@@ -928,27 +967,55 @@ function FoodDetail() {
 
   const hasPhoto = Boolean(shot ?? existing?.photoPath)
 
+  const pickLocation = async (location: EntryLocation | null, source?: PlaceSource) => {
+    if (!existing) {
+      draftSource.current = source
+      setDraftLocation(location)
+      return
+    }
+    try {
+      await patchEntry({ location })
+      if (location && source) track('Meal Location Set', { source })
+    } catch {
+      saveFailed()
+    }
+  }
+
   const addToDiary = () => {
     // Not gated, though it used to be the app's main paywall. A catalogue dish
     // and a barcoded packet are exact answers costing one index probe, so the
     // free tier is a diary you can keep by searching and scanning, with the
     // model behind the wall. Editing was never gated either: a lapsed
     // subscription must not lock somebody out of their own diary.
-    logFood.mutate({
-      snapshot: snapshotFromFood(food, chosen),
-      quantity,
-      logDate: selectedDate,
-      // Only what was actually chosen. `shownIcon` would write the food's own
-      // drawing onto the row as an override, which is not an override at all.
-      icon,
-      // And a photo taken while composing this row, which the picker offers as
-      // the alternative to a drawing. Never both: taking one clears the other.
-      photoPath: shot?.path,
-      // Two doors lead here and `entry_source` calls both `search`: a packet
-      // held up to the camera, and a dish picked out of the list. This branch
-      // only runs with no `existing` entry, so there is no third case.
-      method: packet ? 'barcode' : 'search',
-    })
+    logFood.mutate(
+      {
+        snapshot: snapshotFromFood(food, chosen),
+        quantity,
+        logDate: selectedDate,
+        // Only what was actually chosen. `shownIcon` would write the food's own
+        // drawing onto the row as an override, which is not an override at all.
+        icon,
+        // And a photo taken while composing this row, which the picker offers as
+        // the alternative to a drawing. Never both: taking one clears the other.
+        photoPath: shot?.path,
+        // Two doors lead here and `entry_source` calls both `search`: a packet
+        // held up to the camera, and a dish picked out of the list. This branch
+        // only runs with no `existing` entry, so there is no third case.
+        method: packet ? 'barcode' : 'search',
+        // What the Where card shows, once it shows anything: the user's own pick,
+        // a removal, or the automatic tag that has already landed. Before that,
+        // nothing, and the data layer tags the row when the fix lands.
+        location: draftLocation !== undefined ? draftLocation : autoLocation || undefined,
+      },
+      {
+        // Only once the meal, and the place with it, is saved.
+        onSuccess: () => {
+          if (draftLocation && draftSource.current) {
+            track('Meal Location Set', { source: draftSource.current })
+          }
+        },
+      },
+    )
     // The insert carries it now, so it is not an orphan for the unmount effect
     // to sweep up on the way out.
     orphanShot.current = undefined
@@ -1608,6 +1675,24 @@ function FoodDetail() {
             <MeasureList choices={measureChoices} />
           </Sheet>
         </Card>
+
+        {/* WHERE, under the portion: what was eaten and how much come first,
+            and where is the footnote to them. See `pickLocation`. */}
+        {showLocation && !awaitingEntry ? (
+          <LocationCard
+            location={shownLocation}
+            resolving={composeTagged && draftLocation === undefined && autoLocation === undefined}
+            onPress={() => setPickingPlace(true)}
+          />
+        ) : null}
+        <PlacePickerSheet
+          visible={pickingPlace}
+          current={shownLocation}
+          locating={locationsOn}
+          onClose={() => setPickingPlace(false)}
+          onSelect={(location, source) => void pickLocation(location, source)}
+          onRemove={() => void pickLocation(null)}
+        />
       </View>
 
       {/* With two panes, the dish and its portion stay under the picture and
