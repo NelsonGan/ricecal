@@ -22,7 +22,7 @@ import { type Coordinate, type PlaceResult, toEntryLocation } from './types'
 
 export type CurrentPlaceFailure = 'ask' | 'blocked' | 'services_off' | 'unavailable' | 'error'
 
-export type ResolvedPlace = {
+type ResolvedPlace = {
   coordinate: Coordinate
   place: PlaceResult
   /** False when neither geocoder named the spot and `place` is "Pinned location". */
@@ -37,7 +37,11 @@ type Cached = ResolvedPlace & { at: number; language: string }
  */
 const REUSE_MS = 90_000
 let cached: Cached | null = null
-let inFlight: Promise<ResolvedPlace | CurrentPlaceFailure> | null = null
+let inFlight: {
+  promise: Promise<ResolvedPlace | CurrentPlaceFailure>
+  language: string
+  remote: boolean
+} | null = null
 
 /** A spot neither geocoder could name: kept, with a generic name. */
 function pinnedPlace(coordinate: Coordinate): PlaceResult {
@@ -50,18 +54,25 @@ function pinnedPlace(coordinate: Coordinate): PlaceResult {
   }
 }
 
+async function nameSpot(
+  coordinate: Coordinate,
+  language: string,
+  remote: boolean,
+): Promise<ResolvedPlace> {
+  const named = await describeCoordinate(coordinate, { language, remote })
+  // A spot left unnamed only because the Worker was not asked is not kept:
+  // the next caller who may ask it should.
+  const resolved = { coordinate, place: named ?? pinnedPlace(coordinate), named: Boolean(named) }
+  if (named || remote) cached = { ...resolved, at: Date.now(), language }
+  return resolved
+}
+
 async function locate(
   language: string,
   remote: boolean,
 ): Promise<ResolvedPlace | CurrentPlaceFailure> {
   try {
-    const coordinate = await getCurrentCoordinate()
-    const named = await describeCoordinate(coordinate, { language, remote })
-    // A spot left unnamed only because the Worker was not asked is not kept:
-    // the next caller who may ask it should.
-    const resolved = { coordinate, place: named ?? pinnedPlace(coordinate), named: Boolean(named) }
-    if (named || remote) cached = { ...resolved, at: Date.now(), language }
-    return resolved
+    return await nameSpot(await getCurrentCoordinate(), language, remote)
   } catch (error) {
     return failureOf(error)
   }
@@ -106,10 +117,22 @@ export async function resolveCurrentPlace({
   const reusable = cached
   if (!fresh && stillGood(reusable, language)) return reusable
   // Two callers at once (a meal tagged as its page previews the tag) share a fix.
-  inFlight ??= locate(language, remote).finally(() => {
-    inFlight = null
+  const flight = inFlight?.language === language ? inFlight : null
+  if (flight && (flight.remote || !remote)) return flight.promise
+  if (flight) {
+    // The preview never asks the Worker. A save that joins it keeps its fix but
+    // may still ask, or it would write "Pinned location" for a spot Apple names.
+    return flight.promise.then((found) =>
+      typeof found === 'string' || found.named
+        ? found
+        : nameSpot(found.coordinate, language, true).catch(() => found),
+    )
+  }
+  const promise = locate(language, remote).finally(() => {
+    if (inFlight?.promise === promise) inFlight = null
   })
-  return inFlight
+  inFlight = { promise, language, remote }
+  return promise
 }
 
 /**

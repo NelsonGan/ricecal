@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { type Recipe, useLogFood, useRemoveEntry, useSelectedDate } from '@/data'
@@ -30,10 +31,22 @@ export function useLogRecipe() {
   const toast = useToast()
   const logFood = useLogFood()
   const removeEntry = useRemoveEntry()
+  // `onLogged` navigates, and a promise settles even after the page is gone:
+  // a slow insert would otherwise pop whatever screen the user moved on to.
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
 
   const log = (recipe: Recipe, quantity: number, logDate: string, onLogged?: () => void) => {
-    logFood.mutate(recipeLog(recipe, quantity, logDate), {
-      onSuccess: (row) => {
+    // `mutateAsync`, not `mutate` with callbacks: those fire for the latest
+    // call only, so two cards' plus tapped in a row logged both and confirmed
+    // (and offered Undo for) just the second.
+    logFood.mutateAsync(recipeLog(recipe, quantity, logDate)).then(
+      (row) => {
         toast.show({
           title: t('recipes:card.logged', { name: recipe.name }),
           tone: 'success',
@@ -42,10 +55,10 @@ export function useLogRecipe() {
             onPress: () => removeEntry.mutate({ id: row.id, logDate, source: 'quickAdd' }),
           },
         })
-        onLogged?.()
+        if (mounted.current) onLogged?.()
       },
-      onError: () => toast.show({ title: t('recipes:edit.saveFailed'), tone: 'error' }),
-    })
+      () => toast.show({ title: t('recipes:edit.saveFailed'), tone: 'error' }),
+    )
   }
 
   return { log, pending: logFood.isPending }

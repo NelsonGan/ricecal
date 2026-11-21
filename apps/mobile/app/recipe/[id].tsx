@@ -29,7 +29,7 @@ import {
   useTickedIngredients,
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
-import { useBack } from '@/lib/navigation'
+import { useBack, useCloseStack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -76,6 +76,9 @@ export default function RecipeDetailScreen() {
   const { t } = useTranslation(['recipes', 'common'])
   const router = useRouter()
   const goBack = useBack('/recipes')
+  // Away from a recipe that is gone or hidden, back to what opened it: the
+  // Recipes tab, a group chat, the log search.
+  const leave = useCloseStack('/recipes')
   const toast = useToast()
   const colors = useThemeColors()
 
@@ -135,7 +138,7 @@ export default function RecipeDetailScreen() {
     try {
       await report.mutateAsync({ recipeId: recipe.id, reason })
       toast.show({ title: t('recipes:report.done') })
-      router.replace('/recipes')
+      leave()
     } catch {
       toast.show({ title: t('recipes:report.failed'), tone: 'error' })
     }
@@ -147,7 +150,7 @@ export default function RecipeDetailScreen() {
     try {
       await block.mutateAsync(recipe.ownerId)
       toast.show({ title: t('recipes:report.blocked') })
-      router.replace('/recipes')
+      leave()
     } catch {
       toast.show({ title: t('recipes:report.failed'), tone: 'error' })
     }
@@ -580,7 +583,7 @@ export default function RecipeDetailScreen() {
           await remove.mutateAsync({ id: recipe.id, photoPath: recipe.photoPath })
           setDeleting(false)
           toast.show({ title: t('recipes:detail.deleted'), tone: 'neutral' })
-          router.replace('/recipes')
+          leave()
         }}
       />
     </Screen>

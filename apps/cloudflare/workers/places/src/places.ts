@@ -9,8 +9,9 @@
 // keeps that per isolate. Answers are cached at the edge by the normalized
 // request, with coordinates rounded first, so a repeated search is free and
 // Apple never sees the user's exact position from a search. Apple allows a
-// shared 25,000 calls a day, so each user also has a daily allowance
-// (quota.ts) and each address a per-minute limit; a cache hit uses neither.
+// shared 25,000 calls a day, so each user and each address also has a daily
+// allowance (quota.ts) that a cache hit does not use. The per-minute limit per
+// user (`PLACES_RL`, in index.ts) counts every request, cached or not.
 
 export interface PlacesEnv {
   // The .p8 of the team's Maps key (Maps enabled), PEM text.

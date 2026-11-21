@@ -2481,7 +2481,7 @@ with their factor against the base serving, and ids under `measure:` that go to
 `numeric(6, 3)`: a one-gram portion of a 300 g plate is 0.00333, which the column
 stores as 0.003, a tenth light per gram. A build that has never heard of units
 counts these rows exactly as it counts any other; it shows "1.5 × 100 g" where a
-new one shows "150 g" (`measureOf`, then `portionLabel`).
+new one shows "150 g" (`portionLabel` reads the amount out of the label).
 
 **Picking a unit keeps the amount eaten; picking a portion keeps the count.** Two
 regular plates become two large ones, which is what "Large" means. One 350 g
@@ -2986,11 +2986,13 @@ step moves on, for hands too messy for the button, and each new step is
 announced to VoiceOver, which ignores a live region on iOS. Where the cook is
 lives beside the ticks (`useCookStep` in `cookSession.ts`), so closing cook mode
 to check something does not start it again from step 1. Under each step are the
-ingredients it names at tonight's amounts, tickable. `ingredientsInStep` matches a
-whole name, or its first word when that is four letters or more ("chicken" for
-"Chicken thigh"), and never the last word, which is the generic half: "sauce"
-would put the oyster sauce beside a step about the soy. The full list is one tap
-away in a sheet. The last step asks how much was eaten, in the same sheet as the
+ingredients it names at tonight's amounts, tickable. `ingredientsInStep` matches
+whole words, every word of the name ("Rice vinegar" needs both, so "cook the
+rice" does not hand over the vinegar), with plurals either way. The one
+shortcut is a name ending in a cut of meat, matched on its first word
+("Chicken thighs" for "add the chicken"). A miss costs nothing and a wrong
+match hands over the wrong jar, so the rule leans to missing. The full list is
+one tap away in a sheet. The last step asks how much was eaten, in the same sheet as the
 recipe page, rather than logging one serving for somebody who had two.
 
 **What the data gained** (`20261121042151_recipe_manager.sql`), all nullable or
@@ -4351,7 +4353,9 @@ that name is taken by `item_place`, the kind of stall. A build that predates
 them writes none and reads none.
 
 **Private to the owner.** Nothing that copies an entry to the feed or a group
-reads these columns, and the food map is wrapped in `ReplayMask`. Analytics
+reads these columns. The food map, the picker, the entry page's Where card and
+the place on a Today row (`ItemRow`'s `maskDetail`) are wrapped in
+`ReplayMask`. The privacy policy says so. Analytics
 carries no coordinate, name, address or search text.
 
 **On the entry page**, a Where card under the portion shows the place, its
@@ -4450,8 +4454,8 @@ All three answer `{ places: PlaceResult[] }`.
   coordinates rounded first: about 1 km for a search, 110 m for nearby, 11 m
   for a reverse lookup. Apple never sees the exact spot from a search.
 - **Caps**: 200 Apple calls a day per user and 1,000 per address (an account
-  is cheap to make), plus 60 requests a minute per user (`PLACES_RL`). Cache
-  hits count against none of them. A use is taken before Apple is asked, in
+  is cheap to make), which cache hits do not use, plus 60 requests a minute
+  per user (`PLACES_RL`), which counts every request, cached or not. A use is taken before Apple is asked, in
   one atomic upsert per counter, so searches sent together cannot all read
   the same count and slip past; a refused search or one Apple fails gives it
   back. Daily counts live in D1

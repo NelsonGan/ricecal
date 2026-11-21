@@ -9,7 +9,6 @@ export {
   autoTagWanted,
   type CurrentPlaceFailure,
   currentCoordinate,
-  resolveCurrentPlace,
 } from './currentPlace'
 export {
   describeCoordinate,

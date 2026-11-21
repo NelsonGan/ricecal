@@ -29,7 +29,7 @@ export const recipes = {
     drink: 'Drink',
   },
 
-  /** The three ways in, at the top of your own shelf. One word each. */
+  /** The three ways in, in the sheet behind the tab's plus. One word each. */
   add: {
     title: 'Add a recipe',
     write: 'Write it',
@@ -39,7 +39,7 @@ export const recipes = {
   },
 
   card: {
-    /** The plus on a card: one serving into the day being looked at. */
+    /** The plus on a card: one serving into today. */
     log: 'Add {{name}} to today',
     logged: '{{name}} added to your day',
     favourite: 'Favourite',
@@ -199,7 +199,7 @@ export const recipes = {
       pot: 'Whole pot',
     },
     ofServings: '{{count}} OF {{total}} SERVINGS',
-    /** The three tiles under the title. */
+    /** The strip under the title. */
     prep: 'Prep',
     cook: 'Cook',
     perServing: 'per serving',

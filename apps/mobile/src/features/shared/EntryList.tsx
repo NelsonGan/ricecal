@@ -247,6 +247,9 @@ function EntryRow({
   // import carried. See `portionLabel`. The amount is what was eaten, so half
   // a photographed plate reads as half. One plain serving is left out.
   const portion = portionLabel(eatenQuantity(entry), entry.servingLabel, words)
+  const detail = entry.location
+    ? `${formatTime(entry.loggedAt)} · ${entry.location.name}`
+    : formatTime(entry.loggedAt)
 
   const row = (open?: () => void) => (
     <ItemRow
@@ -261,11 +264,9 @@ function EntryRow({
       // The place, when the meal has one, after the time and in the same
       // line: "8:15 am · Village Park". The name only; the address is on the
       // entry's own page.
-      detail={
-        entry.location
-          ? `${formatTime(entry.loggedAt)} · ${entry.location.name}`
-          : formatTime(entry.loggedAt)
-      }
+      detail={detail}
+      // Where somebody eats is their location history: kept out of replays.
+      maskDetail={Boolean(entry.location)}
       tags={portion ? [portion] : undefined}
       compact
       onPress={open}
@@ -273,8 +274,8 @@ function EntryRow({
   )
 
   // Swiping is the shortcut, not the only way: the detail screen still has a
-  // delete, which is where a screen reader user (and anyone who wants to look
-  // before removing) goes.
+  // delete, for anyone who wants to look before removing, and `SwipeRow` offers
+  // Delete as an accessibility action.
   // A swipeable row hands its tap to `SwipeRow` and renders as a plain view,
   // so one gesture decides between the press and the drag — see the note there.
   if (!onDelete) return row(onPress ? () => onPress(entry) : undefined)
@@ -291,6 +292,15 @@ function EntryRow({
       ]}
       onPress={onPress ? () => onPress(entry) : undefined}
       onOpenChange={onOpenChange}
+      // Built from its children, the swipe row's label would read the masked
+      // place line as "ph-no-capture", so a row with a place names itself.
+      accessibilityLabel={
+        entry.location
+          ? [entry.foodName, `${entry.macros.kcal} ${t('common:unit.kcal')}`, detail, portion]
+              .filter(Boolean)
+              .join(', ')
+          : undefined
+      }
     >
       {row()}
     </SwipeRow>
