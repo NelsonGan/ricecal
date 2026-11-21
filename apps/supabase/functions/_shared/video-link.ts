@@ -241,9 +241,18 @@ export async function resolveShortLink(
       headers: { 'user-agent': BROWSER_UA, accept: 'text/html' },
       signal: AbortSignal.timeout(8000),
     })
-    await res.body?.cancel()
-    const location = res.headers.get('location')
-    if (!location || res.status < 300 || res.status >= 400) return null
+    // t.co answers a browser with a 200 page that redirects by a meta refresh
+    // and only answers other clients with a 301, so a 200 is read for one.
+    let location = res.headers.get('location')
+    if (res.status >= 300 && res.status < 400) {
+      await res.body?.cancel()
+    } else if (res.ok) {
+      location = metaRefresh(await readPrefix(res.body, 64 * 1024))
+    } else {
+      await res.body?.cancel()
+      return null
+    }
+    if (!location) return null
     const next = new URL(location, current).toString()
     const parsed = parseVideoLink(next)
     if (!parsed) return null
@@ -251,6 +260,38 @@ export async function resolveShortLink(
     current = parsed.url
   }
   return null
+}
+
+/** The target of a `<meta http-equiv="refresh" content="0;URL=…">`, or null. */
+export function metaRefresh(html: string): string | null {
+  const tag = html.match(/<meta[^>]+http-equiv\s*=\s*["']?refresh["']?[^>]*>/i)?.[0]
+  const url = tag?.match(/content\s*=\s*["'][^"']*?url\s*=\s*([^"'\s>]+)/i)?.[1]
+  return url ? url.replace(/&amp;/g, '&') : null
+}
+
+/** The first `max` bytes of a body as text, cancelling the rest. */
+async function readPrefix(body: ReadableStream<Uint8Array> | null, max: number): Promise<string> {
+  if (!body) return ''
+  const reader = body.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  try {
+    while (size < max) {
+      const { done, value } = await reader.read()
+      if (done) break
+      chunks.push(value)
+      size += value.length
+    }
+  } finally {
+    await reader.cancel().catch(() => {})
+  }
+  const bytes = new Uint8Array(size)
+  let at = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, at)
+    at += chunk.length
+  }
+  return new TextDecoder().decode(bytes.slice(0, max))
 }
 
 /** A current desktop browser, for pages that answer bots differently. */

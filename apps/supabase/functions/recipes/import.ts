@@ -31,6 +31,7 @@ import {
   cachedDraft,
   importVideoRecipe,
   type PostMedia,
+  VIDEO_ROUTE,
   type VideoMockSteer,
 } from '../_shared/video-recipe.ts'
 
@@ -70,7 +71,17 @@ type ImportContext = {
   } | null>
 }
 
+/**
+ * When an import started must be finished by. The function's wall clock is
+ * 150 s; this leaves room for the writes after the model and the review that
+ * runs once the answer is sent.
+ */
+const IMPORT_BUDGET_MS = 135_000
+/** The most a share link may take to follow, across all its hops. */
+const SHORT_LINK_MS = 15_000
+
 export async function handleImport(body: ImportRequest, ctx: ImportContext): Promise<Response> {
+  const deadline = Date.now() + IMPORT_BUDGET_MS
   const { db, userId, meter } = ctx
   const mock = mockActive() ? body.mock : undefined
   const pasted = typeof body.url === 'string' ? body.url.slice(0, 2000) : ''
@@ -80,7 +91,9 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
   if (!parsed) return json({ ok: false, code: 'unsupported_link' }, 400)
   let link: VideoLink | null
   try {
-    link = isShortLink(parsed) ? await resolveShortLink(parsed) : parsed
+    link = isShortLink(parsed)
+      ? await within(resolveShortLink(parsed), SHORT_LINK_MS, null)
+      : parsed
   } catch (error) {
     console.warn('[recipes/import] short link failed:', errorText(error))
     link = null
@@ -114,7 +127,8 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
       p_user: userId,
     })
     if (runError) console.error('[recipes/import] run claim failed, allowing:', runError.message)
-    else if (allowed === false) return json({ ok: false, code: 'busy' }, 429)
+    else if (allowed === false)
+      return json({ ok: false, code: 'busy', platform: link.platform }, 429)
 
     const fetched = await readPost(link, mock?.post)
     if (!fetched) return json({ ok: false, code: 'unreadable', platform: link.platform })
@@ -131,7 +145,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
 
     let result: Awaited<ReturnType<typeof importVideoRecipe>>
     try {
-      result = await importVideoRecipe(fetched, video, coverMedia, mock, meter)
+      result = await importVideoRecipe(fetched, video, coverMedia, mock, meter, deadline)
     } catch (error) {
       console.error('[recipes/import] model failed:', errorText(error))
       return json({ ok: false, code: 'failed', platform: link.platform })
@@ -140,7 +154,13 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     // A "not a recipe" reached without watching a video that was there to
     // watch is the caption's verdict, not the video's: it is answered, and not
     // cached, so the next import gets another look at the video itself.
-    if (!result.recipe.isRecipe && video.kind === 'video' && result.analysedFrom !== 'video') {
+    //
+    // "There to watch" is the post having a video at all, not the download
+    // working: a TikTok file that answered 403 is exactly the case where the
+    // caption alone (hashtags, the recipe spoken aloud) would wrongly turn the
+    // video away for everybody.
+    const watchable = Boolean(fetched.videoUrl) && VIDEO_ROUTE !== null
+    if (!result.recipe.isRecipe && watchable && result.analysedFrom !== 'video') {
       return json({
         ok: false,
         code: 'not_recipe',
@@ -413,6 +433,14 @@ function afterResponse(work: Promise<unknown>) {
     .EdgeRuntime
   if (runtime?.waitUntil) runtime.waitUntil(work)
   else work.catch(() => {})
+}
+
+/** `promise`, or `fallback` once `ms` have passed without it. */
+export function within<T, F>(promise: Promise<T>, ms: number, fallback: F): Promise<T | F> {
+  return Promise.race([
+    promise,
+    new Promise<F>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ])
 }
 
 function errorText(error: unknown): string {

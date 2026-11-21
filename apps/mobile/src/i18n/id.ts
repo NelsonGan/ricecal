@@ -1637,6 +1637,10 @@ export const id = {
           title: 'Kamu sedang offline',
           body: 'Sambungkan ke internet dan coba lagi.',
         },
+        proLimit: {
+          title: 'Banyak sekali resepnya',
+          body: 'Kamu sudah mengimpor video sebanyak yang bisa dilakukan satu akun bulan ini. Bisa lagi bulan depan.',
+        },
         limit: {
           title: 'Jatah impor bulan ini habis',
           body_one: 'Akun gratis mengimpor {{count}} video sebulan. Pro tanpa batas.',

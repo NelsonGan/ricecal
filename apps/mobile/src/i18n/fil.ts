@@ -1653,6 +1653,10 @@ export const fil = {
           title: 'Offline ka',
           body: 'Kumonekta sa internet at subukan ulit.',
         },
+        proLimit: {
+          title: 'Ang dami nang recipe',
+          body: 'Naabot mo na ang pinakamaraming video na ma-i-import ng isang account ngayong buwan. Puwede ulit sa susunod na buwan.',
+        },
         limit: {
           title: 'Ubos na ang import mo ngayong buwan',
           body_one:

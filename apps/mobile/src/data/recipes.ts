@@ -837,6 +837,10 @@ export function useImportRecipe() {
   const userId = useUserId()
 
   return useMutation({
+    // Sent even offline, rather than paused until the network returns: the
+    // user is looking at a screen waiting for this, and "you are offline" is
+    // the answer it needs, not a spinner that outlasts their patience.
+    networkMode: 'always',
     // A shelf, the count and the allowance all move on a success, and the
     // allowance is worth re-reading after a refusal too.
     onSettled: () => {

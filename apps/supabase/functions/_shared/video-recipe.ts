@@ -187,6 +187,15 @@ export const VIDEO_ROUTE: ModelRoute | null =
  */
 const VIDEO_TIMEOUT_MS = 45_000
 
+/**
+ * The caption route's worst case: Haiku's 15 s, then Qwen's 25 s and its one
+ * retry. The video route never eats into it, so a stalled video model still
+ * leaves a recipe possible inside the function's 150 s wall clock.
+ */
+const CAPTION_RESERVE_MS = 70_000
+/** Less than this and watching the video is not worth starting. */
+const MIN_VIDEO_MS = 15_000
+
 /** Fifteen ingredients with seven fields each, plus the steps and the times. */
 const MAX_TOKENS = 3000
 /** The same answer with room for the video model's reasoning, which it cannot skip. */
@@ -313,6 +322,12 @@ export async function importVideoRecipe(
   cover: PostMedia,
   mock: VideoMockSteer | undefined,
   meter: Meter,
+  /**
+   * When the whole import must be done by (epoch ms). The video route only
+   * runs, and is only retried, while it leaves the caption route its own
+   * worst case (`CAPTION_RESERVE_MS`) before this.
+   */
+  deadline = Date.now() + 120_000,
 ): Promise<{ recipe: VideoRecipe; analysedFrom: 'video' | 'caption' }> {
   if (mockActive()) {
     if (mock?.fail === 'import') throw new Error('mocked video import failure')
@@ -330,6 +345,11 @@ export async function importVideoRecipe(
     // wrong, and the caption route that would answer instead cannot see the
     // video at all. A timeout or an error is not retried.
     for (let attempt = 0; attempt < 2; attempt++) {
+      const left = deadline - Date.now() - CAPTION_RESERVE_MS
+      if (left < MIN_VIDEO_MS) {
+        console.warn('[video-recipe] no time left to watch the video, reading the caption')
+        break
+      }
       try {
         const raw = await chatJSON(
           meter,
@@ -345,7 +365,7 @@ export async function importVideoRecipe(
             },
           ],
           VIDEO_MAX_TOKENS,
-          { route: VIDEO_ROUTE, timeoutMs: VIDEO_TIMEOUT_MS },
+          { route: VIDEO_ROUTE, timeoutMs: Math.min(VIDEO_TIMEOUT_MS, left) },
         )
         return { recipe: shapeVideoRecipe(raw), analysedFrom: 'video' }
       } catch (error) {

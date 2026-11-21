@@ -1630,6 +1630,10 @@ export const vi = {
           title: 'Bạn đang mất mạng',
           body: 'Kết nối mạng rồi thử lại.',
         },
+        proLimit: {
+          title: 'Nhiều công thức quá',
+          body: 'Bạn đã nhập số video tối đa một tài khoản được nhập trong tháng này. Tháng sau có thể nhập tiếp.',
+        },
         limit: {
           title: 'Đã hết lượt nhập tháng này',
           body_one: 'Tài khoản miễn phí nhập được {{count}} video mỗi tháng. Pro không giới hạn.',

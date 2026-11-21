@@ -1618,6 +1618,10 @@ export const zhHant = {
           title: '你目前離線',
           body: '連上網路後再試一次。',
         },
+        proLimit: {
+          title: '食譜已經很多了',
+          body: '本月你已匯入一個帳戶可匯入的最多影片。下個月可以繼續匯入。',
+        },
         limit: {
           title: '本月的匯入次數用完了',
           body_one: '免費帳號每月可匯入 {{count}} 部影片。Pro 沒有上限。',

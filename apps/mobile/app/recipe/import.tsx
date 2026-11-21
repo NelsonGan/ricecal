@@ -1,5 +1,5 @@
 import { FREE_VIDEO_IMPORTS } from '@ricecal/shared'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -32,7 +32,8 @@ import {
 /** When each stage of the checklist hands over to the next. */
 const STAGE_MS = [7000, 20000] as const
 
-type Failure = VideoImportFailure | 'limit'
+/** `limit` is a free account's month spent; `proLimit` is Pro's unprinted ceiling. */
+type Failure = VideoImportFailure | 'limit' | 'proLimit'
 
 /**
  * A cooking video becoming a recipe: `/recipe/import?url=…`.
@@ -67,7 +68,13 @@ export default function ImportRecipeScreen() {
 
   // Whether this screen is still the one on top, so a recipe that arrives after
   // the user left is announced with a toast rather than by pulling them back.
+  // Focus as well as mounting: a screen pushed over this one (a notification,
+  // another shared link) leaves it mounted underneath, and replacing the route
+  // then would throw away whatever the user had moved on to.
+  const focused = useIsFocused()
   const mounted = useRef(true)
+  const onTop = useRef(true)
+  onTop.current = focused
   useEffect(() => {
     mounted.current = true
     return () => {
@@ -91,7 +98,7 @@ export default function ImportRecipeScreen() {
           : result.community
             ? t('recipes:import.doneCommunity')
             : t('recipes:import.done')
-        if (mounted.current) {
+        if (mounted.current && onTop.current) {
           toast.show({ title, tone: 'success' })
           router.replace({ pathname: '/recipe/[id]', params: { id: result.recipeId } })
         } else {
@@ -108,8 +115,16 @@ export default function ImportRecipeScreen() {
       })
       .catch((error: unknown) => {
         if (error instanceof VideoImportLimitError) {
+          // Pro's ceiling is an abuse limit, not something to sell: a paywall
+          // for a plan the user already has would be the wrong answer.
+          if (quota.data?.entitled) {
+            if (mounted.current) setFailure('proLimit')
+            return
+          }
           if (mounted.current) setFailure('limit')
-          openPaywall(toast, { title: proFeatureTitle('video_import'), feature: 'video_import' })
+          if (onTop.current) {
+            openPaywall(toast, { title: proFeatureTitle('video_import'), feature: 'video_import' })
+          }
           return
         }
         if (!mounted.current) return
@@ -120,16 +135,20 @@ export default function ImportRecipeScreen() {
   // A free account with nothing left this month is told before anything is
   // sent; the server refuses it anyway, after a round trip.
   const spent = quota.data ? !quota.data.entitled && quota.data.remaining <= 0 : false
+  // Waits for the allowance only while it is actually being fetched. Offline,
+  // the query is paused and would stay pending for good; the import is sent
+  // anyway, fails at once, and the screen says the user is offline.
+  const waiting = quota.isPending && quota.fetchStatus !== 'paused'
   // biome-ignore lint/correctness/useExhaustiveDependencies: starts once per link, see `started`
   useEffect(() => {
-    if (!link || started.current === link.url || quota.isPending) return
+    if (!link || started.current === link.url || waiting) return
     if (spent) {
       started.current = link.url
       setFailure('limit')
       return
     }
     start()
-  }, [link?.url, quota.isPending, spent])
+  }, [link?.url, waiting, spent])
 
   useEffect(() => {
     if (failure || !importRecipe.isPending) return
@@ -244,6 +263,7 @@ function StageRow({ label, state }: { label: string; state: 'done' | 'active' | 
 
 const FAILURE_ICONS: Record<Failure, IconProps> = {
   not_recipe: { set: 'food', name: 'cooking-pot' },
+  proLimit: { set: 'system', name: 'calendar' },
   unreadable: { set: 'ui', name: 'unlink' },
   unsupported_link: { set: 'ui', name: 'unlink' },
   failed: { set: 'ui', name: 'warning' },

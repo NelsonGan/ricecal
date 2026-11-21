@@ -255,7 +255,11 @@ Deno.test('only public recipe pages a caption links to are fetched', async () =>
     Promise.resolve(
       new Response(null, { status: 301, headers: { location: 'http://192.168.0.1/' } }),
     )) as unknown as typeof fetch
-  eq(await readLinkedRecipe('https://recipes.example/rendang', fetcher), null, 'redirect refused')
+  eq(
+    await readLinkedRecipe('https://recipes.example/rendang', fetcher, () => Promise.resolve(true)),
+    null,
+    'redirect refused',
+  )
 })
 
 Deno.test('the caption is fenced as data in what the model is shown', () => {
@@ -371,4 +375,95 @@ Deno.test('a slow answer is kept alive with spaces and still parses as its JSON'
   const body = await res.text()
   eq(body.startsWith(' '), true, 'kept alive with whitespace')
   eq((JSON.parse(body) as { code: string }).code, 'import_limit', 'and the code survives')
+})
+
+Deno.test('a t.co link that answers a browser with a meta refresh is still followed', async () => {
+  const { metaRefresh } = await import('./video-link.ts')
+  const page =
+    '<head><noscript><META http-equiv="refresh" content="0;URL=https://twitter.com/cook/status/1834623580987916752/video/1"></noscript></head>'
+  eq(metaRefresh(page), 'https://twitter.com/cook/status/1834623580987916752/video/1', 'the target')
+
+  const fetcher = (() =>
+    Promise.resolve(
+      new Response(page, { status: 200, headers: { 'content-type': 'text/html' } }),
+    )) as unknown as typeof fetch
+  const short = parseVideoLink('https://t.co/fx796DrPhe')
+  if (!short || !isShortLink(short)) throw new Error('t.co is a short link')
+  const followed = await resolveShortLink(short, fetcher)
+  eq(followed?.platform, 'x', 'to the X post')
+  eq(followed?.id, '1834623580987916752', 'its id')
+})
+
+Deno.test('a recipe page whose name resolves to a private address is never fetched', async () => {
+  const { isPrivateAddress } = await import('./video-post.ts')
+  for (const address of [
+    '10.1.2.3',
+    '127.0.0.1',
+    '169.254.169.254',
+    '172.20.0.1',
+    '192.168.1.1',
+    '100.64.0.1',
+    '::1',
+    'fd00::1',
+    'fe80::1',
+    '::ffff:10.0.0.1',
+  ]) {
+    eq(isPrivateAddress(address), true, address)
+  }
+  for (const address of ['8.8.8.8', '104.18.1.1', '2606:4700::1111']) {
+    eq(isPrivateAddress(address), false, address)
+  }
+
+  let fetched = 0
+  const fetcher = (() => {
+    fetched++
+    return Promise.resolve(
+      new Response('<html></html>', { headers: { 'content-type': 'text/html' } }),
+    )
+  }) as unknown as typeof fetch
+  const privateName = () => Promise.resolve(false)
+  eq(
+    await readLinkedRecipe(
+      'https://169.254.169.254.nip.io/latest/meta-data/x',
+      fetcher,
+      privateName,
+    ),
+    null,
+    'nothing',
+  )
+  eq(fetched, 0, 'and no request went out')
+})
+
+Deno.test('an import that fails before the grace period still answers with a code', async () => {
+  const { respondWithin } = await import('./http.ts')
+  const res = await respondWithin(Promise.reject(new TypeError('boom')), 50)
+  eq(res.status, 200, 'not the runtime 500')
+  eq((await res.json()).code, 'failed', 'the code the app reads')
+})
+
+Deno.test('a long TikTok is sent as its smallest copy that fits, H.264 first', async () => {
+  const { smallestTikTokVideo } = await import('./video-post.ts')
+  const variant = (url: string, bitrate: number, codec: string) => ({
+    Bitrate: bitrate,
+    CodecType: codec,
+    PlayAddr: { UrlList: [url] },
+  })
+  const item = {
+    video: {
+      duration: 120,
+      bitrateInfo: [
+        variant('https://v16.tiktokcdn.com/1080.mp4', 2_400_000, 'h265_hvc1'),
+        variant('https://v16.tiktokcdn.com/720.mp4', 900_000, 'h264'),
+        variant('https://v16.tiktokcdn.com/540.mp4', 700_000, 'h265_hvc1'),
+        variant('https://v16.tiktokcdn.com/720-big.mp4', 1_700_000, 'h264'),
+      ],
+    },
+  }
+  eq(smallestTikTokVideo(item), 'https://v16.tiktokcdn.com/720.mp4', 'the H.264 copy under the cap')
+  eq(
+    smallestTikTokVideo({ video: { duration: 1200, bitrateInfo: item.video.bitrateInfo } }),
+    null,
+    'nothing fits a 20-minute video',
+  )
+  eq(smallestTikTokVideo({ video: {} }), null, 'no variants, no answer')
 })

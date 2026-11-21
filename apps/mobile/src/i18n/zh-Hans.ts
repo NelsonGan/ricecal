@@ -1618,6 +1618,10 @@ export const zhHans = {
           title: '你目前离线',
           body: '联网后再试一次。',
         },
+        proLimit: {
+          title: '食谱已经很多了',
+          body: '本月你已导入一个账户可导入的最多视频。下个月可以继续导入。',
+        },
         limit: {
           title: '本月的导入次数用完了',
           body_one: '免费账号每月可导入 {{count}} 个视频。Pro 没有上限。',

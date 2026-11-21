@@ -55,8 +55,15 @@ export async function respondWithin(
   graceMs = 5000,
   heartbeatMs = 8000,
 ): Promise<Response> {
+  // A failure is answered the same way however soon it comes: as the code the
+  // app reads, never as the runtime's opaque 500.
+  const failed = () => json({ ok: false, code: 'failed' })
+  const settled = work.catch((error) => {
+    console.error('[respondWithin]', error)
+    return failed()
+  })
   const early = await Promise.race([
-    work,
+    settled,
     new Promise<null>((resolve) => setTimeout(() => resolve(null), graceMs)),
   ])
   if (early) return early
@@ -66,7 +73,7 @@ export async function respondWithin(
     async start(controller) {
       const beat = setInterval(() => controller.enqueue(encoder.encode(' ')), heartbeatMs)
       try {
-        const done = await work
+        const done = await settled
         controller.enqueue(encoder.encode(await done.text()))
       } catch {
         controller.enqueue(encoder.encode(JSON.stringify({ ok: false, code: 'failed' })))

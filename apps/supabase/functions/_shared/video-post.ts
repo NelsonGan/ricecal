@@ -41,6 +41,7 @@ export const MAX_VIDEO_BYTES = 18 * 1024 * 1024
 const MAX_PAGE_BYTES = 4 * 1024 * 1024
 const PAGE_TIMEOUT_MS = 10_000
 const MEDIA_TIMEOUT_MS = 20_000
+const LINKED_RECIPE_MS = 12_000
 
 /**
  * The link-preview crawler's name. A preview is what this is, and it is the
@@ -82,7 +83,12 @@ export async function fetchPost(
   const post = await read(link, fetcher)
   if (!post) return null
   // The recipe page the caption links to, if there is one. Never fatal.
-  const linked = await readLinkedRecipe(post.caption ?? '', fetcher).catch(() => null)
+  // Bounded as a whole: two links of four hops each could otherwise spend
+  // most of the import's time on a page that is only a bonus.
+  const linked = await Promise.race([
+    readLinkedRecipe(post.caption ?? '', fetcher).catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), LINKED_RECIPE_MS)),
+  ])
   return { ...post, linkedRecipe: linked ?? post.linkedRecipe ?? null }
 }
 
@@ -202,6 +208,12 @@ type TikTokItem = {
     playAddr?: string
     downloadAddr?: string
     subtitleInfos?: Array<{ Url?: string; LanguageCodeName?: string; Format?: string }>
+    duration?: number
+    bitrateInfo?: Array<{
+      Bitrate?: number
+      CodecType?: string
+      PlayAddr?: { UrlList?: string[] }
+    }>
   }
   imagePost?: { cover?: { imageURL?: { urlList?: string[] } } }
 }
@@ -244,7 +256,8 @@ async function readTikTok(link: VideoLink, fetcher: Fetcher): Promise<FetchedPos
 
   // The file is signed to the page's own cookies, so it is fetched with them
   // and the page as the referrer, exactly as the page itself would.
-  post.videoUrl = httpsOrNull(item.video?.playAddr ?? item.video?.downloadAddr)
+  post.videoUrl =
+    smallestTikTokVideo(item) ?? httpsOrNull(item.video?.playAddr ?? item.video?.downloadAddr)
   if (post.videoUrl) {
     post.videoHeaders = {
       'user-agent': BROWSER_UA,
@@ -264,6 +277,31 @@ async function readTikTok(link: VideoLink, fetcher: Fetcher): Promise<FetchedPos
     if (vtt) post.transcript = transcriptFromVtt(vtt.text)
   }
   return post
+}
+
+/**
+ * The cheapest copy of a TikTok that still fits what the model is sent. The
+ * default file is the best quality, and a two-minute reel at 1080p is over
+ * `MAX_VIDEO_BYTES` (a 20 MB birthday dinner fell back to its caption), while
+ * a recipe reads as well at 540p. H.264 first, because every video model
+ * decodes it; HEVC only if nothing else fits. Sizes are estimated from the
+ * bitrate and the length, since TikTok rarely says the size. Exported for its
+ * test.
+ */
+export function smallestTikTokVideo(item: TikTokItem): string | null {
+  const seconds = item.video?.duration ?? 0
+  const variants = (item.video?.bitrateInfo ?? [])
+    .map((v) => ({
+      url: httpsOrNull(v.PlayAddr?.UrlList?.[0]),
+      h264: (v.CodecType ?? '').startsWith('h264'),
+      bytes: ((v.Bitrate ?? 0) * seconds) / 8,
+    }))
+    .filter((v): v is { url: string; h264: boolean; bytes: number } => v.url !== null)
+  const fits = (v: { bytes: number }) =>
+    seconds > 0 && v.bytes > 0 && v.bytes <= MAX_VIDEO_BYTES * 0.9
+  const smallest = (list: typeof variants) =>
+    [...list].sort((a, b) => a.bytes - b.bytes)[0]?.url ?? null
+  return smallest(variants.filter((v) => v.h264 && fits(v))) ?? smallest(variants.filter(fits))
 }
 
 /** The words of a WebVTT file, without its cue timings. */
@@ -580,10 +618,15 @@ export function ldRecipeText(recipe: LdRecipe): string | null {
 export async function readLinkedRecipe(
   caption: string,
   fetcher: Fetcher = fetch,
+  resolves: (host: string) => Promise<boolean> = resolvesPublicly,
 ): Promise<string | null> {
   for (const start of recipeLinks(caption)) {
     let url = start
     for (let hop = 0; hop < 4; hop++) {
+      // A public name can still point at a private address (`10.0.0.1.nip.io`,
+      // or a stranger's domain with an A record of 169.254.169.254), so every
+      // hop's name is resolved and checked before anything is sent to it.
+      if (!(await resolves(url.hostname))) break
       const res = await fetcher(url.toString(), {
         headers: { 'user-agent': BROWSER_UA, accept: 'text/html', 'accept-language': 'en' },
         redirect: 'manual',
@@ -612,6 +655,47 @@ export async function readLinkedRecipe(
     }
   }
   return null
+}
+
+/** Whether an address is loopback, private, link-local, CGNAT or otherwise not the internet. */
+export function isPrivateAddress(address: string): boolean {
+  const a = address.toLowerCase()
+  if (a.includes(':')) {
+    // IPv6: loopback, unspecified, unique local, link local, and v4-mapped.
+    if (a === '::1' || a === '::') return true
+    if (/^f[cd]/.test(a) || /^fe[89ab]/.test(a)) return true
+    const mapped = a.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/)?.[1]
+    return mapped ? isPrivateAddress(mapped) : false
+  }
+  const [p, q] = a.split('.').map(Number)
+  return (
+    p === 0 ||
+    p === 10 ||
+    p === 127 ||
+    (p === 100 && q >= 64 && q <= 127) ||
+    (p === 169 && q === 254) ||
+    (p === 172 && q >= 16 && q <= 31) ||
+    (p === 192 && q === 168) ||
+    (p === 198 && (q === 18 || q === 19)) ||
+    p >= 224
+  )
+}
+
+/**
+ * Whether every address a host name resolves to is on the public internet.
+ * Refuses a name that does not resolve. Where the runtime offers no resolver
+ * at all it answers yes, since the name itself has already passed
+ * `isFetchableHost`; the edge runtime has one.
+ */
+export async function resolvesPublicly(host: string): Promise<boolean> {
+  const resolve = (Deno as unknown as { resolveDns?: typeof Deno.resolveDns }).resolveDns
+  if (typeof resolve !== 'function') return true
+  const answers = await Promise.all([
+    resolve(host, 'A').catch(() => [] as string[]),
+    resolve(host, 'AAAA').catch(() => [] as string[]),
+  ])
+  const addresses = answers.flat()
+  return addresses.length > 0 && !addresses.some(isPrivateAddress)
 }
 
 // -- Media --------------------------------------------------------------------

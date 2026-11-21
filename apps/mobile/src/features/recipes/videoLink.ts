@@ -41,8 +41,15 @@ export type FoundVideoLink = { platform: VideoPlatform; url: string }
  */
 export function findVideoLink(text: string | null | undefined): FoundVideoLink | null {
   if (!text) return null
-  for (const match of text.matchAll(/https?:\/\/[^\s<>"'`]+/gi)) {
-    const raw = match[0].replace(/[).,!?;:'"\]]+$/, '')
+  // A link typed by hand or copied out of a caption often has no scheme
+  // ("instagram.com/reel/X"); the server reads those too.
+  const trimmed = text.trim()
+  const bare = /^(?:www\.|m\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+\/\S+$/i.test(trimmed)
+  const candidates = bare
+    ? [`https://${trimmed}`]
+    : Array.from(text.matchAll(/https?:\/\/[^\s<>"'`]+/gi), (m) => m[0])
+  for (const candidate of candidates) {
+    const raw = candidate.replace(/[).,!?;:'"\]]+$/, '')
     let host: string
     try {
       host = new URL(raw).hostname.toLowerCase()

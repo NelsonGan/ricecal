@@ -113,6 +113,11 @@ export const recipes = {
         title: 'You are offline',
         body: 'Connect to the internet and try again.',
       },
+      /** Pro's ceiling, which is never printed elsewhere: no paywall, nothing to buy. */
+      proLimit: {
+        title: 'That is a lot of recipes',
+        body: 'You have imported the most videos one account can this month. More next month.',
+      },
       limit: {
         title: 'No imports left this month',
         body_one: 'A free account imports {{count}} video a month. Pro has no limit.',

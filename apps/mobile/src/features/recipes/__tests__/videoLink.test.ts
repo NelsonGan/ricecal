@@ -23,6 +23,14 @@ describe('findVideoLink', () => {
     expect(findVideoLink(text)?.platform).toBe(platform)
   })
 
+  it('reads a link with no scheme, as one typed or copied out of a caption', () => {
+    expect(findVideoLink('instagram.com/reel/CnkNjXVsAJv/')).toEqual({
+      platform: 'instagram',
+      url: 'https://instagram.com/reel/CnkNjXVsAJv/',
+    })
+    expect(findVideoLink('fixupx.com/cook/status/1834623580987916752')?.platform).toBe('x')
+  })
+
   it('refuses text that is not a supported link', () => {
     expect(findVideoLink('nasi lemak')).toBeNull()
     expect(findVideoLink('https://instagram.com.evil.example/reel/X')).toBeNull()

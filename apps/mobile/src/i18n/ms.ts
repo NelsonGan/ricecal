@@ -1652,6 +1652,10 @@ export const ms = {
           title: 'Anda di luar talian',
           body: 'Sambung ke internet dan cuba lagi.',
         },
+        proLimit: {
+          title: 'Banyaknya resipi',
+          body: 'Anda sudah mengimport video sebanyak yang boleh bagi satu akaun bulan ini. Boleh lagi bulan depan.',
+        },
         limit: {
           title: 'Tiada import lagi bulan ini',
           body_one: 'Akaun percuma mengimport {{count}} video sebulan. Pro tiada had.',

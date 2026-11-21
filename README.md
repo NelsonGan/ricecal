@@ -3231,8 +3231,11 @@ draft with no model call (12 s for the first import of a TikTok on the local
 stack, 0.05 s for the second account). A video that is not a recipe is cached
 too, so pasting the same music video twice costs one look. A failure to read
 the post or a model outage is not cached, so it can be retried, and neither is
-a "not a recipe" reached from the caption alone when there was a video the
-model failed to watch: that is the caption's verdict, not the video's.
+a "not a recipe" reached from the caption alone when the post had a video the
+model did not watch (a download that failed counts): that is the caption's
+verdict, not the video's. A recipe drafted from the caption in that case IS
+cached, so that video stays a caption-quality recipe until its cache row is
+deleted.
 
 **What the server can read, signed out.** Each platform answers a server that
 is not logged in differently, and each reader takes only what that platform
@@ -3243,7 +3246,7 @@ datacenter may be refused where this was not, so watch `unreadable` in
 
 | platform | caption | video | how |
 |---|---|---|---|
-| TikTok | yes | yes, and the spoken transcript | the page's rehydration JSON; the file is signed to that page's cookies |
+| TikTok | yes | yes, and the spoken transcript | the page's rehydration JSON; the file is signed to that page's cookies, and the smallest H.264 copy that fits is taken (`smallestTikTokVideo`), since a two-minute reel's best copy is over the 18 MB the model is sent |
 | YouTube | yes | by link | oEmbed and the watch page; the video model fetches YouTube itself |
 | X | yes | yes | X's own embed endpoint (`cdn.syndication.twimg.com`) |
 | Facebook | yes | yes | the page as a browser asks for it |
@@ -3253,8 +3256,12 @@ datacenter may be refused where this was not, so watch `unreadable` in
 Instagram and Threads creators mostly keep the recipe out of the caption ("link
 in bio"), so a recipe page the caption DOES link to is read as well: its
 schema.org `Recipe` card is the creator's own recipe, exact. Only public hosts
-are fetched, every redirect is checked again, and link-in-bio, shop and social
-hosts are skipped (`readLinkedRecipe`).
+are fetched, every hop's name is resolved and refused if any address is private,
+loopback or link-local (a public name can point at 169.254.169.254), and
+link-in-bio, shop and social hosts are skipped (`readLinkedRecipe`). Share links
+are followed by hand through the platforms' own hosts only; t.co answers a
+browser with a 200 page and a meta refresh rather than a 301, so that is read
+too (`metaRefresh`).
 
 **Two models, and which one depends on what could be fetched.** With a video
 file (or a YouTube link), `google/gemini-3.8-flash` watches it with its sound,
@@ -3314,7 +3321,11 @@ the plus sheet for that reason; the other three tiles ask on tap.
 **An import outlasts a phone's patience.** A first import is 8 to 20 seconds
 and can be over a minute when the video model stalls and the caption route
 answers instead, while React Native on iOS gives up on a request after a minute
-of silence. So the action is wrapped in `respondWithin` (`_shared/http.ts`): an
+of silence, and the function itself is stopped at 150 s. So the import runs to
+one deadline (135 s from the request): share links get 15 s, the linked recipe
+page 12 s, and the video model runs, and is retried, only while it leaves the
+caption route its 70 s worst case. And the action is wrapped in `respondWithin`
+(`_shared/http.ts`): an
 answer ready in five seconds is sent as it is, and a slower one becomes a 200
 JSON stream that writes a space every eight seconds and then the answer
 (leading whitespace is valid JSON). The late answer keeps its `code` in the
@@ -3333,6 +3344,12 @@ a recipe that lands after the user left arrives as a toast with Open. Every
 failure has its own sentence and one way forward (`import.failure.*`). A link
 shared before signing in is held in memory (`pendingImport.ts`) and imported
 once the tabs mount behind a session, rather than lost at the welcome screen.
+Offline, the import is sent anyway (`networkMode: 'always'`) and fails at once
+with its own message, rather than waiting on a paused allowance query for good.
+A Pro account at its unprinted ceiling gets a sentence of its own and no
+paywall. A recipe that lands while another screen is on top of this one (a
+notification, another shared link) is announced with a toast instead of
+replacing that screen.
 
 **Share to RiceCal.** Both platforms do the same small job: take whatever the
 other app shared, find the first `http(s)` link in it, and open the app at

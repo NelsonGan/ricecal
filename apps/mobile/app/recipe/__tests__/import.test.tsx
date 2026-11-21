@@ -12,8 +12,13 @@ const mockImport = jest.fn()
 const mockOpenPaywall = jest.fn()
 const mockParams: { current: Record<string, string> } = { current: {} }
 const mockQuota: { current: unknown } = { current: undefined }
+const mockQuotaState: { current: { isPending: boolean; fetchStatus: string } } = {
+  current: { isPending: false, fetchStatus: 'idle' },
+}
+const mockFocused = { current: true }
 
 jest.mock('expo-router', () => ({
+  useIsFocused: () => mockFocused.current,
   useLocalSearchParams: () => mockParams.current,
   useRouter: () => ({ replace: mockReplace, push: mockPush }),
 }))
@@ -31,11 +36,15 @@ jest.mock('@/data', () => {
     }
   }
   class VideoImportLimitError extends Error {}
+  class Offline extends Error {
+    code = 'offline'
+  }
   return {
     VideoImportError,
     VideoImportLimitError,
     useImportRecipe: () => ({ mutateAsync: mockImport, isPending: true }),
-    useVideoImportQuota: () => ({ data: mockQuota.current, isPending: false }),
+    useVideoImportQuota: () => ({ data: mockQuota.current, ...mockQuotaState.current }),
+    Offline,
   }
 })
 
@@ -62,6 +71,8 @@ beforeEach(() => {
   mockOpenPaywall.mockReset()
   mockParams.current = { url: LINK }
   mockQuota.current = { used: 1, limit: 5, remaining: 4, entitled: false }
+  mockQuotaState.current = { isPending: false, fetchStatus: 'idle' }
+  mockFocused.current = true
 })
 
 it('imports the link once and opens the recipe it made', async () => {
@@ -104,4 +115,68 @@ it('refuses text that is not a video link without asking the server', async () =
 
   expect(await screen.findByText('Not a video link')).toBeTruthy()
   expect(mockImport).not.toHaveBeenCalled()
+})
+
+it('offline, it does not wait on a paused allowance and says so', async () => {
+  const { VideoImportError } = jest.requireMock('@/data') as {
+    VideoImportError: new (code: string) => Error
+  }
+  mockQuota.current = undefined
+  mockQuotaState.current = { isPending: true, fetchStatus: 'paused' }
+  mockImport.mockRejectedValue(new VideoImportError('offline'))
+  await renderScreen()
+
+  expect(await screen.findByText('You are offline')).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
+  expect(mockImport).toHaveBeenCalledTimes(1)
+})
+
+it('waits while the allowance is actually loading', async () => {
+  mockQuota.current = undefined
+  mockQuotaState.current = { isPending: true, fetchStatus: 'fetching' }
+  await renderScreen()
+  expect(mockImport).not.toHaveBeenCalled()
+})
+
+it('does not sell Pro to a Pro account at its ceiling', async () => {
+  const { VideoImportLimitError } = jest.requireMock('@/data') as {
+    VideoImportLimitError: new () => Error
+  }
+  mockQuota.current = { used: 199, limit: 200, remaining: 1, entitled: true }
+  mockImport.mockRejectedValue(new VideoImportLimitError())
+  await renderScreen()
+
+  expect(await screen.findByText('That is a lot of recipes')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'See Pro' })).toBeNull()
+  expect(mockOpenPaywall).not.toHaveBeenCalled()
+})
+
+it('opens the paywall when a free account runs out mid-import', async () => {
+  const { VideoImportLimitError } = jest.requireMock('@/data') as {
+    VideoImportLimitError: new () => Error
+  }
+  mockImport.mockRejectedValue(new VideoImportLimitError())
+  await renderScreen()
+
+  expect(await screen.findByText('No imports left this month')).toBeTruthy()
+  expect(mockOpenPaywall).toHaveBeenCalledTimes(1)
+})
+
+it('announces a recipe that lands under another screen instead of replacing it', async () => {
+  mockFocused.current = false
+  mockImport.mockResolvedValue({ recipeId: 'r1', existing: false, community: false })
+  await renderScreen()
+
+  expect(await screen.findByText('Your recipe from the video is ready')).toBeTruthy()
+  expect(mockReplace).not.toHaveBeenCalled()
+})
+
+it('reads a link pasted without its scheme', async () => {
+  mockParams.current = { url: 'instagram.com/reel/CnkNjXVsAJv/' }
+  mockImport.mockResolvedValue({ recipeId: 'r2', existing: false, community: false })
+  await renderScreen()
+
+  await waitFor(() =>
+    expect(mockImport).toHaveBeenCalledWith('https://instagram.com/reel/CnkNjXVsAJv/'),
+  )
 })
