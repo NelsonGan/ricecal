@@ -425,6 +425,13 @@ export default function RecipeFormScreen() {
       toast.show({ title: t('recipes:edit.saved'), tone: 'success' })
     }
 
+    // An edit goes back to the recipe page that opened it, which the save has
+    // already refreshed. That page holds the log sheet's day, and a fresh one
+    // pushed in its place would log into today instead.
+    if (recipeId && router.canDismiss()) {
+      router.dismiss()
+      return
+    }
     // `replace`, so the back gesture from the recipe lands on the list rather
     // than on the form that no longer has anything to save.
     router.replace({ pathname: '/recipe/[id]', params: { id: result.id } })

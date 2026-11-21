@@ -11,13 +11,14 @@ const mockUpload = jest.fn()
 const mockRemovePhoto = jest.fn((_path: string) => Promise.resolve())
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
+const mockDismiss = jest.fn()
 const mockSave = jest.fn()
 
 const mockParams: { current: Record<string, string> } = { current: {} }
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams.current,
-  useRouter: () => ({ replace: mockReplace }),
+  useRouter: () => ({ replace: mockReplace, dismiss: mockDismiss, canDismiss: () => true }),
 }))
 
 jest.mock('@/data', () => ({
@@ -350,4 +351,34 @@ it('refuses a source that is not a link, and says so', async () => {
 
   expect(await screen.findByText('That link does not look right')).toBeOnTheScreen()
   expect(mockSave).not.toHaveBeenCalled()
+})
+
+it('goes back to the recipe page that opened an edit, keeping the day it logs into', async () => {
+  // The log sheet opens a recipe with the day it is showing, and that page is
+  // what logs. Pushing a fresh copy of it after the save dropped the day, so
+  // the next "Add" filed yesterday's dinner under today.
+  mockParams.current = { id: 'recipe-1' }
+  mockSave.mockResolvedValue({ id: 'recipe-1' })
+  await render(<RecipeFormScreen />)
+
+  await fireEvent.changeText(screen.getByPlaceholderText('What do you call it?'), 'Kari ayam')
+  await fireEvent.press(screen.getByText('Save recipe'))
+
+  await waitFor(() => expect(mockDismiss).toHaveBeenCalledTimes(1))
+  expect(mockReplace).not.toHaveBeenCalled()
+})
+
+it('opens a new recipe on its own page in place of the form', async () => {
+  await render(<RecipeFormScreen />)
+
+  await fireEvent.changeText(screen.getByPlaceholderText('What do you call it?'), 'Kari ayam')
+  await fireEvent.press(screen.getByText('Save recipe'))
+
+  await waitFor(() =>
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: '/recipe/[id]',
+      params: { id: 'new-recipe' },
+    }),
+  )
+  expect(mockDismiss).not.toHaveBeenCalled()
 })
