@@ -219,7 +219,7 @@ export function ItemRow({
           // and at a large text size the second line is the honest cost.
           <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-1">
             {detail ? (
-              <Text variant="meta" numberOfLines={1}>
+              <Text variant="meta" numberOfLines={1} className="shrink">
                 {detail}
               </Text>
             ) : null}
