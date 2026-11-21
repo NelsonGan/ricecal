@@ -70,9 +70,10 @@ invocations in parallel rather than one long `-n` run.
   exercise drawings, the screens of one feature) changes style when the model
   changes, so pin it with `-b` once the first image is approved, and pass that
   image back with `-i`.
-- Output is PNG, usually square around 1254 px unless the brief asks for
-  "landscape 3:2" or "portrait 2:3". A backend that returns JPEG or WebP for a
-  `.png` path is converted with `sips`. Resize or crop afterwards
+- Output is PNG. Codex draws around 1254 px on the long side, Antigravity
+  smaller (a phone mockup came back 768 x 1376) and as JPEG, which is converted
+  with `sips` for a `.png` path. Ask for "landscape 3:2" or "portrait 2:3" in
+  the brief when the shape matters. Resize or crop afterwards
   (`sips -Z 512 in.png --out out.png`) when the project needs exact pixels.
 
 Requirements: at least one backend CLI, signed in. Codex is found on `PATH` or
