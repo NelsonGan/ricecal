@@ -1,5 +1,5 @@
 import { FREE_RECIPES } from '@ricecal/shared'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ActivityIndicator, type TextInputInstance, View } from 'react-native'
@@ -87,6 +87,7 @@ const DEFAULT_RECIPE_ICON: IconRef = { set: 'food', name: 'cooking-pot' }
 export default function RecipeFormScreen() {
   const { t } = useTranslation(['recipes', 'common', 'paywall'])
   const router = useRouter()
+  const navigation = useNavigation()
   const goBack = useBack('/recipes')
   const toast = useToast()
 
@@ -425,6 +426,19 @@ export default function RecipeFormScreen() {
       toast.show({ title: t('recipes:edit.saved'), tone: 'success' })
     }
 
+    // An edit goes back to the recipe page that opened it, which the save has
+    // already refreshed. That page holds the log sheet's day, and a fresh one
+    // pushed in its place would log into today instead. Only that page, by its
+    // row id, in this group's own stack: a form opened cold has nothing under
+    // it to go back to, and a page opened by share slug is cached under the
+    // slug, which the save does not refresh.
+    const state = navigation.getState()
+    const below = state && state.index > 0 ? state.routes[state.index - 1] : undefined
+    const belowId = (below?.params as { id?: string } | undefined)?.id
+    if (recipeId && below?.name === '[id]' && belowId === result.id) {
+      navigation.goBack()
+      return
+    }
     // `replace`, so the back gesture from the recipe lands on the list rather
     // than on the form that no longer has anything to save.
     router.replace({ pathname: '/recipe/[id]', params: { id: result.id } })

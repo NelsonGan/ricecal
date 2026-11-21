@@ -11,12 +11,18 @@ const mockUpload = jest.fn()
 const mockRemovePhoto = jest.fn((_path: string) => Promise.resolve())
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
+const mockGoBack = jest.fn()
+/** The recipe group's own stack, as `useNavigation().getState()` gives it. */
+const mockStack: {
+  current: { index: number; routes: Array<{ name: string; params?: { id?: string } }> }
+} = { current: { index: 0, routes: [{ name: 'edit' }] } }
 const mockSave = jest.fn()
 
 const mockParams: { current: Record<string, string> } = { current: {} }
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => mockParams.current,
+  useNavigation: () => ({ getState: () => mockStack.current, goBack: mockGoBack }),
   useRouter: () => ({ replace: mockReplace }),
 }))
 
@@ -251,6 +257,7 @@ beforeEach(() => {
   jest.clearAllMocks()
   clearRecipeRead()
   mockParams.current = {}
+  mockStack.current = { index: 0, routes: [{ name: 'edit' }] }
   mockSave.mockResolvedValue({ id: 'new-recipe' })
   mockRead.mockResolvedValue(DRAFT)
   mockUpload.mockResolvedValue('meals/user-1/recipe.jpg')
@@ -350,4 +357,62 @@ it('refuses a source that is not a link, and says so', async () => {
 
   expect(await screen.findByText('That link does not look right')).toBeOnTheScreen()
   expect(mockSave).not.toHaveBeenCalled()
+})
+
+it('goes back to the recipe page that opened an edit, keeping the day it logs into', async () => {
+  // The log sheet opens a recipe with the day it is showing, and that page is
+  // what logs. Pushing a fresh copy of it after the save dropped the day, so
+  // the next "Add" filed yesterday's dinner under today.
+  mockParams.current = { id: 'recipe-1' }
+  mockStack.current = {
+    index: 1,
+    routes: [{ name: '[id]', params: { id: 'recipe-1' } }, { name: 'edit' }],
+  }
+  mockSave.mockResolvedValue({ id: 'recipe-1' })
+  await render(<RecipeFormScreen />)
+
+  await fireEvent.changeText(screen.getByPlaceholderText('What do you call it?'), 'Kari ayam')
+  await fireEvent.press(screen.getByText('Save recipe'))
+
+  await waitFor(() => expect(mockGoBack).toHaveBeenCalledTimes(1))
+  expect(mockReplace).not.toHaveBeenCalled()
+})
+
+it.each([
+  ['nothing under it (opened cold)', { index: 0, routes: [{ name: 'edit' }] }],
+  [
+    'its page opened by share slug',
+    { index: 1, routes: [{ name: '[id]', params: { id: 'share-slug' } }, { name: 'edit' }] },
+  ],
+])('opens the saved recipe fresh when the form has %s', async (_case, stack) => {
+  mockParams.current = { id: 'recipe-1' }
+  mockStack.current = stack
+  mockSave.mockResolvedValue({ id: 'recipe-1' })
+  await render(<RecipeFormScreen />)
+
+  await fireEvent.changeText(screen.getByPlaceholderText('What do you call it?'), 'Kari ayam')
+  await fireEvent.press(screen.getByText('Save recipe'))
+
+  await waitFor(() =>
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: '/recipe/[id]',
+      params: { id: 'recipe-1' },
+    }),
+  )
+  expect(mockGoBack).not.toHaveBeenCalled()
+})
+
+it('opens a new recipe on its own page in place of the form', async () => {
+  await render(<RecipeFormScreen />)
+
+  await fireEvent.changeText(screen.getByPlaceholderText('What do you call it?'), 'Kari ayam')
+  await fireEvent.press(screen.getByText('Save recipe'))
+
+  await waitFor(() =>
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: '/recipe/[id]',
+      params: { id: 'new-recipe' },
+    }),
+  )
+  expect(mockGoBack).not.toHaveBeenCalled()
 })
