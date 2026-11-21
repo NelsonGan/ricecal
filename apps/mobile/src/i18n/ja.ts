@@ -1528,6 +1528,8 @@ export const ja = {
     },
 
     empty: {
+      mineTitle: 'まだレシピがありません',
+      mineBody: 'よく作る料理を保存しておくと、ワンタップで記録できます。',
       communityTitle: 'まだ共有はありません',
       communityBody: '自分のレシピをメニューから共有しましょう。',
     },
@@ -1539,10 +1541,6 @@ export const ja = {
 
     new: {
       title: '新しいレシピ',
-      manualLabel: '自分で入力',
-      aiLabel: 'AIを使う',
-      scanLabel: '写真',
-      describeLabel: '書く',
       scanTitle: '写真から埋める',
       describeTitle: '言葉で書く',
       describePlaceholder:

@@ -19,18 +19,17 @@ import {
   useSettings,
 } from '@/data'
 import { announceRefusal, openPaywall } from '@/data/refusals'
-import { IconPicker, InlineCamera } from '@/features/logging'
-import { useRequirePro } from '@/features/paywall'
+import { IconPicker } from '@/features/logging'
 import {
-  DescribeRecipePanel,
+  clearRecipeRead,
   IngredientSheet,
-  NewRecipeChooser,
   normaliseSourceUrl,
+  type PendingRecipeRead,
   parseMinutes,
+  peekRecipeRead,
   potTotals,
   ReadingRecipe,
   RecipeIngredientEditor,
-  type RecipeStart,
   StepsField,
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
@@ -45,7 +44,6 @@ import {
   FormRow,
   Icon,
   Screen,
-  Sheet,
   Skeleton,
   Stepper,
   Tappable,
@@ -91,18 +89,22 @@ export default function RecipeFormScreen() {
   const router = useRouter()
   const goBack = useBack('/recipes')
   const toast = useToast()
-  const requirePro = useRequirePro()
 
-  const params = useLocalSearchParams<{ id?: string; start?: RecipeStart }>()
+  const params = useLocalSearchParams<{ id?: string; read?: string }>()
   const recipeId = params.id
-  /** Which door on the Recipes tab opened this form, when one did. */
-  const start = recipeId ? undefined : params.start
   const { data: existing } = useRecipe(recipeId)
   const { data: existingIngredients } = useRecipeIngredients(recipeId)
   const { data: settings } = useSettings()
 
   const save = useSaveRecipe()
   const read = useReadRecipe()
+
+  // Picked up from the Recipes tab's Photo or Describe sheet before this route
+  // opened. Reading starts on the first frame so the blank form never flashes
+  // behind the loading state.
+  const [initialRead] = useState<PendingRecipeRead | null>(() =>
+    !recipeId && params.read === '1' ? peekRecipeRead() : null,
+  )
 
   const [name, setName] = useState('')
   const [servings, setServings] = useState(1)
@@ -137,28 +139,20 @@ export default function RecipeFormScreen() {
   const [dirty, setDirty] = useState(false)
   /** Null is closed; a missing key adds, and a key replaces that staged row. */
   const [pickingIngredient, setPickingIngredient] = useState<{ replacingKey?: string } | null>(null)
-  // Opened straight away when the tab's Photo or Describe tile brought us here;
-  // the tab has already asked `requirePro`, and the chooser sits under the sheet
-  // for whoever closes it.
-  const [camera, setCamera] = useState(start === 'photo')
-  const [describing, setDescribing] = useState(start === 'describe')
   /**
    * Which read is in flight, and the form is not editable while it is. It names
-   * the source rather than being a boolean, because nothing else on screen still
-   * knows: the describe sheet is dismissed before the call is made, so a wait
-   * reasoning from that said "Reading your photo…" over somebody's typing.
-   * `read.isPending` has the same problem.
+   * the source so the loading screen knows whether it is reading a photograph
+   * or typed text.
    */
-  const [reading, setReading] = useState<'photo' | 'text' | null>(null)
-  // The describe sheet has actually been presented. `autoFocus` inside a
-  // `Modal` is applied while the field is still off screen and routinely
-  // dropped, so the field waits for `onShow` rather than for `visible`.
-  const [describeReady, setDescribeReady] = useState(false)
+  const [reading, setReading] = useState<'photo' | 'text' | null>(() => initialRead?.kind ?? null)
   const [leaving, setLeaving] = useState(false)
-  /** A new food starts on the method choice. Existing food opens on its form. */
-  const [mode, setMode] = useState<'choose' | 'form'>(
-    recipeId || start === 'manual' ? 'form' : 'choose',
-  )
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
 
   /**
    * Seed the form from the recipe being edited, exactly once. A ref rather than a
@@ -214,15 +208,12 @@ export default function RecipeFormScreen() {
    * A failure at either step leaves the form as it was, with the photograph
    * attached if it got that far.
    */
-  const readPhoto = async (uri: string | undefined) => {
-    setCamera(false)
-    if (!uri) return
-
+  const readPhoto = async (uri: string) => {
     setReading('photo')
     const key = await attachPhoto(uri)
+    if (!mounted.current) return
     if (!key) {
       setReading(null)
-      setMode('form')
       toast.show({ title: t('recipes:new.scanFailed'), tone: 'warning' })
       return
     }
@@ -231,16 +222,14 @@ export default function RecipeFormScreen() {
     try {
       draft = await read.mutateAsync({ photoPath: key })
     } catch (error) {
-      if (showRefusal(error)) {
-        setMode('form')
-        return
-      }
+      if (!mounted.current) return
+      if (showRefusal(error)) return
       draft = null
     } finally {
-      setReading(null)
+      if (mounted.current) setReading(null)
     }
+    if (!mounted.current) return
     if (!draft) {
-      setMode('form')
       toast.show({ title: t('recipes:new.scanFailed'), tone: 'warning' })
       return
     }
@@ -265,10 +254,17 @@ export default function RecipeFormScreen() {
     try {
       key = await uploadMealPhoto(uri)
     } catch {
-      setLocalPhoto(null)
+      if (mounted.current) setLocalPhoto(null)
       return null
     } finally {
-      setAttaching(false)
+      if (mounted.current) setAttaching(false)
+    }
+
+    // The cook closed the screen while the upload was in flight, so nothing
+    // will ever save or sweep this object unless we remove it here.
+    if (!mounted.current) {
+      removeMealPhoto(key).catch(() => {})
+      return null
     }
 
     // A photo retaken before Save orphans the one it replaces, and Save only
@@ -310,24 +306,19 @@ export default function RecipeFormScreen() {
    * `applyDraft`.
    */
   const readText = async (described: string) => {
-    setDescribing(false)
-    setDescribeReady(false)
-
     setReading('text')
     let draft: ScannedRecipe | null
     try {
       draft = await read.mutateAsync({ text: described })
     } catch (error) {
-      if (showRefusal(error)) {
-        setMode('form')
-        return
-      }
+      if (!mounted.current) return
+      if (showRefusal(error)) return
       draft = null
     } finally {
-      setReading(null)
+      if (mounted.current) setReading(null)
     }
+    if (!mounted.current) return
     if (!draft) {
-      setMode('form')
       toast.show({ title: t('recipes:new.describeFailed'), tone: 'warning' })
       return
     }
@@ -335,12 +326,11 @@ export default function RecipeFormScreen() {
   }
 
   /**
-   * A draft into the form, only over empty fields: somebody who typed a name and
-   * then reached for the camera meant it to fill in the rest. Shared by both
-   * paths, so the two cannot drift on which fields they will clobber.
+   * Apply an AI-read draft into the form without overwriting any field that
+   * already has a value. Shared by both the photo and describe paths so neither
+   * can drift on which fields it fills.
    */
   const applyDraft = (draft: ScannedRecipe) => {
-    setMode('form')
     touch()
     setName((current) => current || draft.name)
     setSteps((current) => current || draft.steps)
@@ -353,6 +343,16 @@ export default function RecipeFormScreen() {
     // photo path never asks for one.
     if (draft.icon && !pictureChosen.current) setIcon(draft.icon)
   }
+
+  const startedRead = useRef(false)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs once for the staged read handed from the Recipes tab
+  useEffect(() => {
+    if (!initialRead || startedRead.current) return
+    startedRead.current = true
+    clearRecipeRead(initialRead)
+    if (initialRead.kind === 'photo') void readPhoto(initialRead.uri)
+    else void readText(initialRead.text)
+  }, [initialRead])
 
   const commit = async () => {
     // Save stays live without a name and says why here: a dead button at the
@@ -430,20 +430,7 @@ export default function RecipeFormScreen() {
     router.replace({ pathname: '/recipe/[id]', params: { id: result.id } })
   }
 
-  /**
-   * The manual form is one branch of the new-recipe chooser, so its chevron
-   * returns there without throwing away anything already typed. Not when the
-   * tab's "Write it" tile opened the form directly: that cook never saw the
-   * chooser, and backing into it would be a page they did not come from. The
-   * cross is the boundary that confirms before leaving the screen.
-   */
-  const formCanGoBack = !recipeId && start !== 'manual' && mode === 'form' && !reading
-
   const leave = () => {
-    if (formCanGoBack) {
-      setMode('choose')
-      return
-    }
     if (dirty) setLeaving(true)
     else goBack()
   }
@@ -455,12 +442,12 @@ export default function RecipeFormScreen() {
         <AppBar
           title={recipeId ? t('recipes:edit.title') : t('recipes:new.title')}
           onBack={leave}
-          leading={formCanGoBack ? 'back' : 'dismiss'}
-          backLabel={formCanGoBack ? t('common:action.back') : t('common:a11y.close')}
+          leading="dismiss"
+          backLabel={t('common:a11y.close')}
         />
       }
       footer={
-        mode === 'form' && !reading ? (
+        !reading ? (
           <View className="gap-2">
             {/* The preview. Reads the staged values, so it cannot disagree
                 with what Save is about to write. */}
@@ -490,18 +477,6 @@ export default function RecipeFormScreen() {
           arrive around it. For these few seconds there is no answer to edit. */}
       {reading ? (
         <ReadingRecipe source={reading} />
-      ) : mode === 'choose' && !recipeId ? (
-        <NewRecipeChooser
-          onManual={() => setMode('form')}
-          onPhoto={() => {
-            if (!requirePro('read_recipe')) return
-            setCamera(true)
-          }}
-          onDescribe={() => {
-            if (!requirePro('read_recipe')) return
-            setDescribing(true)
-          }}
-        />
       ) : (
         <>
           {/* The picture first, as on the recipe itself: it is the biggest
@@ -658,8 +633,8 @@ export default function RecipeFormScreen() {
             onSelect={(next) => (photoPath || localPhoto ? setPendingIcon(next) : applyIcon(next))}
             // The other way to answer the same question, in the same sheet. It
             // only changes the PICTURE: reading the pot out of a photograph is
-            // what the "Photo" tile at the top of a new recipe does, and doing it
-            // here too would refill a form the cook has already been through.
+            // what the "Photo" tile on the Recipes tab does, and doing it here
+            // too would refill a form the cook has already been through.
             onPickPhoto={(uri) => {
               void attachPhoto(uri).then((key) => {
                 if (!key) toast.show({ title: t('recipes:new.scanFailed'), tone: 'warning' })
@@ -703,38 +678,6 @@ export default function RecipeFormScreen() {
           />
         </>
       )}
-
-      {/* The chooser owns both AI panels. They stay mounted outside its branch so
-          presenting one does not replace the button that opened it. */}
-      <Sheet
-        visible={camera}
-        onClose={() => setCamera(false)}
-        title={t('recipes:new.scanTitle')}
-        closeLabel={t('common:action.close')}
-        // Full height with the camera filling it, as every camera in the app
-        // does. A recipe card or a page of a cookbook is small print, and the
-        // 310pt box this used to be made it smaller still.
-        fullHeight
-        fillBody
-        scrollable={false}
-      >
-        <InlineCamera fill onCapture={readPhoto} />
-      </Sheet>
-
-      <Sheet
-        visible={describing}
-        onClose={() => {
-          setDescribing(false)
-          setDescribeReady(false)
-        }}
-        title={t('recipes:new.describeTitle')}
-        closeLabel={t('common:action.close')}
-        fullHeight
-        scrollable={false}
-        onShow={() => setDescribeReady(true)}
-      >
-        {describeReady ? <DescribeRecipePanel autoFocus onSubmit={readText} /> : null}
-      </Sheet>
 
       <ConfirmSheet
         visible={leaving}

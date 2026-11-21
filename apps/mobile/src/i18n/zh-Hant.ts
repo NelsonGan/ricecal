@@ -1520,6 +1520,8 @@ export const zhHant = {
     },
 
     empty: {
+      mineTitle: '還沒有食譜',
+      mineBody: '儲存常做的菜餚，一鍵即可記錄。',
       communityTitle: '還沒有人分享',
       communityBody: '從你的食譜選單分享一個吧。',
     },
@@ -1531,10 +1533,6 @@ export const zhHant = {
 
     new: {
       title: '新食譜',
-      manualLabel: '自己填寫',
-      aiLabel: '使用 AI',
-      scanLabel: '照片',
-      describeLabel: '描述',
       scanTitle: '用照片填好',
       describeTitle: '用文字描述',
       describePlaceholder: '咖哩雞。600 公克雞腿肉，一罐椰漿，3 顆馬鈴薯。夠 4 個人吃。',

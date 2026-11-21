@@ -1519,6 +1519,8 @@ export const th = {
     },
 
     empty: {
+      mineTitle: 'ยังไม่มีสูตรอาหาร',
+      mineBody: 'บันทึกเมนูที่คุณทำบ่อยไว้เพื่อบันทึกได้ในแตะเดียว',
       communityTitle: 'ยังไม่มีใครแชร์',
       communityBody: 'แชร์สูตรของคุณจากเมนูของสูตรนั้น',
     },
@@ -1530,10 +1532,6 @@ export const th = {
 
     new: {
       title: 'สูตรอาหารใหม่',
-      manualLabel: 'กรอกเอง',
-      aiLabel: 'ใช้ AI',
-      scanLabel: 'รูปถ่าย',
-      describeLabel: 'บรรยาย',
       scanTitle: 'กรอกจากรูปถ่าย',
       describeTitle: 'บรรยายมัน',
       describePlaceholder: 'แกงกะหรี่ไก่ สะโพกไก่ 600 ก. กะทิหนึ่งกระป๋อง มันฝรั่ง 3 หัว กินได้ 4 คน',

@@ -1532,6 +1532,8 @@ export const vi = {
     },
 
     empty: {
+      mineTitle: 'Chưa có công thức nào',
+      mineBody: 'Lưu các món bạn hay nấu để ghi lại chỉ với một chạm.',
       communityTitle: 'Chưa ai chia sẻ',
       communityBody: 'Chia sẻ công thức của bạn từ menu của nó.',
     },
@@ -1543,10 +1545,6 @@ export const vi = {
 
     new: {
       title: 'Công thức mới',
-      manualLabel: 'Tự điền',
-      aiLabel: 'Dùng AI',
-      scanLabel: 'Ảnh',
-      describeLabel: 'Mô tả',
       scanTitle: 'Điền từ một tấm ảnh',
       describeTitle: 'Mô tả nó',
       describePlaceholder:

@@ -1528,6 +1528,8 @@ export const ta = {
     },
 
     empty: {
+      mineTitle: 'இன்னும் செய்முறைகள் இல்லை',
+      mineBody: 'ஒரே தட்டலில் பதிவு செய்ய அடிக்கடி சமைக்கும் உணவுகளைச் சேமியுங்கள்.',
       communityTitle: 'இன்னும் எதுவும் பகிரப்படவில்லை',
       communityBody: 'உங்கள் செய்முறையை அதன் மெனுவிலிருந்து பகிருங்கள்.',
     },
@@ -1539,10 +1541,6 @@ export const ta = {
 
     new: {
       title: 'புதிய செய்முறை',
-      manualLabel: 'நானே நிரப்புகிறேன்',
-      aiLabel: 'AI-ஐ பயன்படுத்துங்கள்',
-      scanLabel: 'படம்',
-      describeLabel: 'விவரி',
       scanTitle: 'படத்திலிருந்து நிரப்பு',
       describeTitle: 'விவரித்துச் சொல்லுங்கள்',
       describePlaceholder:

@@ -1554,6 +1554,8 @@ export const ms = {
     },
 
     empty: {
+      mineTitle: 'Belum ada resipi',
+      mineBody: 'Simpan hidangan yang kerap anda masak untuk log dengan satu ketikan.',
       communityTitle: 'Belum ada yang dikongsi',
       communityBody: 'Kongsi resipi anda dari menunya.',
     },
@@ -1565,10 +1567,6 @@ export const ms = {
 
     new: {
       title: 'Resipi baharu',
-      manualLabel: 'Isi sendiri',
-      aiLabel: 'Guna AI',
-      scanLabel: 'Gambar',
-      describeLabel: 'Terangkan',
       scanTitle: 'Isi daripada gambar',
       describeTitle: 'Terangkan ia',
       describePlaceholder:

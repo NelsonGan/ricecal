@@ -1539,6 +1539,8 @@ export const id = {
     },
 
     empty: {
+      mineTitle: 'Belum ada resep',
+      mineBody: 'Simpan masakan yang sering kamu buat agar bisa dicatat dalam sekali ketuk.',
       communityTitle: 'Belum ada yang dibagikan',
       communityBody: 'Bagikan resepmu dari menunya.',
     },
@@ -1550,10 +1552,6 @@ export const id = {
 
     new: {
       title: 'Resep baru',
-      manualLabel: 'Isi sendiri',
-      aiLabel: 'Pakai AI',
-      scanLabel: 'Foto',
-      describeLabel: 'Ceritakan',
       scanTitle: 'Isi dari sebuah foto',
       describeTitle: 'Ceritakan',
       describePlaceholder:

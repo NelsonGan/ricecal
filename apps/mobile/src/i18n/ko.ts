@@ -1523,6 +1523,8 @@ export const ko = {
     },
 
     empty: {
+      mineTitle: '아직 레시피가 없습니다',
+      mineBody: '자주 만드는 요리를 저장해 두면 탭 한 번으로 기록할 수 있어요.',
       communityTitle: '아직 공유된 것이 없습니다',
       communityBody: '내 레시피를 메뉴에서 공유해 보세요.',
     },
@@ -1534,10 +1536,6 @@ export const ko = {
 
     new: {
       title: '새 레시피',
-      manualLabel: '직접 입력',
-      aiLabel: 'AI 사용',
-      scanLabel: '사진',
-      describeLabel: '설명',
       scanTitle: '사진으로 채우기',
       describeTitle: '말로 설명하기',
       describePlaceholder: '카리 아얌. 닭다리살 600g, 코코넛밀크 한 캔, 감자 3개. 4인분.',

@@ -55,6 +55,8 @@ export const recipes = {
   },
 
   empty: {
+    mineTitle: 'No recipes yet',
+    mineBody: 'Save the dishes you cook often to log them in one tap.',
     communityTitle: 'Nothing shared yet',
     communityBody: 'Share one of yours from its menu.',
   },
@@ -72,15 +74,6 @@ export const recipes = {
 
   new: {
     title: 'New recipe',
-    manualLabel: 'Fill it in myself',
-    aiLabel: 'Use AI',
-    /**
-     * The two tiles at the top of a new food. One word each: at half the
-     * screen a sentence wraps to three lines, and the sheet each one opens
-     * explains itself better than a caption under an icon could.
-     */
-    scanLabel: 'Photo',
-    describeLabel: 'Describe',
     scanTitle: 'Fill it in from a photo',
     describeTitle: 'Describe it',
     // A worked example, and short enough to read at a glance: the long version

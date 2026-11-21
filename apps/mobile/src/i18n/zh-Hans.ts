@@ -1520,6 +1520,8 @@ export const zhHans = {
     },
 
     empty: {
+      mineTitle: '还没有食谱',
+      mineBody: '保存常做的菜肴，一键即可记录。',
       communityTitle: '还没有人分享',
       communityBody: '从你的食谱菜单里分享一个吧。',
     },
@@ -1531,10 +1533,6 @@ export const zhHans = {
 
     new: {
       title: '新食谱',
-      manualLabel: '自己填写',
-      aiLabel: '使用 AI',
-      scanLabel: '照片',
-      describeLabel: '描述',
       scanTitle: '用照片填好',
       describeTitle: '用文字描述',
       describePlaceholder: '咖喱鸡。600 克鸡腿肉，一罐椰浆，3 个土豆。够 4 个人吃。',
