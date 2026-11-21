@@ -904,6 +904,8 @@ export const zhHans = {
       nameField: '名称',
       numbersReset: '用应用算的数字',
       servingWord: '份',
+      servingCount_one: '{{value}} 份',
+      servingCount_other: '{{value}} 份',
       measureIn: '计量单位',
       amount: '用量',
       quickFix: {

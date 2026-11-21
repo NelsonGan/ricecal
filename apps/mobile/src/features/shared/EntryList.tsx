@@ -10,7 +10,7 @@ import { Card, cn, Icon, IconButton, Text } from '@/ui'
 import { ItemRow, ROW_TILE_COMPACT, ROW_TILE_COMPACT_ICON } from './ItemRow'
 import { MealPhoto } from './MealPhoto'
 import { SwipeRow } from './SwipeRow'
-import { useMeasureText } from './useMeasureText'
+import { usePortionWords } from './useMeasureText'
 import { Shimmer, useWorkingStatus } from './Working'
 
 export type EntryListProps = {
@@ -49,8 +49,23 @@ export type EntryListProps = {
   extras?: readonly TimedRow[]
 }
 
-/** A row from somewhere else, and when it happened. See `extras`. */
-export type TimedRow = { key: string; at: string; node: ReactNode }
+/**
+ * A row from somewhere else, and when it happened. See `extras`.
+ *
+ * Given `onDelete`, it swipes open to a delete as a meal does, and then takes
+ * its tap through `onPress` rather than the node's own: a swipeable row hands
+ * its tap to `SwipeRow`. The delete answers whether the row went, so one that
+ * asks first and is kept slides back.
+ */
+export type TimedRow = {
+  key: string
+  at: string
+  node: ReactNode
+  onPress?: () => void
+  onDelete?: () => Promise<boolean>
+  /** What a screen reader says for a swipeable row, when the node's own text will not do. */
+  label?: string
+}
 
 /**
  * Everything that happened in a day, in one list, newest first, which is why the
@@ -96,7 +111,14 @@ export function EntryList({
         />
       ),
     })),
-    ...extras,
+    ...extras.map(({ onDelete, ...row }) =>
+      onDelete
+        ? {
+            ...row,
+            node: <SwipeableExtra row={row} onDelete={onDelete} onOpenChange={onRowOpenChange} />,
+          }
+        : row,
+    ),
   ].sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
   // A heading with something beside it is still worth a card on its own: on
   // Today that is a morning's steps before the first meal.
@@ -149,7 +171,7 @@ function EntryRow({
   onOpenChange?: (open: boolean) => void
 }) {
   const { t } = useTranslation(['logging', 'common'])
-  const measure = useMeasureText()
+  const words = usePortionWords()
 
   // A fix-by-typing correction in flight: the entry exists but is being
   // reworked on the server, so its row shows the work instead of stale
@@ -221,15 +243,10 @@ function EntryRow({
     )
   }
 
-  // Cleaned, because the label is whatever the catalogue import carried: half
-  // of them are measurements rather than portions. See `servingUnit`. The
-  // amount is what was eaten, so half a photographed plate reads as half.
-  const portion = portionLabel(
-    eatenQuantity(entry),
-    entry.servingLabel,
-    t('logging:detail.servingWord'),
-    measure.amount,
-  )
+  // Said the way a person would, because the label is whatever the catalogue
+  // import carried. See `portionLabel`. The amount is what was eaten, so half
+  // a photographed plate reads as half. One plain serving is left out.
+  const portion = portionLabel(eatenQuantity(entry), entry.servingLabel, words)
 
   const row = (open?: () => void) => (
     <ItemRow
@@ -238,10 +255,11 @@ function EntryRow({
       photoPath={entry.photoPath}
       value={entry.macros.kcal}
       unit={t('common:unit.kcal')}
-      // When, and how much. Both fit, and each answers a question the other does
-      // not — the time is where in the day this was, the portion is what the
-      // calories are for.
-      detail={`${formatTime(entry.loggedAt)} · ${portion}`}
+      // When, and how much. Each answers a question the other does not: the
+      // time is where in the day this was, the portion is what the calories
+      // are for. One plain serving has no pill, so the ones that do stand out.
+      detail={formatTime(entry.loggedAt)}
+      tags={portion ? [portion] : undefined}
       compact
       onPress={open}
     />
@@ -268,6 +286,37 @@ function EntryRow({
       onOpenChange={onOpenChange}
     >
       {row()}
+    </SwipeRow>
+  )
+}
+
+/** A row from `extras` that can be swiped to its delete, as a meal can. */
+function SwipeableExtra({
+  row,
+  onDelete,
+  onOpenChange,
+}: {
+  row: TimedRow
+  onDelete: () => Promise<boolean>
+  onOpenChange?: (open: boolean) => void
+}) {
+  const { t } = useTranslation('logging')
+  return (
+    <SwipeRow
+      actions={[
+        {
+          label: t('today.deleteEntry'),
+          icon: 'delete',
+          tone: 'hibiscus',
+          exits: true,
+          onPress: onDelete,
+        },
+      ]}
+      onPress={row.onPress}
+      accessibilityLabel={row.label}
+      onOpenChange={onOpenChange}
+    >
+      {row.node}
     </SwipeRow>
   )
 }

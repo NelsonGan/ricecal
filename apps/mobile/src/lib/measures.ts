@@ -111,13 +111,13 @@ const SPELLINGS: Record<string, MeasureUnit> = {
   floz: 'floz',
 }
 
-const NUMBER = String.raw`(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)`
+export const NUMBER = String.raw`(\d+\s+\d+\/\d+|\d+\/\d+|\d+(?:\.\d+)?)`
 // "fl oz", "fl. oz", "fluid ounces" are one unit, so they are matched as one
 // before the single word, or "fl oz" would read as a weight ounce.
 const UNIT = String.raw`(fl\.?\s*oz|fluid\s+ounces?|[a-z]+)`
 
 /** "1 1/2", "1/4", "2.5" as a number. */
-function parseNumber(text: string): number {
+export function parseNumber(text: string): number {
   const parts = text.trim().split(/\s+/)
   return parts.reduce((sum, part) => {
     if (!part.includes('/')) return sum + Number(part)

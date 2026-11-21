@@ -15,7 +15,7 @@ import {
   type WaterDay,
   type WeightReading,
 } from '@/data'
-import { formatTime, ItemRow, useMeasureText } from '@/features/shared'
+import { formatTime, ItemRow, usePortionWords } from '@/features/shared'
 import { datePattern } from '@/lib/dates'
 import { eatenQuantity, portionLabel } from '@/lib/portions'
 import { showChange, showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
@@ -94,7 +94,8 @@ export function useOpenDay() {
 /** One meal, as the diary draws it: the plate, when, how much, and its calories. */
 export function MealRow({ entry, onPress }: { entry: Entry; onPress: (entry: Entry) => void }) {
   const { t } = useTranslation(['logging', 'common'])
-  const measure = useMeasureText()
+  const words = usePortionWords()
+  const portion = portionLabel(eatenQuantity(entry), entry.servingLabel, words)
 
   return (
     <ItemRow
@@ -103,12 +104,8 @@ export function MealRow({ entry, onPress }: { entry: Entry; onPress: (entry: Ent
       photoPath={entry.photoPath}
       value={entry.macros.kcal}
       unit={t('common:unit.kcal')}
-      detail={`${formatTime(entry.loggedAt)} · ${portionLabel(
-        eatenQuantity(entry),
-        entry.servingLabel,
-        t('logging:detail.servingWord'),
-        measure.amount,
-      )}`}
+      detail={formatTime(entry.loggedAt)}
+      tags={portion ? [portion] : undefined}
       compact
       onPress={() => onPress(entry)}
     />

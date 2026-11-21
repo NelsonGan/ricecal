@@ -22,7 +22,8 @@ export function WorkoutItem({
   onPress,
 }: {
   workout: WorkoutSummary
-  onPress: () => void
+  /** Left out when the row is swipeable, which takes the tap itself. */
+  onPress?: () => void
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const first = workout.exercises[0]
@@ -35,13 +36,12 @@ export function WorkoutItem({
       icon={exerciseIcon(first?.exerciseId ?? '')}
       // The length moves to the right when there is no burn to show there,
       // rather than being said twice.
-      detail={[
-        formatTime(workout.startedAt),
-        counted ? durationText(t, workout.durationS) : null,
+      detail={formatTime(workout.startedAt)}
+      tags={[
+        ...(counted ? [durationText(t, workout.durationS)] : []),
         t('workouts:history.sets', { count: workout.setCount }),
-      ]
-        .filter(Boolean)
-        .join(' · ')}
+      ]}
+      tagTone="hibiscus"
       value={counted ? counted : Math.round(workout.durationS / 60)}
       unit={counted ? t('common:unit.kcal') : t('workouts:history.minutes')}
       valueTone={counted ? 'hibiscus' : 'ink'}

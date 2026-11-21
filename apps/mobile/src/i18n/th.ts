@@ -903,6 +903,8 @@ export const th = {
       nameField: 'ชื่อ',
       numbersReset: 'ใช้ตัวเลขของแอป',
       servingWord: 'ที่',
+      servingCount_one: '{{value}} ที่',
+      servingCount_other: '{{value}} ที่',
       measureIn: 'วัดเป็น',
       amount: 'ปริมาณ',
       quickFix: {

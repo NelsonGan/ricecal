@@ -88,6 +88,11 @@ export type SwipeRowProps = {
    */
   onPress?: () => void
   /**
+   * What a screen reader says for the row, when its children's own labels
+   * would not do: a row inside a `ReplayMask` reads as "ph-no-capture".
+   */
+  accessibilityLabel?: string
+  /**
    * Drop the row's own rounded corners, for a row that is a LINE INSIDE A CARD
    * rather than a tile on the canvas.
    *
@@ -134,6 +139,7 @@ export function SwipeRow({
   actions,
   square = false,
   onPress,
+  accessibilityLabel,
   onOpenChange,
 }: SwipeRowProps) {
   const colors = useThemeColors()
@@ -361,7 +367,37 @@ export function SwipeRow({
         {/* Measured here, on a plain view: on the styled one above, the
             layout never reached `measure`, and a full swipe never armed. */}
         <View collapsable={false} onLayout={measure}>
-          <Animated.View style={sliding}>{children}</Animated.View>
+          {/* A row with a tap of its own is one button to a screen reader,
+              with its swipe actions offered as the reader's actions. Its tap
+              is a gesture rather than a `Pressable` (see `onPress`), and
+              without this VoiceOver read the row as loose text that could
+              neither open nor be deleted. Rows without a tap hold controls of
+              their own, which must stay reachable one by one. */}
+          <Animated.View
+            style={sliding}
+            accessible={Boolean(onPress)}
+            accessibilityRole={onPress ? 'button' : undefined}
+            accessibilityLabel={accessibilityLabel}
+            accessibilityActions={
+              onPress
+                ? [
+                    { name: 'activate' },
+                    ...actions.map((item) => ({
+                      name: item.label,
+                      label: item.a11yLabel ?? item.label,
+                    })),
+                  ]
+                : undefined
+            }
+            onAccessibilityAction={(event) => {
+              const name = event.nativeEvent.actionName
+              if (name === 'activate') return press()
+              const item = actions.find((candidate) => candidate.label === name)
+              if (item) run(item)
+            }}
+          >
+            {children}
+          </Animated.View>
         </View>
       </GestureDetector>
 

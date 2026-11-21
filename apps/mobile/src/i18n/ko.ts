@@ -903,6 +903,8 @@ export const ko = {
       nameField: '이름',
       numbersReset: '앱의 수치 사용',
       servingWord: '인분',
+      servingCount_one: '{{value}}인분',
+      servingCount_other: '{{value}}인분',
       measureIn: '단위',
       amount: '양',
       quickFix: {

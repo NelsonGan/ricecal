@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { useOnline } from '@/lib/online'
@@ -60,18 +60,17 @@ export function useDeleteConfirm<T>({
           waits: true,
           onPress: async () => {
             if (!item) return
-            if (!online) {
-              toast.show({ title: t('offline.title'), tone: 'error' })
-              throw new Error('offline')
-            }
-            hold(item)
-            try {
-              await remove(item)
-            } catch (error) {
-              hold(null)
-              toast.show({ title: failed, tone: 'error' })
-              throw error
-            }
+            await removeOrSay({
+              online,
+              say: (title) => toast.show({ title, tone: 'error' }),
+              offline: t('offline.title'),
+              failed,
+              remove: () => {
+                hold(item)
+                return remove(item)
+              },
+              refused: () => hold(null),
+            })
             await done(item)
           },
         },
@@ -80,4 +79,120 @@ export function useDeleteConfirm<T>({
   )
 
   return { open, button, dialog }
+}
+
+/**
+ * The same question for a row swiped open on a list, where there is no page to
+ * leave: `ask` opens the dialog and answers whether the item went, so `SwipeRow`
+ * can slide a kept row back. A workout cannot be queued offline the way a meal
+ * can, so offline it says so and the row stays.
+ */
+export function useAskedDelete<T>({
+  title,
+  description,
+  remove,
+  failed,
+  done,
+}: {
+  title: string
+  description: (item: T) => string
+  remove: (item: T) => Promise<unknown>
+  failed: string
+  /** Once it is gone. */
+  done?: (item: T) => unknown
+}) {
+  const { t } = useTranslation('common')
+  const toast = useToast()
+  const online = useOnline()
+  // Which item is being asked about, kept apart from whether the dialog is
+  // up: the delete reads it, and it outlives the closing dialog.
+  const [asking, setAsking] = useState<T | null>(null)
+  const [open, setOpen] = useState(false)
+  const answer = useRef<((gone: boolean) => void) | undefined>(undefined)
+  const settle = (gone: boolean) => {
+    answer.current?.(gone)
+    answer.current = undefined
+  }
+
+  const ask = (item: T): Promise<boolean> => {
+    if (!online) {
+      toast.show({ title: t('offline.title'), tone: 'error' })
+      return Promise.resolve(false)
+    }
+    settle(false)
+    setAsking(item)
+    setOpen(true)
+    return new Promise((resolve) => {
+      answer.current = resolve
+    })
+  }
+
+  const dialog = (
+    <Dialog
+      visible={open}
+      onClose={() => {
+        setOpen(false)
+        // After a delete this has already been answered.
+        settle(false)
+      }}
+      title={title}
+      description={asking === null ? undefined : description(asking)}
+      cancelLabel={t('action.keep')}
+      actions={[
+        {
+          key: 'delete',
+          label: t('action.delete'),
+          tone: 'danger',
+          waits: true,
+          onPress: async () => {
+            if (asking === null) return
+            await removeOrSay({
+              online,
+              say: (title) => toast.show({ title, tone: 'error' }),
+              offline: t('offline.title'),
+              failed,
+              remove: () => remove(asking),
+            })
+            settle(true)
+            await done?.(asking)
+          },
+        },
+      ]}
+    />
+  )
+
+  return { ask, dialog }
+}
+
+/**
+ * The delete both dialogs run. Refused offline, where it would pause rather
+ * than fail and the dialog would spin with no way out; a refused delete says
+ * `failed`. Either way it throws, so the dialog stays open.
+ */
+async function removeOrSay({
+  online,
+  say,
+  offline,
+  failed,
+  remove,
+  refused,
+}: {
+  online: boolean
+  say: (title: string) => void
+  offline: string
+  failed: string
+  remove: () => Promise<unknown>
+  refused?: () => void
+}) {
+  if (!online) {
+    say(offline)
+    throw new Error('offline')
+  }
+  try {
+    await remove()
+  } catch (error) {
+    refused?.()
+    say(failed)
+    throw error
+  }
 }

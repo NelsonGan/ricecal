@@ -901,6 +901,8 @@ export const hi = {
       nameField: 'नाम',
       numbersReset: 'ऐप के आंकड़े इस्तेमाल करें',
       servingWord: 'हिस्सा',
+      servingCount_one: '{{value}} हिस्सा',
+      servingCount_other: '{{value}} हिस्से',
       measureIn: 'इसमें मापें',
       amount: 'मात्रा',
       quickFix: {
