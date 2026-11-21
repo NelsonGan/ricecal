@@ -32,8 +32,9 @@ you say you are done. Biome skips `apps/web` and `apps/app-studio`; the website
 has its own ESLint rules and the studio has none.
 
 **Always include screenshots in PR descriptions after UI testing.** Capture the
-final UI and save it, with any recording, in `.github/pr-assets/<topic>/` (one
-kebab-case folder per PR, ignored by git) and upload it as a GitHub attachment:
+final UI and save it, with any recording and the mockup it was built from, in
+`.github/pr-assets/<topic>/` (one kebab-case folder per PR, ignored by git) and
+upload it as a GitHub attachment:
 reference it in the description by that path (`![alt](.github/pr-assets/<topic>/after.png)`)
 and pass the same path to `--attach` on `gh pr create`, `gh pr edit` or
 `gh pr comment`, which uploads it and rewrites the reference. **Never commit
@@ -74,6 +75,18 @@ app writes, ask what 1.0.0 does when it meets your change. The README's
 a migration with `pnpm db:diff <name>`. Never hand-write a migration and never
 apply SQL through the dashboard or the Supabase MCP server: `supabase-drift`
 will catch it, and it goes red on a change that is genuinely in the repo.
+
+**Every visible UI change starts from a generated mockup.** Load `ui-mockups`
+before building or restyling anything a user sees (an app screen, sheet, card,
+row or state, a website page or section, an App Studio view) and before a design
+or user review of one. It draws the screen first with `image-generation`, which
+uses whichever image model is available (Codex, Antigravity, or the agent's own
+tool), builds toward that picture with the project's real components, and checks
+the real UI against it before the change is done. A generated mockup is usually
+more coherent than a first build, and it is the guide every later round and
+review compares against. Attach it beside the final screenshot in the PR. The
+skill names the only exceptions: nothing visible moves, or the user supplied the
+design, which then is the guide.
 
 **Do not add a documentation file.** Everything goes in `README.md`. Scattered
 docs are what this layout replaced.
