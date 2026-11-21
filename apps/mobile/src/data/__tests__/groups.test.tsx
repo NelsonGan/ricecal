@@ -397,7 +397,7 @@ describe('one thread, a page at a time', () => {
     const held = { messages: [...run(90, 10), ...newest.slice(0, -1), mine], more: true }
     const merged = mergeNewest(held, [
       ...newest.slice(1),
-      { ...mine, created_at: newest[49]!.created_at },
+      { ...mine, created_at: newest[49]?.created_at },
     ])
     expect(merged.messages.filter((row) => row.id === 'mine')).toHaveLength(1)
   })

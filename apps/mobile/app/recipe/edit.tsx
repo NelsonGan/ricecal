@@ -2,11 +2,12 @@ import { FREE_RECIPES } from '@ricecal/shared'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, View } from 'react-native'
+import { ActivityIndicator, type TextInputInstance, View } from 'react-native'
 
-import type { IconRef, RecipeIngredientInput, ScannedRecipe } from '@/data'
+import type { IconRef, RecipeIngredientInput, RecipeTag, ScannedRecipe } from '@/data'
 import {
   isRecipeLimit,
+  RECIPE_TAGS,
   removeMealPhoto,
   storedImageSource,
   uploadMealPhoto,
@@ -24,9 +25,12 @@ import {
   DescribeRecipePanel,
   IngredientSheet,
   NewRecipeChooser,
+  normaliseSourceUrl,
+  parseMinutes,
   potTotals,
   ReadingRecipe,
   RecipeIngredientEditor,
+  type RecipeStart,
   StepsField,
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
@@ -34,9 +38,11 @@ import { useBack } from '@/lib/navigation'
 import {
   AppBar,
   Button,
-  Card,
+  Chip,
   ConfirmSheet,
   cn,
+  FormCard,
+  FormRow,
   Icon,
   Screen,
   Sheet,
@@ -83,12 +89,14 @@ const DEFAULT_RECIPE_ICON: IconRef = { set: 'food', name: 'cooking-pot' }
 export default function RecipeFormScreen() {
   const { t } = useTranslation(['recipes', 'common', 'paywall'])
   const router = useRouter()
-  const goBack = useBack('/settings/foods')
+  const goBack = useBack('/recipes')
   const toast = useToast()
   const requirePro = useRequirePro()
 
-  const params = useLocalSearchParams<{ id?: string }>()
+  const params = useLocalSearchParams<{ id?: string; start?: RecipeStart }>()
   const recipeId = params.id
+  /** Which door on the Recipes tab opened this form, when one did. */
+  const start = recipeId ? undefined : params.start
   const { data: existing } = useRecipe(recipeId)
   const { data: existingIngredients } = useRecipeIngredients(recipeId)
   const { data: settings } = useSettings()
@@ -105,6 +113,12 @@ export default function RecipeFormScreen() {
   /** The picture before it has a key — what the tile shows while it uploads. */
   const [localPhoto, setLocalPhoto] = useState<string | null>(null)
   const [items, setItems] = useState<StagedIngredient[]>([])
+  /** As typed, so an empty field stays empty rather than turning into a 0. */
+  const [prep, setPrep] = useState('')
+  const [cook, setCook] = useState('')
+  const [tags, setTags] = useState<RecipeTag[]>([])
+  const [source, setSource] = useState('')
+  const [sourceError, setSourceError] = useState<string | undefined>(undefined)
 
   /**
    * The cook has answered the picture question themselves. A ref, because nothing
@@ -113,6 +127,7 @@ export default function RecipeFormScreen() {
    * so "is it empty" cannot be the test the way it is for the name.
    */
   const pictureChosen = useRef(false)
+  const nameField = useRef<TextInputInstance>(null)
   /** The upload behind the picture tile, which is a second or two on a real photo. */
   const [attaching, setAttaching] = useState(false)
   /** A drawing waiting on the confirmation, because choosing it discards a photo. */
@@ -122,8 +137,11 @@ export default function RecipeFormScreen() {
   const [dirty, setDirty] = useState(false)
   /** Null is closed; a missing key adds, and a key replaces that staged row. */
   const [pickingIngredient, setPickingIngredient] = useState<{ replacingKey?: string } | null>(null)
-  const [camera, setCamera] = useState(false)
-  const [describing, setDescribing] = useState(false)
+  // Opened straight away when the tab's Photo or Describe tile brought us here;
+  // the tab has already asked `requirePro`, and the chooser sits under the sheet
+  // for whoever closes it.
+  const [camera, setCamera] = useState(start === 'photo')
+  const [describing, setDescribing] = useState(start === 'describe')
   /**
    * Which read is in flight, and the form is not editable while it is. It names
    * the source rather than being a boolean, because nothing else on screen still
@@ -138,7 +156,9 @@ export default function RecipeFormScreen() {
   const [describeReady, setDescribeReady] = useState(false)
   const [leaving, setLeaving] = useState(false)
   /** A new food starts on the method choice. Existing food opens on its form. */
-  const [mode, setMode] = useState<'choose' | 'form'>(recipeId ? 'form' : 'choose')
+  const [mode, setMode] = useState<'choose' | 'form'>(
+    recipeId || start === 'manual' ? 'form' : 'choose',
+  )
 
   /**
    * Seed the form from the recipe being edited, exactly once. A ref rather than a
@@ -165,6 +185,10 @@ export default function RecipeFormScreen() {
     // form may not overwrite it.
     pictureChosen.current = true
     setItems(existingIngredients.map((item) => stage(item)))
+    setPrep(existing.prepMinutes != null ? String(existing.prepMinutes) : '')
+    setCook(existing.cookMinutes != null ? String(existing.cookMinutes) : '')
+    setTags(existing.tags)
+    setSource(existing.sourceUrl ?? '')
   }, [recipeId, existing, existingIngredients])
 
   const totals = potTotals(items, servings)
@@ -331,8 +355,18 @@ export default function RecipeFormScreen() {
   }
 
   const commit = async () => {
+    // Save stays live without a name and says why here: a dead button at the
+    // foot of a long form explains nothing, and the name is off screen by then.
     if (!ready) {
       toast.show({ title: t('recipes:edit.nameRequired'), tone: 'warning' })
+      nameField.current?.focus()
+      return
+    }
+    // Checked here rather than left to the column's check, which would refuse
+    // the whole save with an error that names nothing on screen.
+    const sourceUrl = normaliseSourceUrl(source)
+    if (source.trim() && !sourceUrl) {
+      setSourceError(t('recipes:edit.sourceInvalid'))
       return
     }
 
@@ -347,6 +381,10 @@ export default function RecipeFormScreen() {
         photoPath,
         previousPhotoPath: existing?.photoPath,
         ingredients: items.map(({ key: _key, ...input }) => input),
+        prepMinutes: parseMinutes(prep),
+        cookMinutes: parseMinutes(cook),
+        tags,
+        sourceUrl,
       })
     } catch (error) {
       // The free tier's ceiling, met at the write rather than the button. The
@@ -392,19 +430,23 @@ export default function RecipeFormScreen() {
     router.replace({ pathname: '/recipe/[id]', params: { id: result.id } })
   }
 
+  /**
+   * The manual form is one branch of the new-recipe chooser, so its chevron
+   * returns there without throwing away anything already typed. Not when the
+   * tab's "Write it" tile opened the form directly: that cook never saw the
+   * chooser, and backing into it would be a page they did not come from. The
+   * cross is the boundary that confirms before leaving the screen.
+   */
+  const formCanGoBack = !recipeId && start !== 'manual' && mode === 'form' && !reading
+
   const leave = () => {
-    // The manual form is one branch of the new-food chooser, so its chevron
-    // returns there without throwing away anything already typed. The chooser's
-    // own cross remains the boundary that confirms before leaving the screen.
-    if (!recipeId && mode === 'form' && !reading) {
+    if (formCanGoBack) {
       setMode('choose')
       return
     }
     if (dirty) setLeaving(true)
     else goBack()
   }
-
-  const formCanGoBack = !recipeId && mode === 'form' && !reading
 
   return (
     <Screen
@@ -419,9 +461,23 @@ export default function RecipeFormScreen() {
       }
       footer={
         mode === 'form' && !reading ? (
-          <Button fullWidth loading={save.isPending} disabled={!ready} onPress={commit}>
-            {t('recipes:edit.save')}
-          </Button>
+          <View className="gap-2">
+            {/* The preview. Reads the staged values, so it cannot disagree
+                with what Save is about to write. */}
+            {items.length > 0 ? (
+              <Text variant="label" className="text-center">
+                {/* With the servings beside it, so a pot for four left at the
+                    default of one stands out here rather than in the diary. */}
+                {t('recipes:edit.perServing', {
+                  kcal: totals.perServing.kcal.toLocaleString(),
+                  count: servings,
+                })}
+              </Text>
+            ) : null}
+            <Button fullWidth loading={save.isPending} onPress={commit}>
+              {t('recipes:edit.save')}
+            </Button>
+          </View>
         ) : undefined
       }
     >
@@ -448,7 +504,18 @@ export default function RecipeFormScreen() {
         />
       ) : (
         <>
+          {/* The picture first, as on the recipe itself: it is the biggest
+              thing there, and the form reads as the page it will become. */}
+          <RecipePicture
+            icon={icon}
+            photoPath={photoPath}
+            localPhoto={localPhoto}
+            attaching={attaching}
+            onPress={() => setPicking(true)}
+          />
+
           <TextField
+            ref={nameField}
             label={t('recipes:edit.name')}
             value={name}
             onChangeText={(next) => {
@@ -458,20 +525,10 @@ export default function RecipeFormScreen() {
             placeholder={t('recipes:edit.namePlaceholder')}
           />
 
-          <View className="gap-1.5">
-            <Text variant="label">{t('recipes:edit.picture')}</Text>
-            <RecipePicture
-              icon={icon}
-              photoPath={photoPath}
-              localPhoto={localPhoto}
-              attaching={attaching}
-              onPress={() => setPicking(true)}
-            />
-          </View>
-
-          <View className="gap-1.5">
-            <Text variant="label">{t('recipes:edit.servings')}</Text>
-            <Card contentClassName="px-3 py-2">
+          {/* Three short answers in one card, the way onboarding asks for a
+              body: how many it feeds, and how long it takes to get there. */}
+          <FormCard>
+            <FormRow label={t('recipes:edit.servingsRow')}>
               <Stepper
                 value={servings}
                 onChange={(next) => {
@@ -484,8 +541,56 @@ export default function RecipeFormScreen() {
                 format={(value) => String(Math.round(value))}
                 decrementLabel={t('common:a11y.decrease')}
                 incrementLabel={t('common:a11y.increase')}
+                className="w-[150px]"
               />
-            </Card>
+            </FormRow>
+            <FormRow label={t('recipes:edit.prep')}>
+              <MinutesField
+                label={t('recipes:edit.prep')}
+                value={prep}
+                onChange={(next) => {
+                  setPrep(next)
+                  touch()
+                }}
+              />
+            </FormRow>
+            <FormRow label={t('recipes:edit.cook')}>
+              <MinutesField
+                label={t('recipes:edit.cook')}
+                value={cook}
+                onChange={(next) => {
+                  setCook(next)
+                  touch()
+                }}
+              />
+            </FormRow>
+          </FormCard>
+
+          <View className="gap-1.5">
+            <Text variant="label">{t('recipes:edit.meal')}</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {RECIPE_TAGS.map((tag) => {
+                const selected = tags.includes(tag)
+                return (
+                  <Chip
+                    key={tag}
+                    selected={selected}
+                    onPress={() => {
+                      // Kept in the chips' order rather than the order tapped,
+                      // so the recipe's own tags read the same way every time.
+                      setTags((current) =>
+                        RECIPE_TAGS.filter((key) =>
+                          key === tag ? !selected : current.includes(key),
+                        ),
+                      )
+                      touch()
+                    }}
+                  >
+                    {t(`recipes:tag.${tag}`)}
+                  </Chip>
+                )
+              })}
+            </View>
           </View>
 
           <View className="gap-1.5">
@@ -519,35 +624,30 @@ export default function RecipeFormScreen() {
             />
           </View>
 
-          {/* The preview. Reads the staged values, so it cannot disagree with what
-          Save is about to write. */}
-          {items.length > 0 ? (
-            <Card>
-              <View className="flex-row items-center justify-between gap-3">
-                <View className="min-w-0 flex-1 gap-0.5">
-                  <Text variant="bodyStrong">
-                    {t('recipes:edit.totalLabel', { count: servings })}
-                  </Text>
-                  <Text variant="meta">
-                    {t('recipes:edit.totalWhole', { kcal: totals.total.kcal.toLocaleString() })}
-                  </Text>
-                </View>
-                <View className="flex-row items-baseline gap-1">
-                  <Text variant="numeric" className="text-[26px] leading-[32px] text-pandan-ink">
-                    {totals.perServing.kcal.toLocaleString()}
-                  </Text>
-                  <Text variant="caption">{t('common:unit.kcal')}</Text>
-                </View>
-              </View>
-            </Card>
-          ) : null}
-
           <StepsField
             value={steps}
             onChange={(next) => {
               setSteps(next)
               touch()
             }}
+          />
+
+          {/* Where it came from: a reel, a post, a blog. Shown back to the
+              cook alone, so it is a bookmark rather than a credit line. */}
+          <TextField
+            label={t('recipes:edit.source')}
+            value={source}
+            onChangeText={(next) => {
+              setSource(next)
+              setSourceError(undefined)
+              touch()
+            }}
+            placeholder={t('recipes:edit.sourcePlaceholder')}
+            error={sourceError}
+            keyboardType="url"
+            autoCapitalize="none"
+            autoCorrect={false}
+            leftSlot={<Icon set="ui" name="link" size={20} />}
           />
 
           <IconPicker
@@ -716,6 +816,45 @@ function RecipePicture({
       ) : (
         <Icon set="food" name="cooking-pot" size={100} />
       )}
+      {/* Says the box is a control: a grey box with a drawing in it reads as a
+          picture, not as a place to change one. */}
+      {attaching ? null : (
+        <View className="absolute bottom-2 right-2 flex-row items-center gap-1.5 rounded-full bg-inverse/90 px-3 py-1">
+          <Icon set="ui" name="edit" size={14} />
+          <Text variant="caption" className="text-on-inverse">
+            {t('edit.change')}
+          </Text>
+        </View>
+      )}
     </Tappable>
+  )
+}
+
+/**
+ * Minutes, typed. Digits only and at most four of them: the column takes two
+ * days at most, and `parseMinutes` clamps whatever gets past this.
+ */
+function MinutesField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: string
+  onChange: (next: string) => void
+}) {
+  const { t } = useTranslation('recipes')
+  return (
+    <TextField
+      size="sm"
+      hideLabel
+      label={label}
+      containerClassName="w-[124px]"
+      keyboardType="number-pad"
+      maxLength={4}
+      value={value}
+      onChangeText={(next) => onChange(next.replace(/[^0-9]/g, ''))}
+      rightSlot={<Text variant="caption">{t('edit.minutes')}</Text>}
+    />
   )
 }

@@ -48,6 +48,23 @@ create table public.recipes (
   -- paragraph.
   steps         text check (char_length(steps) <= 4000),
 
+  -- What a cook reads before deciding to make it tonight. Both optional, in
+  -- minutes, and capped at two days so an overnight marinade fits and a typo of
+  -- 30000 does not.
+  prep_minutes  smallint check (prep_minutes between 0 and 2880),
+  cook_minutes  smallint check (cook_minutes between 0 and 2880),
+
+  -- Which meals it is for, from a fixed set of keys rather than free text: the
+  -- app translates them, the Recipes tab filters on them, and a word nobody
+  -- reviews cannot be a way to put text in front of the community. Widening the
+  -- set is a new key here and in the app; narrowing it would orphan rows a
+  -- released app wrote.
+  tags          text[] not null default '{}' check (
+    tags <@ array['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink']::text[]
+  ),
+
+  -- Where the cook found it and their star are NOT here: see `recipe_private`.
+
   -- Publishing.
   --
   -- Two columns rather than one, because they are two different facts: the owner
@@ -487,10 +504,14 @@ grant select, delete on public.recipes to authenticated;
 -- are absent for a quieter reason: they are derived, and a client that could
 -- write them could credit somebody else, collide two share links, vote for its
 -- own recipe, or point at a dish it did not cook.
-grant insert (owner_id, name, servings, steps, icon_set, icon_name, photo_path)
-  on public.recipes to authenticated;
-grant update (name, photo_path, icon_set, icon_name, servings, steps)
-  on public.recipes to authenticated;
+grant insert (
+  owner_id, name, servings, steps, icon_set, icon_name, photo_path,
+  prep_minutes, cook_minutes, tags
+) on public.recipes to authenticated;
+grant update (
+  name, photo_path, icon_set, icon_name, servings, steps,
+  prep_minutes, cook_minutes, tags
+) on public.recipes to authenticated;
 grant select, insert, update, delete on public.recipes to service_role;
 
 -- A SECOND, RESTRICTIVE read policy sits on top of this one, in
@@ -571,3 +592,81 @@ create policy "recipe_ingredients: delete own recipe"
       where r.id = recipe_id and r.owner_id = (select auth.uid())
     )
   );
+
+
+-- ---------------------------------------------------------------------------
+-- What only the cook sees about their own recipe: where they found it (a reel,
+-- a post, a blog) and their favourite star.
+--
+-- A table of its own rather than two more columns on `recipes`, because that
+-- table is readable by every signed-in account on an approved community row,
+-- and a column cannot be kept out of a select the row is visible to without a
+-- column grant, which the security-invoker views reading `recipes` would then
+-- fail on. Here the read policy is owner-only, so `recipe_details`' join comes
+-- back empty for anybody else and the API has nothing to give them.
+--
+-- The link stays private for a second reason: the reviewer never reads it, and
+-- a link on a community card is an advert waiting to happen. A saved copy has
+-- no row here, so it carries neither the link nor the star.
+-- ---------------------------------------------------------------------------
+create table public.recipe_private (
+  recipe_id    uuid primary key references public.recipes (id) on delete cascade,
+  -- The recipe's owner, copied so the policy is one comparison rather than a
+  -- join; the insert check below holds it to the recipe's real owner.
+  owner_id     uuid not null references auth.users (id) on delete cascade,
+  source_url   text check (
+    char_length(source_url) <= 2000 and source_url ~* '^https?://[^[:space:]]+$'
+  ),
+  is_favourite boolean not null default false,
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now()
+);
+
+-- Deleting an account cascades through `owner_id`.
+create index recipe_private_owner_idx on public.recipe_private (owner_id);
+
+create trigger recipe_private_set_updated_at
+  before update on public.recipe_private
+  for each row execute function public.set_updated_at();
+
+alter table public.recipe_private enable row level security;
+
+grant select, insert, update, delete on public.recipe_private to authenticated;
+grant select, insert, update, delete on public.recipe_private to service_role;
+
+create policy "recipe_private: read own"
+  on public.recipe_private for select
+  to authenticated
+  using (owner_id = (select auth.uid()));
+
+-- Only for a recipe of your own, on insert and on update alike: without the
+-- `exists`, anybody could attach a row to somebody else's recipe id (or move
+-- their own row onto it), and since `recipe_id` is the primary key, that cook
+-- could then never write a link or a star for their own recipe.
+create policy "recipe_private: write own recipe"
+  on public.recipe_private for insert
+  to authenticated
+  with check (
+    owner_id = (select auth.uid())
+    and exists (
+      select 1 from public.recipes r
+      where r.id = recipe_id and r.owner_id = (select auth.uid())
+    )
+  );
+
+create policy "recipe_private: update own"
+  on public.recipe_private for update
+  to authenticated
+  using (owner_id = (select auth.uid()))
+  with check (
+    owner_id = (select auth.uid())
+    and exists (
+      select 1 from public.recipes r
+      where r.id = recipe_id and r.owner_id = (select auth.uid())
+    )
+  );
+
+create policy "recipe_private: delete own"
+  on public.recipe_private for delete
+  to authenticated
+  using (owner_id = (select auth.uid()));

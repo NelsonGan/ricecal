@@ -300,7 +300,27 @@ export type Recipe = {
   total: Macros
   /** One serving of it — what a log of this recipe costs, and the snapshot's base. */
   perServing: Macros
+
+  /** Minutes of preparation and of cooking, when the cook said. */
+  prepMinutes?: number
+  cookMinutes?: number
+  /** Which meals it is for. Keys from `RECIPE_TAGS`, never free text. */
+  tags: RecipeTag[]
+  /** Where the cook found it. The view sends it to the owner only. */
+  sourceUrl?: string
+  /** The owner's own star. Always false on somebody else's. */
+  isFavourite: boolean
 }
+
+/**
+ * The meals a recipe can be for, in the order the chips draw them. Mirrors the
+ * check on `recipes.tags`: a key added here and not there is refused at Save.
+ */
+export const RECIPE_TAGS = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink'] as const
+export type RecipeTag = (typeof RECIPE_TAGS)[number]
+
+export const isRecipeTag = (value: string): value is RecipeTag =>
+  (RECIPE_TAGS as readonly string[]).includes(value)
 
 export type Targets = {
   kcal: number

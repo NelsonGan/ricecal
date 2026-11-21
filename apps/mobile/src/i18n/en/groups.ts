@@ -103,9 +103,9 @@ export const groups = {
   share: 'Share',
   tabFood: 'Food',
   tabWorkouts: 'Workouts',
-  /** The viewer's own foods (recipes), as the chat's + offers them. */
-  tabMyFood: 'My Food',
-  shareMyFoodEmpty: 'Foods you write show here.',
+  /** The viewer's own recipes, as the chat's + offers them. */
+  tabMyFood: 'My recipes',
+  shareMyFoodEmpty: 'Recipes you write show here.',
   shareFoodEmpty: 'Foods you post show here.',
   shareWorkoutEmpty: 'Workouts you log or record show here.',
   /** The figures on a workout card in the chat, each over its value. */

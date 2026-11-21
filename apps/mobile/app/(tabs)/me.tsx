@@ -46,15 +46,7 @@ import {
 
 /** U1 PROFILE */
 export default function MeScreen() {
-  const { t } = useTranslation([
-    'profile',
-    'activity',
-    'common',
-    'news',
-    'paywall',
-    'social',
-    'workouts',
-  ])
+  const { t } = useTranslation(['profile', 'activity', 'common', 'news', 'paywall', 'workouts'])
   const router = useRouter()
   const colors = useThemeColors()
   const { session } = useSession()
@@ -317,13 +309,8 @@ export default function MeScreen() {
                   ? t('profile:home.goalsValue', { kcal: targets.kcal.toLocaleString() })
                   : '—'
             }
-            onPress={() => router.push('/settings/goals')}
-          />
-          <SettingRow
-            icon={{ set: 'food', name: 'cooking-pot' }}
-            title={t('social:myFoods')}
             divider={false}
-            onPress={() => router.push('/settings/foods')}
+            onPress={() => router.push('/settings/goals')}
           />
         </Card>
 

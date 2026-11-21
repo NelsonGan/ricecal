@@ -12,7 +12,7 @@ import type {
   RecipeUnit,
   Serving,
 } from './types'
-import { fromDbSource } from './types'
+import { fromDbSource, isRecipeTag } from './types'
 
 /**
  * Row shapes to domain shapes.
@@ -159,6 +159,14 @@ export function toRecipe(row: RecipeRow): Recipe {
       protein: Number(row.serving_protein_g ?? 0),
       fat: Number(row.serving_fat_g ?? 0),
     },
+
+    prepMinutes: row.prep_minutes ?? undefined,
+    cookMinutes: row.cook_minutes ?? undefined,
+    // Filtered, so a key a newer build wrote is dropped here rather than drawn
+    // as a chip with no words on it.
+    tags: (row.tags ?? []).filter(isRecipeTag),
+    sourceUrl: row.source_url ?? undefined,
+    isFavourite: row.is_favourite ?? false,
   }
 }
 

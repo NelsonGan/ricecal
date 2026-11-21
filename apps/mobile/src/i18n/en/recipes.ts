@@ -1,37 +1,62 @@
 /**
- * Home cooking: the two shelves, the form, and the community gate.
+ * Home cooking: the Recipes tab, the form, cook mode and the community gate.
  *
- * THE WORD ON SCREEN IS "FOOD". The namespace, the tables and every hook still
- * say "recipe", because a released app is talking to those tables and renaming
- * one is deleting it; the user was never going to call the thing they wrote a
- * recipe when half of them are a sandwich they make the same way every morning.
+ * The word on screen is "recipe" again. It was "food" while these lived behind
+ * a row in Settings, because half of what people wrote down was a sandwich; a
+ * tab of its own, with times, meal tags and a cook mode, is a recipe box, and
+ * the people opening it cook.
  *
  * Dish names are NOT here and never will be — "rendang daging" is what the cook
  * typed, in whatever language they typed it, and it is data. Nothing in this
  * file names a food.
  */
 export const recipes = {
+  /** The tab's name, in the nav bar and over the shelf. */
+  title: 'Recipes',
+
   shelf: {
     mine: 'Mine',
     community: 'Community',
   },
 
-  heading: {
-    mine: 'My foods',
-    community: 'Community',
+  /** Meal tags. Keys of `recipes.tags`; the database refuses any other. */
+  tag: {
+    breakfast: 'Breakfast',
+    lunch: 'Lunch',
+    dinner: 'Dinner',
+    snack: 'Snack',
+    dessert: 'Dessert',
+    drink: 'Drink',
+  },
+
+  /** The three ways in, at the top of your own shelf. One word each. */
+  add: {
+    title: 'Add a recipe',
+    write: 'Write it',
+    photo: 'Photo',
+    describe: 'Describe',
+    quota: '{{used}} of {{count}} free',
+  },
+
+  card: {
+    /** The plus on a card: one serving into the day being looked at. */
+    log: 'Add {{name}} to today',
+    logged: '{{name}} added to your day',
+    favourite: 'Favourite',
+    unfavourite: 'Remove from favourites',
   },
 
   search: {
-    community: 'Search shared foods',
-    mine: 'Search my foods',
+    community: 'Search shared recipes',
+    mine: 'Search my recipes',
     clear: 'Clear search',
     none: 'Nothing by that name',
     noneBody: 'Try a shorter word, or part of the dish name.',
   },
 
   empty: {
-    mineTitle: 'No foods yet',
     communityTitle: 'Nothing shared yet',
+    communityBody: 'Share one of yours from its menu.',
   },
 
   /** The count under a food's name in a list. */
@@ -46,7 +71,7 @@ export const recipes = {
   someCook: 'Someone',
 
   new: {
-    title: 'New food',
+    title: 'New recipe',
     manualLabel: 'Fill it in myself',
     aiLabel: 'Use AI',
     /**
@@ -80,19 +105,30 @@ export const recipes = {
   },
 
   edit: {
-    title: 'Edit food',
+    title: 'Edit recipe',
     name: 'NAME',
     namePlaceholder: 'What do you call it?',
-    picture: 'PICTURE',
     changePicture: 'Change the picture',
+    change: 'Change',
     /**
      * The one choice in this form that throws something away: a drawing over a
      * photograph of the real pot.
      */
     replacePhotoTitle: 'Use a drawing instead?',
-    replacePhotoBody: 'The photo of this food will be removed.',
+    replacePhotoBody: 'The photo of this recipe will be removed.',
     replacePhotoConfirm: 'Use the drawing',
-    servings: 'HOW MANY SERVINGS',
+    /** The details card: three short rows under the picture. */
+    servingsRow: 'Servings',
+    prep: 'Prep time',
+    cook: 'Cook time',
+    /** Beside the minutes field. */
+    minutes: 'min',
+    meal: 'MEAL',
+    source: 'SOURCE',
+    sourcePlaceholder: 'Link to the reel or post',
+    sourceInvalid: 'That link does not look right',
+    /** Over the save button. */
+    perServing: '{{kcal}} kcal per serving, serves {{count}}',
     ingredients: 'INGREDIENTS',
     ingredientsCount: 'INGREDIENTS · {{count}}',
     addIngredient: 'Add an ingredient',
@@ -107,8 +143,8 @@ export const recipes = {
     stepPlaceholder: 'What happens in this step?',
     addStep: 'Add step',
     removeStep: 'Remove step {{count}}',
-    save: 'Save food',
-    saved: 'Food saved',
+    save: 'Save recipe',
+    saved: 'Recipe saved',
     nameRequired: 'Give it a name first',
     saveFailed: 'Could not save that. Try again.',
     /**
@@ -119,10 +155,7 @@ export const recipes = {
      * the number rather than saying "limit reached", because a ceiling somebody
      * has just met is a ceiling they want to know the size of.
      */
-    limitReached: 'A free account keeps {{count}} foods of its own. Pro has no limit.',
-    /** The totals card under the ingredient list. */
-    totalLabel: 'Per serving, {{count}}',
-    totalWhole: 'Whole pot {{kcal}} kcal',
+    limitReached: 'A free account keeps {{count}} recipes of its own. Pro has no limit.',
     discardTitle: 'Leave without saving?',
     discardBody: 'The changes you made here will be lost.',
     discardConfirm: 'Discard',
@@ -169,39 +202,40 @@ export const recipes = {
   },
 
   detail: {
-    /**
-     * The word under the stepper's number, and it has to agree with it.
-     *
-     * A count-bearing key with no `{{count}}` in the text: the stepper draws
-     * the figure itself, one line above, so a unit carrying its own copy of it
-     * would read "3 3 servings". The count is passed for the plural rule and
-     * for nothing else.
-     */
-    servingLabel_one: 'serving',
-    servingLabel_other: 'servings',
     portion: {
-      half: 'Half',
-      one: '1 serving',
-      two: '2 servings',
       pot: 'Whole pot',
     },
     ofServings: '{{count}} OF {{total}} SERVINGS',
+    /** The three tiles under the title. */
+    prep: 'Prep',
+    cook: 'Cook',
+    perServing: 'per serving',
+    tabIngredients: 'Ingredients',
+    tabMethod: 'Method',
+    /** The scaler over the ingredient list. Changes the amounts, not the log. */
+    cookingFor: 'Cooking for',
+    /** An ingredient row read out, ticked or not. */
+    tick: 'Tick off {{name}}',
+    source: 'Source',
+    /** Half the footer's width, beside "Add to today", so one short word. */
+    startCooking: 'Cook',
+    /** The sheet "Add to today" opens: how much of the pot was eaten. */
+    logTitle: 'How much did you have?',
     steps: 'HOW I COOK IT',
     stepsFrom: 'HOW {{name}} COOKS IT',
     noSteps: 'No steps written down.',
-    ingredients: 'INGREDIENTS',
+    noIngredients: 'No ingredients written down.',
     addToDay: 'Add to today',
-    added: 'Added to your day',
-    saveCopy: 'Save to my foods',
-    savedCopy: 'Saved to your foods',
+    saveCopy: 'Save to my recipes',
+    savedCopy: 'Saved to your recipes',
     saveCopyFailed: 'Could not save that one. Try again.',
-    goneTitle: 'Food not found',
+    goneTitle: 'Recipe not found',
     goneBody:
       'It may have been deleted, or made private again. Ask whoever shared it for a fresh link.',
-    delete: 'Delete food',
-    deleteTitle: 'Delete this food?',
+    delete: 'Delete recipe',
+    deleteTitle: 'Delete this recipe?',
     deleteBody: 'Meals you have already logged from it stay in your diary.',
-    deleted: 'Food deleted',
+    deleted: 'Recipe deleted',
   },
 
   /**
@@ -217,7 +251,7 @@ export const recipes = {
    * The four reasons are `report_reason` in `schemas/01_enums.sql`, in its order.
    */
   report: {
-    title: 'Report this food',
+    title: 'Report this recipe',
     body: 'It stops showing up for you straight away. The cook is not told.',
     inappropriate: 'Offensive or not food',
     spam: 'Spam or advertising',
@@ -226,13 +260,13 @@ export const recipes = {
     /** The cook's own name, or "Someone" when there is none. */
     block: 'Hide everything by {{name}}',
     done: 'Reported. You will not see it again.',
-    blocked: 'Hidden. You will not see their foods again.',
+    blocked: 'Hidden. You will not see their recipes again.',
     failed: 'Could not do that. Try again.',
   },
 
   share: {
     action: 'Share',
-    title: 'Share this food',
+    title: 'Share this recipe',
     body: 'Anyone with the link can see the ingredients, the steps and the calories, and save their own copy. Yours stays yours.',
     /** The toggle at the foot of the share sheet. */
     publicTitle: 'Make it public',
@@ -241,12 +275,31 @@ export const recipes = {
   },
 
   /**
+   * Cook mode: one step at a time, large, with the screen kept awake. The
+   * phone is propped against the tiles and read from a step away.
+   */
+  cook: {
+    step: 'STEP {{count}} OF {{total}}',
+    next: 'Next step',
+    back: 'Back',
+    done: 'Done',
+    /** The ingredients a step names, under it. */
+    youNeed: 'You need',
+    ingredients: 'Ingredients',
+    close: 'Stop cooking',
+    noSteps: 'No steps written down yet. Add them from the recipe menu.',
+    finishedTitle: 'Enjoy your meal',
+    finishedBody: 'Add a serving to your day?',
+    finishedSkip: 'Not now',
+  },
+
+  /**
    * What the review said. Three outcomes and they are deliberately distinct:
    * `pending` is not a soft rejection, it is nobody having read it yet.
    */
   review: {
-    checking: 'Checking your food…',
-    approved: 'Your food is in the community',
+    checking: 'Checking your recipe…',
+    approved: 'Your recipe is in the community',
     rejected: 'Not published: {{reason}}',
     rejectedPlain: 'We could not publish this one.',
     pending: 'We are still looking at this one. It will show up once it passes.',

@@ -8,8 +8,12 @@
  * that: the renamed fields arrive `undefined` and print as `NaN`, and the ones
  * that kept their names arrive in the wrong unit, so six cups draw as a tank
  * six millilitres full.
+ *
+ * 6: a recipe gained `tags`, `isFavourite`, times and a source link. A recipe
+ * rehydrated from 5 has no `tags`, and the recipe page and its form read them as
+ * an array, so the first recipe opened after an update threw while rendering.
  */
-export const SCHEMA_VERSION = '5'
+export const SCHEMA_VERSION = '6'
 
 /**
  * The free tier's ceilings, as the app prints them.

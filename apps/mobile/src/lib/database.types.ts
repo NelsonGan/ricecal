@@ -1669,6 +1669,48 @@ export type Database = {
           },
         ]
       }
+      recipe_private: {
+        Row: {
+          created_at: string
+          is_favourite: boolean
+          owner_id: string
+          recipe_id: string
+          source_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          is_favourite?: boolean
+          owner_id: string
+          recipe_id: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          is_favourite?: boolean
+          owner_id?: string
+          recipe_id?: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'recipe_private_recipe_id_fkey'
+            columns: ['recipe_id']
+            isOneToOne: true
+            referencedRelation: 'recipe_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'recipe_private_recipe_id_fkey'
+            columns: ['recipe_id']
+            isOneToOne: true
+            referencedRelation: 'recipes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       recipe_reports: {
         Row: {
           created_at: string
@@ -1765,6 +1807,7 @@ export type Database = {
       recipes: {
         Row: {
           author_name: string
+          cook_minutes: number | null
           created_at: string
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
@@ -1773,6 +1816,7 @@ export type Database = {
           name: string
           owner_id: string | null
           photo_path: string | null
+          prep_minutes: number | null
           review_note: string | null
           review_status: Database['public']['Enums']['recipe_review']
           saved_count: number
@@ -1780,10 +1824,12 @@ export type Database = {
           share_slug: string
           source_recipe_id: string | null
           steps: string | null
+          tags: string[]
           updated_at: string
         }
         Insert: {
           author_name?: string
+          cook_minutes?: number | null
           created_at?: string
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
@@ -1792,6 +1838,7 @@ export type Database = {
           name: string
           owner_id?: string | null
           photo_path?: string | null
+          prep_minutes?: number | null
           review_note?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           saved_count?: number
@@ -1799,10 +1846,12 @@ export type Database = {
           share_slug: string
           source_recipe_id?: string | null
           steps?: string | null
+          tags?: string[]
           updated_at?: string
         }
         Update: {
           author_name?: string
+          cook_minutes?: number | null
           created_at?: string
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
@@ -1811,6 +1860,7 @@ export type Database = {
           name?: string
           owner_id?: string | null
           photo_path?: string | null
+          prep_minutes?: number | null
           review_note?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           saved_count?: number
@@ -1818,6 +1868,7 @@ export type Database = {
           share_slug?: string
           source_recipe_id?: string | null
           steps?: string | null
+          tags?: string[]
           updated_at?: string
         }
         Relationships: [
@@ -2903,17 +2954,20 @@ export type Database = {
       recipe_details: {
         Row: {
           author_name: string | null
+          cook_minutes: number | null
           created_at: string | null
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
           ingredient_count: number | null
+          is_favourite: boolean | null
           is_mine: boolean | null
           is_official: boolean | null
           is_public: boolean | null
           name: string | null
           owner_id: string | null
           photo_path: string | null
+          prep_minutes: number | null
           review_note: string | null
           review_status: Database['public']['Enums']['recipe_review'] | null
           saved_count: number | null
@@ -2924,7 +2978,9 @@ export type Database = {
           servings: number | null
           share_slug: string | null
           source_recipe_id: string | null
+          source_url: string | null
           steps: string | null
+          tags: string[] | null
           total_carbs_g: number | null
           total_fat_g: number | null
           total_kcal: number | null
@@ -3698,17 +3754,20 @@ export type Database = {
         Args: { p_share_slug: string }
         Returns: {
           author_name: string | null
+          cook_minutes: number | null
           created_at: string | null
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
           ingredient_count: number | null
+          is_favourite: boolean | null
           is_mine: boolean | null
           is_official: boolean | null
           is_public: boolean | null
           name: string | null
           owner_id: string | null
           photo_path: string | null
+          prep_minutes: number | null
           review_note: string | null
           review_status: Database['public']['Enums']['recipe_review'] | null
           saved_count: number | null
@@ -3719,7 +3778,9 @@ export type Database = {
           servings: number | null
           share_slug: string | null
           source_recipe_id: string | null
+          source_url: string | null
           steps: string | null
+          tags: string[] | null
           total_carbs_g: number | null
           total_fat_g: number | null
           total_kcal: number | null

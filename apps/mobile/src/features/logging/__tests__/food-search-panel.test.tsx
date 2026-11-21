@@ -48,6 +48,8 @@ const GINGER_RICE: Recipe = {
   ingredientCount: 3,
   total: { kcal: 1_600, carbs: 180, protein: 100, fat: 45 },
   perServing: { kcal: 400, carbs: 45, protein: 25, fat: 11.25 },
+  tags: [],
+  isFavourite: false,
 }
 
 const mockSearch = jest.fn()
@@ -126,7 +128,7 @@ it('records a restored search that was not', async () => {
 })
 
 /**
- * "New food" is the second thing that leaves this panel behind, and it leaves it
+ * "New recipe" is the second thing that leaves this panel behind, and it leaves it
  * behind harder: a form is abandoned more often than a portion is, and it is
  * reached from the tab whose job is "not in the catalogue" — so the search
  * underneath it is the search that just failed to find the dish being written.
@@ -143,19 +145,19 @@ it('hands the host the search when a food is written instead of found', async ()
   )
 
   await user.type(screen.getByPlaceholderText('Search any dish'), 'sup ekor')
-  await user.press(screen.getByRole('tab', { name: 'My foods' }))
-  await user.press(await screen.findByRole('button', { name: 'New food' }))
+  await user.press(screen.getByRole('tab', { name: 'My recipes' }))
+  await user.press(await screen.findByRole('button', { name: 'New recipe' }))
 
   expect(onCreateOwn).toHaveBeenCalledWith({ query: 'sup ekor', tracked: false })
 })
 
-it('hands the host the search when one of My foods is opened', async () => {
+it('hands the host the search when one of My recipes is opened', async () => {
   const onOpenOwn = jest.fn()
   mockRecipes = [GINGER_RICE]
   await render(<FoodSearchPanel onPick={onPick} onPickOwn={jest.fn()} onOpenOwn={onOpenOwn} />)
 
   await user.type(screen.getByPlaceholderText('Search any dish'), 'ginger')
-  await user.press(screen.getByRole('tab', { name: 'My foods' }))
+  await user.press(screen.getByRole('tab', { name: 'My recipes' }))
   await user.press(
     await screen.findByRole('button', {
       name: 'Ginger chicken rice, 400 kcal',

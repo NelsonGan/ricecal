@@ -10,7 +10,6 @@ export const social = {
   feedShowAll: 'Everything',
   feedShowFood: 'Food',
   feedShowWorkouts: 'Workouts',
-  myFoods: 'My foods',
   people: 'Find people',
   suggestions: 'People to follow',
   search: 'Search handles',

@@ -139,7 +139,9 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
         className={cn(
           steps.length
             ? 'gap-3 rounded-card border-[3px] border-line bg-surface p-4'
-            : 'flex-row items-center gap-2.5 py-1',
+            : // The same white card as the empty ingredient list above it, so
+              // the two parts of the form read as the same kind of thing.
+              'flex-row items-center gap-2.5 rounded-card border-[3px] border-line bg-surface px-card py-md',
         )}
         onPress={open}
         accessibilityRole="button"

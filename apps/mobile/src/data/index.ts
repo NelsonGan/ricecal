@@ -107,6 +107,7 @@ export {
   type ScannedRecipe,
   storedAmount,
   useDeleteRecipe,
+  useFavouriteRecipe,
   usePublishRecipe,
   useReadRecipe,
   useRecipe,

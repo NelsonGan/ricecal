@@ -101,12 +101,11 @@ describe('splitPanes', () => {
         <Aside>
           <Text>Reviews</Text>
         </Aside>
-        <>
-          <Text>Chart</Text>
-          <Aside>
-            <Text>History</Text>
-          </Aside>
-        </>
+
+        <Text>Chart</Text>
+        <Aside>
+          <Text>History</Text>
+        </Aside>
       </>,
     )
     expect(panes?.main).toHaveLength(2)

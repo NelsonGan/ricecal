@@ -142,7 +142,7 @@ export const paywall = {
       },
       recipes: {
         label: 'Save what you cook',
-        free: '{{recipes}} foods',
+        free: '{{recipes}} recipes',
         pro: 'Unlimited',
       },
       routines: {
@@ -156,7 +156,7 @@ export const paywall = {
         pro: 'Unlimited',
       },
       recipeFill: {
-        label: 'Fill a food in from a photo',
+        label: 'Fill a recipe in from a photo',
         free: '',
         pro: '',
       },
@@ -262,8 +262,8 @@ export const paywall = {
       camera: 'Scanning another plate today needs RiceCal Pro.',
       describe: 'Saying what you ate in words needs RiceCal Pro.',
       refine: 'Fixing a meal by describing it needs RiceCal Pro.',
-      read_recipe: 'Filling a food in from a photo needs RiceCal Pro.',
-      new_recipe: 'Keeping more than {{recipes}} foods of your own needs RiceCal Pro.',
+      read_recipe: 'Filling a recipe in from a photo needs RiceCal Pro.',
+      new_recipe: 'Keeping more than {{recipes}} recipes of your own needs RiceCal Pro.',
       trend_range: 'Looking back further than a week needs RiceCal Pro.',
       new_routine: 'Keeping more than {{routines}} workout routines needs RiceCal Pro.',
       new_group: 'Starting more than {{groups}} groups needs RiceCal Pro.',
