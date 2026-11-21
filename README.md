@@ -4397,6 +4397,26 @@ the system permission, which iOS will not present over a modal on its way down.
 without it gets a placeholder and a blank Android map; a production Android
 EAS build refuses to start without it. iOS uses Apple Maps and needs no key.
 
+**On iOS the map's gestures are the app's own** (`MapGestures`). On iOS 27 an
+Apple map from react-native-maps 1.29.11 on the new architecture takes no pan
+or pinch, and on a simulator no tap either, even as a bare `MapView` at the
+app's root (react-native-maps#6052, open with no fix), while camera moves the
+app makes still work. A transparent gesture layer over the map turns a drag
+into a new camera centre, a pinch into a new camera height and a double tap
+into a zoom, and hands a tap back as a point that the screen matches to its
+pins with MapKit's `pointForCoordinate`. The camera rather than the region,
+because MapKit reports a region that is not the view's shape and setting it
+back zoomed out a little on every drag. `fitToCoordinates` misbehaves the same
+way there, so on iOS `fitMapToPoints` works the region out itself
+(`paddedRegion`), sized for the band `mapPadding` leaves open. Android's Google
+map keeps its own gestures and marker presses. Delete the layer once a
+react-native-maps release fixes #6052. Inside the picker's modal it needs a
+`GestureHandlerRootView` of its own, as `Sheet` has.
+
+**The header is drawn, not iconed.** Over a map, a clay arrow at 12pt reads as
+a blob, so the food map's back, period arrows and menu chevron are `Chevron`, a
+bordered square turned to point.
+
 **Both map modules are required lazily** (`mapsModule()`, `locationModule()`),
 so a dev client built before them keeps running this JavaScript: the map draws
 a note instead and the picker still searches.

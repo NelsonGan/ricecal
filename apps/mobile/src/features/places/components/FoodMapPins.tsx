@@ -13,7 +13,7 @@ import { mapsModule } from './AppMap'
  * a theme switch) and then stop, or panning stutters. Apple Maps draws the
  * live view and ignores this. A photo landing restarts the window.
  */
-function useSettlingTracking(...deps: unknown[]): [boolean, () => void] {
+export function useSettlingTracking(...deps: unknown[]): [boolean, () => void] {
   const [tracking, setTracking] = useState(true)
   const [kick, setKick] = useState(0)
   // biome-ignore lint/correctness/useExhaustiveDependencies: the deps are the caller's
@@ -165,6 +165,38 @@ export const ClusterPin = memo(function ClusterPin({
         <Text variant="label" className="text-on-pandan">
           {count > 99 ? '99+' : String(count)}
         </Text>
+      </View>
+    </maps.Marker>
+  )
+})
+
+/** A place the picker lists, as a small red pin with a fork and spoon. */
+export const NearbyPin = memo(function NearbyPin({
+  latitude,
+  longitude,
+  label,
+  onPress,
+}: {
+  latitude: number
+  longitude: number
+  label: string
+  onPress: () => void
+}) {
+  const maps = mapsModule()
+  const [tracking] = useSettlingTracking()
+  if (!maps) return null
+  return (
+    <maps.Marker
+      coordinate={{ latitude, longitude }}
+      tracksViewChanges={tracking}
+      onPress={(event) => {
+        event.stopPropagation()
+        onPress()
+      }}
+      accessibilityLabel={label}
+    >
+      <View className="h-7 w-7 items-center justify-center rounded-full border-2 border-surface bg-hibiscus">
+        <Icon set="food" name="fork-spoon" size={14} />
       </View>
     </maps.Marker>
   )

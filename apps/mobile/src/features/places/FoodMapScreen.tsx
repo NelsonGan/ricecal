@@ -29,14 +29,14 @@ import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, Skeleton, Tappable, Text } from '@/ui'
 
 import { AppMap, mapsModule } from './components/AppMap'
+import { Chevron } from './components/Chevron'
 import { ClusterPin, PlacePin } from './components/FoodMapPins'
-import { MapGestures, pointFor, type ScreenPoint } from './components/MapGestures'
+import { MapGestures, markerAt, type ScreenPoint } from './components/MapGestures'
 import { fitMapToPoints } from './lib/fitMap'
 import {
   inPeriod,
   isCurrentPeriod,
   type MapPeriod,
-  type MapPeriodKind,
   periodRange,
   shiftPeriod,
 } from './lib/mapPeriod'
@@ -69,7 +69,15 @@ const PANEL_HEIGHT = 196
 /** The selected place's floating card. */
 const PLACE_CARD_HEIGHT = 228
 const PLACE_CARD_WIDTH = 132
-const PERIODS: readonly MapPeriodKind[] = ['month', 'week', 'all']
+
+/** The one shadow every floating control over the map shares. */
+const FLOATING = {
+  shadowColor: '#000',
+  shadowOpacity: 0.12,
+  shadowRadius: 8,
+  shadowOffset: { width: 0, height: 2 },
+  elevation: 3,
+} as const
 
 /**
  * The food map (README: Meal locations): every tagged meal of a week, a month
@@ -99,6 +107,7 @@ export function FoodMapScreen() {
   const showMe = enabled && here.status === 'ready'
   const [period, setPeriod] = useState<MapPeriod>({ kind: 'month', anchor: today() })
   const [selection, setSelection] = useState<Selection>(null)
+  const [choosingPeriod, setChoosingPeriod] = useState(false)
 
   const groups = useMemo(
     () => groupByPlace((located.data ?? []).filter((entry) => inPeriod(entry.logDate, period))),
@@ -134,8 +143,9 @@ export function FoodMapScreen() {
         margin: { top: 48, right: 64, bottom: 32, left: 64 },
         mapPadding,
         animated,
+        size: { width, height },
       }),
-    [groups, mapPadding],
+    [groups, mapPadding, width, height],
   )
 
   // A fit closes the place panel first and frames the places once the panel is
@@ -223,15 +233,9 @@ export function FoodMapScreen() {
    * Nothing within reach closes whatever was open.
    */
   const tapAt = (point: ScreenPoint) => {
-    let best: { marker: PlaceMarker; distance: number } | null = null
-    for (const marker of markers) {
-      const at = pointFor(region, { width, height }, marker)
-      const face = marker.kind === 'place' ? { x: at.x, y: at.y - 32 } : at
-      const distance = Math.hypot(face.x - point.x, face.y - point.y)
-      if (distance <= 30 && (!best || distance < best.distance)) best = { marker, distance }
-    }
-    if (best) pressMarker(best.marker)
-    else setSelection(null)
+    void markerAt(mapRef.current, point, markers, {
+      lift: (marker) => (marker.kind === 'place' ? 32 : 0),
+    }).then((hit) => (hit ? pressMarker(hit) : setSelection(null)))
   }
 
   const openEntry = (entry: LocatedEntry) =>
@@ -255,12 +259,6 @@ export function FoodMapScreen() {
     )}`
   })()
   const atLatest = isCurrentPeriod(period, today())
-  const nextPeriod = () =>
-    setPeriod((now) => ({
-      ...now,
-      kind: PERIODS[(PERIODS.indexOf(now.kind) + 1) % PERIODS.length] ?? 'month',
-    }))
-
   const placed = selection?.kind === 'place' ? selectedGroups[0] : undefined
   const cards = selection?.kind === 'cluster' ? selectedGroups : groups
   const totals = [
@@ -284,13 +282,7 @@ export function FoodMapScreen() {
       {/* Where somebody eats is their location history: kept out of replays. */}
       <ReplayMask style={StyleSheet.absoluteFill}>
         {maps ? (
-          <MapGestures
-            mapRef={mapRef}
-            region={region}
-            size={{ width, height }}
-            onRegion={setRegion}
-            onTap={tapAt}
-          >
+          <MapGestures mapRef={mapRef} size={{ width, height }} onTap={tapAt}>
             <AppMap
               ref={mapRef}
               initialRegion={initialRegion}
@@ -319,16 +311,20 @@ export function FoodMapScreen() {
                   )
                 }
                 const cover = coverEntry(marker.group.entries)
+                const selected = selection?.kind === 'place' && selection.key === marker.group.key
                 return (
                   <PlacePin
-                    key={marker.key}
+                    // A new marker when the selection moves: Google Maps redraws
+                    // a marker's picture only while it tracks changes, and a
+                    // ring turning green after that window never showed.
+                    key={`${marker.key}:${selected ? 'on' : 'off'}`}
                     id={marker.key}
                     latitude={marker.latitude}
                     longitude={marker.longitude}
                     photoPath={cover?.photoPath}
                     icon={cover?.icon}
                     count={marker.group.entries.length}
-                    selected={selection?.kind === 'place' && selection.key === marker.group.key}
+                    selected={selected}
                     accessibilityLabel={`${marker.group.name}, ${t('places:meals', {
                       count: marker.group.entries.length,
                     })}`}
@@ -347,59 +343,110 @@ export function FoodMapScreen() {
         )}
       </ReplayMask>
 
-      {/* One row of small floating controls: back, the period, and its kind. */}
+      {/* One row of floating controls, one height and one surface: back, the
+          period with its arrows, and which kind of period. */}
       <View
-        className="absolute left-0 right-0 top-0 flex-row items-center justify-between px-gutter"
-        style={{ paddingTop: insets.top + 8 }}
+        className="absolute left-0 right-0 top-0 flex-row items-center gap-2 px-gutter"
+        style={{ paddingTop: insets.top + 6 }}
         pointerEvents="box-none"
       >
-        <RoundButton onPress={back} label={t('common:a11y.back')}>
-          <Icon set="ui" name="arrow-left" size={16} tintColor={colors.ink} />
-        </RoundButton>
-        <View className="flex-row items-center rounded-full bg-surface px-1 shadow-sm">
+        <Tappable
+          onPress={back}
+          accessibilityRole="button"
+          accessibilityLabel={t('common:a11y.back')}
+          hitSlop={6}
+          className="h-10 w-10 items-center justify-center rounded-full bg-surface"
+          style={FLOATING}
+        >
+          <Chevron direction="left" color={colors.ink} />
+        </Tappable>
+        <View
+          className="h-10 min-w-0 flex-1 flex-row items-center rounded-full bg-surface"
+          style={FLOATING}
+        >
           {period.kind === 'all' ? null : (
             <Tappable
-              className="h-9 w-8 items-center justify-center"
+              className="h-10 w-10 items-center justify-center"
               onPress={() => setPeriod((now) => shiftPeriod(now, -1))}
               accessibilityRole="button"
               accessibilityLabel={t('places:previous')}
             >
-              <Icon set="ui" name="chevron-left" size={14} tintColor={colors.ink} />
+              <Chevron direction="left" size={8} color={colors.ink} />
             </Tappable>
           )}
-          <Text variant="label" className="px-1" numberOfLines={1}>
+          <Text
+            className="min-w-0 flex-1 text-center font-display text-[17px] text-heading"
+            numberOfLines={1}
+          >
             {periodLabel}
           </Text>
           {period.kind === 'all' ? null : (
             <Tappable
-              className="h-9 w-8 items-center justify-center"
+              className="h-10 w-10 items-center justify-center"
               onPress={() => setPeriod((now) => shiftPeriod(now, 1))}
               disabled={atLatest}
               accessibilityRole="button"
               accessibilityLabel={t('places:next')}
               accessibilityState={{ disabled: atLatest }}
             >
-              <Icon
-                set="ui"
-                name="chevron-right"
-                size={14}
-                tintColor={atLatest ? colors.faint : colors.ink}
-              />
+              <Chevron direction="right" size={8} color={atLatest ? colors.faint : colors.ink} />
             </Tappable>
           )}
         </View>
         <Tappable
-          className="h-9 flex-row items-center gap-1 rounded-full bg-surface px-3 shadow-sm"
-          onPress={nextPeriod}
+          className="h-10 flex-row items-center gap-1.5 rounded-full bg-surface px-3.5"
+          style={FLOATING}
+          onPress={() => setChoosingPeriod((open) => !open)}
           accessibilityRole="button"
-          accessibilityLabel={`${t('places:mapTitle')}, ${t(`places:${period.kind}`)}`}
+          accessibilityState={{ expanded: choosingPeriod }}
+          accessibilityLabel={t(`places:${period.kind}`)}
         >
-          <Text variant="caption" className="text-ink">
+          <Text variant="label" className="text-heading">
             {t(`places:${period.kind}Short`)}
           </Text>
-          <Icon set="ui" name="swap" size={12} tintColor={colors.muted} />
+          <Chevron direction="down" size={7} color={colors.ink} />
         </Tappable>
       </View>
+
+      {/* Which kind of period, as a small menu under its chip. The scrim under
+          it closes it on a tap anywhere else. */}
+      {choosingPeriod ? (
+        <>
+          <Tappable
+            haptics={false}
+            className="absolute inset-0"
+            onPress={() => setChoosingPeriod(false)}
+            accessibilityLabel={t('common:action.close')}
+          />
+          <View
+            className="absolute right-gutter min-w-[150px] overflow-hidden rounded-tile bg-surface py-1"
+            style={[FLOATING, { top: insets.top + 54 }]}
+          >
+            {(['week', 'month', 'all'] as const).map((kind) => (
+              <Tappable
+                key={kind}
+                onPress={() => {
+                  setChoosingPeriod(false)
+                  setPeriod((now) => ({ ...now, kind }))
+                }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: period.kind === kind }}
+                className="flex-row items-center justify-between gap-3 px-4 py-2.5"
+              >
+                <Text
+                  variant="label"
+                  className={period.kind === kind ? 'text-pandan-ink' : undefined}
+                >
+                  {t(`places:${kind}`)}
+                </Text>
+                {period.kind === kind ? (
+                  <Icon set="ui" name="check" size={14} tintColor={colors.pandan} />
+                ) : null}
+              </Tappable>
+            ))}
+          </View>
+        </>
+      ) : null}
 
       {/* Locate and fit, stacked over the panel's top right corner. */}
       <View className="absolute right-gutter gap-2" style={{ bottom: panelHeight + 12 }}>
@@ -475,7 +522,7 @@ export function FoodMapScreen() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20, gap: 10 }}
+                contentContainerStyle={{ paddingHorizontal: 20, gap: 10, alignItems: 'flex-start' }}
               >
                 {cards.map((group) => (
                   <PlaceTile
@@ -510,7 +557,8 @@ function RoundButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       hitSlop={6}
-      className="h-9 w-9 items-center justify-center rounded-full bg-surface shadow-sm"
+      className="h-10 w-10 items-center justify-center rounded-full bg-surface"
+      style={FLOATING}
     >
       {children}
     </Tappable>

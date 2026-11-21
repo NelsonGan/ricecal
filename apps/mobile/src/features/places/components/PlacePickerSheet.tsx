@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal, ScrollView, View } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import type MapViewType from 'react-native-maps'
 import type { Region } from 'react-native-maps'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -30,7 +31,8 @@ import {
 } from '../lib/placeLocation'
 import { useCurrentPlace } from '../services/useCurrentPlace'
 import { AppMap, mapsModule } from './AppMap'
-import { MapGestures, pointFor, type ScreenPoint } from './MapGestures'
+import { NearbyPin } from './FoodMapPins'
+import { MapGestures, markerAt, type ScreenPoint } from './MapGestures'
 
 /** How a place was chosen, for analytics. */
 export type PlaceSource = 'current' | 'nearby' | 'recent' | 'search'
@@ -107,8 +109,7 @@ export function PlacePickerSheet({
   const here = useCurrentPlace({ active: visible && locating })
   const located = useLocatedEntries({ enabled: visible })
 
-  /** The region on screen and the map's size, for the iOS gesture layer. */
-  const [mapRegion, setMapRegion] = useState<Region | null>(null)
+  /** The map's size, for the iOS gesture layer. */
   const [mapSize, setMapSize] = useState({ width: 1, height: 1 })
   /** Where the pin is: the map's middle once it settles. */
   const [center, setCenter] = useState<Coordinate | null>(null)
@@ -143,7 +144,6 @@ export function PlacePickerSheet({
   useEffect(() => {
     if (!visible) {
       setInitial(null)
-      setMapRegion(null)
       setCenter(null)
       setSelected(null)
       setSpot(null)
@@ -235,7 +235,7 @@ export function PlacePickerSheet({
   )
   const list = searching
     ? results.kind === 'done'
-      ? results.places
+      ? sortNear(results.places)
       : []
     : nearby.kind === 'done'
       ? sortNear(nearby.places)
@@ -250,21 +250,15 @@ export function PlacePickerSheet({
       if (under)
         return { place: under, source: searching ? ('search' as const) : ('nearby' as const) }
     }
-    return spot ? { place: spot, source: 'current' as const } : null
+    // The spot is not named while a search is showing, so it would be stale.
+    return spot && !searching ? { place: spot, source: 'current' as const } : null
   }, [selected, center, list, spot, searching])
 
   /** A tap on the map, matched to the listed place whose pin is under it (see `MapGestures`). */
   const tapAt = (point: ScreenPoint) => {
-    if (!mapRegion) return
-    const hit = list
-      .slice(0, 12)
-      .map((place) => {
-        const at = pointFor(mapRegion, mapSize, place)
-        return { place, distance: Math.hypot(at.x - point.x, at.y - point.y) }
-      })
-      .filter((candidate) => candidate.distance <= 26)
-      .sort((a, b) => a.distance - b.distance)[0]
-    if (hit) jumpTo(hit.place, searching ? 'search' : 'nearby')
+    void markerAt(mapRef.current, point, list.slice(0, 12), { reach: 26 }).then((hit) => {
+      if (hit) jumpTo(hit, searching ? 'search' : 'nearby')
+    })
   }
 
   const jumpTo = (place: PlaceResult, source: PlaceSource) => {
@@ -308,215 +302,210 @@ export function PlacePickerSheet({
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <View className="flex-1 bg-canvas">
-        <View
-          style={{ height: mapHeight }}
-          onLayout={(event) => {
-            const { width, height } = event.nativeEvent.layout
-            setMapSize({ width, height })
-          }}
-        >
-          {maps && initial ? (
-            <MapGestures
-              mapRef={mapRef}
-              region={mapRegion ?? regionAround(initial)}
-              size={mapSize}
-              onRegion={setMapRegion}
-              onGestureStart={() => setSelected(null)}
-              onTap={tapAt}
-            >
-              <AppMap
-                ref={mapRef}
-                initialRegion={regionAround(initial)}
-                showsUserLocation={locating && here.status === 'ready'}
-                onRegionChangeComplete={(region, details) => {
-                  setMapRegion(region)
-                  setCenter({ latitude: region.latitude, longitude: region.longitude })
-                  // A drag puts the pin somewhere new; a jump the app made keeps
-                  // the place it jumped to.
-                  if (details?.isGesture) setSelected(null)
-                }}
-              >
-                {list.slice(0, 12).map((place) => (
-                  <maps.Marker
-                    key={placeKey(place)}
-                    coordinate={place}
-                    tracksViewChanges={false}
-                    onPress={(event) => {
-                      event.stopPropagation()
-                      jumpTo(place, searching ? 'search' : 'nearby')
-                    }}
-                    accessibilityLabel={place.name}
-                  >
-                    <View className="h-7 w-7 items-center justify-center rounded-full border-2 border-surface bg-hibiscus">
-                      <Icon set="food" name="fork-spoon" size={14} tintColor={colors.onPandan} />
-                    </View>
-                  </maps.Marker>
-                ))}
-              </AppMap>
-            </MapGestures>
-          ) : (
-            <View className="flex-1 items-center justify-center bg-surface-alt">
-              {maps ? <Spinner /> : <Text variant="meta">{t('places:mapUnavailable')}</Text>}
-            </View>
-          )}
-
-          {/* The pin is the map's middle, drawn over it rather than a marker,
-              so it stays put while the map moves under it. */}
-          {maps && initial ? (
-            <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
-              <View className="items-center" style={{ marginBottom: 44 }}>
-                {pinned ? (
-                  <View className="mb-1 max-w-[240px] rounded-full bg-surface px-3 py-1 shadow-sm">
-                    <Text variant="caption" className="text-ink" numberOfLines={1}>
-                      {pinned.place.name}
-                    </Text>
-                  </View>
-                ) : null}
-                <Icon set="ui" name="location" size={40} />
-              </View>
-            </View>
-          ) : null}
-
-          {/* Close and search, floating over the map's top edge. */}
+      {/* A modal is its own window, outside the app's gesture root, and the
+          map's iOS gestures (`MapGestures`) need one of their own here. */}
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <View className="flex-1 bg-canvas">
           <View
-            className="absolute left-0 right-0 flex-row items-center gap-2 px-gutter"
-            style={{ top: insets.top + 8 }}
+            style={{ height: mapHeight }}
+            onLayout={(event) => {
+              const { width, height } = event.nativeEvent.layout
+              setMapSize({ width, height })
+            }}
           >
-            <IconButton
-              size="xs"
-              variant="neutral"
-              onPress={onClose}
-              accessibilityLabel={t('common:action.close')}
-            >
-              <Icon set="ui" name="close" size={14} tintColor={colors.ink} />
-            </IconButton>
-            <View className="flex-1">
-              <SearchField
-                size="sm"
-                value={query}
-                onChangeText={(next) => {
-                  setQuery(next.slice(0, MAX_QUERY))
-                  setSelected(null)
-                }}
-                placeholder={t('places:searchPlaceholder')}
-                onClear={() => setQuery('')}
-                clearLabel={t('logging:search.clear')}
-                accessibilityLabel={t('places:searchPlaceholder')}
-              />
-            </View>
-          </View>
+            {maps && initial ? (
+              <MapGestures
+                mapRef={mapRef}
+                size={mapSize}
+                onGestureStart={() => setSelected(null)}
+                onTap={tapAt}
+              >
+                <AppMap
+                  ref={mapRef}
+                  initialRegion={regionAround(initial)}
+                  showsUserLocation={locating && here.status === 'ready'}
+                  onRegionChangeComplete={(region, details) => {
+                    setCenter({ latitude: region.latitude, longitude: region.longitude })
+                    // A drag puts the pin somewhere new; a jump the app made keeps
+                    // the place it jumped to.
+                    if (details?.isGesture) setSelected(null)
+                  }}
+                >
+                  {list.slice(0, 12).map((place) => (
+                    <NearbyPin
+                      key={placeKey(place)}
+                      latitude={place.latitude}
+                      longitude={place.longitude}
+                      label={place.name}
+                      onPress={() => jumpTo(place, searching ? 'search' : 'nearby')}
+                    />
+                  ))}
+                </AppMap>
+              </MapGestures>
+            ) : (
+              <View className="flex-1 items-center justify-center bg-surface-alt">
+                {maps ? <Spinner /> : <Text variant="meta">{t('places:mapUnavailable')}</Text>}
+              </View>
+            )}
 
-          {locating && here.status !== 'unavailable' ? (
-            <View className="absolute bottom-3 right-gutter">
+            {/* The pin is the map's middle, drawn over it rather than a marker,
+              so it stays put while the map moves under it. */}
+            {maps && initial ? (
+              <View pointerEvents="none" className="absolute inset-0 items-center justify-center">
+                <View className="items-center" style={{ marginBottom: 44 }}>
+                  {pinned ? (
+                    <View className="mb-1 max-w-[240px] rounded-full bg-surface px-3 py-1 shadow-sm">
+                      <Text variant="caption" className="text-ink" numberOfLines={1}>
+                        {pinned.place.name}
+                      </Text>
+                    </View>
+                  ) : null}
+                  <Icon set="ui" name="location" size={40} />
+                </View>
+              </View>
+            ) : null}
+
+            {/* Close and search, floating over the map's top edge. */}
+            <View
+              className="absolute left-0 right-0 flex-row items-center gap-2 px-gutter"
+              style={{ top: insets.top + 8 }}
+            >
               <IconButton
                 size="xs"
                 variant="neutral"
-                onPress={locateMe}
-                accessibilityLabel={t('places:current')}
+                onPress={onClose}
+                accessibilityLabel={t('common:action.close')}
               >
-                <Icon set="ui" name="locate" size={22} />
+                <Icon set="ui" name="close" size={14} tintColor={colors.ink} />
               </IconButton>
+              <View className="flex-1">
+                <SearchField
+                  size="sm"
+                  value={query}
+                  onChangeText={(next) => {
+                    setQuery(next.slice(0, MAX_QUERY))
+                    setSelected(null)
+                  }}
+                  placeholder={t('places:searchPlaceholder')}
+                  onClear={() => setQuery('')}
+                  clearLabel={t('logging:search.clear')}
+                  accessibilityLabel={t('places:searchPlaceholder')}
+                />
+              </View>
             </View>
-          ) : null}
-        </View>
 
-        <View className="-mt-5 flex-1 rounded-t-sheet bg-surface">
-          <View className="items-center pt-2">
-            <View className="h-1.5 w-10 rounded-full bg-track" />
-          </View>
-          <ScrollView
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
-            contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12 }}
-          >
-            <Text variant="subtitle" className="mb-1">
-              {t('places:pickerTitle')}
-            </Text>
-
-            {!searching && recents.length > 0 ? (
-              <View className="mb-1 flex-row flex-wrap gap-2 py-1">
-                {recents.map((place) => (
-                  <Tappable
-                    key={placeKey(place)}
-                    onPress={() => jumpTo(place, 'recent')}
-                    accessibilityRole="button"
-                    accessibilityLabel={place.name}
-                    className="max-w-[200px] flex-row items-center gap-1.5 rounded-full bg-surface-alt px-3 py-1.5"
-                  >
-                    <Icon set="ui" name="restore" size={14} tintColor={colors.muted} />
-                    <Text variant="caption" className="text-ink" numberOfLines={1}>
-                      {place.name}
-                    </Text>
-                  </Tappable>
-                ))}
+            {locating && here.status !== 'unavailable' ? (
+              <View className="absolute bottom-3 right-gutter">
+                <IconButton
+                  size="xs"
+                  variant="neutral"
+                  onPress={locateMe}
+                  accessibilityLabel={t('places:current')}
+                >
+                  <Icon set="ui" name="locate" size={22} />
+                </IconButton>
               </View>
             ) : null}
+          </View>
 
-            <Text variant="overlineSm" className="pb-1 pt-2">
-              {searching ? t('places:results') : t('places:nearby')}
-            </Text>
-
-            {loading && list.length === 0 ? (
-              <View className="items-center py-lg">
-                <Spinner />
-              </View>
-            ) : list.length === 0 && listMessage ? (
-              <Text variant="meta" className="py-md text-center">
-                {listMessage}
+          <View className="-mt-5 flex-1 rounded-t-sheet bg-surface">
+            <View className="items-center pt-2">
+              <View className="h-1.5 w-10 rounded-full bg-track" />
+            </View>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12 }}
+            >
+              <Text variant="subtitle" className="mb-1">
+                {t('places:pickerTitle')}
               </Text>
-            ) : (
-              list.map((place) => {
-                const on = pinned !== null && placeKey(pinned.place) === placeKey(place)
-                const distance = from ? formatDistance(distanceMeters(from, place), language) : ''
-                return (
-                  <Tappable
-                    key={placeKey(place)}
-                    onPress={() => jumpTo(place, searching ? 'search' : 'nearby')}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: on }}
-                    accessibilityLabel={[place.name, distance].filter(Boolean).join(', ')}
-                    className={
-                      on
-                        ? '-mx-2 flex-row items-center gap-3 rounded-sm bg-pandan-soft px-2 py-2'
-                        : '-mx-2 flex-row items-center gap-3 px-2 py-2'
-                    }
-                  >
-                    <Icon {...placeCategoryIcon(place.category)} size={26} />
-                    <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
-                      {place.name}
-                    </Text>
-                    {distance ? <Text variant="caption">{distance}</Text> : null}
-                    {on ? <Icon set="ui" name="check" size={16} tintColor={colors.pandan} /> : null}
-                  </Tappable>
-                )
-              })
-            )}
-          </ScrollView>
 
-          <View
-            className="gap-2 border-t border-line px-gutter pt-3"
-            style={{ paddingBottom: Math.max(insets.bottom, 12) }}
-          >
-            <Button fullWidth disabled={!pinned} onPress={save}>
-              {t('places:useSpot')}
-            </Button>
-            {current ? (
-              <Button
-                fullWidth
-                size="sm"
-                variant="ghost"
-                onPress={() => {
-                  onClose()
-                  onRemove()
-                }}
-              >
-                {t('places:remove')}
+              {!searching && recents.length > 0 ? (
+                <View className="mb-1 flex-row flex-wrap gap-2 py-1">
+                  {recents.map((place) => (
+                    <Tappable
+                      key={placeKey(place)}
+                      onPress={() => jumpTo(place, 'recent')}
+                      accessibilityRole="button"
+                      accessibilityLabel={place.name}
+                      className="max-w-[200px] rounded-full bg-surface-alt px-3 py-1.5"
+                    >
+                      <Text variant="caption" className="text-ink" numberOfLines={1}>
+                        {place.name}
+                      </Text>
+                    </Tappable>
+                  ))}
+                </View>
+              ) : null}
+
+              <Text variant="overlineSm" className="pb-1 pt-2">
+                {searching ? t('places:results') : t('places:nearby')}
+              </Text>
+
+              {loading && list.length === 0 ? (
+                <View className="items-center py-lg">
+                  <Spinner />
+                </View>
+              ) : list.length === 0 && listMessage ? (
+                <Text variant="meta" className="py-md text-center">
+                  {listMessage}
+                </Text>
+              ) : (
+                list.map((place) => {
+                  const on = pinned !== null && placeKey(pinned.place) === placeKey(place)
+                  const distance = from ? formatDistance(distanceMeters(from, place), language) : ''
+                  return (
+                    <Tappable
+                      key={placeKey(place)}
+                      onPress={() => jumpTo(place, searching ? 'search' : 'nearby')}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: on }}
+                      accessibilityLabel={[place.name, distance].filter(Boolean).join(', ')}
+                      className={
+                        on
+                          ? '-mx-2 flex-row items-center gap-3 rounded-sm bg-pandan-soft px-2 py-2'
+                          : '-mx-2 flex-row items-center gap-3 px-2 py-2'
+                      }
+                    >
+                      <Icon {...placeCategoryIcon(place.category)} size={26} />
+                      <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
+                        {place.name}
+                      </Text>
+                      {distance ? <Text variant="caption">{distance}</Text> : null}
+                      {on ? (
+                        <Icon set="ui" name="check" size={16} tintColor={colors.pandan} />
+                      ) : null}
+                    </Tappable>
+                  )
+                })
+              )}
+            </ScrollView>
+
+            <View
+              className="gap-2 border-t border-line px-gutter pt-3"
+              style={{ paddingBottom: Math.max(insets.bottom, 12) }}
+            >
+              <Button fullWidth disabled={!pinned} onPress={save}>
+                {t('places:useSpot')}
               </Button>
-            ) : null}
+              {current ? (
+                <Button
+                  fullWidth
+                  size="sm"
+                  variant="ghost"
+                  onPress={() => {
+                    onClose()
+                    onRemove()
+                  }}
+                >
+                  {t('places:remove')}
+                </Button>
+              ) : null}
+            </View>
           </View>
         </View>
-      </View>
+      </GestureHandlerRootView>
     </Modal>
   )
 }
