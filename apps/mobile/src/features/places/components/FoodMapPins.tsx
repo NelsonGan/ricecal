@@ -1,10 +1,11 @@
-import { Image } from 'expo-image'
 import { memo, useEffect, useState } from 'react'
 import { View } from 'react-native'
 
 import { type IconRef, storedImageSource, useMealPhotoUrl } from '@/data'
+import { MealPhoto } from '@/features/shared'
 import { Icon, Text } from '@/ui'
 
+import { PIN as PIN_ICON } from '../lib/placeIcons'
 import { mapsModule } from './AppMap'
 
 /**
@@ -13,7 +14,7 @@ import { mapsModule } from './AppMap'
  * a theme switch) and then stop, or panning stutters. Apple Maps draws the
  * live view and ignores this. A photo landing restarts the window.
  */
-export function useSettlingTracking(...deps: unknown[]): [boolean, () => void] {
+function useSettlingTracking(...deps: unknown[]): [boolean, () => void] {
   const [tracking, setTracking] = useState(true)
   const [kick, setKick] = useState(0)
   // biome-ignore lint/correctness/useExhaustiveDependencies: the deps are the caller's
@@ -27,6 +28,34 @@ export function useSettlingTracking(...deps: unknown[]): [boolean, () => void] {
 
 const PIN = 52
 
+/** "99+" past two digits: a badge has room for no more. */
+const badge = (count: number) => (count > 99 ? '99+' : String(count))
+
+/**
+ * The plate a place is known by: a meal's photo, else its drawing, else a pin.
+ * Fills its box, which owes it a size and an `overflow-hidden`.
+ */
+export function PlaceCover({
+  photoPath,
+  icon,
+  size,
+  onLoad,
+}: {
+  photoPath?: string | null
+  icon?: IconRef | null
+  /** The drawing's size, when there is no photo. */
+  size: number
+  onLoad?: () => void
+}) {
+  const url = useMealPhotoUrl(photoPath ?? undefined)
+  const source = storedImageSource(photoPath ?? undefined, url.data)
+  return source ? (
+    <MealPhoto source={source} onLoad={onLoad} />
+  ) : (
+    <Icon {...(icon ?? PIN_ICON)} size={size} />
+  )
+}
+
 type PlacePinProps = {
   id: string
   latitude: number
@@ -37,7 +66,8 @@ type PlacePinProps = {
   count: number
   selected: boolean
   accessibilityLabel: string
-  onPress: () => void
+  /** With the marker's `id`, so one handler serves every pin and the memo holds. */
+  onPress: (id: string) => void
 }
 
 /** A place: the plate eaten there, in a round pin, with how many meals. */
@@ -53,9 +83,7 @@ export const PlacePin = memo(function PlacePin({
   onPress,
 }: PlacePinProps) {
   const maps = mapsModule()
-  const url = useMealPhotoUrl(photoPath)
-  const source = photoPath ? storedImageSource(photoPath, url.data) : null
-  const [tracking, landed] = useSettlingTracking(selected, source ? 1 : 0, count)
+  const [tracking, landed] = useSettlingTracking(selected, photoPath, count)
   if (!maps) return null
   return (
     <maps.Marker
@@ -67,7 +95,7 @@ export const PlacePin = memo(function PlacePin({
       zIndex={selected ? 1000 : count}
       onPress={(event) => {
         event.stopPropagation()
-        onPress()
+        onPress(id)
       }}
       accessibilityLabel={accessibilityLabel}
     >
@@ -80,17 +108,7 @@ export const PlacePin = memo(function PlacePin({
           }
           style={{ width: PIN, height: PIN }}
         >
-          {source ? (
-            <Image
-              source={source}
-              style={{ width: PIN, height: PIN }}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              onLoad={landed}
-            />
-          ) : (
-            <Icon {...(icon ?? { set: 'ui', name: 'location' })} size={34} />
-          )}
+          <PlaceCover photoPath={photoPath} icon={icon} size={34} onLoad={landed} />
         </View>
         {/* The point, under the pin's middle. */}
         <View
@@ -109,7 +127,7 @@ export const PlacePin = memo(function PlacePin({
         {count > 1 ? (
           <View className="absolute right-0 top-0 h-6 min-w-6 items-center justify-center rounded-full border-2 border-surface bg-ink px-1">
             <Text variant="micro" className="text-surface">
-              {count > 99 ? '99+' : String(count)}
+              {badge(count)}
             </Text>
           </View>
         ) : null}
@@ -126,7 +144,7 @@ type ClusterPinProps = {
   count: number
   selected: boolean
   accessibilityLabel: string
-  onPress: () => void
+  onPress: (id: string) => void
 }
 
 /** Places close together at this zoom, as one bubble with how many meals. */
@@ -151,7 +169,7 @@ export const ClusterPin = memo(function ClusterPin({
       zIndex={selected ? 999 : 500 + count}
       onPress={(event) => {
         event.stopPropagation()
-        onPress()
+        onPress(id)
       }}
       accessibilityLabel={accessibilityLabel}
     >
@@ -163,7 +181,7 @@ export const ClusterPin = memo(function ClusterPin({
         }
       >
         <Text variant="label" className="text-on-pandan">
-          {count > 99 ? '99+' : String(count)}
+          {badge(count)}
         </Text>
       </View>
     </maps.Marker>

@@ -10,28 +10,26 @@ import { addMonths } from 'date-fns/addMonths'
 import { addWeeks } from 'date-fns/addWeeks'
 import { endOfMonth } from 'date-fns/endOfMonth'
 import { endOfWeek } from 'date-fns/endOfWeek'
-import { format } from 'date-fns/format'
 import { parseISO } from 'date-fns/parseISO'
 import { startOfMonth } from 'date-fns/startOfMonth'
 import { startOfWeek } from 'date-fns/startOfWeek'
 
-export type MapPeriodKind = 'week' | 'month' | 'all'
+import { dateKey as key } from '@/data/client'
+import { WEEK_STARTS_ON } from '@/features/logging/week'
 
 export type MapPeriod = {
-  kind: MapPeriodKind
+  kind: 'week' | 'month' | 'all'
   /** Any day inside the period, YYYY-MM-DD. Ignored for `all`. */
   anchor: string
 }
-
-const key = (date: Date) => format(date, 'yyyy-MM-dd')
 
 /** The first and last day of the period, inclusive, or null for all time. */
 export function periodRange(period: MapPeriod): { from: string; to: string } | null {
   const day = parseISO(period.anchor)
   if (period.kind === 'week') {
     return {
-      from: key(startOfWeek(day, { weekStartsOn: 1 })),
-      to: key(endOfWeek(day, { weekStartsOn: 1 })),
+      from: key(startOfWeek(day, { weekStartsOn: WEEK_STARTS_ON })),
+      to: key(endOfWeek(day, { weekStartsOn: WEEK_STARTS_ON })),
     }
   }
   if (period.kind === 'month') return { from: key(startOfMonth(day)), to: key(endOfMonth(day)) }

@@ -4,8 +4,9 @@ import {
   distanceMeters,
   formatDistance,
   groupByPlace,
+  knownPlaces,
+  nearFirst,
   placeKey,
-  recentPlaces,
   regionFor,
   toEntryLocation,
 } from '../lib/placeLocation'
@@ -69,7 +70,6 @@ describe('toEntryLocation', () => {
         latitude: 3.1,
         longitude: 101.6,
         category: 'Restaurant',
-        countryCode: 'MY',
       }),
     ).toEqual({
       latitude: 3.1,
@@ -90,7 +90,6 @@ describe('toEntryLocation', () => {
         latitude: 3.1,
         longitude: 101.6,
         category: null,
-        countryCode: null,
       }),
     ).toEqual({
       latitude: 3.1,
@@ -131,7 +130,7 @@ describe('placeKey', () => {
   })
 })
 
-describe('recentPlaces', () => {
+describe('knownPlaces and nearFirst', () => {
   const entries = [
     entry(VILLAGE_PARK, { loggedAt: '2026-11-18T04:00:00.000Z' }),
     entry(ALI_MAMAK, { loggedAt: '2026-11-20T12:00:00.000Z' }),
@@ -139,7 +138,7 @@ describe('recentPlaces', () => {
   ]
 
   it('lists each place once, the most recent first', () => {
-    expect(recentPlaces(entries).map((place) => place.name)).toEqual([
+    expect(knownPlaces(entries).map((place) => place.name)).toEqual([
       'Ali Mamak',
       'Village Park Restaurant',
     ])
@@ -147,7 +146,7 @@ describe('recentPlaces', () => {
 
   it('puts the ones around here first, closest first', () => {
     const near = { latitude: 3.1378, longitude: 101.6234 }
-    expect(recentPlaces(entries, { near }).map((place) => place.name)).toEqual([
+    expect(nearFirst(knownPlaces(entries), near, 3).map((place) => place.name)).toEqual([
       'Village Park Restaurant',
       'Ali Mamak',
     ])

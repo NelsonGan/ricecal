@@ -1,6 +1,7 @@
 // Apple Maps Server API for place search (README: The places Worker): POST
-// /search (text search biased toward the user) and POST /reverse (coordinates
-// to the place there), see index.ts for the routes. Ported from Money2Time's
+// /search (text search biased toward the user), POST /reverse (coordinates
+// to the place there) and POST /nearby (food places around a spot), see
+// index.ts for the routes. Ported from Money2Time's
 // places Worker, which proxies the same API for transaction locations.
 //
 // The Apple key never leaves the Worker: it signs a short-lived Maps auth
@@ -18,7 +19,7 @@ export interface PlacesEnv {
   APPLE_TEAM_ID?: string
 }
 
-/** One place, as the app stores it on a transaction. */
+/** One place, as the app stores it on a meal. */
 export interface PlaceResult {
   /** Apple's place id, when Apple has one (a point of interest). */
   id: string | null

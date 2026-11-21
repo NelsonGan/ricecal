@@ -16,7 +16,8 @@ const ICON_BY_CATEGORY: Record<string, IconRef> = {
   Nightlife: { set: 'food', name: 'beer-mug' },
 }
 
-const PIN: IconRef = { set: 'ui', name: 'location' }
+/** A spot with no dish: a place without a category, or a meal without a picture. */
+export const PIN: IconRef = { set: 'ui', name: 'location' }
 
 export function placeCategoryIcon(category: string | null | undefined): IconRef {
   // Own keys only: the category is data from the server, and "constructor" is

@@ -6,14 +6,7 @@
 
 import Supercluster from 'supercluster'
 
-import type { PlaceGroup } from './placeLocation'
-
-export interface MapRegion {
-  latitude: number
-  longitude: number
-  latitudeDelta: number
-  longitudeDelta: number
-}
+import type { MapRegion, PlaceGroup } from './placeLocation'
 
 export type PlaceMarker =
   | { kind: 'place'; key: string; latitude: number; longitude: number; group: PlaceGroup }

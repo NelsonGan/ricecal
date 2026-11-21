@@ -14,7 +14,6 @@ describe('placeFromGeocodedAddress', () => {
         street: 'Jalan SS 21/37',
         district: 'Damansara Utama',
         city: 'Petaling Jaya',
-        isoCountryCode: 'my',
       }),
     ).toEqual({
       id: null,
@@ -22,7 +21,6 @@ describe('placeFromGeocodedAddress', () => {
       address: '5 Jalan SS 21/37, Damansara Utama, Petaling Jaya',
       ...HERE,
       category: null,
-      countryCode: 'MY',
     })
   })
 

@@ -364,7 +364,7 @@ export function toEntry(row: EntryRow): Entry {
  * columns rehydrates without them, which reads as no location rather than as
  * a point at 0,0.
  */
-export function toLocation(
+function toLocation(
   row: Pick<
     FoodLogRow,
     | 'latitude'

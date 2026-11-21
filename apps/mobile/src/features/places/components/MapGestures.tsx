@@ -1,4 +1,4 @@
-import { type ReactNode, useRef } from 'react'
+import { type ReactNode, useMemo, useRef } from 'react'
 import { Platform, StyleSheet, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import type MapViewType from 'react-native-maps'
@@ -10,7 +10,7 @@ export type ScreenPoint = { x: number; y: number }
 type LatLng = { latitude: number; longitude: number }
 
 /** Degrees per point across and down the view, read off two corners MapKit converted. */
-export type MapScale = { lngPerPoint: number; latPerPoint: number }
+type MapScale = { lngPerPoint: number; latPerPoint: number }
 
 export function scaleFrom(
   topLeft: LatLng,
@@ -61,6 +61,7 @@ export function MapGestures({
   size,
   onTap,
   onGestureStart,
+  onGestureEnd,
   children,
 }: {
   mapRef: React.RefObject<MapViewType | null>
@@ -68,69 +69,87 @@ export function MapGestures({
   onTap: (point: ScreenPoint) => void
   /** A drag or a pinch began: the user is moving the map by hand. */
   onGestureStart?: () => void
+  /** The drag or pinch is over. */
+  onGestureEnd?: () => void
   children: ReactNode
 }) {
-  /** The camera and scale at touch down, once MapKit has answered. */
-  const start = useRef<{ camera: Camera; scale: MapScale } | null>(null)
+  // The gestures are built once and read the latest props from here: rebuilt
+  // each render, they sent a new handler config to native on every frame of
+  // a drag.
+  const props = useRef({ size, onTap, onGestureStart, onGestureEnd })
+  props.current = { size, onTap, onGestureStart, onGestureEnd }
+
+  const gestures = useMemo(() => {
+    /** The camera and scale at touch down, once MapKit has answered. */
+    let start: { camera: Camera; scale: MapScale } | null = null
+
+    const read = () => {
+      const map = mapRef.current
+      if (!map) return
+      const { size } = props.current
+      start = null
+      void Promise.all([
+        map.getCamera(),
+        map.coordinateForPoint({ x: 0, y: 0 }),
+        map.coordinateForPoint({ x: size.width, y: size.height }),
+      ])
+        .then(([camera, topLeft, bottomRight]) => {
+          start = { camera, scale: scaleFrom(topLeft, bottomRight, size) }
+        })
+        .catch(() => undefined)
+    }
+    const began = () => props.current.onGestureStart?.()
+    const ended = () => props.current.onGestureEnd?.()
+
+    const pan = Gesture.Pan()
+      .runOnJS(true)
+      .minDistance(4)
+      .onBegin(read)
+      .onStart(began)
+      .onEnd(ended)
+      .onUpdate((event) => {
+        if (!start) return
+        mapRef.current?.setCamera({
+          center: pannedCenter(
+            start.camera.center,
+            start.scale,
+            event.translationX,
+            event.translationY,
+          ),
+        })
+      })
+
+    const pinch = Gesture.Pinch()
+      .runOnJS(true)
+      .onBegin(read)
+      .onStart(began)
+      .onEnd(ended)
+      .onUpdate((event) => {
+        if (!start?.camera.altitude) return
+        mapRef.current?.setCamera({ altitude: pinchedAltitude(start.camera.altitude, event.scale) })
+      })
+
+    const doubleTap = Gesture.Tap()
+      .runOnJS(true)
+      .numberOfTaps(2)
+      .onEnd(() => {
+        void mapRef.current?.getCamera().then((camera) => {
+          if (!camera.altitude) return
+          mapRef.current?.animateCamera(
+            { altitude: pinchedAltitude(camera.altitude, 2) },
+            { duration: 250 },
+          )
+        })
+      })
+
+    const tap = Gesture.Tap()
+      .runOnJS(true)
+      .onEnd((event) => props.current.onTap({ x: event.x, y: event.y }))
+
+    return Gesture.Simultaneous(pan, pinch, Gesture.Exclusive(doubleTap, tap))
+  }, [mapRef])
 
   if (Platform.OS !== 'ios') return children
-
-  const read = () => {
-    const map = mapRef.current
-    if (!map) return
-    start.current = null
-    void Promise.all([
-      map.getCamera(),
-      map.coordinateForPoint({ x: 0, y: 0 }),
-      map.coordinateForPoint({ x: size.width, y: size.height }),
-    ])
-      .then(([camera, topLeft, bottomRight]) => {
-        start.current = { camera, scale: scaleFrom(topLeft, bottomRight, size) }
-      })
-      .catch(() => undefined)
-  }
-
-  const pan = Gesture.Pan()
-    .runOnJS(true)
-    .minDistance(4)
-    .onBegin(read)
-    .onStart(() => onGestureStart?.())
-    .onUpdate((event) => {
-      const at = start.current
-      if (!at) return
-      mapRef.current?.setCamera({
-        center: pannedCenter(at.camera.center, at.scale, event.translationX, event.translationY),
-      })
-    })
-
-  const pinch = Gesture.Pinch()
-    .runOnJS(true)
-    .onBegin(read)
-    .onStart(() => onGestureStart?.())
-    .onUpdate((event) => {
-      const at = start.current
-      if (!at?.camera.altitude) return
-      mapRef.current?.setCamera({ altitude: pinchedAltitude(at.camera.altitude, event.scale) })
-    })
-
-  const doubleTap = Gesture.Tap()
-    .runOnJS(true)
-    .numberOfTaps(2)
-    .onEnd(() => {
-      void mapRef.current?.getCamera().then((camera) => {
-        if (!camera.altitude) return
-        mapRef.current?.animateCamera(
-          { altitude: pinchedAltitude(camera.altitude, 2) },
-          { duration: 250 },
-        )
-      })
-    })
-
-  const tap = Gesture.Tap()
-    .runOnJS(true)
-    .onEnd((event) => onTap({ x: event.x, y: event.y }))
-
-  const gestures = Gesture.Simultaneous(pan, pinch, Gesture.Exclusive(doubleTap, tap))
 
   return (
     <View style={StyleSheet.absoluteFill}>

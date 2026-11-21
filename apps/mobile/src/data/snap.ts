@@ -14,7 +14,7 @@ import { autoTagLocation, autoTagWanted, recordMealForLocationsOffer } from '@/l
 import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
-import { today } from './client'
+import { TIMED_OUT, today, withDeadline } from './client'
 import { invalidateEatenTotals, invalidateEntryPosts, keys } from './keys'
 import { usePendingSnaps } from './pending-snaps'
 import { uploadMealPhoto } from './photos'
@@ -66,15 +66,16 @@ const LOCATION_WAIT_MS = 3000
 const LOCATION_WAIT_TYPED_MS = 400
 
 /** The location if it lands in time, else none. Never throws: a meal outranks its address. */
-function settleLocation(
+async function settleLocation(
   location: Promise<EntryLocation | null> | undefined,
   waitMs: number,
 ): Promise<EntryLocation | null> {
-  if (!location) return Promise.resolve(null)
-  return Promise.race([
+  if (!location) return null
+  const settled = await withDeadline(
     location.catch(() => null),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), waitMs)),
-  ])
+    waitMs,
+  )
+  return settled === TIMED_OUT ? null : settled
 }
 
 /** What the scan-meal edge function answers with. */

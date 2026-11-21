@@ -1,49 +1,41 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import type { Coordinate, PlaceResult } from '@/lib/places'
 import {
+  type Coordinate,
   type CurrentPlaceFailure,
+  currentCoordinate,
   requestLocationPermission,
-  resolveCurrentPlace,
 } from '@/lib/places'
 
-export type CurrentPlaceStatus = 'idle' | 'locating' | 'ready' | CurrentPlaceFailure
+type CurrentPlaceStatus = 'idle' | 'locating' | 'ready' | CurrentPlaceFailure
 
 /**
- * The picker's "Current location" row: where the phone is, what the spot is
- * called, and what to offer when it cannot say. Asks the system for permission
- * only through `request()`, never by itself.
+ * Where the phone is, for the map screens' blue dot and first frame, and what
+ * to offer when it cannot say. Asks the system for permission only through
+ * `request()`, never by itself.
  */
 export function useCurrentPlace({ active }: { active: boolean }) {
   const [status, setStatus] = useState<CurrentPlaceStatus>('idle')
-  const [place, setPlace] = useState<PlaceResult | null>(null)
   const [coordinate, setCoordinate] = useState<Coordinate | null>(null)
   const run = useRef(0)
 
   const locate = useCallback(async (fresh = false) => {
     const id = ++run.current
     setStatus('locating')
-    const resolved = await resolveCurrentPlace({ fresh })
+    const located = await currentCoordinate({ fresh })
     if (id !== run.current) return
-    if (typeof resolved === 'string') {
-      setStatus(resolved)
+    if (typeof located === 'string') {
+      setStatus(located)
       return
     }
-    setPlace(resolved.place)
-    setCoordinate(resolved.coordinate)
+    setCoordinate(located)
     setStatus('ready')
   }, [])
 
+  // `locate` checks the permission again and says what to offer if refused.
   const request = useCallback(async () => {
-    const permission = await requestLocationPermission()
-    if (permission.status === 'granted') return locate()
-    setStatus(
-      permission.status === 'unavailable'
-        ? 'unavailable'
-        : permission.canAskAgain
-          ? 'ask'
-          : 'blocked',
-    )
+    await requestLocationPermission()
+    return locate()
   }, [locate])
 
   useEffect(() => {
@@ -55,5 +47,5 @@ export function useCurrentPlace({ active }: { active: boolean }) {
     }
   }, [active, locate])
 
-  return { status, place, coordinate, refresh: () => locate(true), request }
+  return { status, coordinate, refresh: () => locate(true), request }
 }

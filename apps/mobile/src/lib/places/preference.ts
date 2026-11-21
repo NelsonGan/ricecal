@@ -1,5 +1,4 @@
-import { useSyncExternalStore } from 'react'
-import { createMMKV } from 'react-native-mmkv'
+import { createJsonStore } from '@/lib/jsonStore'
 
 /**
  * The Locations switches and the one-time offer, per phone and per account
@@ -14,68 +13,6 @@ import { createMMKV } from 'react-native-mmkv'
  * In `lib` rather than in `features/places` because the data layer counts the
  * meals the offer waits for, and `src/data` does not import a feature.
  */
-const storage = createMMKV({ id: 'ricecal-places' })
-
-/**
- * Every write goes through this module, so it tells its own readers rather than
- * leaning on MMKV's listener: a switch flipped in Settings, or the offer made
- * due by the data layer, shows on the screen behind at once.
- */
-const listeners = new Set<() => void>()
-let version = 0
-
-function write(key: string, value: boolean | string): void {
-  storage.set(key, value)
-  version += 1
-  for (const listener of listeners) listener()
-}
-
-function subscribe(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
-
-/** Re-renders on any write here; the values themselves are read synchronously. */
-function useVersion(): number {
-  return useSyncExternalStore(subscribe, () => version)
-}
-
-const enabledKey = (userId: string) => `enabled:${userId}`
-const autoTagKey = (userId: string) => `autoTag:${userId}`
-const offerKey = (userId: string) => `offer:${userId}`
-
-/** Off until the user turns it on, here or from the offer. */
-export function locationsEnabled(userId: string): boolean {
-  return storage.getBoolean(enabledKey(userId)) ?? false
-}
-
-/** On by default once Locations is: tagging is what turning it on is for. */
-export function autoTagEnabled(userId: string): boolean {
-  return storage.getBoolean(autoTagKey(userId)) ?? true
-}
-
-export function setLocationsEnabled(userId: string, enabled: boolean): void {
-  write(enabledKey(userId), enabled)
-  // Turning it on anywhere answers the offer: asking again would be asking a
-  // question the user has already answered.
-  if (enabled) answerLocationsOffer(userId)
-}
-
-export function setAutoTag(userId: string, enabled: boolean): void {
-  write(autoTagKey(userId), enabled)
-}
-
-/** Both switches, live: a change in Settings shows on the screen behind it. */
-export function useLocationsPreference(userId: string) {
-  useVersion()
-  return { enabled: locationsEnabled(userId), autoTag: autoTagEnabled(userId) }
-}
-
-// ---------------------------------------------------------------------------
-// The offer
-// ---------------------------------------------------------------------------
 
 /**
  * `due` once a meal has been logged on this phone while Locations was off;
@@ -84,11 +21,52 @@ export function useLocationsPreference(userId: string) {
  * never brings it back: the cost of that is one lost offer, where the other
  * order costs an offer that keeps returning.
  */
-type OfferState = 'due' | 'answered'
+type OfferState = 'due' | 'answered' | null
 
-function offerState(userId: string): OfferState | null {
-  const value = storage.getString(offerKey(userId))
-  return value === 'due' || value === 'answered' ? value : null
+type Preference = {
+  /** Off until the user turns it on, in Settings or from the offer. */
+  enabled: boolean
+  /** On by default once Locations is: tagging is what turning it on is for. */
+  autoTag: boolean
+  offer: OfferState
+}
+
+const store = createJsonStore<Preference>('ricecal-places', (stored) => {
+  const value = (stored ?? {}) as Partial<Preference>
+  return {
+    enabled: value.enabled === true,
+    autoTag: value.autoTag !== false,
+    offer: value.offer === 'due' || value.offer === 'answered' ? value.offer : null,
+  }
+})
+
+function update(userId: string, change: Partial<Preference>): void {
+  store.set(userId, { ...store.get(userId), ...change })
+}
+
+export function locationsEnabled(userId: string): boolean {
+  return store.get(userId).enabled
+}
+
+export function autoTagEnabled(userId: string): boolean {
+  return store.get(userId).autoTag
+}
+
+export function setLocationsEnabled(userId: string, enabled: boolean): void {
+  // Turning it on anywhere answers the offer: asking again would be asking a
+  // question the user has already answered.
+  update(userId, enabled ? { enabled, offer: 'answered' } : { enabled })
+}
+
+export function setAutoTag(userId: string, autoTag: boolean): void {
+  update(userId, { autoTag })
+}
+
+/** Both switches, live: a change in Settings shows on the screen behind it. */
+export function useLocationsPreference(userId: string) {
+  const enabled = store.useValue(userId, (value) => value.enabled)
+  const autoTag = store.useValue(userId, (value) => value.autoTag)
+  return { enabled, autoTag }
 }
 
 /**
@@ -97,23 +75,26 @@ function offerState(userId: string): OfferState | null {
  * throw, so the write that called it is never at risk.
  */
 export function recordMealForLocationsOffer(userId: string): void {
-  if (offerState(userId) !== null || locationsEnabled(userId)) return
-  write(offerKey(userId), 'due')
+  const value = store.get(userId)
+  if (value.offer !== null || value.enabled) return
+  update(userId, { offer: 'due' })
 }
 
 export function answerLocationsOffer(userId: string): void {
-  write(offerKey(userId), 'answered')
+  update(userId, { offer: 'answered' })
+}
+
+function offerDue(value: Preference): boolean {
+  return value.offer === 'due' && !value.enabled
 }
 
 /** Whether the offer should go up now (the screen also checks what else is). */
 export function useLocationsOfferDue(userId: string): boolean {
   // Live, so a `due` written by the data layer while Today is mounted shows.
-  useVersion()
-  return offerState(userId) === 'due' && !locationsEnabled(userId)
+  return store.useValue(userId, offerDue)
 }
 
-/** Test hook. */
-export function resetPlacesStorageForTest(): void {
-  storage.clearAll()
-  version += 1
+/** `useLocationsOfferDue` without rendering, for tests. */
+export function locationsOfferDue(userId: string): boolean {
+  return offerDue(store.get(userId))
 }

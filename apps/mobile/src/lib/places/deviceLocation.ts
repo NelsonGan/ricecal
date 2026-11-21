@@ -6,11 +6,12 @@
  * reverse lookup step in.
  *
  * `expo-location` is a native module: it is required lazily so a dev client
- * built before it was added keeps working (the location chip then offers
- * search only).
+ * built before it was added keeps working (the picker then offers search
+ * only).
  */
 
 import { Linking } from 'react-native'
+import { TIMED_OUT, withDeadline } from '@/data/client'
 import { reverseGeocodePlace } from './placeSearch'
 import type { Coordinate, PlaceResult } from './types'
 
@@ -28,7 +29,7 @@ function locationModule(): ExpoLocation | null {
   return cachedModule
 }
 
-export type LocationPermission = 'granted' | 'denied' | 'undetermined' | 'unavailable'
+type LocationPermission = 'granted' | 'denied' | 'undetermined' | 'unavailable'
 
 export interface LocationPermissionState {
   status: LocationPermission
@@ -68,7 +69,7 @@ export async function requestLocationPermission(): Promise<LocationPermissionSta
  * time (a timeout, or the phone could not get one; worth a retry), or no
  * location module in this build.
  */
-export type CurrentCoordinateError = 'permission' | 'services_off' | 'no_fix' | 'unavailable'
+type CurrentCoordinateError = 'permission' | 'services_off' | 'no_fix' | 'unavailable'
 
 export class CurrentLocationError extends Error {
   readonly code: CurrentCoordinateError
@@ -87,7 +88,7 @@ const FIX_TIMEOUT_MS = 10000
 
 /**
  * Where the phone is now. Never asks for permission: callers ask first
- * (the Settings switch, or the picker's "Current location" row).
+ * (the Settings switch, or a map screen's locate button).
  */
 export async function getCurrentCoordinate(): Promise<Coordinate> {
   const Location = locationModule()
@@ -105,27 +106,18 @@ export async function getCurrentCoordinate(): Promise<Coordinate> {
     return { latitude: lastKnown.coords.latitude, longitude: lastKnown.coords.longitude }
   }
 
-  let timer: ReturnType<typeof setTimeout> | undefined
-  try {
-    const position = await Promise.race([
-      // Never Android's "turn on Location Accuracy" dialog: this runs on its
-      // own when a meal is logged, and a coarser fix is fine for a stall.
-      Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-        mayShowUserSettingsDialog: false,
-      }),
-      new Promise<never>((_, reject) => {
-        timer = setTimeout(() => reject(new CurrentLocationError('no_fix')), FIX_TIMEOUT_MS)
-      }),
-    ])
-    return { latitude: position.coords.latitude, longitude: position.coords.longitude }
-  } catch (err) {
-    if (err instanceof CurrentLocationError) throw err
-    // iOS's kCLErrorLocationUnknown, or Android with no fix yet: try again later.
-    throw new CurrentLocationError('no_fix')
-  } finally {
-    if (timer) clearTimeout(timer)
-  }
+  // Never Android's "turn on Location Accuracy" dialog: this runs on its own
+  // when a meal is logged, and a coarser fix is fine for a stall. A failure is
+  // iOS's kCLErrorLocationUnknown or Android with no fix yet: try again later.
+  const position = await withDeadline(
+    Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+      mayShowUserSettingsDialog: false,
+    }),
+    FIX_TIMEOUT_MS,
+  ).catch((): typeof TIMED_OUT => TIMED_OUT)
+  if (position === TIMED_OUT) throw new CurrentLocationError('no_fix')
+  return { latitude: position.coords.latitude, longitude: position.coords.longitude }
 }
 
 interface GeocodedAddress {
@@ -136,7 +128,6 @@ interface GeocodedAddress {
   city?: string | null
   subregion?: string | null
   region?: string | null
-  isoCountryCode?: string | null
 }
 
 const clean = (value: string | null | undefined) => (value ?? '').trim()
@@ -173,7 +164,6 @@ export function placeFromGeocodedAddress(
     latitude: coordinate.latitude,
     longitude: coordinate.longitude,
     category: null,
-    countryCode: clean(address.isoCountryCode).toUpperCase() || null,
   }
 }
 

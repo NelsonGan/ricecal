@@ -20,12 +20,7 @@ export function placeOfLocation(location: EntryLocation): PlaceResult {
     latitude: location.latitude,
     longitude: location.longitude,
     category: location.category ?? null,
-    countryCode: null,
   }
-}
-
-export function isLocated(entry: Entry): entry is LocatedEntry {
-  return Boolean(entry.location)
 }
 
 const EARTH_RADIUS_M = 6371008.8
@@ -77,34 +72,38 @@ export function locationKey(location: EntryLocation): string {
 const newestFirst = (a: Entry, b: Entry) =>
   a.loggedAt < b.loggedAt ? 1 : a.loggedAt > b.loggedAt ? -1 : 0
 
-/**
- * The places the user tagged before, most recent first, one per place. With
- * `near`, the ones within `nearRadiusMeters` come first, closest first, so the
- * picker offers "where I usually eat around here" without a search.
- */
-export function recentPlaces(
-  entries: readonly Entry[],
-  {
-    limit = 8,
-    near = null,
-    nearRadiusMeters = 2000,
-  }: { limit?: number; near?: Coordinate | null; nearRadiusMeters?: number } = {},
-): PlaceResult[] {
-  const byKey = new Map<string, { place: PlaceResult; at: string }>()
-  for (const entry of entries) {
+/** How far "around here" reaches for the picker's recent places. */
+const NEAR_RADIUS_M = 2000
+
+/** The places the user tagged before, one per place, most recent first. */
+export function knownPlaces(entries: readonly Entry[]): PlaceResult[] {
+  const byKey = new Map<string, PlaceResult>()
+  // Newest first, so the first entry seen per place is its latest name.
+  for (const entry of [...entries].sort(newestFirst)) {
     if (!entry.location) continue
     const place = placeOfLocation(entry.location)
     const key = placeKey(place)
-    const seen = byKey.get(key)
-    if (!seen || entry.loggedAt > seen.at) byKey.set(key, { place, at: entry.loggedAt })
+    if (!byKey.has(key)) byKey.set(key, place)
   }
-  const all = [...byKey.values()].sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0))
-  if (!near) return all.slice(0, limit).map((item) => item.place)
-  const measured = all.map((item) => ({ ...item, distance: distanceMeters(near, item.place) }))
+  return [...byKey.values()]
+}
+
+/**
+ * The first `limit` places, the ones within 2 km of `near` first, closest
+ * first, so the picker offers "where I usually eat around here" without a
+ * search.
+ */
+export function nearFirst(
+  places: readonly PlaceResult[],
+  near: Coordinate | null,
+  limit: number,
+): PlaceResult[] {
+  if (!near) return places.slice(0, limit)
+  const measured = places.map((place) => ({ place, distance: distanceMeters(near, place) }))
   const nearby = measured
-    .filter((item) => item.distance <= nearRadiusMeters)
+    .filter((item) => item.distance <= NEAR_RADIUS_M)
     .sort((a, b) => a.distance - b.distance)
-  const rest = measured.filter((item) => item.distance > nearRadiusMeters)
+  const rest = measured.filter((item) => item.distance > NEAR_RADIUS_M)
   return [...nearby, ...rest].slice(0, limit).map((item) => item.place)
 }
 
@@ -123,7 +122,9 @@ export type PlaceGroup = {
 /** A period's located entries, one group per place, busiest place first. */
 export function groupByPlace(entries: readonly LocatedEntry[]): PlaceGroup[] {
   const groups = new Map<string, PlaceGroup>()
-  for (const entry of entries) {
+  // Newest first: each group's first entry is then its newest, which names the
+  // place, so a stall that changed its name shows the new one.
+  for (const entry of [...entries].sort(newestFirst)) {
     const key = locationKey(entry.location)
     let group = groups.get(key)
     if (!group) {
@@ -142,25 +143,12 @@ export function groupByPlace(entries: readonly LocatedEntry[]): PlaceGroup[] {
     group.entries.push(entry)
     group.kcal += entry.macros.kcal
   }
-  const out = [...groups.values()]
-  for (const group of out) {
-    group.entries.sort(newestFirst)
-    // The newest visit names the place, so a stall that changed its name shows
-    // the new one.
-    const newest = group.entries[0]
-    if (newest) {
-      group.name = newest.location.name
-      group.address = newest.location.address ?? null
-      group.category = newest.location.category ?? null
-    }
-  }
   // Busiest first; between two as busy, the one visited last.
-  return out.sort((a, b) => {
-    const visits = b.entries.length - a.entries.length
-    if (visits !== 0) return visits
-    const [aLast, bLast] = [a.entries[0]?.loggedAt ?? '', b.entries[0]?.loggedAt ?? '']
-    return aLast < bLast ? 1 : aLast > bLast ? -1 : 0
-  })
+  return [...groups.values()].sort(
+    (a, b) =>
+      b.entries.length - a.entries.length ||
+      newestFirst(a.entries[0] as Entry, b.entries[0] as Entry),
+  )
 }
 
 /**
@@ -173,11 +161,34 @@ export function coverEntry(entries: readonly LocatedEntry[]): LocatedEntry | und
   )
 }
 
+export type MapRegion = {
+  latitude: number
+  longitude: number
+  latitudeDelta: number
+  longitudeDelta: number
+}
+
+/** Where a map opens with nothing to show: Kuala Lumpur. */
+export const HOME_COORDINATE: Coordinate = { latitude: 3.139, longitude: 101.6869 }
+
+/** About a street's width across: close enough to tell two stalls apart. */
+export const STREET_DELTA = 0.006
+
+/** A square region around one point. */
+export function regionAround(point: Coordinate, delta = STREET_DELTA): MapRegion {
+  return {
+    latitude: point.latitude,
+    longitude: point.longitude,
+    latitudeDelta: delta,
+    longitudeDelta: delta,
+  }
+}
+
 /** The smallest box around the points, padded, for a map's first frame. */
 export function regionFor(
   points: readonly Coordinate[],
   { padding = 1.4, minDelta = 0.01 }: { padding?: number; minDelta?: number } = {},
-): { latitude: number; longitude: number; latitudeDelta: number; longitudeDelta: number } | null {
+): MapRegion | null {
   if (points.length === 0) return null
   let minLat = Number.POSITIVE_INFINITY
   let maxLat = Number.NEGATIVE_INFINITY

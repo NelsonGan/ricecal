@@ -3,6 +3,7 @@ import type * as StoreReviewModule from 'expo-store-review'
 import { createMMKV } from 'react-native-mmkv'
 
 import { track } from '@/lib/analytics'
+import { floorTaken } from '@/lib/floor'
 import {
   checkRating,
   crossedCheckpoint,
@@ -186,24 +187,19 @@ export const ASK_DELAY_MS = 1200
  */
 let pending: ReturnType<typeof setTimeout> | null = null
 
-/** Whether the sheet is on screen, which it reports through `setRatingSheetOpen`. */
-let sheetOpen = false
-
-export function setRatingSheetOpen(open: boolean): void {
-  sheetOpen = open
-}
-
 /**
- * Whether an ask is booked or its sheet is up, for another one-time sheet that
- * must not stack on it (the Locations offer). Read rather than subscribed:
- * a second listener on the bridge would count as a sheet that took the ask.
+ * Whether an ask is booked and its sheet not up yet, for another one-time sheet
+ * that must not take the floor in that gap (`lib/floor.ts`). Read rather than
+ * subscribed: a second listener on the bridge would count as a sheet that took
+ * the ask.
  */
-export function ratingPromptBusy(): boolean {
-  return pending !== null || sheetOpen
+export function ratingAskBooked(): boolean {
+  return pending !== null
 }
 
 function ask(userId: string, trigger: RatingTrigger, now: number): void {
-  if (pending) return
+  // Another question on screen: this checkpoint passes, the next one asks.
+  if (pending || floorTaken('rating')) return
   const verdict = checkRating(read(userId, now), now, appVersion())
   if (!verdict.ask) {
     track('Rating Prompt Skipped', { trigger, reason: verdict.reason })

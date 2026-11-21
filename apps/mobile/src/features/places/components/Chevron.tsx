@@ -11,12 +11,10 @@ export function Chevron({
   direction,
   size = 9,
   color,
-  weight = 2,
 }: {
   direction: keyof typeof TURN
   size?: number
   color: string
-  weight?: number
 }) {
   // The turned square's corner points out of its box, so it is nudged back
   // toward the way it points to look centred.
@@ -34,8 +32,8 @@ export function Chevron({
       style={{
         width: size,
         height: size,
-        borderLeftWidth: weight,
-        borderBottomWidth: weight,
+        borderLeftWidth: 2,
+        borderBottomWidth: 2,
         borderColor: color,
         borderBottomLeftRadius: 1,
         transform: [{ rotate: TURN[direction] }],

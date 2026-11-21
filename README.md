@@ -4387,9 +4387,10 @@ this phone while Locations is off (`recordMealForLocationsOffer`, beside
 `recordMealLogged`). It is stored as answered before it is on screen, so a
 crash never brings it back, and turning Locations on anywhere answers it. It
 never stacks on another sheet: not while a news card has the floor
-(`announcementHasTheFloor`), not while the rating ask is booked or up
-(`ratingPromptBusy`), and only while Today is on top; a turn it cannot take is
-not lost. Turn on Locations closes the sheet, and only once it is gone asks for
+(`announcementHasTheFloor`), not while the rating ask is booked
+(`ratingAskBooked`) or up, and only while Today is on top; a turn it cannot take
+is not lost. The rating ask and the offer each hold `lib/floor.ts` while they are
+on screen, and neither goes up while the other holds it. Turn on Locations closes the sheet, and only once it is gone asks for
 the system permission, which iOS will not present over a modal on its way down.
 
 **Android needs a Google Maps key at build time.** `app.config.ts` reads

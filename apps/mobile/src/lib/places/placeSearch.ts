@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase'
 
 import type { PlaceResult } from './types'
 
-export type PlaceSearchErrorCode =
+type PlaceSearchErrorCode =
   | 'not_available'
   | 'limit_reached'
   | 'rate_limited'
@@ -107,7 +107,6 @@ async function post(
     latitude: place.latitude,
     longitude: place.longitude,
     category: typeof place.category === 'string' && place.category ? place.category : null,
-    countryCode: typeof place.countryCode === 'string' ? place.countryCode : null,
   }))
 }
 
@@ -128,31 +127,24 @@ export function searchPlaces({
   })
 }
 
-export async function reverseGeocodePlace(args: {
-  latitude: number
-  longitude: number
-  language?: string | null
-}): Promise<PlaceResult | null> {
-  const places = await post('/reverse', {
-    latitude: args.latitude,
-    longitude: args.longitude,
-    language: appleLanguage(args.language),
+type AroundSpot = { latitude: number; longitude: number; language?: string | null }
+
+function around(path: '/reverse' | '/nearby', spot: AroundSpot): Promise<PlaceResult[]> {
+  return post(path, {
+    latitude: spot.latitude,
+    longitude: spot.longitude,
+    language: appleLanguage(spot.language),
   })
-  return places[0] ?? null
+}
+
+export async function reverseGeocodePlace(spot: AroundSpot): Promise<PlaceResult | null> {
+  return (await around('/reverse', spot))[0] ?? null
 }
 
 /**
  * Places to eat around a spot, for the picker's Nearby list before anything is
  * typed. The Worker rounds the spot to about 110 m before Apple sees it.
  */
-export function nearbyPlaces(args: {
-  latitude: number
-  longitude: number
-  language?: string | null
-}): Promise<PlaceResult[]> {
-  return post('/nearby', {
-    latitude: args.latitude,
-    longitude: args.longitude,
-    language: appleLanguage(args.language),
-  })
+export function nearbyPlaces(spot: AroundSpot): Promise<PlaceResult[]> {
+  return around('/nearby', spot)
 }

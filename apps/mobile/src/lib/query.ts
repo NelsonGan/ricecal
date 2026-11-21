@@ -133,7 +133,8 @@ export function shouldPersistQuery(query: Query): boolean {
     newestAnswer = Math.max(newestAnswer, query.state.dataUpdatedAt)
   }
   const [area, , third, fourth] = query.queryKey
-  if (area === 'social' || area === 'photo' || area === 'food-search') return false
+  if (area === 'social' || area === 'photo' || area === 'food-search' || area === 'place-search')
+    return false
   if (area === 'groups' && third !== 'my_groups' && third !== 'group_invite_count') return false
   // A recipe shelf with something in its search field. The shelves themselves
   // have an empty one, and the count has none.

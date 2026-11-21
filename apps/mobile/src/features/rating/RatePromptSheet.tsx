@@ -8,13 +8,13 @@ import { View } from 'react-native'
 // imports `@/data`, which pulls the whole router and half the native modules in
 // behind a single string constant.
 import { DISCORD_INVITE } from '@/features/settings/discord'
+import { holdFloor } from '@/lib/floor'
 import {
   type RatingRequest,
   ratingDisliked,
   ratingDismissed,
   ratingFeedbackOpened,
   ratingLiked,
-  setRatingSheetOpen,
   subscribeToRatingPrompt,
 } from '@/lib/rating'
 import { Button, Icon, Sheet, useToast } from '@/ui'
@@ -56,10 +56,10 @@ export function RatePromptSheet() {
   // one holding the first one's trigger.
   const close = useCallback(() => setRequest(null), [])
 
-  // Told to the prompt module so another one-time sheet waits its turn.
+  // Held while up, so another one-time sheet waits its turn (`lib/floor.ts`).
   useEffect(() => {
-    setRatingSheetOpen(request !== null)
-    return () => setRatingSheetOpen(false)
+    holdFloor('rating', request !== null)
+    return () => holdFloor('rating', false)
   }, [request])
 
   /**

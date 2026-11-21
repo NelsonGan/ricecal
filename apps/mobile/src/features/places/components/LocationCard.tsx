@@ -6,10 +6,8 @@ import { useThemeColors } from '@/theme/useTheme'
 import { Card, Icon, Spinner, Tappable, Text } from '@/ui'
 
 import { placeCategoryIcon } from '../lib/placeIcons'
+import { regionAround } from '../lib/placeLocation'
 import { AppMap, mapsModule } from './AppMap'
-
-/** How far a still map shows around the spot: a few streets. */
-const STILL_DELTA = 0.006
 
 /**
  * Where a meal was eaten, on the entry page (README: Meal locations): the
@@ -46,12 +44,7 @@ export function LocationCard({
           {resolving && !location ? (
             <Spinner />
           ) : (
-            <Icon
-              {...(location
-                ? placeCategoryIcon(location.category)
-                : { set: 'ui', name: 'location' })}
-              size={34}
-            />
+            <Icon {...placeCategoryIcon(location?.category)} size={34} />
           )}
         </View>
         <View className="min-w-0 flex-1 gap-0.5">
@@ -76,12 +69,7 @@ export function LocationCard({
             <AppMap
               key={`${location.latitude},${location.longitude}`}
               still
-              initialRegion={{
-                latitude: location.latitude,
-                longitude: location.longitude,
-                latitudeDelta: STILL_DELTA,
-                longitudeDelta: STILL_DELTA,
-              }}
+              initialRegion={regionAround(location)}
             >
               <maps.Marker
                 coordinate={{ latitude: location.latitude, longitude: location.longitude }}

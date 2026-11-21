@@ -1,11 +1,5 @@
 import { forwardRef, type ReactNode } from 'react'
-import {
-  Platform,
-  type StyleProp,
-  StyleSheet,
-  TurboModuleRegistry,
-  type ViewStyle,
-} from 'react-native'
+import { Platform, StyleSheet, TurboModuleRegistry } from 'react-native'
 import type MapViewType from 'react-native-maps'
 import type { EdgePadding, MapPressEvent, MapStyleElement, Region } from 'react-native-maps'
 
@@ -68,7 +62,6 @@ type AppMapProps = {
   onMapReady?: () => void
   /** A still picture of a spot: no gestures, no labels to tap. */
   still?: boolean
-  style?: StyleProp<ViewStyle>
   children?: ReactNode
 }
 
@@ -87,7 +80,6 @@ export const AppMap = forwardRef<MapViewType, AppMapProps>(function AppMapImpl(
     onMapReady,
     showsUserLocation = false,
     still = false,
-    style,
     children,
   },
   ref,
@@ -99,7 +91,7 @@ export const AppMap = forwardRef<MapViewType, AppMapProps>(function AppMapImpl(
   return (
     <MapView
       ref={ref}
-      style={style ?? StyleSheet.absoluteFill}
+      style={StyleSheet.absoluteFill}
       provider={Platform.OS === 'android' ? maps.PROVIDER_GOOGLE : maps.PROVIDER_DEFAULT}
       initialRegion={initialRegion}
       mapPadding={mapPadding}

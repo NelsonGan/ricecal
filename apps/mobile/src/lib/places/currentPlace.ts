@@ -1,14 +1,14 @@
 /**
- * Where the phone is and what the spot is called, shared by the picker's
- * "Current location" row and a new meal's automatic tag (README: Meal
- * locations). The tag is applied by the data layer, after the insert, so a
- * meal never waits on the GPS to be saved. Never asks for permission: the Locations switch and the
- * picker's own row ask, and only when tapped.
+ * Where the phone is and what the spot is called, for a new meal's automatic
+ * tag (README: Meal locations). The tag is applied by the data layer, after the
+ * insert, so a meal never waits on the GPS to be saved. Never asks for
+ * permission: the Locations switch and the map screens ask, and only when
+ * tapped.
  */
 
-import { format } from 'date-fns/format'
-
-// Types only from the data layer, which imports this module for the tag.
+// The data layer imports this module for the tag, so from it only `today`
+// (in `client`, which imports nothing back) and types.
+import { today } from '@/data/client'
 import type { EntryLocation } from '@/data/types'
 import i18n, { currentLanguage } from '@/i18n'
 import {
@@ -26,7 +26,7 @@ export type ResolvedPlace = {
   coordinate: Coordinate
   place: PlaceResult
   /** False when neither geocoder named the spot and `place` is "Pinned location". */
-  named?: boolean
+  named: boolean
 }
 
 type Cached = ResolvedPlace & { at: number; language: string }
@@ -47,7 +47,6 @@ function pinnedPlace(coordinate: Coordinate): PlaceResult {
     address: '',
     ...coordinate,
     category: null,
-    countryCode: null,
   }
 }
 
@@ -64,13 +63,30 @@ async function locate(
     if (named || remote) cached = { ...resolved, at: Date.now(), language }
     return resolved
   } catch (error) {
-    const code = error instanceof CurrentLocationError ? error.code : 'no_fix'
-    if (code === 'permission') return 'ask'
-    if (code === 'services_off') return 'services_off'
-    if (code === 'unavailable') return 'unavailable'
-    return 'error'
+    return failureOf(error)
   }
 }
+
+function failureOf(error: unknown): CurrentPlaceFailure {
+  const code = error instanceof CurrentLocationError ? error.code : 'no_fix'
+  if (code === 'permission') return 'ask'
+  if (code === 'services_off') return 'services_off'
+  if (code === 'unavailable') return 'unavailable'
+  return 'error'
+}
+
+/** What to offer instead of a place when permission is not given. */
+async function permissionFailure(): Promise<CurrentPlaceFailure | null> {
+  const permission = await getLocationPermission()
+  if (permission.status === 'unavailable') return 'unavailable'
+  if (permission.status !== 'granted') return permission.canAskAgain ? 'ask' : 'blocked'
+  return null
+}
+
+const stillGood = (entry: Cached | null, language?: string): entry is Cached =>
+  entry !== null &&
+  (language === undefined || entry.language === language) &&
+  Date.now() - entry.at < REUSE_MS
 
 /**
  * The current place, or why there is none. Permission is checked every time,
@@ -84,19 +100,36 @@ export async function resolveCurrentPlace({
   /** Whether the Worker's Apple lookup may name a spot the phone cannot. */
   remote?: boolean
 } = {}): Promise<ResolvedPlace | CurrentPlaceFailure> {
-  const permission = await getLocationPermission()
-  if (permission.status === 'unavailable') return 'unavailable'
-  if (permission.status !== 'granted') return permission.canAskAgain ? 'ask' : 'blocked'
+  const failure = await permissionFailure()
+  if (failure) return failure
   const language = currentLanguage()
   const reusable = cached
-  if (!fresh && reusable && reusable.language === language && Date.now() - reusable.at < REUSE_MS) {
-    return { coordinate: reusable.coordinate, place: reusable.place, named: reusable.named }
-  }
-  // Two callers at once (the picker opening as a meal is tagged) share a fix.
+  if (!fresh && stillGood(reusable, language)) return reusable
+  // Two callers at once (a meal tagged as its page previews the tag) share a fix.
   inFlight ??= locate(language, remote).finally(() => {
     inFlight = null
   })
   return inFlight
+}
+
+/**
+ * Only where the phone is, for a map's blue dot and first frame: naming the
+ * spot would spend a geocode, and maybe an Apple call, on a name nobody shows.
+ */
+export async function currentCoordinate({
+  fresh = false,
+}: {
+  fresh?: boolean
+} = {}): Promise<Coordinate | CurrentPlaceFailure> {
+  const failure = await permissionFailure()
+  if (failure) return failure
+  const reusable = cached
+  if (!fresh && stillGood(reusable)) return reusable.coordinate
+  try {
+    return await getCurrentCoordinate()
+  } catch (error) {
+    return failureOf(error)
+  }
 }
 
 /**
@@ -105,11 +138,7 @@ export async function resolveCurrentPlace({
  * whether to start a fix at all (`autoTagLocation` checks it again).
  */
 export function autoTagWanted(userId: string, logDate: string): boolean {
-  return (
-    locationsEnabled(userId) &&
-    autoTagEnabled(userId) &&
-    logDate === format(new Date(), 'yyyy-MM-dd')
-  )
+  return locationsEnabled(userId) && autoTagEnabled(userId) && logDate === today()
 }
 
 /**
@@ -136,15 +165,9 @@ export async function autoTagLocation(
   try {
     const resolved = await resolveCurrentPlace({ remote: !preview })
     if (typeof resolved === 'string') return null
-    if (preview && resolved.named === false) return null
+    if (preview && !resolved.named) return null
     return toEntryLocation(resolved.place)
   } catch {
     return null
   }
-}
-
-/** Test hook. */
-export function forgetCurrentPlace(): void {
-  cached = null
-  inFlight = null
 }

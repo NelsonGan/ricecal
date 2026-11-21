@@ -1,36 +1,26 @@
 import { format } from 'date-fns/format'
 import { parseISO } from 'date-fns/parseISO'
-import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
 import type MapViewType from 'react-native-maps'
-import type { Region } from 'react-native-maps'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import {
-  ENTRY_FOOD_ID,
-  type LocatedEntry,
-  storedImageSource,
-  today,
-  useLocatedEntries,
-  useMealPhotoUrl,
-  useUserId,
-} from '@/data'
+import { ENTRY_FOOD_ID, type LocatedEntry, today, useLocatedEntries, useUserId } from '@/data'
+import { count } from '@/features/activity/format'
 import { formatTime } from '@/features/shared'
-import { currentLanguage } from '@/i18n'
 import { track } from '@/lib/analytics'
 import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { useLocationsPreference } from '@/lib/places'
 import { ReplayMask } from '@/lib/replay-mask'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Icon, Skeleton, Tappable, Text } from '@/ui'
+import { Button, FLOAT_SHADOW, Icon, Skeleton, Tappable, Text } from '@/ui'
 
 import { AppMap, mapsModule } from './components/AppMap'
 import { Chevron } from './components/Chevron'
-import { ClusterPin, PlacePin } from './components/FoodMapPins'
+import { ClusterPin, PlaceCover, PlacePin } from './components/FoodMapPins'
 import { MapGestures, markerAt, type ScreenPoint } from './components/MapGestures'
 import { fitMapToPoints } from './lib/fitMap'
 import {
@@ -44,22 +34,24 @@ import {
   CLUSTER_MAX_ZOOM,
   createPlaceClusterer,
   longitudeDeltaForZoom,
-  type MapRegion,
   type PlaceMarker,
   zoomForRegion,
 } from './lib/placeClusters'
-import { coverEntry, groupByPlace, type PlaceGroup, regionFor } from './lib/placeLocation'
+import {
+  coverEntry,
+  groupByPlace,
+  HOME_COORDINATE,
+  type MapRegion,
+  type PlaceGroup,
+  regionAround,
+  regionFor,
+} from './lib/placeLocation'
 import { useCurrentPlace } from './services/useCurrentPlace'
 
 type Selection = { kind: 'place'; key: string } | { kind: 'cluster'; keys: string[] } | null
 
 /** Where the map opens with nothing on it: the region the catalogue is centred on. */
-const HOME_REGION: MapRegion = {
-  latitude: 3.139,
-  longitude: 101.687,
-  latitudeDelta: 0.4,
-  longitudeDelta: 0.4,
-}
+const HOME_REGION = regionAround(HOME_COORDINATE, 0.4)
 
 /** One place, or places at one spot, shown at about a neighbourhood. */
 const ONE_SPOT_DELTA = 0.02
@@ -69,15 +61,6 @@ const PANEL_HEIGHT = 196
 /** The selected place's floating card. */
 const PLACE_CARD_HEIGHT = 228
 const PLACE_CARD_WIDTH = 132
-
-/** The one shadow every floating control over the map shares. */
-const FLOATING = {
-  shadowColor: '#000',
-  shadowOpacity: 0.12,
-  shadowRadius: 8,
-  shadowOffset: { width: 0, height: 2 },
-  elevation: 3,
-} as const
 
 /**
  * The food map (README: Meal locations): every tagged meal of a week, a month
@@ -98,7 +81,6 @@ export function FoodMapScreen() {
   const mapRef = useRef<MapViewType>(null)
   const maps = mapsModule()
   const colors = useThemeColors()
-  const language = currentLanguage()
 
   const located = useLocatedEntries()
   // The blue dot and the locate button, only with Locations on: the map never
@@ -115,7 +97,24 @@ export function FoodMapScreen() {
   )
   const groupByKey = useMemo(() => new Map(groups.map((group) => [group.key, group])), [groups])
 
+  // The clusters follow the region, but not while a hand is on the map: the
+  // iOS gesture layer moves the camera every frame and MapKit reports each
+  // move, which re-rendered the whole screen and every pin per frame. The
+  // latest region is kept in a ref and committed when the gesture ends.
   const [region, setRegion] = useState<MapRegion>(HOME_REGION)
+  const regionRef = useRef<MapRegion>(HOME_REGION)
+  const moving = useRef(false)
+  const onRegionChange = useCallback((next: MapRegion) => {
+    regionRef.current = next
+    if (!moving.current) setRegion(next)
+  }, [])
+  const onGestureStart = useCallback(() => {
+    moving.current = true
+  }, [])
+  const onGestureEnd = useCallback(() => {
+    moving.current = false
+    setRegion(regionRef.current)
+  }, [])
   // Fixed at the first render: react-native-maps re-applies a changed
   // `initialRegion` on the new architecture, which snapped every pan back.
   // Every later move is a fit (`fitAll`) or a tap.
@@ -124,6 +123,8 @@ export function FoodMapScreen() {
   )
   const clusterer = useMemo(() => createPlaceClusterer(groups), [groups])
   const markers = useMemo(() => clusterer(region, width), [clusterer, region, width])
+  const markersRef = useRef(markers)
+  markersRef.current = markers
 
   // The panel under the map: a line of totals over a row of place cards, or
   // the selected place's card, which is taller for its meals.
@@ -189,42 +190,36 @@ export function FoodMapScreen() {
     if (selection && selectedGroups.length === 0) setSelection(null)
   }, [selection, selectedGroups.length])
 
-  const focusPlace = useCallback(
-    (group: PlaceGroup) => {
-      setSelection({ kind: 'place', key: group.key })
-      mapRef.current?.animateToRegion(
-        {
-          latitude: group.latitude,
-          longitude: group.longitude,
-          latitudeDelta: Math.min(region.latitudeDelta, ONE_SPOT_DELTA),
-          longitudeDelta: Math.min(region.longitudeDelta, ONE_SPOT_DELTA),
-        },
-        300,
-      )
-    },
-    [region],
-  )
+  // Read through refs, so the handlers stay the same across renders and the
+  // pins' memo holds while the map moves.
+  const focusPlace = useCallback((group: PlaceGroup) => {
+    setSelection({ kind: 'place', key: group.key })
+    const delta = Math.min(regionRef.current.longitudeDelta, ONE_SPOT_DELTA)
+    mapRef.current?.animateToRegion(regionAround(group, delta), 300)
+  }, [])
 
-  const pressMarker = (marker: PlaceMarker) => {
-    if (marker.kind === 'place') return focusPlace(marker.group)
-    const zoom = zoomForRegion(region, width)
-    // A bubble that can still split zooms in to where it does; one that cannot
-    // (places at one point, or past the last zoom) lists its places instead.
-    if (marker.expansionZoom <= CLUSTER_MAX_ZOOM && marker.expansionZoom > zoom) {
-      const delta = longitudeDeltaForZoom(marker.expansionZoom, width)
-      mapRef.current?.animateToRegion(
-        {
-          latitude: marker.latitude,
-          longitude: marker.longitude,
-          latitudeDelta: delta,
-          longitudeDelta: delta,
-        },
-        300,
-      )
-      return
-    }
-    setSelection({ kind: 'cluster', keys: marker.groups.map((group) => group.key) })
-  }
+  const pressMarker = useCallback(
+    (marker: PlaceMarker) => {
+      if (marker.kind === 'place') return focusPlace(marker.group)
+      const zoom = zoomForRegion(regionRef.current, width)
+      // A bubble that can still split zooms in to where it does; one that
+      // cannot (places at one point, or past the last zoom) lists its places.
+      if (marker.expansionZoom <= CLUSTER_MAX_ZOOM && marker.expansionZoom > zoom) {
+        const delta = longitudeDeltaForZoom(marker.expansionZoom, width)
+        mapRef.current?.animateToRegion(regionAround(marker, delta), 300)
+        return
+      }
+      setSelection({ kind: 'cluster', keys: marker.groups.map((group) => group.key) })
+    },
+    [focusPlace, width],
+  )
+  const pressKey = useCallback(
+    (key: string) => {
+      const marker = markersRef.current.find((each) => each.key === key)
+      if (marker) pressMarker(marker)
+    },
+    [pressMarker],
+  )
 
   /**
    * A tap on the map, matched to the pin under it (the iOS gesture layer hands
@@ -232,11 +227,15 @@ export function FoodMapScreen() {
    * its face is about 32 points above it; a bubble is centred on its spot.
    * Nothing within reach closes whatever was open.
    */
-  const tapAt = (point: ScreenPoint) => {
-    void markerAt(mapRef.current, point, markers, {
-      lift: (marker) => (marker.kind === 'place' ? 32 : 0),
-    }).then((hit) => (hit ? pressMarker(hit) : setSelection(null)))
-  }
+  const tapAt = useCallback(
+    (point: ScreenPoint) => {
+      void markerAt(mapRef.current, point, markersRef.current, {
+        lift: (marker) => (marker.kind === 'place' ? 32 : 0),
+      }).then((hit) => (hit ? pressMarker(hit) : setSelection(null)))
+    },
+    [pressMarker],
+  )
+  const mapSize = useMemo(() => ({ width, height }), [width, height])
 
   const openEntry = (entry: LocatedEntry) =>
     router.push({
@@ -246,7 +245,6 @@ export function FoodMapScreen() {
 
   const totalMeals = groups.reduce((sum, group) => sum + group.entries.length, 0)
   const totalKcal = groups.reduce((sum, group) => sum + group.kcal, 0)
-  const number = (value: number) => new Intl.NumberFormat(language).format(Math.round(value))
 
   // Short, because it sits in a pill between two arrows.
   const periodLabel = (() => {
@@ -264,17 +262,14 @@ export function FoodMapScreen() {
   const totals = [
     t('places:placesCount', { count: groups.length }),
     t('places:meals', { count: totalMeals }),
-    `${number(totalKcal)} ${t('common:unit.kcal')}`,
+    `${count(totalKcal)} ${t('common:unit.kcal')}`,
   ].join(' · ')
 
   const locateMe = () => {
     const me = here.coordinate
     if (!me) return
     setSelection(null)
-    mapRef.current?.animateToRegion(
-      { ...me, latitudeDelta: ONE_SPOT_DELTA, longitudeDelta: ONE_SPOT_DELTA },
-      300,
-    )
+    mapRef.current?.animateToRegion(regionAround(me, ONE_SPOT_DELTA), 300)
   }
 
   return (
@@ -282,13 +277,19 @@ export function FoodMapScreen() {
       {/* Where somebody eats is their location history: kept out of replays. */}
       <ReplayMask style={StyleSheet.absoluteFill}>
         {maps ? (
-          <MapGestures mapRef={mapRef} size={{ width, height }} onTap={tapAt}>
+          <MapGestures
+            mapRef={mapRef}
+            size={mapSize}
+            onTap={tapAt}
+            onGestureStart={onGestureStart}
+            onGestureEnd={onGestureEnd}
+          >
             <AppMap
               ref={mapRef}
               initialRegion={initialRegion}
               mapPadding={mapPadding}
               showsUserLocation={showMe}
-              onRegionChangeComplete={(next: Region) => setRegion(next)}
+              onRegionChangeComplete={onRegionChange}
               onPress={() => setSelection(null)}
               onMapReady={() => setMapReady(true)}
             >
@@ -306,7 +307,7 @@ export function FoodMapScreen() {
                       count={marker.count}
                       selected={selected}
                       accessibilityLabel={t('places:placesHere', { count: marker.groups.length })}
-                      onPress={() => pressMarker(marker)}
+                      onPress={pressKey}
                     />
                   )
                 }
@@ -328,7 +329,7 @@ export function FoodMapScreen() {
                     accessibilityLabel={`${marker.group.name}, ${t('places:meals', {
                       count: marker.group.entries.length,
                     })}`}
-                    onPress={() => pressMarker(marker)}
+                    onPress={pressKey}
                   />
                 )
               })}
@@ -350,19 +351,12 @@ export function FoodMapScreen() {
         style={{ paddingTop: insets.top + 6 }}
         pointerEvents="box-none"
       >
-        <Tappable
-          onPress={back}
-          accessibilityRole="button"
-          accessibilityLabel={t('common:a11y.back')}
-          hitSlop={6}
-          className="h-10 w-10 items-center justify-center rounded-full bg-surface"
-          style={FLOATING}
-        >
+        <RoundButton onPress={back} label={t('common:a11y.back')}>
           <Chevron direction="left" color={colors.ink} />
-        </Tappable>
+        </RoundButton>
         <View
           className="h-10 min-w-0 flex-1 flex-row items-center rounded-full bg-surface"
-          style={FLOATING}
+          style={FLOAT_SHADOW}
         >
           {period.kind === 'all' ? null : (
             <Tappable
@@ -395,7 +389,7 @@ export function FoodMapScreen() {
         </View>
         <Tappable
           className="h-10 flex-row items-center gap-1.5 rounded-full bg-surface px-3.5"
-          style={FLOATING}
+          style={FLOAT_SHADOW}
           onPress={() => setChoosingPeriod((open) => !open)}
           accessibilityRole="button"
           accessibilityState={{ expanded: choosingPeriod }}
@@ -420,7 +414,7 @@ export function FoodMapScreen() {
           />
           <View
             className="absolute right-gutter min-w-[150px] overflow-hidden rounded-tile bg-surface py-1"
-            style={[FLOATING, { top: insets.top + 54 }]}
+            style={[FLOAT_SHADOW, { top: insets.top + 54 }]}
           >
             {(['week', 'month', 'all'] as const).map((kind) => (
               <Tappable
@@ -466,7 +460,6 @@ export function FoodMapScreen() {
         <PlaceCard
           group={placed}
           bottom={insets.bottom + 8}
-          number={number}
           onClose={() => setSelection(null)}
           onOpenEntry={openEntry}
         />
@@ -558,7 +551,7 @@ function RoundButton({
       accessibilityLabel={label}
       hitSlop={6}
       className="h-10 w-10 items-center justify-center rounded-full bg-surface"
-      style={FLOATING}
+      style={FLOAT_SHADOW}
     >
       {children}
     </Tappable>
@@ -567,18 +560,7 @@ function RoundButton({
 
 /** The plate a place is known by: its newest photo, else its drawing. */
 function Cover({ entry, size }: { entry: LocatedEntry | undefined; size: number }) {
-  const url = useMealPhotoUrl(entry?.photoPath)
-  const source = entry?.photoPath ? storedImageSource(entry.photoPath, url.data) : null
-  return source ? (
-    <Image
-      source={source}
-      style={{ width: '100%', height: '100%' }}
-      contentFit="cover"
-      cachePolicy="memory-disk"
-    />
-  ) : (
-    <Icon {...(entry?.icon ?? { set: 'ui' as const, name: 'location' })} size={size} />
-  )
+  return <PlaceCover photoPath={entry?.photoPath} icon={entry?.icon} size={size} />
 }
 
 /** A place in the panel's row: its plate, its name and how many meals. */
@@ -619,13 +601,11 @@ function PlaceTile({
 function PlaceCard({
   group,
   bottom,
-  number,
   onClose,
   onOpenEntry,
 }: {
   group: PlaceGroup
   bottom: number
-  number: (value: number) => string
   onClose: () => void
   onOpenEntry: (entry: LocatedEntry) => void
 }) {
@@ -633,8 +613,8 @@ function PlaceCard({
   const colors = useThemeColors()
   return (
     <View
-      className="absolute left-3 right-3 rounded-card bg-surface px-md pb-md pt-3 shadow-md"
-      style={{ bottom, height: PLACE_CARD_HEIGHT }}
+      className="absolute left-3 right-3 rounded-card bg-surface px-md pb-md pt-3"
+      style={[FLOAT_SHADOW, { bottom, height: PLACE_CARD_HEIGHT }]}
     >
       <View className="flex-row items-center gap-3">
         <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-sm bg-surface-alt">
@@ -645,7 +625,7 @@ function PlaceCard({
             {group.name}
           </Text>
           <Text variant="meta" numberOfLines={1}>
-            {`${t('places:meals', { count: group.entries.length })} · ${number(group.kcal)} ${t(
+            {`${t('places:meals', { count: group.entries.length })} · ${count(group.kcal)} ${t(
               'common:unit.kcal',
             )}`}
           </Text>

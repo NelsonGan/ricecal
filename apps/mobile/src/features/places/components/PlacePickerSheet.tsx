@@ -1,12 +1,12 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal, ScrollView, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import type MapViewType from 'react-native-maps'
-import type { Region } from 'react-native-maps'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { type EntryLocation, useLocatedEntries } from '@/data'
+import { type EntryLocation, keys, useLocatedEntries } from '@/data'
 import { currentLanguage } from '@/i18n'
 import {
   type Coordinate,
@@ -17,6 +17,7 @@ import {
   PlaceSearchError,
   searchPlaces,
 } from '@/lib/places'
+import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Icon, IconButton, SearchField, Spinner, Tappable, Text } from '@/ui'
 
@@ -24,10 +25,13 @@ import { placeCategoryIcon } from '../lib/placeIcons'
 import {
   distanceMeters,
   formatDistance,
+  HOME_COORDINATE,
+  knownPlaces,
   locationKey,
+  nearFirst,
   placeKey,
   placeOfLocation,
-  recentPlaces,
+  regionAround,
   toEntryLocation,
 } from '../lib/placeLocation'
 import { useCurrentPlace } from '../services/useCurrentPlace'
@@ -64,10 +68,8 @@ const MIN_QUERY = 2
 const MAX_QUERY = 120
 /** A listed place this close to the pin is what the pin is on. */
 const SNAP_METERS = 40
-/** Roughly a few streets: what "around here" means on a phone. */
-const STREET_DELTA = 0.006
-/** Where the map opens with nothing better to go on. */
-const FALLBACK: Coordinate = { latitude: 3.139, longitude: 101.687 }
+/** How many listed places get a pin on the map. */
+const PINS = 12
 
 type Listing =
   | { kind: 'idle' }
@@ -75,12 +77,7 @@ type Listing =
   | { kind: 'done'; places: PlaceResult[] }
   | { kind: 'error'; code: PlaceSearchError['code'] | 'unknown' }
 
-const regionAround = (point: Coordinate, delta = STREET_DELTA): Region => ({
-  latitude: point.latitude,
-  longitude: point.longitude,
-  latitudeDelta: delta,
-  longitudeDelta: delta,
-})
+const errorCode = (error: unknown) => (error instanceof PlaceSearchError ? error.code : 'unknown')
 
 /**
  * Where a meal was eaten, map first (README: Meal locations): the map opens on
@@ -120,12 +117,16 @@ export function PlacePickerSheet({
   const [spot, setSpot] = useState<PlaceResult | null>(null)
   const [nearby, setNearby] = useState<Listing>({ kind: 'idle' })
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<Listing>({ kind: 'idle' })
-  const searchId = useRef(0)
   const settleId = useRef(0)
+
+  // The pin moves when a hand gesture ends, not on every frame of it: the iOS
+  // gesture layer moves the camera each frame and MapKit reports each move.
+  const centerRef = useRef<Coordinate | null>(null)
+  const moving = useRef(false)
 
   const trimmed = query.trim()
   const searching = trimmed.length >= MIN_QUERY
+  const typed = useDebouncedValue(trimmed, SEARCH_DEBOUNCE_MS)
   // Read when a search fires, so moving the map or a fix landing ranks the
   // next search without starting one by itself.
   const nearRef = useRef<Coordinate | null>(null)
@@ -139,7 +140,7 @@ export function PlacePickerSheet({
     if (here.coordinate) return here.coordinate
     const last = located.data?.[0]?.location
     if (last) return last
-    return here.status === 'locating' || here.status === 'idle' ? null : FALLBACK
+    return here.status === 'locating' || here.status === 'idle' ? null : HOME_COORDINATE
   }, [visible, current, here.coordinate, here.status, located.data])
   const [initial, setInitial] = useState<Coordinate | null>(null)
   useEffect(() => {
@@ -150,7 +151,6 @@ export function PlacePickerSheet({
       setSpot(null)
       setNearby({ kind: 'idle' })
       setQuery('')
-      setResults({ kind: 'idle' })
       return
     }
     if (!initial && opening) {
@@ -160,10 +160,12 @@ export function PlacePickerSheet({
     }
   }, [visible, opening, initial, current])
 
-  const recents = useMemo(
-    () => (visible ? recentPlaces(located.data ?? [], { near: center, limit: 3 }) : []),
-    [visible, located.data, center],
+  // One per place once per answer; only the cheap "nearest first" follows the pin.
+  const known = useMemo(
+    () => (visible ? knownPlaces(located.data ?? []) : []),
+    [visible, located.data],
   )
+  const recents = useMemo(() => nearFirst(known, center, 3), [known, center])
 
   // The pin settled: name the spot under it and list what is around it. Both
   // are skipped while a search is showing; the list is the results then.
@@ -180,11 +182,7 @@ export function PlacePickerSheet({
           if (id === settleId.current) setNearby({ kind: 'done', places })
         })
         .catch((error: unknown) => {
-          if (id !== settleId.current) return
-          setNearby({
-            kind: 'error',
-            code: error instanceof PlaceSearchError ? error.code : 'unknown',
-          })
+          if (id === settleId.current) setNearby({ kind: 'error', code: errorCode(error) })
         })
       void describeCoordinate(center, { language }).then((place) => {
         if (id === settleId.current) setSpot(place)
@@ -193,54 +191,48 @@ export function PlacePickerSheet({
     return () => clearTimeout(timer)
   }, [visible, center, searching, language])
 
+  // A query asked once is answered from the phone's cache after that, so
+  // typing it again spends nothing.
+  const search = useQuery({
+    queryKey: keys.placeSearch(typed, language),
+    queryFn: () => searchPlaces({ query: typed, near: nearRef.current, language }),
+    enabled: visible && typed.length >= MIN_QUERY,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  })
+  const results: Listing = !searching
+    ? { kind: 'idle' }
+    : typed !== trimmed || search.isFetching
+      ? { kind: 'loading' }
+      : search.error
+        ? { kind: 'error', code: errorCode(search.error) }
+        : { kind: 'done', places: search.data ?? [] }
+
+  // The results, framed: a search is often for somewhere else.
   useEffect(() => {
-    if (!visible || !searching) {
-      searchId.current += 1
-      setResults({ kind: 'idle' })
-      return undefined
-    }
-    setResults({ kind: 'loading' })
-    const id = ++searchId.current
-    const timer = setTimeout(() => {
-      searchPlaces({ query: trimmed, near: nearRef.current, language })
-        .then((places) => {
-          if (id !== searchId.current) return
-          setResults({ kind: 'done', places })
-          // The results, framed: a search is often for somewhere else.
-          const points = places.slice(0, 8)
-          if (points.length > 0 && mapRef.current) {
-            mapRef.current.fitToCoordinates(points, {
-              edgePadding: { top: 120, right: 48, bottom: 48, left: 48 },
-              animated: true,
-            })
-          }
-        })
-        .catch((error: unknown) => {
-          if (id !== searchId.current) return
-          setResults({
-            kind: 'error',
-            code: error instanceof PlaceSearchError ? error.code : 'unknown',
-          })
-        })
-    }, SEARCH_DEBOUNCE_MS)
-    return () => clearTimeout(timer)
-  }, [visible, searching, trimmed, language])
+    const points = search.data?.slice(0, 8) ?? []
+    if (points.length === 0 || !mapRef.current) return
+    mapRef.current.fitToCoordinates(points, {
+      edgePadding: { top: 120, right: 48, bottom: 48, left: 48 },
+      animated: true,
+    })
+  }, [search.data])
 
   // Nearest first, from wherever the distances are measured: the phone if it
   // is known, else the pin.
   const from = here.coordinate ?? center
-  const sortNear = useCallback(
-    (places: PlaceResult[]) =>
-      from ? [...places].sort((a, b) => distanceMeters(from, a) - distanceMeters(from, b)) : places,
-    [from],
+  const listing = searching ? results : nearby
+  const listed = listing.kind === 'done' ? listing.places : null
+  const list = useMemo(
+    () =>
+      !listed
+        ? []
+        : from
+          ? [...listed].sort((a, b) => distanceMeters(from, a) - distanceMeters(from, b))
+          : listed,
+    [listed, from],
   )
-  const list = searching
-    ? results.kind === 'done'
-      ? sortNear(results.places)
-      : []
-    : nearby.kind === 'done'
-      ? sortNear(nearby.places)
-      : []
+  const listSource: PlaceSource = searching ? 'search' : 'nearby'
 
   // What the pin is on: a chosen place, a listed place right under it, or the
   // spot itself.
@@ -248,17 +240,16 @@ export function PlacePickerSheet({
     if (selected) return selected
     if (center) {
       const under = list.find((place) => distanceMeters(center, place) <= SNAP_METERS)
-      if (under)
-        return { place: under, source: searching ? ('search' as const) : ('nearby' as const) }
+      if (under) return { place: under, source: listSource }
     }
     // The spot is not named while a search is showing, so it would be stale.
     return spot && !searching ? { place: spot, source: 'current' as const } : null
-  }, [selected, center, list, spot, searching])
+  }, [selected, center, list, spot, searching, listSource])
 
   /** A tap on the map, matched to the listed place whose pin is under it (see `MapGestures`). */
   const tapAt = (point: ScreenPoint) => {
-    void markerAt(mapRef.current, point, list.slice(0, 12), { reach: 26 }).then((hit) => {
-      if (hit) jumpTo(hit, searching ? 'search' : 'nearby')
+    void markerAt(mapRef.current, point, list.slice(0, PINS), { reach: 26 }).then((hit) => {
+      if (hit) jumpTo(hit, listSource)
     })
   }
 
@@ -287,14 +278,13 @@ export function PlacePickerSheet({
   }
 
   const listMessage = (() => {
-    const listing = searching ? results : nearby
     if (listing.kind !== 'error') return searching ? t('places:noResults') : null
     if (listing.code === 'limit_reached') return t('places:searchLimit')
     if (listing.code === 'busy' || listing.code === 'rate_limited') return t('places:searchBusy')
     if (listing.code === 'not_available') return t('places:searchUnavailable')
     return t('places:searchError')
   })()
-  const loading = (searching ? results : nearby).kind === 'loading'
+  const loading = listing.kind === 'loading'
 
   const mapHeight = '46%'
 
@@ -320,7 +310,14 @@ export function PlacePickerSheet({
               <MapGestures
                 mapRef={mapRef}
                 size={mapSize}
-                onGestureStart={() => setSelected(null)}
+                onGestureStart={() => {
+                  moving.current = true
+                  setSelected(null)
+                }}
+                onGestureEnd={() => {
+                  moving.current = false
+                  if (centerRef.current) setCenter(centerRef.current)
+                }}
                 onTap={tapAt}
               >
                 <AppMap
@@ -328,19 +325,20 @@ export function PlacePickerSheet({
                   initialRegion={regionAround(initial)}
                   showsUserLocation={locating && here.status === 'ready'}
                   onRegionChangeComplete={(region, details) => {
-                    setCenter({ latitude: region.latitude, longitude: region.longitude })
+                    centerRef.current = { latitude: region.latitude, longitude: region.longitude }
+                    if (!moving.current) setCenter(centerRef.current)
                     // A drag puts the pin somewhere new; a jump the app made keeps
                     // the place it jumped to.
                     if (details?.isGesture) setSelected(null)
                   }}
                 >
-                  {list.slice(0, 12).map((place) => (
+                  {list.slice(0, PINS).map((place) => (
                     <NearbyPin
                       key={placeKey(place)}
                       latitude={place.latitude}
                       longitude={place.longitude}
                       label={place.name}
-                      onPress={() => jumpTo(place, searching ? 'search' : 'nearby')}
+                      onPress={() => jumpTo(place, listSource)}
                     />
                   ))}
                 </AppMap>
@@ -461,7 +459,7 @@ export function PlacePickerSheet({
                   return (
                     <Tappable
                       key={placeKey(place)}
-                      onPress={() => jumpTo(place, searching ? 'search' : 'nearby')}
+                      onPress={() => jumpTo(place, listSource)}
                       accessibilityRole="button"
                       accessibilityState={{ selected: on }}
                       accessibilityLabel={[place.name, distance].filter(Boolean).join(', ')}

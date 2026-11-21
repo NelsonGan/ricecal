@@ -11,7 +11,6 @@ export type PlaceResult = {
   longitude: number
   /** Apple's PoiCategory ("Restaurant"), or null. */
   category: string | null
-  countryCode: string | null
 }
 
 export type Coordinate = {

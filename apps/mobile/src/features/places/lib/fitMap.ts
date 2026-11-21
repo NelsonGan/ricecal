@@ -10,8 +10,6 @@ interface FittableMap {
   ): void
 }
 
-const NO_PADDING: EdgePadding = { top: 0, right: 0, bottom: 0, left: 0 }
-
 /**
  * Frames `points` on `map`: their bounds with `margin` around them, inside the
  * map's own `mapPadding`. Points that all sit on one spot (a single place, or
@@ -24,16 +22,16 @@ export function fitMapToPoints(
   {
     minDelta,
     margin,
-    mapPadding = NO_PADDING,
+    mapPadding,
     animated,
     size,
   }: {
     minDelta: number
     margin: EdgePadding
-    mapPadding?: EdgePadding
+    mapPadding: EdgePadding
     animated: boolean
     /** The map's size in points, which the iOS fit needs. */
-    size?: { width: number; height: number }
+    size: { width: number; height: number }
   },
 ): void {
   const first = points[0]
@@ -55,7 +53,7 @@ export function fitMapToPoints(
     )
     return
   }
-  if (Platform.OS === 'ios' && size) {
+  if (Platform.OS === 'ios') {
     // MapKit on iOS 27 answers `fitToCoordinates` with a view many times too
     // wide (alongside react-native-maps#6052), so the region is worked out
     // here. MapKit already fits a region into the band `mapPadding` leaves
@@ -86,7 +84,7 @@ export function fitMapToPoints(
  * open band rather than the view. Degrees per point are taken as equal both
  * ways, which is close enough at the latitudes anybody eats at for a frame.
  */
-export function paddedRegion(
+function paddedRegion(
   points: readonly { latitude: number; longitude: number }[],
   size: { width: number; height: number },
   padding: EdgePadding,

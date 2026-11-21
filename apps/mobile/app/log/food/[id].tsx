@@ -1005,8 +1005,7 @@ function FoodDetail() {
         // What the Where card shows, once it shows anything: the user's own pick,
         // a removal, or the automatic tag that has already landed. Before that,
         // nothing, and the data layer tags the row when the fix lands.
-        location:
-          draftLocation !== undefined ? draftLocation : autoLocation ? autoLocation : undefined,
+        location: draftLocation !== undefined ? draftLocation : autoLocation || undefined,
       },
       {
         // Only once the meal, and the place with it, is saved.
@@ -1682,12 +1681,7 @@ function FoodDetail() {
         {showLocation && !awaitingEntry ? (
           <LocationCard
             location={shownLocation}
-            resolving={
-              !existing &&
-              composeTagged &&
-              draftLocation === undefined &&
-              autoLocation === undefined
-            }
+            resolving={composeTagged && draftLocation === undefined && autoLocation === undefined}
             onPress={() => setPickingPlace(true)}
           />
         ) : null}

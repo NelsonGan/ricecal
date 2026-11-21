@@ -6,13 +6,14 @@ import { View } from 'react-native'
 import { useProfile, useSession } from '@/data'
 import { announcementHasTheFloor } from '@/features/news/useAnnouncementOffer'
 import { track } from '@/lib/analytics'
+import { floorTaken, holdFloor } from '@/lib/floor'
 import {
   answerLocationsOffer,
   requestLocationPermission,
   setLocationsEnabled,
   useLocationsOfferDue,
 } from '@/lib/places'
-import { ratingPromptBusy } from '@/lib/rating'
+import { ratingAskBooked } from '@/lib/rating'
 import { Button, Icon, Sheet, Text } from '@/ui'
 
 /**
@@ -26,8 +27,8 @@ const DELAY_MS = 2500
  * logged on this phone while Locations is off (README: Meal locations).
  *
  * Never stacked on another sheet: not while a news card has the floor this
- * launch, not while the rating ask is booked or up, and only while Today is
- * on top. A turn it cannot take is not lost; the offer stays due and the next
+ * launch, not while the rating ask is booked or up (and the rating ask waits
+ * while this is up), and only while Today is on top. A turn it cannot take is not lost; the offer stays due and the next
  * focus of Today asks again. It is stored as answered before it is on
  * screen, so a crash or a kill while it is up never brings it back.
  *
@@ -48,13 +49,19 @@ export function LocationsOffer() {
   useEffect(() => {
     if (!userId || !due || !focused || announcing || visible) return
     const timer = setTimeout(() => {
-      if (ratingPromptBusy()) return
+      if (ratingAskBooked() || floorTaken('locations')) return
       answerLocationsOffer(userId)
       track('Locations Offer Shown', {})
       setVisible(true)
     }, DELAY_MS)
     return () => clearTimeout(timer)
   }, [userId, due, focused, announcing, visible])
+
+  // Held while up, so the rating ask lets its turn pass (`lib/floor.ts`).
+  useEffect(() => {
+    holdFloor('locations', visible)
+    return () => holdFloor('locations', false)
+  }, [visible])
 
   const accept = () => {
     if (!userId) return

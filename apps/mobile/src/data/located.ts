@@ -48,6 +48,9 @@ export function useLocatedEntries({ enabled = true }: { enabled?: boolean } = {}
   return useQuery({
     queryKey: keys.located(userId),
     queryFn: () => fetchLocated(userId),
+    // Every write that can move a meal's place invalidates `located`, so an
+    // answer is good until then; it is not persisted, so a launch fetches once.
+    staleTime: Number.POSITIVE_INFINITY,
     enabled,
   })
 }

@@ -8,36 +8,20 @@ export {
   autoTagLocation,
   autoTagWanted,
   type CurrentPlaceFailure,
-  forgetCurrentPlace,
-  type ResolvedPlace,
+  currentCoordinate,
   resolveCurrentPlace,
 } from './currentPlace'
 export {
-  type CurrentCoordinateError,
-  CurrentLocationError,
   describeCoordinate,
-  getCurrentCoordinate,
   getLocationPermission,
-  type LocationPermission,
   type LocationPermissionState,
   openLocationSettings,
-  placeFromGeocodedAddress,
   requestLocationPermission,
 } from './deviceLocation'
-export {
-  appleLanguage,
-  nearbyPlaces,
-  PlaceSearchError,
-  type PlaceSearchErrorCode,
-  reverseGeocodePlace,
-  searchPlaces,
-} from './placeSearch'
+export { nearbyPlaces, PlaceSearchError, searchPlaces } from './placeSearch'
 export {
   answerLocationsOffer,
-  autoTagEnabled,
-  locationsEnabled,
   recordMealForLocationsOffer,
-  resetPlacesStorageForTest,
   setAutoTag,
   setLocationsEnabled,
   useLocationsOfferDue,
