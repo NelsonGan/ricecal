@@ -9,7 +9,6 @@ import { showsDistance, workoutIcon, workoutKindKey } from './workoutKind'
 
 export type SessionItemProps = {
   session: ActivitySession
-  onPress?: () => void
 }
 
 /** What the row says, worked out once for the row and for its spoken label. */
@@ -48,7 +47,7 @@ export function useSessionLabel() {
  * first in the detail line) and differs only where it means something else: the
  * calories are burned, so they read in hibiscus.
  */
-export function SessionItem({ session, onPress }: SessionItemProps) {
+export function SessionItem({ session }: SessionItemProps) {
   const { t } = useTranslation(['activity', 'common'])
   const row = sessionRow(session, t)
 
@@ -65,7 +64,6 @@ export function SessionItem({ session, onPress }: SessionItemProps) {
         unit={row.unit}
         valueTone="hibiscus"
         compact
-        onPress={onPress}
       />
     </ReplayMask>
   )

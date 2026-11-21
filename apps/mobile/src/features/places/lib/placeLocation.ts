@@ -172,7 +172,7 @@ export type MapRegion = {
 export const HOME_COORDINATE: Coordinate = { latitude: 3.139, longitude: 101.6869 }
 
 /** About a street's width across: close enough to tell two stalls apart. */
-export const STREET_DELTA = 0.006
+const STREET_DELTA = 0.006
 
 /** A square region around one point. */
 export function regionAround(point: Coordinate, delta = STREET_DELTA): MapRegion {

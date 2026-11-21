@@ -8,6 +8,7 @@ import RecipeDetailScreen from '../[id]'
 
 const mockPush = jest.fn()
 const mockReplace = jest.fn()
+const mockLeave = jest.fn()
 const mockRemove = jest.fn(() => Promise.resolve())
 const mockFavourite = jest.fn()
 const mockIngredients = [
@@ -59,7 +60,7 @@ jest.mock('@/data', () => ({
   useBlockAuthor: () => ({ mutateAsync: jest.fn() }),
   useDeleteRecipe: () => ({ mutateAsync: mockRemove }),
   useFavouriteRecipe: () => ({ mutate: mockFavourite }),
-  useLogFood: () => ({ mutate: jest.fn(), isPending: false }),
+  useLogFood: () => ({ mutateAsync: jest.fn(() => new Promise(() => {})), isPending: false }),
   useMealPhotoUrl: () => ({ data: undefined, isLoading: false }),
   useRecipe: () => ({ data: { ...RECIPE, ...mockRecipe.current }, isPending: false }),
   useRecipeIngredients: () => ({ data: mockIngredients }),
@@ -90,7 +91,10 @@ jest.mock('@/features/recipes', () => ({
   useTickedIngredients: () => [new Set(), jest.fn()],
 }))
 jest.mock('@/features/shared', () => ({ MealPhoto: () => null }))
-jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))
+jest.mock('@/lib/navigation', () => ({
+  useBack: () => jest.fn(),
+  useDismissTo: () => mockLeave,
+}))
 
 function renderScreen() {
   return render(
@@ -125,7 +129,9 @@ it('asks to delete only once the menu has finished closing', async () => {
 
   await user.press(screen.getByText('Delete'))
   await waitFor(() => expect(mockRemove).toHaveBeenCalledWith({ id: 'recipe-1', photoPath: null }))
-  expect(mockReplace).toHaveBeenCalledWith('/recipes')
+  // Back to the Recipes tab underneath, not a second tab bar replacing this page.
+  expect(mockLeave).toHaveBeenCalled()
+  expect(mockReplace).not.toHaveBeenCalled()
 })
 
 it('opens the editor once the menu has finished closing', async () => {

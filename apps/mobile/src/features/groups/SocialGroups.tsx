@@ -92,8 +92,12 @@ export function SocialGroups({ inView }: { inView: boolean }) {
     const sent = { id: remembered, stamp: groups.dataUpdatedAt, state: 'asking' as const }
     setAsk(sent)
     void refetch().then((result) => {
+      // Answered only by a list that landed. A refetch cancelled by a later
+      // one (an invalidation) resolves without an error and without new data;
+      // read as an answer, a failure of that later fetch forgot the group.
+      const landed = !result.isError && result.dataUpdatedAt !== sent.stamp
       setAsk((current) =>
-        current === sent ? { ...sent, state: result.isError ? 'failed' : 'answered' } : current,
+        current === sent ? { ...sent, state: landed ? 'answered' : 'failed' } : current,
       )
     })
   }, [missing, remembered, asked, groups.data, groups.fetchStatus, groups.dataUpdatedAt, refetch])

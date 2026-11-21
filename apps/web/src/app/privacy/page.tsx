@@ -76,6 +76,7 @@ const SECTIONS: LegalSection[] = [
           "Photographs of meals you choose to scan, and the ingredient breakdown produced from them.",
           "Foods you write, including their ingredients, steps and serving counts. One stays private unless you choose to publish it.",
           "Water, day notes, weigh-ins and the streak worked out from your logging.",
+          "Where a meal was eaten, only if you turn on Locations in the app: the spot’s coordinates, its name and address, and the map service’s identifier for the place. Only you can see it; it is never shared with a group or the feed.",
         ],
       },
       { kind: "h3", text: "Health and activity, only if you connect it" },
@@ -114,7 +115,7 @@ const SECTIONS: LegalSection[] = [
       {
         kind: "ul",
         items: [
-          "Your precise location. RiceCal does not ask for location permission.",
+          "Your location, unless you turn on Locations. Then RiceCal asks for access while the app is in use, and reads where the phone is only to tag a meal you log for today or to centre a map you open. It never reads your location in the background, and session recordings hide places and maps.",
           "Your contacts, your calendar, your microphone recordings or your camera roll at large. The camera is used only for the plate you point it at and the barcode you scan.",
           "Payment card details.",
           "Special category data beyond the health and body figures listed above, which you provide or connect yourself.",
@@ -149,6 +150,10 @@ const SECTIONS: LegalSection[] = [
           [
             "Extend your budget with movement",
             "Steps, workouts and calories burned from Apple Health or Health Connect",
+          ],
+          [
+            "Remember where you ate, if you turn on Locations",
+            "Your phone’s location when you log a meal for today, and the places you search for",
           ],
           [
             "Remind you at the times you eat",
@@ -190,7 +195,7 @@ const SECTIONS: LegalSection[] = [
         kind: "ul",
         items: [
           "Performance of a contract: running your account, storing your diary, and giving you the features you subscribed to.",
-          "Consent: reading Apple Health or Health Connect, sending notifications, and processing the health and body figures you give us, which are special category data. You can withdraw consent at any time in the app’s settings or in your device settings.",
+          "Consent: reading Apple Health or Health Connect, reading your location when Locations is on, sending notifications, and processing the health and body figures you give us, which are special category data. You can withdraw consent at any time in the app’s settings or in your device settings.",
           "Legitimate interests: keeping the app secure and working, understanding which features are used, enforcing fair-use limits on AI requests, and preventing abuse of the publishing feature.",
           "Legal obligation: keeping the records tax and consumer law require of us.",
         ],
@@ -261,7 +266,7 @@ const SECTIONS: LegalSection[] = [
           ],
           [
             "Cloudflare",
-            "Meal photos in private object storage, the food catalogue, and the network in front of both",
+            "Meal photos in private object storage, the food catalogue, place search, and the network in front of them",
           ],
           [
             "OpenRouter and its model providers",
@@ -273,7 +278,7 @@ const SECTIONS: LegalSection[] = [
           ],
           [
             "Apple and Google",
-            "Sign-in, payment, and the app stores themselves",
+            "Sign-in, payment, and the app stores themselves. With Locations on, also maps: Apple Maps finds and names places (asked by our server, with coordinates rounded and no account identifier) and draws the map on iPhone, Google Maps draws it on Android, and the phone’s own map service names the spot it is at",
           ],
           [
             "PostHog",

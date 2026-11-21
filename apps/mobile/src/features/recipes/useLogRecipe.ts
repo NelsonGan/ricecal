@@ -32,8 +32,11 @@ export function useLogRecipe() {
   const removeEntry = useRemoveEntry()
 
   const log = (recipe: Recipe, quantity: number, logDate: string, onLogged?: () => void) => {
-    logFood.mutate(recipeLog(recipe, quantity, logDate), {
-      onSuccess: (row) => {
+    // `mutateAsync`, not `mutate` with callbacks: those fire for the latest
+    // call only, so two cards' plus tapped in a row logged both and confirmed
+    // (and offered Undo for) just the second.
+    logFood.mutateAsync(recipeLog(recipe, quantity, logDate)).then(
+      (row) => {
         toast.show({
           title: t('recipes:card.logged', { name: recipe.name }),
           tone: 'success',
@@ -44,8 +47,8 @@ export function useLogRecipe() {
         })
         onLogged?.()
       },
-      onError: () => toast.show({ title: t('recipes:edit.saveFailed'), tone: 'error' }),
-    })
+      () => toast.show({ title: t('recipes:edit.saveFailed'), tone: 'error' }),
+    )
   }
 
   return { log, pending: logFood.isPending }

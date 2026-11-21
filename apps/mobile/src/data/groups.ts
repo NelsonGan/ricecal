@@ -432,8 +432,8 @@ const staleVoteLine = (message: GroupMessage, entryId: string, value: -1 | 0 | 1
   message.event.food?.entry_id === entryId
 
 /**
- * Messages taken out of a thread here (deleted, reported, hidden, or a like line
- * whose like was taken back), each with the number of the last thread read sent
+ * Messages taken out of a thread here (deleted, reported, hidden, or a like or
+ * dislike line whose vote was taken back), each with the number of the last thread read sent
  * before it went. Reads are numbered as they are sent, a counter so two in one
  * millisecond keep their order. A read sent before a removal may still hold the
  * message, and landing after it would lay it back (a poll, a catch-up or an
@@ -741,7 +741,7 @@ export function useGroupChatPresence(groupId: string, focused: boolean): number 
  * A broadcast names message ids and nothing more, so a new one is drawn by
  * refetching the thread's newest page, where blocks and reports are applied.
  * Nothing is asked for an id already in the thread, nor while the viewer's own
- * send to it (or own like, for an event) is on its way, since that send or like
+ * send to it (or own vote, for an event) is on its way, since that send or vote
  * reads the thread when it lands. A removed one is taken out in place. Each
  * time the channel joins, first or after a drop, the thread is read once more,
  * since anything sent while it was not listening was never going to be heard.

@@ -1,5 +1,5 @@
 import { useKeepAwake } from 'expo-keep-awake'
-import { useLocalSearchParams, useRouter } from 'expo-router'
+import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AccessibilityInfo, View } from 'react-native'
@@ -48,6 +48,7 @@ export default function CookModeScreen() {
   const router = useRouter()
   const params = useLocalSearchParams<{ id: string; servings?: string; date?: string }>()
   const goBack = useBack(params.id ? `/recipe/${params.id}` : '/recipes')
+  const navigation = useNavigation()
   const { logDate, isToday } = useRecipeLogDate(params.date)
 
   const { data: recipe, isPending } = useRecipe(params.id)
@@ -195,7 +196,14 @@ export default function CookModeScreen() {
           isToday={isToday}
           // From the log sheet (it passes its day), back to it, as the recipe
           // page does; otherwise back to the recipe.
-          onLogged={() => (params.date ? router.dismissTo('/log/search') : goBack())}
+          // The recipe pages are one entry on the root stack, so popping that
+          // entry is back to the search with its query and meal intact.
+          // `dismissTo('/log/search')` replaced the search's params with none.
+          onLogged={() => {
+            const recipePages = navigation.getParent()
+            if (params.date && recipePages?.canGoBack()) recipePages.goBack()
+            else goBack()
+          }}
         />
       </Screen>
     )

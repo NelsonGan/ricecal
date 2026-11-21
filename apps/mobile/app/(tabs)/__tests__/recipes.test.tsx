@@ -19,7 +19,7 @@ import RecipesTab from '../recipes'
 
 const mockPush = jest.fn()
 const mockUseRecipes = jest.fn()
-const mockLog = jest.fn()
+const mockLog = jest.fn(() => Promise.resolve({ id: 'entry-1' }))
 const mockRemoveEntry = jest.fn()
 const mockRequirePro = jest.fn()
 
@@ -45,7 +45,7 @@ jest.mock('@/features/logging', () => {
 jest.mock('@/data', () => ({
   snapshotFromRecipe: (recipe: { name: string }) => ({ name: recipe.name }),
   storedImageSource: () => undefined,
-  useLogFood: () => ({ mutate: mockLog, isPending: false }),
+  useLogFood: () => ({ mutateAsync: mockLog, isPending: false }),
   useMealPhotoUrl: () => ({ data: undefined, isLoading: false }),
   useRecipeQuota: () => ({ count: 4, limit: null, atLimit: false, loading: false }),
   useRecipes: (shelf: string, query: string) => mockUseRecipes(shelf, query),
@@ -175,7 +175,6 @@ it('logs one serving from the card into today, not the day the diary is on', asy
   await user.press(screen.getByRole('button', { name: 'Add Kari ayam to today' }))
   expect(mockLog).toHaveBeenCalledWith(
     expect.objectContaining({ quantity: 1, logDate: '2026-11-21', method: 'recipe' }),
-    expect.anything(),
   )
 })
 

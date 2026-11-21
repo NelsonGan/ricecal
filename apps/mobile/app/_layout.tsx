@@ -352,7 +352,7 @@ function RootStack() {
           floating back button. No swipe back: a sideways drag is the map's,
           and with the gesture on, the map took no pan, pinch or tap at all. */}
       <Stack.Screen name="food-map" options={{ gestureEnabled: false }} />
-      {/* A recipe pushes from My foods in Settings or the log search.
+      {/* A recipe pushes from the Recipes tab, the log search or a group chat.
 
           One entry, not two: the group has a layout of its own, because a
           shared recipe is a link and a link is opened cold. See

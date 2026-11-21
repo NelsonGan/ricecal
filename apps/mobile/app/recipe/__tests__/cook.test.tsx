@@ -37,10 +37,11 @@ jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn() }))
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: mockRecipe.current.id ?? 'kari', servings: '2' }),
   useRouter: () => ({ replace: mockReplace }),
+  useNavigation: () => ({ getParent: () => undefined }),
 }))
 jest.mock('@/lib/navigation', () => ({ useBack: () => mockBack }))
 jest.mock('@/data', () => ({
-  useLogFood: () => ({ mutate: jest.fn(), isPending: false }),
+  useLogFood: () => ({ mutateAsync: jest.fn(() => new Promise(() => {})), isPending: false }),
   useRecipe: () => ({ data: { ...mockKari, ...mockRecipe.current }, isPending: false }),
   useRecipeIngredients: () => ({ data: mockIngredients }),
   useRemoveEntry: () => ({ mutate: jest.fn() }),

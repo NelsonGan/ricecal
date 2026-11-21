@@ -17,14 +17,8 @@ import { durationText } from './format'
  * back. Otherwise its length: a burn figure beside a ring that did not move
  * reads as a bug.
  */
-export function WorkoutItem({
-  workout,
-  onPress,
-}: {
-  workout: WorkoutSummary
-  /** Left out when the row is swipeable, which takes the tap itself. */
-  onPress?: () => void
-}) {
+/** Today's row is swipeable, so `SwipeRow` owns its tap and this has none. */
+export function WorkoutItem({ workout }: { workout: WorkoutSummary }) {
   const { t } = useTranslation(['workouts', 'common'])
   const first = workout.exercises[0]
   const reading = useHealthConnection().data?.connected === true
@@ -46,7 +40,6 @@ export function WorkoutItem({
       unit={counted ? t('common:unit.kcal') : t('workouts:history.minutes')}
       valueTone={counted ? 'hibiscus' : 'ink'}
       compact
-      onPress={onPress}
     />
   )
 }
