@@ -20,7 +20,12 @@
 -- replacement waited on a read that held `food_log_details` and was waiting
 -- on `food_logs`. Locking the view first locks what it reads too, so a read
 -- either finishes before this starts or waits for it.
-LOCK TABLE public.food_log_details IN ACCESS EXCLUSIVE MODE;
+--
+-- Inside a DO block because a bare LOCK is an error outside a transaction,
+-- which is how the CLI applies migrations to a local stack. There it locks
+-- nothing and costs nothing; the hosted deploy runs the file in one
+-- transaction, and holds the lock until it commits.
+DO $$ BEGIN LOCK TABLE public.food_log_details IN ACCESS EXCLUSIVE MODE; END $$;
 
 ALTER TABLE public.food_logs
   ADD COLUMN latitude double precision;

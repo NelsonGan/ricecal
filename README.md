@@ -10561,8 +10561,10 @@ then waited for the view. Production died with `deadlock detected`, the
 integration skipped the migration and the functions, and the store builds from
 the same merge shipped reading columns that did not exist. Previews never see it,
 because nothing reads a preview. Start such a migration with
-`LOCK TABLE <the view> IN ACCESS EXCLUSIVE MODE;`, which takes the view and every
-table under it in the order a read does. After a merge that touches the schema,
+`DO $$ BEGIN LOCK TABLE <the view> IN ACCESS EXCLUSIVE MODE; END $$;`, which
+takes the view and every table under it in the order a read does. The `DO` is
+needed: the CLI applies migrations outside a transaction, where a bare `LOCK` is
+an error. After a merge that touches the schema,
 check the **Supabase Preview** check on the `main` commit, not just the PR's.
 
 **`supabase db diff` misses function grants.** Against the full local stack it
