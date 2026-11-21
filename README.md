@@ -3750,14 +3750,15 @@ meal share a tile and swipe sideways inside it.
   `save_shared_recipe_copy`, gated as the recipe page is (`useCopyRecipe`).
   Deleting the recipe deletes the message. Its body is "Name (520 kcal)" for a
   push and an older app.
-- **Joins and likes as quiet lines.** A member joining writes a `joined` row
-  (not the one who made the group), and a like of a fellow member's food a
-  `liked` row in each group the two share (`group_messages.event`, with the
-  entry in `entry_id`; taking the like back or turning it into a dislike
-  deletes it, and a dislike is never told). The app draws each as one centred
-  line with no pill, as a messenger draws its notices: the actor's avatar with
-  a small clay thumbs-up or wave in its corner, then the sentence, cut short
-  with an ellipsis. A like puts the food's picture just before its name,
+- **Joins, likes and dislikes as quiet lines.** A member joining writes a
+  `joined` row (not the one who made the group), and a like or a dislike of a
+  fellow member's food a `liked` or `disliked` row in each group the two share
+  (`group_messages.event`, with the entry in `entry_id`; taking the vote back
+  deletes its line, and changing it swaps the line for the other kind). The
+  app draws each as one centred line with no pill, as a messenger draws its
+  notices: the actor's avatar with a small thumbs-up, thumbs-down or wave in
+  its corner, then the sentence, cut short with an ellipsis. A like or a
+  dislike puts the food's picture just before its name,
   wherever the language places the name, so its food carries the board's
   `photo_path`, `icon_set` and `icon_name` beside its name and owner. The
   drawing sits under the photo, since a member's photo older than the board's
@@ -3766,6 +3767,8 @@ meal share a tile and swipe sideways inside it.
   report or delete. `group_messages` returns them only to an app that passes
   `p_events`, so a released app never sees one, and they are broadcast as
   `event` rather than `message`, which a released app does not listen for.
+  A `disliked` line also needs `p_dislikes`: an app from before dislike lines
+  draws every event that is not a join as a like.
 - **Release 1.0 still reads every message.** `body` stays required and a food
   message's body is its name and calories ("Nasi lemak (640 kcal)"), which is
   also what its push says, so an app that knows nothing of food cards draws a
@@ -3927,9 +3930,9 @@ board does not leave and rejoin. Everything else still polls.
   a catch-up reads, and the whole newest page is read instead. Re-reading the
   50-message page for every message heard was about a quarter of the project's
   egress (measured 2026-10-28: ~1,700 reads a day at ~30 KB each).
-- **The viewer's own like** does not wait for its echo. When the vote lands,
-  the chat on screen runs the same catch-up, and a like taken back or turned
-  into a dislike drops the viewer's line at once; a chat not on screen reads it
+- **The viewer's own like or dislike** does not wait for its echo. When the
+  vote lands, the chat on screen runs the same catch-up, and a vote taken back
+  or changed drops the viewer's old line at once; a chat not on screen reads it
   when it opens. On the hosted project the echo of a like was not acted on
   (2026-11-06: likes made with the chat open, then nothing read until the next
   send), so the line waited for the three-minute poll. While the viewer's own

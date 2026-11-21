@@ -398,7 +398,11 @@ export function ChatScreen({
         }),
         outgoing: item,
       })),
-      ...[...(messages ?? [])].reverse(),
+      // A kind of line this app does not know is left out rather than drawn
+      // as a like, which is how an app from before dislikes misread them.
+      ...[...(messages ?? [])]
+        .reverse()
+        .filter((message) => !message.event || knownEvent(message.event)),
     ]
     const items: ChatItem[] = []
     newestFirst.forEach((message, index) => {
@@ -682,8 +686,9 @@ const EVENT_FOOD_DROP = 3
 
 /**
  * Something that happened rather than something said: a member joining, or
- * liking a fellow member's food. A quiet line in the middle of the thread, as
- * a messenger draws its own notices, with nothing to reply to or react to.
+ * liking or disliking a fellow member's food. A quiet line in the middle of
+ * the thread, as a messenger draws its own notices, with nothing to reply to
+ * or react to.
  *
  * No chip behind it: a filled shape read as one more message. The face says who
  * at a glance and its badge says what; a like shows the food's own picture
@@ -706,19 +711,27 @@ function EventLine({
   const viewer = useUserId()
   const actor = message.mine ? t('you') : message.author.name
   const name = NAME_MARK
-  const food = event.kind === 'liked' ? event.food : null
+  const food = event.kind === 'joined' ? null : event.food
+  const disliked = event.kind === 'disliked'
   const text =
     event.kind === 'joined'
       ? message.mine
         ? t('eventJoinedYou')
         : t('eventJoined', { name })
       : !food
-        ? t('eventLikedGone', { name })
+        ? t(disliked ? 'eventDislikedGone' : 'eventLikedGone', { name })
         : food.owner.id === viewer
-          ? t('eventLikedYours', { name, food: FOOD_MARK })
+          ? t(disliked ? 'eventDislikedYours' : 'eventLikedYours', { name, food: FOOD_MARK })
           : message.mine
-            ? t('eventLikedByYou', { owner: food.owner.name, food: FOOD_MARK })
-            : t('eventLiked', { name, owner: food.owner.name, food: FOOD_MARK })
+            ? t(disliked ? 'eventDislikedByYou' : 'eventLikedByYou', {
+                owner: food.owner.name,
+                food: FOOD_MARK,
+              })
+            : t(disliked ? 'eventDisliked' : 'eventLiked', {
+                name,
+                owner: food.owner.name,
+                food: FOOD_MARK,
+              })
   const label = text
     .split(NAME_MARK)
     .join(actor)
@@ -782,7 +795,9 @@ function EventFace({ person, kind }: { person: GroupPerson; kind: ChatEvent['kin
       <View className="absolute" style={{ right: -EVENT_BADGE / 3, bottom: -EVENT_BADGE / 3 }}>
         <Icon
           set="system"
-          name={kind === 'joined' ? 'wave-cute' : 'thumbs-up-cute'}
+          name={
+            kind === 'joined' ? 'wave-cute' : kind === 'disliked' ? 'thumbs-down' : 'thumbs-up-cute'
+          }
           size={EVENT_BADGE}
         />
       </View>
@@ -799,11 +814,15 @@ const EVENT_FACE_SCALE = {
 }
 
 /**
- * The liked food's photo, or its drawing. The drawing sits under the photo, so
- * it shows while the photo is signed and stays when signing is refused, as it
- * is for a member's meal older than the board's sixty days.
+ * The liked or disliked food's photo, or its drawing. The drawing sits under
+ * the photo, so it shows while the photo is signed and stays when signing is
+ * refused, as it is for a member's meal older than the board's sixty days.
  */
-function EventFood({ food }: { food: NonNullable<Extract<ChatEvent, { kind: 'liked' }>['food']> }) {
+function EventFood({
+  food,
+}: {
+  food: NonNullable<Extract<ChatEvent, { kind: 'liked' | 'disliked' }>['food']>
+}) {
   return (
     <View
       className="items-center justify-center overflow-hidden rounded-full bg-surface-alt"
@@ -965,6 +984,9 @@ const Composer = memo(function Composer({
 type ChatRow = GroupMessage & { outgoing?: Outgoing<SendMeta> }
 /** A message, or the chip that starts a day. */
 type ChatItem = ChatRow | { id: string; day: string }
+
+const EVENT_KINDS: ReadonlySet<string> = new Set<ChatEvent['kind']>(['joined', 'liked', 'disliked'])
+const knownEvent = (event: ChatEvent) => EVENT_KINDS.has(event.kind)
 // A day chip or an event line has no author of a run, so either side of one
 // starts a new run.
 const authorOf = (item: ChatItem | undefined) =>

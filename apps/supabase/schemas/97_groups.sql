@@ -506,7 +506,8 @@ $$;
 -- out under the same rules as the thread (deleted, hidden, blocked, reported),
 -- and so are reactions by anyone blocked either way.
 create or replace function public.group_messages(p_group_id uuid, p_before_at timestamptz default null,
-  p_before_id uuid default null, p_limit integer default 50, p_events boolean default false)
+  p_before_id uuid default null, p_limit integer default 50, p_events boolean default false,
+  p_dislikes boolean default false)
 returns jsonb language plpgsql stable security definer set search_path = '' as $$
 declare v_user uuid := private.group_require_member(p_group_id);
 begin
@@ -535,10 +536,11 @@ begin
           select 1 from public.recipe_reports x where x.recipe_id = m.recipe_id and x.reporter_id = v_user)
         then private.group_recipe(m.recipe_id) end,
       -- Only asked for by an app that draws them (`p_events`), so only ever
-      -- present for one. A like names the food and whose it is, read live, with
-      -- the photo or drawing the board shows for it so the line can show it too.
+      -- present for one. A like or a dislike names the food and whose it is,
+      -- read live, with the photo or drawing the board shows for it so the
+      -- line can show it too.
       'event', case when m.event is not null then jsonb_build_object('kind', m.event,
-        'food', case when m.event = 'liked' then (
+        'food', case when m.event in ('liked', 'disliked') then (
           select jsonb_build_object('entry_id', f.id, 'name', left(coalesce(f.display_label, f.item_name), 160),
             'owner', private.group_person(f.user_id),
             'photo_path', d.photo_path, 'icon_set', d.icon_set, 'icon_name', d.icon_name)
@@ -561,9 +563,12 @@ begin
       select * from public.group_messages m
       where m.group_id = p_group_id and not m.quarantined
         and (m.event is null or (p_events
-          -- A like of the food of someone the viewer blocked, or who blocked
+          -- An app from before dislike lines reads any event that is not a
+          -- join as a like, so it is only sent one when it asks.
+          and (m.event <> 'disliked' or coalesce(p_dislikes, false))
+          -- A vote on the food of someone the viewer blocked, or who blocked
           -- them, is about that person, and is left out as their messages are.
-          and (m.event <> 'liked' or not exists (
+          and (m.event not in ('liked', 'disliked') or not exists (
             select 1 from public.food_logs f
             where f.id = m.entry_id and f.user_id <> v_user and private.social_pair_blocked(f.user_id)))))
         -- Constants on the right, so the index walks straight to the cursor.

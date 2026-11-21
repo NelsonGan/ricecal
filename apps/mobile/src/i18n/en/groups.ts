@@ -125,6 +125,11 @@ export const groups = {
   eventLikedByYou: "You liked {{owner}}'s {{food}}",
   /** A like whose food has since been deleted. */
   eventLikedGone: '{{name}} liked a food',
+  eventDisliked: "{{name}} disliked {{owner}}'s {{food}}",
+  eventDislikedYours: '{{name}} disliked your {{food}}',
+  eventDislikedByYou: "You disliked {{owner}}'s {{food}}",
+  /** A dislike whose food has since been deleted. */
+  eventDislikedGone: '{{name}} disliked a food',
   openProfile: "Open {{name}}'s profile",
   enlargePhoto: 'Enlarge photo',
   shrinkPhoto: 'Shrink photo',

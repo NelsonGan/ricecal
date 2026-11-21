@@ -215,12 +215,12 @@ export type ChatRecipe = {
 
 /**
  * Something that happened rather than something said, drawn as a quiet line:
- * the author joined, or liked a fellow member's food.
+ * the author joined, or liked or disliked a fellow member's food.
  */
 export type ChatEvent =
   | { kind: 'joined'; food?: null }
   | {
-      kind: 'liked'
+      kind: 'liked' | 'disliked'
       /**
        * Null once the food is gone from under it. The picture fields are
        * missing from a server older than the line's photo, so read them as
@@ -418,9 +418,18 @@ export function useGroupBoard(groupId: string, day: string, enabled: boolean, li
   })
 }
 
-/** The viewer's own "liked" line for one food. */
-const ownLikeLine = (message: GroupMessage, entryId: string) =>
-  message.mine && message.event?.kind === 'liked' && message.event.food?.entry_id === entryId
+/** The kind of line a vote writes in the chat, if any. */
+const voteLine = (value: -1 | 0 | 1) => (value === 1 ? 'liked' : value === -1 ? 'disliked' : null)
+
+/**
+ * The viewer's own "liked" or "disliked" line for one food that a new vote of
+ * `value` no longer stands behind.
+ */
+const staleVoteLine = (message: GroupMessage, entryId: string, value: -1 | 0 | 1) =>
+  message.mine &&
+  (message.event?.kind === 'liked' || message.event?.kind === 'disliked') &&
+  message.event.kind !== voteLine(value) &&
+  message.event.food?.entry_id === entryId
 
 /**
  * Messages taken out of a thread here (deleted, reported, hidden, or a like line
@@ -559,7 +568,7 @@ export function useGroupThread(groupId: string, live: boolean) {
       const sentAt = ++threadReads
       const newest = (await rpc(
         'group_messages',
-        { p_group_id: groupId, p_limit: THREAD_PAGE, p_events: true },
+        { p_group_id: groupId, p_limit: THREAD_PAGE, p_events: true, p_dislikes: true },
         signal,
       )) as unknown as GroupMessage[]
       // The thread as it is now, not as it was when the read started: an older
@@ -594,6 +603,7 @@ export function useGroupThread(groupId: string, live: boolean) {
         p_before_id: oldest.id,
         p_limit: THREAD_PAGE,
         p_events: true,
+        p_dislikes: true,
       })) as unknown as GroupMessage[]
       // Only onto the thread it was asked from: a refetch that started the
       // thread again meanwhile has its own oldest message.
@@ -638,6 +648,7 @@ async function rereadMessage(
       p_before_id: after.id,
       p_limit: 1,
       p_events: true,
+      p_dislikes: true,
     })) as unknown as GroupMessage[]
     if (!fresh) return
     patchThread(client, userId, groupId, (messages) =>
@@ -700,10 +711,10 @@ function broadcastIds(payload: Record<string, unknown>): string[] {
 const chatTopic = (groupId: string) => `group-chat:${groupId}`
 
 /**
- * The catch-up of each chat on screen. The viewer's own like runs them when it
- * lands, so its line does not wait on Realtime echoing it back: on the hosted
- * project that echo was not acted on, and the line waited for the thread's
- * three-minute poll.
+ * The catch-up of each chat on screen. The viewer's own like or dislike runs
+ * them when it lands, so its line does not wait on Realtime echoing it back:
+ * on the hosted project that echo was not acted on, and the line waited for
+ * the thread's three-minute poll.
  */
 const openChats = new Set<() => void>()
 
@@ -774,6 +785,7 @@ export function useGroupChatLive(groupId: string): boolean {
             p_group_id: groupId,
             p_limit: CATCH_UP,
             p_events: true,
+            p_dislikes: true,
           })) as unknown as GroupMessage[]
           // No thread yet (its first read failed or is still to come), or a
           // gap the newest few cannot bridge: read the whole page.
@@ -1640,18 +1652,19 @@ export function useGroupAction() {
     onSettled: (data, error, input) => {
       switch (input.action) {
         case 'react':
-          // A like writes a line in each chat the two share, and anything else
-          // takes it away. Taken away here at once; written, it is read by the
-          // chat on screen now, and by any other when it next opens.
-          // A line not held yet is announced as removed to an open chat.
-          if (!error && input.value !== 1) {
+          // A like or a dislike writes a line in each chat the two share, and
+          // changing or taking it back takes that line away. Taken away here at
+          // once; written, it is read by the chat on screen now, and by any
+          // other when it next opens. A line not held yet is announced as
+          // removed to an open chat.
+          if (!error) {
             for (const [, thread] of client.getQueriesData<GroupThread>({
               queryKey: root,
               predicate: named('group_messages'),
             })) {
               remember(
                 (thread?.messages ?? [])
-                  .filter((message) => ownLikeLine(message, input.entryId))
+                  .filter((message) => staleVoteLine(message, input.entryId, input.value))
                   .map((message) => message.id),
               )
             }
@@ -1659,7 +1672,7 @@ export function useGroupAction() {
               { queryKey: root, predicate: named('group_messages') },
               (thread) => {
                 const kept = thread?.messages.filter(
-                  (message) => !ownLikeLine(message, input.entryId),
+                  (message) => !staleVoteLine(message, input.entryId, input.value),
                 )
                 return thread && kept && kept.length < thread.messages.length
                   ? { ...thread, messages: kept }

@@ -3808,6 +3808,7 @@ export type Database = {
         Args: {
           p_before_at?: string
           p_before_id?: string
+          p_dislikes?: boolean
           p_events?: boolean
           p_group_id: string
           p_limit?: number
