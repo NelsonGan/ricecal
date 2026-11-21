@@ -1,17 +1,20 @@
 -- The Recipes tab: what a cook needs on a recipe beyond what goes in it.
 --
--- `recipes` gains prep and cook minutes, meal tags from a fixed set of keys, a
--- source link and the owner's favourite star. All nullable or defaulted, so a
--- build already in a store neither writes nor needs them, and its updates leave
--- them as they were. The client's column grants grow to cover them.
--- `recipe_details` shows the link and the star to their owner only.
+-- `recipes` gains prep and cook minutes and meal tags from a fixed set of keys.
+-- The cook's source link and favourite star go in `recipe_private`, a table
+-- whose read policy is owner-only, because `recipes` is readable by everybody on
+-- an approved community row and a column there cannot be hidden from them.
+-- Everything is nullable or defaulted, so a build already in a store neither
+-- writes nor needs any of it, and its updates leave the new columns alone.
 --
 -- Hand-arranged from `pnpm db:diff`, which dropped and recreated
 -- `recipe_details` and, with it, `get_shared_recipe` (which returns its rows). A
 -- recreated function comes back executable by PUBLIC and without its comment,
 -- because the diff does not carry grants. The view only gains columns at its
 -- end instead, which `create or replace` allows, and the function is replaced
--- in place, so both keep their grants.
+-- in place, so both keep their grants. The client-privilege revoke that
+-- `98_client_table_privileges.sql` applies to every table is restated for the
+-- new one at the foot, since that file ran before this table existed.
 
 -- Migration unit 1: schema_changes
 -- Transaction mode: transactional
@@ -179,6 +182,64 @@ begin
 end;
 $function$;
 
+CREATE TABLE public.recipe_private (
+  recipe_id    uuid                     NOT NULL,
+  owner_id     uuid                     NOT NULL,
+  source_url   text,
+  is_favourite boolean                  DEFAULT false NOT NULL,
+  created_at   timestamp with time zone DEFAULT now() NOT NULL,
+  updated_at   timestamp with time zone DEFAULT now() NOT NULL
+);
+
+ALTER TABLE public.recipe_private
+  ENABLE ROW LEVEL SECURITY;
+
+ALTER TABLE public.recipe_private
+  ADD CONSTRAINT recipe_private_owner_id_fkey FOREIGN KEY (owner_id) REFERENCES auth.users(id) ON DELETE CASCADE;
+
+ALTER TABLE public.recipe_private
+  ADD CONSTRAINT recipe_private_pkey PRIMARY KEY (recipe_id);
+
+ALTER TABLE public.recipe_private
+  ADD CONSTRAINT recipe_private_recipe_id_fkey FOREIGN KEY (recipe_id) REFERENCES public.recipes(id) ON DELETE CASCADE;
+
+ALTER TABLE public.recipe_private
+  ADD CONSTRAINT recipe_private_source_url_check CHECK (char_length(source_url) <= 2000 AND source_url ~* '^https?://[^[:space:]]+$'::text);
+
+GRANT DELETE, INSERT, SELECT, UPDATE ON public.recipe_private TO authenticated;
+
+GRANT ALL ON public.recipe_private TO service_role;
+
+CREATE INDEX recipe_private_owner_idx ON public.recipe_private (owner_id);
+
+CREATE TRIGGER recipe_private_set_updated_at
+  BEFORE UPDATE ON public.recipe_private
+  FOR EACH ROW
+  EXECUTE FUNCTION public.set_updated_at();
+
+CREATE POLICY "recipe_private: delete own" ON public.recipe_private
+  FOR DELETE
+  TO authenticated
+  USING ((owner_id = ( SELECT auth.uid() AS uid)));
+
+CREATE POLICY "recipe_private: read own" ON public.recipe_private
+  FOR SELECT
+  TO authenticated
+  USING ((owner_id = ( SELECT auth.uid() AS uid)));
+
+CREATE POLICY "recipe_private: update own" ON public.recipe_private
+  FOR UPDATE
+  TO authenticated
+  USING ((owner_id = ( SELECT auth.uid() AS uid)))
+  WITH CHECK ((owner_id = ( SELECT auth.uid() AS uid)));
+
+CREATE POLICY "recipe_private: write own recipe" ON public.recipe_private
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (((owner_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1
+   FROM public.recipes r
+  WHERE ((r.id = recipe_private.recipe_id) AND (r.owner_id = ( SELECT auth.uid() AS uid)))))));
+
 ALTER TABLE public.recipes
   ADD COLUMN prep_minutes smallint;
 
@@ -197,22 +258,13 @@ ALTER TABLE public.recipes
 ALTER TABLE public.recipes
   ADD CONSTRAINT recipes_tags_check CHECK (tags <@ ARRAY['breakfast'::text, 'lunch'::text, 'dinner'::text, 'snack'::text, 'dessert'::text, 'drink'::text]);
 
-ALTER TABLE public.recipes
-  ADD COLUMN source_url text;
-
-ALTER TABLE public.recipes
-  ADD CONSTRAINT recipes_source_url_check CHECK (char_length(source_url) <= 2000 AND source_url ~* '^https?://[^[:space:]]+$'::text);
-
-ALTER TABLE public.recipes
-  ADD COLUMN is_favourite boolean DEFAULT false NOT NULL;
-
 REVOKE INSERT (icon_name, icon_set, name, owner_id, photo_path, servings, steps) ON public.recipes FROM authenticated;
 
 REVOKE UPDATE (icon_name, icon_set, name, photo_path, servings, steps) ON public.recipes FROM authenticated;
 
-GRANT INSERT (cook_minutes, icon_name, icon_set, is_favourite, name, owner_id, photo_path, prep_minutes, servings, source_url, steps, tags) ON public.recipes TO authenticated;
+GRANT INSERT (cook_minutes, icon_name, icon_set, name, owner_id, photo_path, prep_minutes, servings, steps, tags) ON public.recipes TO authenticated;
 
-GRANT UPDATE (cook_minutes, icon_name, icon_set, is_favourite, name, photo_path, prep_minutes, servings, source_url, steps, tags) ON public.recipes TO authenticated;
+GRANT UPDATE (cook_minutes, icon_name, icon_set, name, photo_path, prep_minutes, servings, steps, tags) ON public.recipes TO authenticated;
 
 CREATE OR REPLACE VIEW public.recipe_details WITH (security_invoker=on) AS SELECT r.id,
     r.owner_id,
@@ -245,19 +297,17 @@ CREATE OR REPLACE VIEW public.recipe_details WITH (security_invoker=on) AS SELEC
     r.prep_minutes,
     r.cook_minutes,
     r.tags,
-        CASE
-            WHEN (r.owner_id = ( SELECT auth.uid() AS uid)) THEN r.source_url
-            ELSE NULL::text
-        END AS source_url,
-    COALESCE(((r.owner_id = ( SELECT auth.uid() AS uid)) AND r.is_favourite), false) AS is_favourite
-   FROM (public.recipes r
+    p.source_url,
+    COALESCE(p.is_favourite, false) AS is_favourite
+   FROM ((public.recipes r
      LEFT JOIN LATERAL ( SELECT (count(*))::integer AS ingredient_count,
             sum((i.kcal_per_unit * i.amount)) AS kcal,
             sum((i.carbs_g_per_unit * i.amount)) AS carbs_g,
             sum((i.protein_g_per_unit * i.amount)) AS protein_g,
             sum((i.fat_g_per_unit * i.amount)) AS fat_g
            FROM public.recipe_ingredients i
-          WHERE (i.recipe_id = r.id)) t ON (true));
+          WHERE (i.recipe_id = r.id)) t ON (true))
+     LEFT JOIN public.recipe_private p ON ((p.recipe_id = r.id)));
 
 CREATE OR REPLACE FUNCTION public.get_shared_recipe (
   p_share_slug text
@@ -300,8 +350,11 @@ CREATE OR REPLACE FUNCTION public.get_shared_recipe (
     d.prep_minutes,
     d.cook_minutes,
     d.tags,
-    d.source_url,
-    d.is_favourite
+    -- Security definer reads past `recipe_private`'s policy, so the owner-only
+    -- rule is restated here: a link's holder gets neither the cook's source
+    -- nor their star.
+    case when d.is_mine then d.source_url end as source_url,
+    d.is_mine and d.is_favourite as is_favourite
   from public.recipe_details d
   where (select auth.uid()) is not null
     and d.share_slug = p_share_slug
@@ -325,3 +378,6 @@ CREATE OR REPLACE FUNCTION public.get_shared_recipe (
     )
   limit 1;
 $function$;
+
+REVOKE TRUNCATE, REFERENCES, TRIGGER, MAINTAIN ON public.recipe_private
+  FROM public, anon, authenticated;

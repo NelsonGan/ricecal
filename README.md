@@ -521,7 +521,7 @@ auth.users
        ├── food_logs ──────── what was eaten, with its own numbers
        │    └── food_log_ingredients   what a scanned plate was made of
        ├── daily_logs ─────── water in ml, and a day note
-       ├── recipes ────────── home cooking → recipe_ingredients
+       ├── recipes ────────── home cooking → recipe_ingredients, recipe_private
        ├── recipe_reports ─── a community recipe somebody reported
        ├── blocked_authors ── cooks this account never wants to see again
        ├── weight_logs ────── current weight, typed or synced
@@ -2989,21 +2989,42 @@ would put the oyster sauce beside a step about the soy. The full list is one tap
 away in a sheet. The last step asks how much was eaten, in the same sheet as the
 recipe page, rather than logging one serving for somebody who had two.
 
-**What the row gained** (`20261121042151_recipe_manager.sql`), all nullable or
-defaulted, so 1.0.0 neither writes nor needs them and its updates leave them
-alone:
+**What the data gained** (`20261121042151_recipe_manager.sql`), all nullable or
+defaulted, so 1.0.0 neither writes nor needs it and its updates leave it alone:
 
-| column | |
-|---|---|
-| `prep_minutes`, `cook_minutes` | 0 to 2,880 (two days, for an overnight marinade) |
-| `tags` | `text[]` from a fixed set (`breakfast`, `lunch`, `dinner`, `snack`, `dessert`, `drink`), checked in the database. Keys, so the app translates them and nothing free-text reaches the community. Adding one is a new key in the check and in `RECIPE_TAGS`; removing one would orphan rows a released app wrote. |
-| `source_url` | http(s), no whitespace, 2,000 characters. The owner's bookmark: `recipe_details` and `get_shared_recipe` null it for anybody else, and a copy does not carry it, because the reviewer never reads it and a link on a community card is an advert. This is where an imported reel will record where it came from. |
-| `is_favourite` | the owner's star, which `recipe_details` shows to its owner only (false for anybody else), or every community card would wear its cook's heart. A community recipe somebody likes is saved as a copy, which has a star of its own. |
+| where | column | |
+|---|---|---|
+| `recipes` | `prep_minutes`, `cook_minutes` | 0 to 2,880 (two days, for an overnight marinade) |
+| `recipes` | `tags` | `text[]` from a fixed set (`breakfast`, `lunch`, `dinner`, `snack`, `dessert`, `drink`), checked in the database. Keys, so the app translates them and nothing free-text reaches the community. Adding one is a new key in the check and in `RECIPE_TAGS`; removing one would orphan rows a released app wrote. |
+| `recipe_private` | `source_url` | http(s), no whitespace, 2,000 characters. The owner's bookmark, and where an imported reel will record where it came from. |
+| `recipe_private` | `is_favourite` | the owner's star. A community recipe somebody likes is saved as a copy, which has a star of its own. |
 
-None of them is in the review-reset trigger: tags and minutes carry no free
-text, and the link is never shown to anyone else. Copies (`save_recipe_copy`,
-`save_shared_recipe_copy`) carry the times and tags. `tests/44_recipe_manager.test.sql`
-covers the grants, the checks, the owner-only link and the copy.
+**The link and the star are a table of their own, `recipe_private`, and that is
+the privacy.** They began as columns on `recipes` with the view nulling them for
+anybody but the owner, which hid them from the app and not from the API:
+`recipes` is readable by every signed-in account on an approved community row,
+so `select source_url from recipes` handed out every cook's link and star. A
+column cannot be kept out of a select its row is visible to without a column
+grant, and the security-invoker views reading `recipes` would then fail on it.
+`recipe_private`'s read policy is owner-only, so `recipe_details`' left join
+finds nothing for anybody else. `get_shared_recipe` is security definer and
+reads past that policy, so it restates the rule (`case when d.is_mine`). Its
+insert policy also checks the recipe is the caller's, or anybody could attach
+rows to somebody else's recipe. The client upserts only the column it is
+changing, so saving the link leaves the star alone and the other way round, and
+favourite writes run one at a time (`scope` on `useFavouriteRecipe`) so two
+quick taps land in order.
+
+None of this is in the review-reset trigger: tags and minutes carry no free
+text, and the link is never shown to anyone else (the reviewer never reads it,
+and a link on a community card would be an advert). Copies (`save_recipe_copy`,
+`save_shared_recipe_copy`) carry the times and tags and no `recipe_private` row.
+`tests/44_recipe_manager.test.sql` covers the grants, the checks, the owner-only
+link and star through the table, the view and a shared link, and the copy.
+
+The persisted query cache's `SCHEMA_VERSION` went to 6 with this, because a
+recipe rehydrated from 5 has no `tags` and the recipe page reads them as an
+array.
 
 ### Sharing a food by link
 

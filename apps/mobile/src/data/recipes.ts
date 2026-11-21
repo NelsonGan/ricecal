@@ -317,7 +317,6 @@ export function useSaveRecipe() {
         prep_minutes: input.prepMinutes ?? null,
         cook_minutes: input.cookMinutes ?? null,
         tags: input.tags ?? [],
-        source_url: input.sourceUrl?.trim() || null,
       }
 
       const saved = input.id
@@ -355,8 +354,9 @@ export function useSaveRecipe() {
         )
       }
 
-      if (input.ingredients.length > 0) {
-        try {
+      const sourceUrl = input.sourceUrl?.trim() || null
+      try {
+        if (input.ingredients.length > 0) {
           unwrap(
             await supabase
               .from('recipe_ingredients')
@@ -365,14 +365,29 @@ export function useSaveRecipe() {
               )
               .select('id'),
           )
-        } catch (error) {
-          // A new recipe whose ingredients were refused is taken back out. The
-          // form has no id for it, so Save would insert a second recipe beside
-          // an empty one, and on the free tier the empty one takes the slot the
-          // retry needs.
-          if (!input.id) await supabase.from('recipes').delete().eq('id', recipeId)
-          throw error
         }
+        // The link lives in `recipe_private`, which only its owner can read.
+        // Written when there is one, or when an edit may be clearing one; a new
+        // recipe with no link needs no row. Only `source_url` is sent, so the
+        // upsert leaves the star as it was.
+        if (sourceUrl || input.id) {
+          unwrap(
+            await supabase
+              .from('recipe_private')
+              .upsert(
+                { recipe_id: recipeId, owner_id: userId, source_url: sourceUrl },
+                { onConflict: 'recipe_id' },
+              )
+              .select('recipe_id'),
+          )
+        }
+      } catch (error) {
+        // A new recipe whose ingredients or link were refused is taken back
+        // out. The form has no id for it, so Save would insert a second recipe
+        // beside an empty one, and on the free tier the empty one takes the
+        // slot the retry needs.
+        if (!input.id) await supabase.from('recipes').delete().eq('id', recipeId)
+        throw error
       }
 
       // After the row, as everywhere else: an object deleted for a row that
@@ -429,14 +444,21 @@ export function useFavouriteRecipe() {
   const queryClient = useQueryClient()
 
   return useMutation({
+    // One at a time, in the order tapped. Two quick taps sent side by side can
+    // land in either order, and the server would keep whichever arrived last.
+    scope: { id: 'recipe-favourite' },
     mutationFn: async ({ id, favourite }: { id: string; favourite: boolean }) => {
+      // In `recipe_private`, the owner-only table, so nobody else learns which
+      // of a cook's recipes they star. Only `is_favourite` is sent, so the
+      // upsert leaves the source link as it was.
       unwrap(
         await supabase
-          .from('recipes')
-          .update({ is_favourite: favourite })
-          .eq('id', id)
-          .eq('owner_id', userId)
-          .select('id'),
+          .from('recipe_private')
+          .upsert(
+            { recipe_id: id, owner_id: userId, is_favourite: favourite },
+            { onConflict: 'recipe_id' },
+          )
+          .select('recipe_id'),
       )
     },
     onMutate: async ({ id, favourite }) => {

@@ -98,11 +98,11 @@ select
   r.prep_minutes,
   r.cook_minutes,
   r.tags,
-  -- The owner's bookmark and the owner's star, and nobody else's business. A
-  -- reader of a community recipe would otherwise see its cook's heart on the
-  -- card and have no way to take it off. See `recipes.source_url`.
-  case when r.owner_id = (select auth.uid()) then r.source_url end as source_url,
-  coalesce(r.owner_id = (select auth.uid()) and r.is_favourite, false) as is_favourite
+  -- The owner's bookmark and star, from `recipe_private`, whose read policy
+  -- is owner-only: for anybody else the join finds nothing, so a reader of a
+  -- community recipe never sees its cook's link or heart.
+  p.source_url,
+  coalesce(p.is_favourite, false) as is_favourite
   -- `food_id` and `default_serving_id` were here, so a screen could log a pot
   -- through the catalogue without a second round trip for two ids it used once.
   -- There is no mirror to name and no portion row to point at: a pot is logged
@@ -118,7 +118,8 @@ left join lateral (
     sum(i.fat_g_per_unit     * i.amount)  as fat_g
   from public.recipe_ingredients i
   where i.recipe_id = r.id
-) t on true;
+) t on true
+left join public.recipe_private p on p.recipe_id = r.id;
 
 grant select on public.recipe_details to authenticated, service_role;
 
@@ -170,8 +171,11 @@ as $$
     d.prep_minutes,
     d.cook_minutes,
     d.tags,
-    d.source_url,
-    d.is_favourite
+    -- Security definer reads past `recipe_private`'s policy, so the owner-only
+    -- rule is restated here: a link's holder gets neither the cook's source
+    -- nor their star.
+    case when d.is_mine then d.source_url end as source_url,
+    d.is_mine and d.is_favourite as is_favourite
   from public.recipe_details d
   where (select auth.uid()) is not null
     and d.share_slug = p_share_slug

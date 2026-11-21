@@ -50,7 +50,7 @@ export function recipeLog(recipe: Recipe, quantity: number, logDate: string): Lo
  * Minutes as the form keeps them: digits only, empty for "not said", and
  * clamped to what `recipes.prep_minutes` accepts (two days).
  */
-export const MAX_MINUTES = 2880
+const MAX_MINUTES = 2880
 
 export function parseMinutes(text: string): number | null {
   const digits = text.replace(/[^0-9]/g, '')
@@ -81,19 +81,60 @@ export function sourceHost(url: string): string {
 /**
  * The ingredients a step mentions, for the "You need" card in cook mode.
  *
- * A name matches whole ("soy sauce"), or by its first word when that word is
- * long enough to mean something ("chicken" for "Chicken thigh"). Only the first
- * word, because the last is usually the generic half: "sauce" would put the
- * oyster sauce beside a step about the soy. A miss costs nothing, since the full
- * list is one tap away; a wrong match puts the wrong jar in the cook's hand.
+ * Whole words only, and every word of the name: "Rice vinegar" needs both, so
+ * "cook the rice" does not put the vinegar in the cook's hand, and "Corn" does
+ * not match "cornflour". A plural on either side still matches ("potato" in
+ * "the potatoes"). The one shortcut is a name that ends in a cut of meat,
+ * where the meat alone is how a method says it: "Chicken thighs" for "add the
+ * chicken". A miss costs nothing, since the full list is one tap away; a wrong
+ * match puts the wrong jar in the cook's hand, so the rule leans to missing.
  */
 export function ingredientsInStep<T extends { name: string }>(step: string, ingredients: T[]): T[] {
-  const text = step.toLocaleLowerCase()
+  const said = new Set(words(step))
+  const mentioned = (word: string) =>
+    said.has(word) ||
+    said.has(`${word}s`) ||
+    said.has(`${word}es`) ||
+    (word.endsWith('s') && said.has(word.slice(0, -1))) ||
+    (word.endsWith('es') && said.has(word.slice(0, -2)))
+
   return ingredients.filter((item) => {
-    const name = item.name.trim().toLocaleLowerCase()
-    if (!name) return false
-    if (text.includes(name)) return true
-    const first = name.split(/[\s,(]+/)[0] ?? ''
-    return first.length >= 4 && text.includes(first)
+    const name = words(item.name)
+    if (name.length === 0) return false
+    if (name.every(mentioned)) return true
+    const last = name[name.length - 1] ?? ''
+    return name.length > 1 && CUTS.has(last) && mentioned(name[0] ?? '')
   })
 }
+
+/** A name's or a step's words, lower case, without punctuation. */
+function words(text: string): string[] {
+  return text
+    .toLocaleLowerCase()
+    .split(/[\s,.;:!?()"'/-]+/)
+    .filter(Boolean)
+}
+
+/** Parts of an animal, after which a method names only the animal. */
+const CUTS = new Set([
+  'thigh',
+  'thighs',
+  'breast',
+  'breasts',
+  'wing',
+  'wings',
+  'drumstick',
+  'drumsticks',
+  'leg',
+  'legs',
+  'fillet',
+  'fillets',
+  'belly',
+  'mince',
+  'chop',
+  'chops',
+  'ribs',
+  'shoulder',
+  'shank',
+  'loin',
+])

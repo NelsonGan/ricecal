@@ -18,13 +18,9 @@ export {
 } from './basis'
 export {
   ingredientsInStep,
-  MAX_MINUTES,
   normaliseSourceUrl,
   parseMinutes,
-  recipeLog,
-  scaleIngredient,
   sourceHost,
-  totalMinutes,
 } from './cooking'
 export { useCookStep, useTickedIngredients } from './cookSession'
 export { DescribeRecipePanel, type DescribeRecipePanelProps } from './DescribeRecipePanel'
@@ -44,11 +40,9 @@ export {
 } from './RecipeIngredientEditor'
 export { RecipeNutrition, RecipeStats } from './RecipeStats'
 export { RecipeSteps, splitSteps } from './RecipeSteps'
-export { RecipeTile, type RecipeTileProps } from './RecipeTile'
 export { ShareSheet, type ShareSheetProps } from './ShareSheet'
 export { StepsField, type StepsFieldProps } from './StepsField'
 export { recipeLink } from './share'
 export { useCopyRecipe } from './useCopyRecipe'
-export { useDurationText } from './useDurationText'
 export { useIngredientMeasure } from './useIngredientMeasure'
 export { useLogRecipe, useRecipeLogDate } from './useLogRecipe'

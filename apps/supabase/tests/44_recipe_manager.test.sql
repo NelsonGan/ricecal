@@ -1,17 +1,18 @@
 -- ---------------------------------------------------------------------------
--- The Recipes tab's columns: times, meal tags, the source link and the star.
+-- The Recipes tab's data: times and meal tags on `recipes`, and the cook's
+-- source link and favourite star in the owner-only `recipe_private`.
 --
--- What matters is that each column is writable by its owner through the
--- client's grant, refuses what the app would never send, and that the source
--- link stays with its owner: the view nulls it for anybody else, the shared
--- link does too, and a saved copy does not carry it. Run as `authenticated`
--- with a forged claim, for the reason 02_rls gives.
+-- What matters is that the owner can write all of it through the client's
+-- grants, that the checks refuse what the app would never send, and that the
+-- link and the star stay with their owner however they are asked for: the
+-- table itself, the view, a shared link, and a saved copy. Run as
+-- `authenticated` with a forged claim, for the reason 02_rls gives.
 -- ---------------------------------------------------------------------------
 begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(16);
+select plan(18);
 
 \set cook   'c0c0c0c0-0000-4000-8000-000000000001'
 \set reader 'c0c0c0c0-0000-4000-8000-000000000002'
@@ -36,26 +37,30 @@ select set_config('request.jwt.claims',
 set local role authenticated;
 
 select lives_ok(
-  format($$insert into public.recipes
-             (owner_id, name, servings, prep_minutes, cook_minutes, tags, source_url, is_favourite)
-           values (%L, 'rm-fixture-kari', 6, 20, 50, '{lunch,dinner}',
-                   'https://www.instagram.com/reel/abc', true)$$, :'cook'),
-  'the client grant covers times, tags, the source link and the star'
+  format($$insert into public.recipes (owner_id, name, servings, prep_minutes, cook_minutes, tags)
+           values (%L, 'rm-fixture-kari', 6, 20, 50, '{lunch,dinner}')$$, :'cook'),
+  'the client grant covers the times and the meal tags'
 );
 
 select id as recipe_id, share_slug as slug
   from public.recipes where name = 'rm-fixture-kari' \gset
 
+select lives_ok(
+  format($$insert into public.recipe_private (recipe_id, owner_id, source_url, is_favourite)
+           values (%L, %L, 'https://www.instagram.com/reel/abc', true)$$, :'recipe_id', :'cook'),
+  'the owner keeps a source link and a star for their own recipe'
+);
+
 select results_eq(
   format($$select prep_minutes::int, cook_minutes::int, tags, source_url, is_favourite
              from public.recipe_details where id = %L$$, :'recipe_id'),
   $$values (20, 50, '{lunch,dinner}'::text[], 'https://www.instagram.com/reel/abc'::text, true)$$,
-  'the owner reads every new column back through the view'
+  'the owner reads all of it back through the view'
 );
 
 select lives_ok(
-  format($$update public.recipes set is_favourite = false, cook_minutes = 45 where id = %L$$, :'recipe_id'),
-  'the owner can take the star off and change a time'
+  format($$update public.recipe_private set is_favourite = false where recipe_id = %L$$, :'recipe_id'),
+  'the owner can take the star off'
 );
 
 select throws_ok(
@@ -71,18 +76,20 @@ select throws_ok(
 );
 
 select throws_ok(
-  format($$update public.recipes set source_url = 'javascript:alert(1)' where id = %L$$, :'recipe_id'),
+  format($$update public.recipe_private set source_url = 'javascript:alert(1)' where recipe_id = %L$$, :'recipe_id'),
   '23514', null,
   'a source link that is not http(s) is refused'
 );
 
 select throws_ok(
-  format($$update public.recipes set source_url = 'https://a.b/has space' where id = %L$$, :'recipe_id'),
+  format($$update public.recipe_private set source_url = 'https://a.b/has space' where recipe_id = %L$$, :'recipe_id'),
   '23514', null,
   'a source link with whitespace in it is refused'
 );
 
--- Publish it, then approve as the reviewer would, so the reader can see it.
+-- Starred again, so the reader's checks below prove it is hidden. Then publish
+-- and approve as the reviewer would, so the reader can see the recipe.
+update public.recipe_private set is_favourite = true where recipe_id = :'recipe_id';
 select public.set_recipe_public(:'recipe_id'::uuid, true);
 reset role;
 update public.recipes set review_status = 'approved' where id = :'recipe_id';
@@ -96,55 +103,52 @@ set local role authenticated;
 
 select results_eq(
   format($$select prep_minutes::int, cook_minutes::int, tags from public.recipe_details where id = %L$$, :'recipe_id'),
-  $$values (20, 45, '{lunch,dinner}'::text[])$$,
+  $$values (20, 50, '{lunch,dinner}'::text[])$$,
   'a community reader sees the times and the meals'
 );
 
 select is(
-  (select source_url from public.recipe_details where id = :'recipe_id'),
-  null,
-  'the source link is nulled for anybody but its owner'
+  (select count(*)::int from public.recipe_private where recipe_id = :'recipe_id'),
+  0,
+  'the table itself gives a reader nothing of the cook''s link or star'
 );
 
--- Starred again as the cook, below, so this proves the reader's view hides it.
-reset role;
-update public.recipes set is_favourite = true where id = :'recipe_id';
-set local role authenticated;
-
-select is(
-  (select is_favourite from public.recipe_details where id = :'recipe_id'),
-  false,
-  'and so is the cook''s star, which would otherwise draw on the reader''s card'
+select results_eq(
+  format($$select source_url, is_favourite from public.recipe_details where id = %L$$, :'recipe_id'),
+  $$values (null::text, false)$$,
+  'nor does the view'
 );
 
-
-select is(
-  (select source_url from public.get_shared_recipe(:'slug')),
-  null,
-  'a shared link nulls the source link too'
+select results_eq(
+  format($$select source_url, is_favourite, prep_minutes::int from public.get_shared_recipe(%L)$$, :'slug'),
+  $$values (null::text, false, 20)$$,
+  'nor a shared link, which carries the times'
 );
 
-select is(
-  (select prep_minutes::int from public.get_shared_recipe(:'slug')),
-  20,
-  'a shared link carries the times'
+select throws_ok(
+  format($$insert into public.recipe_private (recipe_id, owner_id, source_url)
+           values (%L, %L, 'https://spam.example')$$, :'recipe_id', :'reader'),
+  '42501', null,
+  'a reader cannot attach a row to somebody else''s recipe'
 );
 
-select is(
-  (select is_favourite from public.get_shared_recipe(:'slug')),
-  false,
-  'and not the cook''s star'
+select lives_ok(
+  format($$update public.recipe_private set is_favourite = false where recipe_id = %L$$, :'recipe_id'),
+  'changing somebody else''s star is not an error'
 );
 
 select lives_ok(
   format($$update public.recipes set cook_minutes = 1 where id = %L$$, :'recipe_id'),
-  'writing somebody else''s recipe is not an error'
+  'nor is writing their recipe'
 );
 reset role;
-select is(
-  (select cook_minutes::int from public.recipes where id = :'recipe_id'),
-  45,
-  'but it changes nothing: the update policy is own-only'
+
+select results_eq(
+  format($$select r.cook_minutes::int, p.is_favourite
+             from public.recipes r join public.recipe_private p on p.recipe_id = r.id
+            where r.id = %L$$, :'recipe_id'),
+  $$values (50, true)$$,
+  'but neither changes anything: both policies are own-only'
 );
 
 set local role authenticated;
@@ -152,10 +156,15 @@ select public.save_recipe_copy(:'recipe_id'::uuid) as copy_id \gset
 reset role;
 
 select results_eq(
-  format($$select prep_minutes::int, cook_minutes::int, tags, source_url, is_favourite
-             from public.recipes where id = %L$$, :'copy_id'),
-  $$values (20, 45, '{lunch,dinner}'::text[], null::text, false)$$,
-  'a saved copy keeps the times and meals, and not the link or the star'
+  format($$select prep_minutes::int, cook_minutes::int, tags from public.recipes where id = %L$$, :'copy_id'),
+  $$values (20, 50, '{lunch,dinner}'::text[])$$,
+  'a saved copy keeps the times and meals'
+);
+
+select is(
+  (select count(*)::int from public.recipe_private where recipe_id = :'copy_id'),
+  0,
+  'and not the link or the star'
 );
 
 select * from finish();

@@ -18,7 +18,7 @@ export type LogRecipeSheetProps = {
 }
 
 /** "½", "1½", "2": a serving count the way it is said, not "1.5". */
-export function servingsText(value: number): string {
+function servingsText(value: number): string {
   const whole = Math.floor(value)
   const half = value - whole >= 0.5
   if (!half) return whole.toLocaleString()

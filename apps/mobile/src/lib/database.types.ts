@@ -484,8 +484,14 @@ export type Database = {
           item_icon_set: Database['public']['Enums']['icon_set'] | null
           item_name: string
           item_place: Database['public']['Enums']['food_place'] | null
+          latitude: number | null
+          location_address: string | null
+          location_category: string | null
+          location_id: string | null
+          location_name: string | null
           log_date: string
           logged_at: string
+          longitude: number | null
           note: string | null
           override_carbs_g: number | null
           override_fat_g: number | null
@@ -526,8 +532,14 @@ export type Database = {
           item_icon_set?: Database['public']['Enums']['icon_set'] | null
           item_name: string
           item_place?: Database['public']['Enums']['food_place'] | null
+          latitude?: number | null
+          location_address?: string | null
+          location_category?: string | null
+          location_id?: string | null
+          location_name?: string | null
           log_date?: string
           logged_at?: string
+          longitude?: number | null
           note?: string | null
           override_carbs_g?: number | null
           override_fat_g?: number | null
@@ -568,8 +580,14 @@ export type Database = {
           item_icon_set?: Database['public']['Enums']['icon_set'] | null
           item_name?: string
           item_place?: Database['public']['Enums']['food_place'] | null
+          latitude?: number | null
+          location_address?: string | null
+          location_category?: string | null
+          location_id?: string | null
+          location_name?: string | null
           log_date?: string
           logged_at?: string
+          longitude?: number | null
           note?: string | null
           override_carbs_g?: number | null
           override_fat_g?: number | null
@@ -1672,6 +1690,48 @@ export type Database = {
           },
         ]
       }
+      recipe_private: {
+        Row: {
+          created_at: string
+          is_favourite: boolean
+          owner_id: string
+          recipe_id: string
+          source_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          is_favourite?: boolean
+          owner_id: string
+          recipe_id: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          is_favourite?: boolean
+          owner_id?: string
+          recipe_id?: string
+          source_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'recipe_private_recipe_id_fkey'
+            columns: ['recipe_id']
+            isOneToOne: true
+            referencedRelation: 'recipe_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'recipe_private_recipe_id_fkey'
+            columns: ['recipe_id']
+            isOneToOne: true
+            referencedRelation: 'recipes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       recipe_reports: {
         Row: {
           created_at: string
@@ -1773,7 +1833,6 @@ export type Database = {
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string
-          is_favourite: boolean
           is_public: boolean
           name: string
           owner_id: string | null
@@ -1785,7 +1844,6 @@ export type Database = {
           servings: number
           share_slug: string
           source_recipe_id: string | null
-          source_url: string | null
           steps: string | null
           tags: string[]
           updated_at: string
@@ -1797,7 +1855,6 @@ export type Database = {
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
-          is_favourite?: boolean
           is_public?: boolean
           name: string
           owner_id?: string | null
@@ -1809,7 +1866,6 @@ export type Database = {
           servings?: number
           share_slug: string
           source_recipe_id?: string | null
-          source_url?: string | null
           steps?: string | null
           tags?: string[]
           updated_at?: string
@@ -1821,7 +1877,6 @@ export type Database = {
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
-          is_favourite?: boolean
           is_public?: boolean
           name?: string
           owner_id?: string | null
@@ -1833,7 +1888,6 @@ export type Database = {
           servings?: number
           share_slug?: string
           source_recipe_id?: string | null
-          source_url?: string | null
           steps?: string | null
           tags?: string[]
           updated_at?: string
@@ -2833,8 +2887,14 @@ export type Database = {
           item_brand: string | null
           item_name: string | null
           kcal: number | null
+          latitude: number | null
+          location_address: string | null
+          location_category: string | null
+          location_id: string | null
+          location_name: string | null
           log_date: string | null
           logged_at: string | null
+          longitude: number | null
           note: string | null
           override_carbs_g: number | null
           override_fat_g: number | null

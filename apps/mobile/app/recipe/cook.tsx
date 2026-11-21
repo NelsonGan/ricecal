@@ -52,14 +52,17 @@ export default function CookModeScreen() {
   const { data: recipe, isPending } = useRecipe(params.id)
   const { data: ingredients = [] } = useRecipeIngredients(params.id)
 
-  const [index, setIndex] = useCookStep(params.id ?? '')
+  const [savedIndex, setIndex] = useCookStep(params.id ?? '')
   const [finished, setFinished] = useState(false)
   const [logging, setLogging] = useState(false)
   const [showIngredients, setShowIngredients] = useState(false)
   const [ticked, toggleTick] = useTickedIngredients(params.id ?? '')
 
   const steps = splitSteps(recipe?.steps ?? '')
-  const step = steps[Math.min(index, Math.max(0, steps.length - 1))] ?? ''
+  // Clamped once, here: the remembered step can be past the end of a method
+  // that has been edited shorter since, and every reading below uses this one.
+  const index = Math.min(savedIndex, Math.max(0, steps.length - 1))
+  const step = steps[index] ?? ''
 
   // VoiceOver does not read a live region on iOS, so a new step is announced.
   // Not on arrival, where the header already says where the cook is.

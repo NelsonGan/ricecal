@@ -30,7 +30,6 @@ import {
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
-import { energyShare } from '@/lib/nutrition'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -201,10 +200,6 @@ export default function RecipeDetailScreen() {
   ]
     .filter(Boolean)
     .join(' · ')
-  const perServing = recipe.perServing
-  // Proportional to the calories each macro contributes, which is the only
-  // reading under which three bars of different nutrients are comparable.
-  const _share = energyShare(perServing)
   // Logging is NOT GATED, and on somebody else's recipe either. Logging a pot
   // writes an entry from figures somebody typed, reaches no model and costs
   // nothing, so it is free for the same reason searching the catalogue is. What
@@ -483,6 +478,10 @@ export default function RecipeDetailScreen() {
         recipe={recipe}
         logDate={logDate}
         isToday={isToday}
+        // Opened from the log sheet (which passes its day): logging is what it
+        // came for, so it goes back there, as it always did. From the Recipes
+        // tab it stays, for the cook still reading the recipe.
+        onLogged={date ? () => goBack() : undefined}
       />
 
       <ShareSheet visible={sharing} onClose={() => setSharing(false)} recipe={recipe} />

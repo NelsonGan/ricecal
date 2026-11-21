@@ -79,22 +79,32 @@ describe('normaliseSourceUrl', () => {
 })
 
 describe('ingredientsInStep', () => {
-  const pot = [
-    { name: 'Chicken thigh' },
-    { name: 'Soy sauce' },
-    { name: 'Oyster sauce' },
-    { name: 'Curry powder' },
-  ]
+  const names = (step: string, pot: Array<{ name: string }>) =>
+    ingredientsInStep(step, pot).map((item) => item.name)
 
-  it('finds a whole name, or its first word when that word means something', () => {
-    expect(
-      ingredientsInStep('Add the chicken and the curry powder.', pot).map((i) => i.name),
-    ).toEqual(['Chicken thigh', 'Curry powder'])
+  it('finds a whole name, and the meat alone for a cut of it', () => {
+    const pot = [{ name: 'Chicken thighs' }, { name: 'Curry powder' }, { name: 'Potato' }]
+    expect(names('Add the chicken, the curry powder and the potatoes.', pot)).toEqual([
+      'Chicken thighs',
+      'Curry powder',
+      'Potato',
+    ])
   })
 
-  it('does not match on the generic last word', () => {
-    expect(ingredientsInStep('Splash in the soy sauce.', pot).map((i) => i.name)).toEqual([
-      'Soy sauce',
-    ])
+  it('does not match on one word of a longer name', () => {
+    const pot = [
+      { name: 'Soy sauce' },
+      { name: 'Oyster sauce' },
+      { name: 'Rice vinegar' },
+      { name: 'Ground pork' },
+      { name: 'Ground white pepper' },
+    ]
+    expect(names('Splash in the soy sauce.', pot)).toEqual(['Soy sauce'])
+    expect(names('Cook the rice.', pot)).toEqual([])
+    expect(names('Season with ground white pepper.', pot)).toEqual(['Ground white pepper'])
+  })
+
+  it('matches whole words, not the inside of one', () => {
+    expect(names('Thicken with cornflour.', [{ name: 'Corn' }])).toEqual([])
   })
 })

@@ -165,7 +165,13 @@ export default function RecipesTab() {
       {showAdd ? (
         <AddRecipeCard
           onStart={startNew}
-          free={quota.limit != null ? { used: quota.count, limit: quota.limit } : undefined}
+          // Not while the entitlement is still loading: until it lands every
+          // account looks free, and a Pro user saw "0 of 3 free" flash past.
+          free={
+            !quota.loading && quota.limit != null
+              ? { used: quota.count, limit: quota.limit }
+              : undefined
+          }
         />
       ) : null}
 
