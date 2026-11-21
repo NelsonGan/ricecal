@@ -34,7 +34,7 @@ const here = dirname(fileURLToPath(import.meta.url))
 const APP = join(here, '..', '..')
 const RAW = process.env.EXERCISE_ART_RAW ?? join(homedir(), '.cache', 'ricecal', 'exercise-art')
 const REFERENCE = join(here, 'style-reference.png')
-const CODEX_IMAGE = join(APP, '../../.agents/skills/codex-imagegen/scripts/codex-image.sh')
+const GENERATE_IMAGE = join(APP, '../../.agents/skills/image-generation/scripts/generate-image.sh')
 
 const args = process.argv.slice(2)
 const flag = (name) => args.includes(name)
@@ -91,9 +91,15 @@ Avoid: text, letters, numbers, labels, arrows, motion lines, watermark, backgrou
 function draw(exercise) {
   return new Promise((resolve) => {
     const out = join(RAW, `${exercise.id}.png`)
-    const child = spawn(CODEX_IMAGE, ['-o', out, '-t', '-i', REFERENCE, brief(exercise)], {
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
+    // Pinned to Codex, which drew the whole set: another model draws another
+    // figure, however closely it follows the reference.
+    const child = spawn(
+      GENERATE_IMAGE,
+      ['-b', 'codex', '-o', out, '-t', '-i', REFERENCE, brief(exercise)],
+      {
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    )
     let err = ''
     child.stderr.on('data', (chunk) => {
       err += chunk

@@ -55,6 +55,10 @@ and it has no linter of its own. Stop the server when you are done
 
 ## Looking at it
 
+A new or restyled studio view starts from a generated mockup and is checked
+against it (`ui-mockups`). Store creatives and frames follow README *The App
+Studio* → *Design* first.
+
 Open `http://localhost:3001` with the T3 preview tools, or take a headless
 Chrome screenshot:
 

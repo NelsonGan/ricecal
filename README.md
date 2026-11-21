@@ -114,7 +114,8 @@ Keep both copies in sync when changing a workflow.
 | `maintain-analytics-tracking` | any tracking change, in the app or on the website |
 | `create-pr` | opening a PR, including what its merge ships |
 | `animate-expo` | animation and gestures in the app |
-| `codex-imagegen` | generating raster art, and where each app keeps it |
+| `image-generation` | generating raster art with whichever image model is installed (Codex, Antigravity), and where each app keeps it |
+| `ui-mockups` | a generated mockup before any visible UI change, the build checked against it, and design and user reviews |
 
 Useful commands:
 
@@ -5402,7 +5403,8 @@ uv run scripts/exercise-art/process.py --only <id>
 ```
 
 `generate.mjs` sends each pose brief in `poses.mjs` to Codex image generation
-with `style-reference.png` attached, because a set drawn without one shared
+(the `image-generation` skill's script, pinned to Codex because the set was
+drawn there and a second model drifts the style) with `style-reference.png` attached, because a set drawn without one shared
 reference drifts into five styles by the fortieth image. It writes 1254 px PNGs
 to `~/.cache/ricecal/exercise-art`, outside the app folder because Metro watches
 that folder and reloads on every file that lands in it. `process.py` trims each
@@ -6496,7 +6498,7 @@ fails if it points at an id that does not exist.
 Codex's image allowance, which draws the exercises, is its own daily cap,
 apart from the general usage the Codex app shows; when it runs out the drawing
 fails with `usage_limit_reached` and a `resets_at` in
-`$TMPDIR/codex-image.*/run.jsonl.err`.
+`$TMPDIR/generate-image.codex.*/run.jsonl.err`.
 
 **Imports make big histories.** A five-year Strong export is around 20,000 to
 25,000 sets, a few megabytes in `workout_sets` with its indexes, so a hundred

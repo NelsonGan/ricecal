@@ -44,7 +44,9 @@ markdown-only or comment-only change needs no build.
 ## Seeing a change
 
 There is no browser automation in the repo. Look at every visible change, in
-both colour schemes and at a phone width.
+both colour schemes and at a phone width. A new or restyled page or section
+starts from a generated mockup and is checked against it (`ui-mockups`); the
+comp in *Where the design comes from* still wins where the two disagree.
 
 - **Phone width: the T3 preview tools.** Open `http://localhost:3000`
   (`preview_open` with `target: { kind: "environment-port", port: 3000 }`),
