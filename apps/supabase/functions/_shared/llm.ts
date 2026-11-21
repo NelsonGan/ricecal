@@ -240,6 +240,13 @@ export type ModelRoute = {
   temperature?: number
   /** Added to the system prompt, for a model that has to be told what others do unasked. */
   instruction?: string
+  /**
+   * Sent instead of `{ enabled: false }`, for a model that refuses to run
+   * without reasoning at all (the video model answers 400 to the default).
+   * Reasoning tokens come out of `max_tokens`, so a route with this needs a
+   * ceiling with room for them.
+   */
+  reasoning?: Record<string, unknown>
 }
 
 /**
@@ -745,7 +752,7 @@ export function requestBody(
     // corrections that were fine.
     //
     // Models with no reasoning mode ignore the field.
-    reasoning: { enabled: false },
+    reasoning: route.reasoning ?? { enabled: false },
     // Asks for `usage` in full: the PostHog cost reads `cost` and
     // `cost_details`, and the BYOK breaker reads `is_byok`, which only trips on
     // an explicit false.
@@ -801,6 +808,13 @@ export async function chatJSON(
   span: AiSpan,
   messages: unknown[],
   maxTokens = DEFAULT_MAX_TOKENS,
+  /**
+   * Ask this one route, once, instead of the primary-then-fallback chain. For
+   * a request only some models can read at all (a video), where the fallback
+   * is a different request rather than the same one to another model, so the
+   * caller decides what happens on a failure.
+   */
+  only?: { route: ModelRoute; timeoutMs: number },
 ): Promise<unknown> {
   const key = Deno.env.get('OPENROUTER_API_KEY')
   if (!key) throw new Error('OPENROUTER_API_KEY not set')
@@ -852,7 +866,9 @@ export async function chatJSON(
   const request = async (route: ModelRoute, generation: Generation): Promise<unknown> => {
     const res = await fetch(OPENROUTER_URL, {
       method: 'POST',
-      signal: AbortSignal.timeout(route === PRIMARY_ROUTE ? PRIMARY_TIMEOUT_MS : CALL_TIMEOUT_MS),
+      signal: AbortSignal.timeout(
+        only ? only.timeoutMs : route === PRIMARY_ROUTE ? PRIMARY_TIMEOUT_MS : CALL_TIMEOUT_MS,
+      ),
       headers: {
         Authorization: `Bearer ${key}`,
         'Content-Type': 'application/json',
@@ -907,6 +923,8 @@ export async function chatJSON(
       throw error
     }
   }
+
+  if (only) return attempt(only.route)
 
   if (PRIMARY_ROUTE && !byokBroken) {
     askedPrimary = true

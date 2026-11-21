@@ -1,0 +1,358 @@
+// `{action: 'import'}`: a link to a cooking video becomes a recipe on the
+// caller's shelf. README: "Importing a recipe from a video".
+//
+//   link      parsed and, for a share link, followed to the post it names
+//   cache     `recipe_imports` by platform and post id; a hit skips the rest
+//   fetch     the post's caption, cover and (where it can be had) video file
+//   model     is it a recipe, and if so the recipe (`video-recipe.ts`)
+//   store     the verdict cached for everybody, the cover kept once in R2
+//   make      `import_recipe_for` claims the month's allowance and writes the
+//             recipe in one transaction; the first importer's goes to the
+//             community, pending its review, which runs here
+//
+// Every refusal answers with a `code`, so the app can say what happened in the
+// user's language. A failure to read the post or the video is not cached, so
+// it can be retried; a verdict is, so a dance clip costs one look.
+
+import type { SupabaseClient } from '@supabase/supabase-js'
+import { claimRecipeReview, type Meter } from '../_shared/entitlement.ts'
+import { json } from '../_shared/http.ts'
+import { mockActive, photoBase64 } from '../_shared/llm.ts'
+import { copyObject, deleteObject, newKey, r2Configured, writeObject } from '../_shared/r2.ts'
+import { type RecipeMockSteer, reviewRecipe } from '../_shared/recipe.ts'
+import {
+  isShortLink,
+  parseVideoLink,
+  resolveShortLink,
+  type VideoLink,
+} from '../_shared/video-link.ts'
+import { type FetchedPost, fetchMedia, fetchPost, MAX_VIDEO_BYTES } from '../_shared/video-post.ts'
+import {
+  cachedDraft,
+  importVideoRecipe,
+  type PostMedia,
+  type VideoMockSteer,
+} from '../_shared/video-recipe.ts'
+
+export type ImportRequest = {
+  action: 'import'
+  url?: string
+  /** Mock mode only: a post to use instead of fetching one, and the model's answer. */
+  mock?: VideoMockSteer & RecipeMockSteer & { post?: Partial<FetchedPost> }
+}
+
+type ImportRow = {
+  id: string
+  status: 'recipe' | 'not_recipe'
+  reason: string | null
+  photo_key: string | null
+  platform: string
+  author_handle: string | null
+}
+
+const IMPORT_COLUMNS = 'id, status, reason, photo_key, platform, author_handle'
+
+/** A cover is a picture for a card; past this it is not a cover. */
+const MAX_COVER_BYTES = 5 * 1024 * 1024
+
+type ImportContext = {
+  db: SupabaseClient
+  userId: string
+  meter: Meter
+  /** Whether a review may run, for loading the recipe it reviews. */
+  loadForReview: (
+    db: SupabaseClient,
+    recipeId: string,
+  ) => Promise<{
+    recipe: { name: string | null; servings: number | null; steps: string | null }
+    ingredients: Array<{ name: string | null; amount: number | null; unit: string | null }>
+  } | null>
+}
+
+export async function handleImport(body: ImportRequest, ctx: ImportContext): Promise<Response> {
+  const { db, userId, meter } = ctx
+  const mock = mockActive() ? body.mock : undefined
+  const pasted = typeof body.url === 'string' ? body.url.slice(0, 2000) : ''
+
+  // -- The link.
+  const parsed = parseVideoLink(pasted)
+  if (!parsed) return json({ ok: false, code: 'unsupported_link' }, 400)
+  let link: VideoLink | null
+  try {
+    link = isShortLink(parsed) ? await resolveShortLink(parsed) : parsed
+  } catch (error) {
+    console.warn('[recipes/import] short link failed:', errorText(error))
+    link = null
+  }
+  if (!link) return json({ ok: false, code: 'unreadable', platform: parsed.platform })
+
+  // -- The cache.
+  let row = await findImport(db, link)
+
+  if (!row) {
+    // The month's allowance is claimed when the recipe is made, below, so it
+    // is only spent on a recipe that arrives. Checked here too, so an account
+    // with none left is not made to wait for a model it cannot use.
+    const left = await allowance(db, userId)
+    if (left && left.remaining <= 0) {
+      return json(
+        { ok: false, code: 'import_limit', used: left.used, limit: left.monthly_limit },
+        429,
+      )
+    }
+
+    // A ceiling on model runs that do not end in a recipe: see
+    // `recipe_import_runs`. Refused, nothing was spent and nothing is cached.
+    const { data: allowed, error: runError } = await db.rpc('claim_recipe_import_run', {
+      p_user: userId,
+    })
+    if (runError) console.error('[recipes/import] run claim failed, allowing:', runError.message)
+    else if (allowed === false) return json({ ok: false, code: 'busy' }, 429)
+
+    const fetched = await readPost(link, mock?.post)
+    if (!fetched) return json({ ok: false, code: 'unreadable', platform: link.platform })
+
+    // The video for the video model, the cover for the caption route and for
+    // the card. Fetched together: neither waits on the other.
+    const [video, cover] = await Promise.all([
+      videoFor(fetched),
+      fetched.coverUrl ? fetchMedia(fetched.coverUrl, MAX_COVER_BYTES, 'image/') : null,
+    ])
+    const coverMedia: PostMedia = cover
+      ? { kind: 'image', base64: photoBase64(cover.bytes), type: cover.type }
+      : { kind: 'none' }
+
+    let result: Awaited<ReturnType<typeof importVideoRecipe>>
+    try {
+      result = await importVideoRecipe(fetched, video, coverMedia, mock, meter)
+    } catch (error) {
+      console.error('[recipes/import] model failed:', errorText(error))
+      return json({ ok: false, code: 'failed', platform: link.platform })
+    }
+
+    const id = crypto.randomUUID()
+    let photoKey: string | null = null
+    if (result.recipe.isRecipe && cover && r2Configured()) {
+      try {
+        photoKey = `imports/${id}.jpg`
+        await writeObject(photoKey, cover.bytes, cover.type)
+      } catch (error) {
+        console.warn('[recipes/import] cover not stored:', errorText(error))
+        photoKey = null
+      }
+    }
+
+    const finalLink = fetched.link
+    const { error: insertError } = await db.from('recipe_imports').upsert(
+      {
+        id,
+        platform: finalLink.platform,
+        video_id: finalLink.id,
+        canonical_url: finalLink.canonicalUrl,
+        status: result.recipe.isRecipe ? 'recipe' : 'not_recipe',
+        draft: result.recipe.isRecipe ? cachedDraft(result.recipe) : null,
+        reason: result.recipe.isRecipe ? null : result.recipe.reason.slice(0, 500),
+        author_handle: fetched.author?.slice(0, 80) ?? null,
+        title: fetched.title?.slice(0, 300) ?? null,
+        caption: fetched.caption?.slice(0, 5000) ?? null,
+        analysed_from: result.analysedFrom,
+        photo_key: photoKey,
+        created_by: userId,
+      },
+      // Somebody else imported the same video while this one was reading it.
+      // Theirs stands, and this answer is dropped rather than overwriting it:
+      // two readers of one video must end up with one recipe.
+      { onConflict: 'platform,video_id', ignoreDuplicates: true },
+    )
+    if (insertError) {
+      console.error('[recipes/import] cache write failed:', insertError.message)
+      return json({ ok: false, code: 'failed', platform: link.platform })
+    }
+    row = await findImport(db, finalLink)
+    if (row && row.id !== id && photoKey) await deleteObject(photoKey).catch(() => {})
+    if (!row) return json({ ok: false, code: 'failed', platform: link.platform })
+  }
+
+  if (row.status === 'not_recipe') {
+    return json({ ok: false, code: 'not_recipe', platform: row.platform, reason: row.reason })
+  }
+
+  // -- The recipe.
+  //
+  // Already imported by this account? Hand that one back before copying a
+  // cover that would only be thrown away.
+  const { data: mine } = await db
+    .from('recipes')
+    .select('id')
+    .eq('owner_id', userId)
+    .eq('import_id', row.id)
+    .limit(1)
+    .maybeSingle()
+  if (mine) return done({ recipeId: mine.id, existing: true, community: false, row })
+
+  let photoPath: string | null = null
+  if (row.photo_key && r2Configured()) {
+    try {
+      photoPath = newKey('meal', userId)
+      await copyObject(row.photo_key, photoPath)
+    } catch (error) {
+      console.warn('[recipes/import] cover not copied:', errorText(error))
+      photoPath = null
+    }
+  }
+
+  const { data: made, error: makeError } = await db
+    .rpc('import_recipe_for', { p_user: userId, p_import: row.id, p_photo_path: photoPath })
+    .maybeSingle<{
+      recipe_id: string | null
+      existing: boolean
+      allowed: boolean
+      used: number
+      monthly_limit: number
+      community_recipe_id: string | null
+      community_review: 'pending' | 'approved' | 'rejected' | null
+      is_community: boolean
+    }>()
+
+  if (makeError || !made) {
+    console.error('[recipes/import] import_recipe_for failed:', makeError?.message)
+    if (photoPath) await deleteObject(photoPath).catch(() => {})
+    return json({ ok: false, code: 'failed', platform: row.platform })
+  }
+  if (!made.allowed || !made.recipe_id) {
+    if (photoPath) await deleteObject(photoPath).catch(() => {})
+    return json(
+      { ok: false, code: 'import_limit', used: made.used, limit: made.monthly_limit },
+      429,
+    )
+  }
+  if (made.existing && photoPath) await deleteObject(photoPath).catch(() => {})
+
+  // The community recipe has not been read yet: this import made it, or the
+  // review that should have run when somebody else's did never finished.
+  if (made.community_recipe_id && made.community_review === 'pending') {
+    await review(ctx, made.community_recipe_id, mock)
+  }
+
+  return done({
+    recipeId: made.recipe_id,
+    existing: made.existing,
+    community: made.is_community,
+    row,
+  })
+}
+
+function done(result: { recipeId: string; existing: boolean; community: boolean; row: ImportRow }) {
+  return json({
+    ok: true,
+    recipe_id: result.recipeId,
+    existing: result.existing,
+    community: result.community,
+    platform: result.row.platform,
+    author: result.row.author_handle,
+  })
+}
+
+async function findImport(db: SupabaseClient, link: VideoLink): Promise<ImportRow | null> {
+  const { data, error } = await db
+    .from('recipe_imports')
+    .select(IMPORT_COLUMNS)
+    .eq('platform', link.platform)
+    .eq('video_id', link.id)
+    .maybeSingle<ImportRow>()
+  if (error) console.error('[recipes/import] cache read failed:', error.message)
+  return data ?? null
+}
+
+type Allowance = { used: number; monthly_limit: number; remaining: number }
+
+/** This month's imports, or null when the question could not be answered. */
+async function allowance(db: SupabaseClient, userId: string): Promise<Allowance | null> {
+  const { data, error } = await db
+    .rpc('recipe_import_allowance', { p_user: userId })
+    .maybeSingle<Allowance>()
+  if (error) console.error('[recipes/import] allowance read failed:', error.message)
+  return data ?? null
+}
+
+/** The post, or the mock's stand-in for one. */
+async function readPost(
+  link: VideoLink,
+  mockPost: Partial<FetchedPost> | undefined,
+): Promise<FetchedPost | null> {
+  if (mockPost) {
+    return {
+      link,
+      platform: link.platform,
+      author: mockPost.author ?? null,
+      title: mockPost.title ?? null,
+      caption: mockPost.caption ?? null,
+      transcript: mockPost.transcript ?? null,
+      linkedRecipe: mockPost.linkedRecipe ?? null,
+      coverUrl: mockPost.coverUrl ?? null,
+      videoUrl: mockPost.videoUrl ?? null,
+    }
+  }
+  try {
+    return await fetchPost(link)
+  } catch (error) {
+    console.warn(`[recipes/import] ${link.platform} post not read:`, errorText(error))
+    return null
+  }
+}
+
+/**
+ * The video as the video model takes it: YouTube by its link, which the model
+ * fetches itself, and anything else downloaded and inlined, since a platform's
+ * own video URL is signed for whoever asked for it and nobody else can open it.
+ */
+async function videoFor(post: FetchedPost): Promise<PostMedia> {
+  if (!post.videoUrl) return { kind: 'none' }
+  if (post.link.platform === 'youtube') return { kind: 'video', url: post.link.canonicalUrl }
+  const file = await fetchMedia(post.videoUrl, MAX_VIDEO_BYTES, 'video/', post.videoHeaders)
+  if (!file) return { kind: 'none' }
+  return { kind: 'video', url: `data:${file.type};base64,${photoBase64(file.bytes)}` }
+}
+
+/**
+ * The publishing review, for a recipe this import put on the community shelf.
+ * The same gate a hand-written recipe goes through, and it fails the same way:
+ * anything but a clear verdict leaves the recipe pending, and invisible.
+ */
+async function review(ctx: ImportContext, recipeId: string, mock: RecipeMockSteer | undefined) {
+  const { db, userId, meter } = ctx
+  try {
+    if (!(await claimRecipeReview(db, userId))) return
+    const loaded = await ctx.loadForReview(db, recipeId)
+    if (!loaded) return
+    const verdict = await reviewRecipe(
+      {
+        name: loaded.recipe.name ?? '',
+        servings: loaded.recipe.servings ?? 1,
+        steps: loaded.recipe.steps ?? '',
+        ingredients: loaded.ingredients.map((i) => ({
+          name: i.name ?? '',
+          amount: Number(i.amount ?? 0),
+          unit: i.unit ?? 'g',
+        })),
+      },
+      mock,
+      meter,
+    )
+    const { error } = await db
+      .from('recipes')
+      .update({
+        review_status: verdict.approved ? 'approved' : 'rejected',
+        review_note: verdict.approved ? null : verdict.reason || null,
+      })
+      .eq('id', recipeId)
+      .eq('review_status', 'pending')
+    if (error) console.error('[recipes/import] verdict not saved:', error.message)
+  } catch (error) {
+    console.error('[recipes/import] review failed, left pending:', errorText(error))
+  }
+}
+
+function errorText(error: unknown): string {
+  return error instanceof Error ? error.message.slice(0, 200) : String(error).slice(0, 200)
+}

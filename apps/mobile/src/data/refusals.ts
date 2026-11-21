@@ -1,4 +1,10 @@
-import { FREE_DAILY_SCANS, FREE_GROUPS, FREE_RECIPES, FREE_ROUTINES } from '@ricecal/shared'
+import {
+  FREE_DAILY_SCANS,
+  FREE_GROUPS,
+  FREE_RECIPES,
+  FREE_ROUTINES,
+  FREE_VIDEO_IMPORTS,
+} from '@ricecal/shared'
 import { router } from 'expo-router'
 
 import i18n from '@/i18n'
@@ -210,6 +216,7 @@ export const STREAK_MILESTONE_DAYS = 7
 export function proFeatureTitle(feature: ProFeature): string {
   return i18n.t(`paywall:limit.feature.${feature}`, {
     recipes: FREE_RECIPES,
+    imports: FREE_VIDEO_IMPORTS,
     routines: FREE_ROUTINES,
     groups: FREE_GROUPS,
     days: STREAK_MILESTONE_DAYS,

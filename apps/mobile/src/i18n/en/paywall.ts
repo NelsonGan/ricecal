@@ -160,6 +160,11 @@ export const paywall = {
         free: '',
         pro: '',
       },
+      videoImport: {
+        label: 'Import recipes from videos',
+        free: '{{imports}}/month',
+        pro: 'Unlimited',
+      },
       budget: {
         label: 'A calorie budget that fits you',
         free: '',
@@ -264,6 +269,7 @@ export const paywall = {
       refine: 'Fixing a meal by describing it needs RiceCal Pro.',
       read_recipe: 'Filling a recipe in from a photo needs RiceCal Pro.',
       new_recipe: 'Keeping more than {{recipes}} recipes of your own needs RiceCal Pro.',
+      video_import: 'Importing more than {{imports}} videos a month needs RiceCal Pro.',
       trend_range: 'Looking back further than a week needs RiceCal Pro.',
       new_routine: 'Keeping more than {{routines}} workout routines needs RiceCal Pro.',
       new_group: 'Starting more than {{groups}} groups needs RiceCal Pro.',

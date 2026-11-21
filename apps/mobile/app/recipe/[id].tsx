@@ -195,10 +195,17 @@ export default function RecipeDetailScreen() {
 
   const cooking = cookingFor ?? recipe.servings
   const priced = recipe.ingredientCount > 0
+  // A recipe from a video is the video's creator's, whoever imported it, so
+  // they are the one credited, on your own copy too.
+  const credit = recipe.videoCredit
   const metaLine = [
-    recipe.isMine
-      ? null
-      : t('recipes:fromAuthor', { name: recipe.authorName || t('recipes:someCook') }),
+    credit
+      ? t('recipes:fromAuthor', {
+          name: credit.author || t(`recipes:platform.${credit.platform}`),
+        })
+      : recipe.isMine
+        ? null
+        : t('recipes:fromAuthor', { name: recipe.authorName || t('recipes:someCook') }),
     ...recipe.tags.map((tag) => t(`recipes:tag.${tag}`)),
   ]
     .filter(Boolean)
@@ -447,6 +454,33 @@ export default function RecipeDetailScreen() {
             )}
           </Card>
         )}
+
+        {/* The video it was imported from, for everybody: the server rebuilt
+            the link from the platform and the post id, so unlike the owner's
+            own bookmark below it cannot point anywhere else. */}
+        {credit ? (
+          <Tappable
+            className="flex-row items-center gap-3 rounded-tile border-[3px] border-line bg-surface px-4 py-3"
+            accessibilityRole="link"
+            accessibilityLabel={t('recipes:import.watch', {
+              platform: t(`recipes:platform.${credit.platform}`),
+            })}
+            onPress={() => {
+              Linking.openURL(credit.url).catch(() => {})
+            }}
+          >
+            <Icon set="system" name="video" size={28} />
+            <View className="min-w-0 flex-1">
+              <Text variant="caption">
+                {t('recipes:import.watch', { platform: t(`recipes:platform.${credit.platform}`) })}
+              </Text>
+              <Text variant="label" numberOfLines={1}>
+                {credit.author || t(`recipes:platform.${credit.platform}`)}
+              </Text>
+            </View>
+            <Icon set="ui" name="chevron-right" size={18} />
+          </Tappable>
+        ) : null}
 
         {/* The owner's bookmark to where it came from. Nobody else is sent it;
             see `recipes.source_url`. */}

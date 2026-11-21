@@ -65,6 +65,7 @@ type R2Config = {
   client: AwsClient
   /** `https://<account>.r2.cloudflarestorage.com/<bucket>` — no trailing slash. */
   base: string
+  bucket: string
 }
 
 let cached: R2Config | null = null
@@ -93,6 +94,7 @@ function config(): R2Config | null {
   cached = {
     client: new AwsClient({ accessKeyId, secretAccessKey, service: 's3', region: 'auto' }),
     base: `${endpoint ?? `https://${accountId}.r2.cloudflarestorage.com`}/${bucket}`,
+    bucket,
   }
   return cached
 }
@@ -215,6 +217,41 @@ export async function readObject(key: string): Promise<Uint8Array> {
   const response = await client.fetch(`${base}/${key}`, { method: 'GET' })
   if (!response.ok) throw new Error(`R2 GET ${key} failed: ${response.status}`)
   return new Uint8Array(await response.arrayBuffer())
+}
+
+/**
+ * Writes an object the function itself fetched: the cover of an imported video,
+ * kept once under `imports/` (a prefix no user owns, so `ownsKey` never signs
+ * it for a client). Everything a user uploads goes through `signPut` instead.
+ */
+export async function writeObject(key: string, bytes: Uint8Array, contentType: string) {
+  if (!SAFE_KEY.test(key) || key.includes('..')) throw new Error(`unsafe key ${key}`)
+  const { client, base } = mustR2()
+  const response = await client.fetch(`${base}/${key}`, {
+    method: 'PUT',
+    headers: { 'content-type': contentType },
+    body: bytes as Uint8Array<ArrayBuffer>,
+  })
+  if (!response.ok) throw new Error(`R2 PUT ${key} failed: ${response.status}`)
+}
+
+/**
+ * Copies one object to another key inside the bucket, without the bytes
+ * passing through the function: each importer of a video gets their own copy
+ * of its cover under their own prefix, because a key names one user's object
+ * and a shared one would go dark for everybody when its first owner deleted it.
+ */
+export async function copyObject(from: string, to: string): Promise<void> {
+  for (const key of [from, to]) {
+    if (!SAFE_KEY.test(key) || key.includes('..')) throw new Error(`unsafe key ${key}`)
+  }
+  const { client, base, bucket } = mustR2()
+  const response = await client.fetch(`${base}/${to}`, {
+    method: 'PUT',
+    headers: { 'x-amz-copy-source': `/${bucket}/${from}` },
+  })
+  await response.body?.cancel()
+  if (!response.ok) throw new Error(`R2 COPY ${from} failed: ${response.status}`)
 }
 
 /**

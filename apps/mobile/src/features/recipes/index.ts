@@ -28,6 +28,7 @@ export {
 } from './cooking'
 export { forgetCookSession, useCookStep, useTickedIngredients } from './cookSession'
 export { DescribeRecipePanel, type DescribeRecipePanelProps } from './DescribeRecipePanel'
+export { ImportVideoPanel, type ImportVideoPanelProps } from './ImportVideoPanel'
 export { IngredientChecklist, type IngredientChecklistProps } from './IngredientChecklist'
 export {
   IngredientSheet,
@@ -55,3 +56,4 @@ export { recipeLink } from './share'
 export { useCopyRecipe } from './useCopyRecipe'
 export { useIngredientMeasure } from './useIngredientMeasure'
 export { useLogRecipe, useRecipeLogDate } from './useLogRecipe'
+export { type FoundVideoLink, findVideoLink, VIDEO_PLATFORMS } from './videoLink'

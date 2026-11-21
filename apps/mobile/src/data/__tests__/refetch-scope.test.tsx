@@ -37,7 +37,8 @@ jest.mock('@/lib/supabase', () => ({
   supabase: {
     rpc: (name: string, args: unknown) => mockRpc(name, args),
     from: () => ({
-      select: () => ({ eq: () => mockCount() }),
+      // `.is('import_id', null)`: imported recipes do not count against the cap.
+      select: () => ({ eq: () => ({ is: () => mockCount() }) }),
     }),
   },
 }))

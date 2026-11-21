@@ -12,6 +12,8 @@ import type {
   RecipeRow,
   RecipeUnit,
   Serving,
+  VideoCredit,
+  VideoPlatform,
 } from './types'
 import { fromDbSource, isRecipeTag } from './types'
 
@@ -168,7 +170,32 @@ export function toRecipe(row: RecipeRow): Recipe {
     tags: (row.tags ?? []).filter(isRecipeTag),
     sourceUrl: row.source_url ?? undefined,
     isFavourite: row.is_favourite ?? false,
+    videoCredit: toVideoCredit(row.import_platform, row.import_author, row.import_url),
   }
+}
+
+const VIDEO_PLATFORMS = new Set<VideoPlatform>([
+  'instagram',
+  'tiktok',
+  'youtube',
+  'x',
+  'threads',
+  'facebook',
+  'rednote',
+])
+
+/**
+ * The credit, or nothing. A platform this build has never heard of is dropped
+ * rather than drawn with no name, and a link that is not https is not a link.
+ */
+export function toVideoCredit(
+  platform: string | null | undefined,
+  author: string | null | undefined,
+  url: string | null | undefined,
+): VideoCredit | undefined {
+  if (!platform || !url || !VIDEO_PLATFORMS.has(platform as VideoPlatform)) return undefined
+  if (!url.startsWith('https://')) return undefined
+  return { platform: platform as VideoPlatform, author: author || undefined, url }
 }
 
 /**

@@ -4,6 +4,7 @@ import {
   FREE_PHOTO_RETENTION_DAYS,
   FREE_RECIPES,
   FREE_ROUTINES,
+  FREE_VIDEO_IMPORTS,
 } from '@ricecal/shared'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
@@ -42,6 +43,8 @@ export const PLAN_FEATURES = [
   { key: 'routines', free: 'text', pro: 'text' },
   { key: 'groups', free: 'text', pro: 'text' },
   { key: 'recipeFill', free: 'no', pro: 'yes' },
+  // Beside the photo read: both make a recipe out of something you saw.
+  { key: 'videoImport', free: 'text', pro: 'text' },
   { key: 'budget', free: 'yes', pro: 'yes' },
   { key: 'health', free: 'yes', pro: 'yes' },
   { key: 'reminders', free: 'yes', pro: 'yes' },
@@ -73,6 +76,7 @@ export function PlanTable() {
   const limits = {
     scans: FREE_DAILY_SCANS,
     recipes: FREE_RECIPES,
+    imports: FREE_VIDEO_IMPORTS,
     routines: FREE_ROUTINES,
     groups: FREE_GROUPS,
     days: FREE_PHOTO_RETENTION_DAYS,

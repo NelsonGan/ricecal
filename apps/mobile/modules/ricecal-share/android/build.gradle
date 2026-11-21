@@ -1,0 +1,20 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.ricecalshare'
+version = '1.0.0'
+
+android {
+  namespace 'expo.modules.ricecalshare'
+  defaultConfig {
+    versionCode 1
+    versionName '1.0.0'
+  }
+}
+
+dependencies {
+  // For `ReactActivityHandler`, whose hooks name ReactActivity.
+  implementation 'com.facebook.react:react-android'
+}

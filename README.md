@@ -525,6 +525,7 @@ auth.users
        │    └── food_log_ingredients   what a scanned plate was made of
        ├── daily_logs ─────── water in ml, and a day note
        ├── recipes ────────── home cooking → recipe_ingredients, recipe_private
+       ├── recipe_import_usage  videos imported, one row per local month
        ├── recipe_reports ─── a community recipe somebody reported
        ├── blocked_authors ── cooks this account never wants to see again
        ├── weight_logs ────── current weight, typed or synced
@@ -539,6 +540,7 @@ auth.users
             └── activity_hours ──── steps by local hour, month plus timezone buffer
 
 food_scan_items       what the model claimed, and where it landed
+recipe_imports        one cached reading per cooking video, shared by every importer
 food_scan_misses      the catalogue-widening backlog
 barcode_misses        the same, for packets
 job_runs              what each periodic job did, written by the job itself
@@ -2932,8 +2934,9 @@ the top of the tab busy for a shelf most people keep short, and it went. The
 meal tags and the star stay on the recipe itself.
 
 The plus in the bar (and the empty-shelf action when you have no recipes yet)
-opens a sheet on the Recipes tab with three tiles: Write it, Photo and
-Describe. Write it pushes `/recipe/edit` directly; Photo and Describe open
+opens a sheet on the Recipes tab with four tiles: Write it, Photo, Describe
+and Video (see [Importing a recipe from a video](#importing-a-recipe-from-a-video)).
+Write it pushes `/recipe/edit` directly; Photo and Describe open
 their sheets over the Recipes tab and hand the captured photo or typed
 description to `/recipe/edit` (through `pendingRead.ts`) only once submitted,
 so backing out returns straight to the tab instead of a separate chooser page.
@@ -3003,7 +3006,7 @@ defaulted, so 1.0.0 neither writes nor needs it and its updates leave it alone:
 |---|---|---|
 | `recipes` | `prep_minutes`, `cook_minutes` | 0 to 2,880 (two days, for an overnight marinade) |
 | `recipes` | `tags` | `text[]` from a fixed set (`breakfast`, `lunch`, `dinner`, `snack`, `dessert`, `drink`), checked in the database. Keys, so the app translates them and nothing free-text reaches the community. Adding one is a new key in the check and in `RECIPE_TAGS`; removing one would orphan rows a released app wrote. |
-| `recipe_private` | `source_url` | http(s), no whitespace, 2,000 characters. The owner's bookmark, and where an imported reel will record where it came from. |
+| `recipe_private` | `source_url` | http(s), no whitespace, 2,000 characters. The owner's bookmark. An imported video's link is `recipes.import_url` instead (see [Importing a recipe from a video](#importing-a-recipe-from-a-video)). |
 | `recipe_private` | `is_favourite` | the owner's star. A community recipe somebody likes is saved as a copy, which has a star of its own. |
 
 **The link and the star are a table of their own, `recipe_private`, and that is
@@ -3197,6 +3200,159 @@ sentences when it did not get them, and `RecipeSteps` draws the numerals.
 Numbering in the data would double up against the numerals beside it, survive
 into the field the cook edits by hand, and renumber nothing when a step was taken
 out of the middle.
+
+### Importing a recipe from a video
+
+Most of the recipes people want to keep are in a reel, a TikTok or a Short.
+The fourth tile on the Recipes tab's plus, **Video**, takes a link to one, and
+so does the system share sheet: share the post to RiceCal from Instagram,
+TikTok, YouTube, X, Threads, Facebook or Rednote and the app opens
+`ricecal:///recipe/import?url=…`. The server reads the post, decides whether it
+is a recipe at all, writes the recipe onto the user's shelf and the app opens
+it. ReciMe, Flavorish, Honeydew and Pestle were the reference points: all of
+them read the caption first, the better ones the video's speech, and the
+fallback when the caption says "link in bio" is the dish written out as it is
+normally cooked.
+
+```
+app/recipe/import.tsx       the screen: three timed stages, then the recipe
+functions/recipes/import.ts {action: 'import'}: cache, fetch, model, write
+_shared/video-link.ts       which video a link names (pure, tested)
+_shared/video-post.ts       what each platform says about a post, signed out
+_shared/video-recipe.ts     the prompt, the video route and the caption route
+schemas/25_recipe_imports.sql  the cache, the allowance, import_recipe_for
+```
+
+**One reading per video, and that is the cache.** `recipe_imports` is keyed by
+platform and the platform's own post id, never by the pasted text: `/reel/X/?igsh=…`,
+`/p/X`, `/<user>/reel/X` and a share link that redirects to one of them are one
+video. The model is asked about a video once; everybody after gets the same
+draft with no model call (12 s for the first import of a TikTok on the local
+stack, 0.05 s for the second account). A video that is not a recipe is cached
+too, so pasting the same music video twice costs one look. A failure to read
+the post or a model outage is not cached, so it can be retried.
+
+**What the server can read, signed out.** Each platform answers a server that
+is not logged in differently, and each reader takes only what that platform
+hands a link preview or a browser: no account, no cookies of our own, no
+pretending to be a search engine. Measured from a Malaysian connection; a
+datacenter may be refused where this was not, so watch `unreadable` in
+`Recipe Imported` by platform after release.
+
+| platform | caption | video | how |
+|---|---|---|---|
+| TikTok | yes | yes, and the spoken transcript | the page's rehydration JSON; the file is signed to that page's cookies |
+| YouTube | yes | by link | oEmbed and the watch page; the video model fetches YouTube itself |
+| X | yes | yes | X's own embed endpoint (`cdn.syndication.twimg.com`) |
+| Facebook | yes | yes | the page as a browser asks for it |
+| Instagram, Threads | yes | no | link-preview meta tags (`facebookexternalhit`) |
+| Rednote | rarely | no | blocked for servers outside China; answers `unreadable` |
+
+Instagram and Threads creators mostly keep the recipe out of the caption ("link
+in bio"), so a recipe page the caption DOES link to is read as well: its
+schema.org `Recipe` card is the creator's own recipe, exact. Only public hosts
+are fetched, every redirect is checked again, and link-in-bio, shop and social
+hosts are skipped (`readLinkedRecipe`).
+
+**Two models, and which one depends on what could be fetched.** With a video
+file (or a YouTube link), `google/gemini-3.8-flash` watches it with its sound,
+because most recipe reels say their amounts out loud or put them on screen.
+Claude does not take video, so this route is billed to OpenRouter credits;
+`OPENROUTER_VIDEO_MODEL` changes it and `off` sends everything down the caption
+route without a deploy. Gemini 3.8 refuses `reasoning: { enabled: false }`
+with a 400, so its route sends `{ effort: 'low' }` and a 12,000 token ceiling.
+Any failure there falls back to the ordinary Haiku-then-Qwen chain with the
+caption, the transcript, the linked recipe and the cover image. Both answer one
+prompt (`import-video-recipe`, hosted in PostHog like the rest), which reuses
+the describe path's `RECIPE_SHAPE` and `RECIPE_STEPS` and adds four things: is
+this a recipe at all (a "link in bio" post IS one; a restaurant review, a
+mukbang or a haul is not), the creator is the authority on amounts, ingredient
+names and steps are written in English because one cached draft serves every
+reader, and the caption is fenced as data, because it is a stranger's text and
+the answer is shown to everybody who imports the video.
+
+**One video, one community card.** The first importer's recipe is published,
+pending the same review a hand-written recipe gets (it runs in the import, so
+nobody presses Publish). Everybody after gets a private recipe of their own,
+pointing at it through `source_recipe_id` and counted as one save of it, so a
+viral reel is one card on the shelf rather than one per person who liked it. If
+the first importer unpublishes or deletes theirs, the next import takes its
+place. `import_recipe_for` does the claim, the recipe, its ingredients and the
+community choice in one transaction, with the cache row locked, so two people
+importing one video at once cannot both become its card.
+
+**The credit is public and the server writes it.** `recipes.import_platform`,
+`import_author` and `import_url` say whose video it was ("From @wokwithmei", and
+a Watch on TikTok row at the foot of the recipe), on every copy, for everybody.
+That looks like the source link `recipe_private` keeps private, and the
+difference is who wrote it: `import_url` is rebuilt by the server from the
+platform and the post id, never the pasted text, and none of the three is in a
+client grant. Saved copies carry the credit and not `import_id`.
+
+**The cover is the recipe's photo.** It is fetched once, kept at
+`imports/<id>.jpg` (a prefix `ownsKey` never signs for a client), and copied
+into each importer's own `meals/<user>/` prefix with an S3 copy, so it is theirs
+to delete and a deleted original does not take everybody's picture with it.
+
+**The allowance is its own meter.** Five imports a month on a free account
+(`free_monthly_imports()`, the user's own calendar month), and an unprinted 200
+on Pro, sold as unlimited like the scan ceiling. What counts is a recipe
+arriving on the shelf: a cached recipe counts, a second import of a video the
+account already has does not, and neither does a video that is not a recipe.
+Those uncounted model runs are bounded instead by `recipe_import_runs`, twenty
+uncached videos an hour per account. Imported recipes sit outside the three a
+free account keeps (`recipes_enforce_free_limit` skips a row with an
+`import_id`, and `useRecipeQuota` counts the same way): selling five imports a
+month and refusing the fourth because three recipes are kept would sell
+something the database does not do. A free account at its three can still open
+the plus sheet for that reason; the other three tiles ask on tap.
+
+**The screen** starts the import as soon as it opens, since both ways in were
+the user saying "import this", and shows the link with three stages on a timer
+(watching, writing, working out the calories): honest theatre, as
+`ReadingRecipe` is. The recipe is written on the server, so leaving is safe, and
+a recipe that lands after the user left arrives as a toast with Open. Every
+failure has its own sentence and one way forward (`import.failure.*`). A link
+shared before signing in is held in memory (`pendingImport.ts`) and imported
+once the tabs mount behind a session, rather than lost at the welcome screen.
+
+**Share to RiceCal.** Both platforms do the same small job: take whatever the
+other app shared, find the first `http(s)` link in it, and open the app at
+`ricecal:///recipe/import?url=<link>`. From then on the import is an ordinary
+deep link, so cold starts and warm starts behave as any other link does. The
+link finding is deliberately strict, matching only characters a URL may
+contain: Rednote shares `…http://xhslink.com/a/AbC，复制本条信息…` with Chinese text
+straight after the link. The rules are written twice, in
+`share/ios/SharedLink.swift` and `modules/ricecal-share/.../ShareLink.kt`, and
+the two must agree.
+
+- **iOS** uses a share extension, `RiceCalShare` (`<app>.share`), which
+  `plugins/withShareExtension.js` adds at prebuild from `share/ios/*.swift`, as
+  `withWidgets.js` adds the widgets. It draws nothing: it reads a URL
+  attachment, then shared text, opens the app and closes, or shows a one-line
+  alert when there is no link. A share extension has no API to open its own
+  app, so it walks the responder chain to `UIApplication` and calls
+  `open(_:options:)`; that works on iOS 18 to 27 and is a small App Review risk
+  (the fallback would be an App Group and an "Open RiceCal" prompt). EAS signs
+  it through the `appExtensions` entry in `app.config.ts`, and the first build
+  needs a provisioning profile for the new bundle id. `app.json` lists the
+  plugin before `withWidgets`: config plugins' Xcode changes run in reverse,
+  and the app's dependency on the new target only lands once `withWatch` has
+  created the dependency sections. A new Swift file there needs
+  `expo prebuild --clean`.
+- **Android** lists the main activity for `SEND text/plain`. React Native's
+  `Linking` reads only a VIEW intent's data, so `modules/ricecal-share`
+  rewrites the SEND intent in place into the VIEW intent the deep link would
+  have produced. A cold start is rewritten in
+  `ReactActivityHandler.onDidCreateReactActivityDelegateNotification`, not a
+  lifecycle listener's `onCreate`, which Expo calls only after the activity
+  delegate (in a dev client, the dev launcher's) has acted on the intent. A
+  share while the app is running is rewritten in `onNewIntent`. Text without a
+  link is left alone.
+
+Released builds never hit any of this: the action, the tables and the view's
+new columns are additions, `get_shared_recipe` gains columns at its end, and a
+1.3.0 app selecting `*` from `recipe_details` ignores them.
 
 ---
 
@@ -6696,7 +6852,8 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | a meal typed in words | no | yes |
 | a meal corrected in words | no | yes |
 | a recipe read out of a photograph | no | yes |
-| recipes kept | 3 | unlimited |
+| a recipe imported from a cooking video | 5 a month | 200 a month, sold as unlimited |
+| recipes kept (imported ones do not count) | 3 | unlimited |
 | workout routines kept | 3 | unlimited |
 | groups led at once (joining is never limited) | 2 | unlimited |
 | group icons | 7 drawings | 34 drawings, or an uploaded picture |
@@ -6707,10 +6864,10 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | meal photographs kept | 30 days, or 60 past a lapsed subscription, with a warning a few days before | for good |
 | budget, health sync, reminders, the whole catalogue | yes | yes |
 
-Five of those numbers live in `packages/shared` for the copy to interpolate,
-and all five are enforced in Postgres: `free_daily_scans()`,
-`free_recipe_limit()`, `free_routine_limit()`, `free_group_limit()`,
-`free_photo_retention_days()`.
+Six of those numbers live in `packages/shared` for the copy to interpolate,
+and all six are enforced in Postgres: `free_daily_scans()`,
+`free_recipe_limit()`, `free_monthly_imports()`, `free_routine_limit()`,
+`free_group_limit()`, `free_photo_retention_days()`.
 A fifth,
 `lapsed_photo_grace_days()`, is Postgres-only, because the grace period is not
 advertised and a promise about it would be one more thing that cannot be
@@ -7591,7 +7748,8 @@ events, 815 weekly users, 338 installs) ×4.3.
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
 | Meal locations (`Locations Toggled`, `Meal Location Set`, `Food Map Opened`, `Locations Offer Shown`) | 4,000 | New, so no history: the offer once per account (~1,500), a toggle after it, a map visit or two a week by those who turn Locations on, and hand-picked places. The automatic tag adds no event (`Meal Logged`'s `located`) |
-| **Total** | **~302,500 (30%)** | Room for three times today's audience |
+| Video imports (`Recipe Imported`) | 3,000 | New, so no history: one event per import attempt. Free accounts are capped at five recipes a month and failures are a fraction of that; assumes a few hundred importers a month, Pro ones importing a few times a week |
+| **Total** | **~305,500 (31%)** | Room for three times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -7616,10 +7774,10 @@ eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom events | 71 | All 71 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
+| Native app custom events | 72 | All 72 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
 | Website decisions | 6 | Same PostHog project (page views as `$pageview`); five namespaced GA4 events plus manually managed `page_view` in the shared property |
 | Native screen views | 0 | No `$screen` or `screen_view` emitter; Firebase automatic screen reporting is disabled. Session replay shows navigation |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 71 custom app definitions |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 72 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
 | Per-install engagement events | 2 | `First App Open` once per install and `Daily App Open` once per local day; every other event is repeatable product use |
 
@@ -7671,6 +7829,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` | Recipe save succeeds; each new/edit save, with ingredient/serving counts only. |
 | Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` | Photo/text drafting reaches its outcome; each attempt, including refusals, empty and failure. It does not prove a recipe was saved. |
 | Recipe Published | ricecal_recipe_published | outcome: 'approved' &#124; 'rejected' &#124; 'pending' | `src/data/recipes.ts` | A public save or publish operation returns moderation status; each result. Unpublishing emits nothing. |
+| Recipe Imported | ricecal_recipe_imported | platform: string; outcome: ImportOutcome | `src/data/recipes.ts` | An import of a cooking video answers; each attempt, once, including refusals and failures. `imported` and `existing` mean a recipe is on the user's shelf (written by the server); the link itself is never sent. |
 | Recipe Copied | ricecal_recipe_copied | none | `src/data/recipes.ts` | Copying a community recipe succeeds; each successful copy. |
 | Recipe Reported | ricecal_recipe_reported | reason: ReportReason | `src/data/moderation.ts` | Moderation report write succeeds; each successful report, with its controlled reason only. |
 | Author Blocked | ricecal_author_blocked | none | `src/data/moderation.ts` | Blocking an author succeeds; each success, without the author identity. |
@@ -7718,7 +7877,7 @@ that instant.
 
 | Contract | PostHog | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 71 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 72 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -7745,9 +7904,10 @@ user text. Extend the source type and these tables together when its domain chan
 | `method` / `LogMethod` | `camera`, `describe`, `search`, `barcode`, `recipe`, `quick_add`, `history` | `events.ts`; compare logging actions, not individual food components |
 | `method` / `SignInMethod` | `apple`, `google`, `email`, `password` | `email` means code/link. Failure coverage currently covers Apple/Google only |
 | `screen` / `PaywallScreen` | `hard`, `intro` | Paywall surfaces below; no generic screen-view event. `reminder` and `ended` appear only in data from app versions released before those two screens were deleted; no build ever navigated to them |
-| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `new_routine`, `new_group`, `group_icon`, `photo_retention`, `trend_range`, `workout_range`, `review`, `nudge_streak`, `nudge_goal` | Refused capability or milestone offer; trial expiration is a paywall screen value, not a feature. `nudge` (the two-day standing offer) appears only in data from app versions before the milestone offers; `suggest` only from versions released before "what to eat next" was removed |
+| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `video_import`, `new_routine`, `new_group`, `group_icon`, `photo_retention`, `trend_range`, `workout_range`, `review`, `nudge_streak`, `nudge_goal` | Refused capability or milestone offer; trial expiration is a paywall screen value, not a feature. `nudge` (the two-day standing offer) appears only in data from app versions before the milestone offers; `suggest` only from versions released before "what to eat next" was removed |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
+| `outcome` / `ImportOutcome` | `imported`, `existing`, `limit_reached`, `unsupported_link`, `unreadable`, `not_recipe`, `failed`, `busy`, `offline` | `data/recipes.ts` (`Recipe Imported`); `imported` and `existing` mean the server wrote a recipe to the shelf, the rest are its refusal codes, and `offline` is a request with no answer |
 | `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder category only |
 | `plan_direction` | `lose`, `gain`, `maintain` | Locally derived; a missing target or absolute target/current weight difference below 0.5 kg means maintain. Body values never leave the app through analytics |
 | `activity_level` | `sedentary`, `light`, `onFeet`, `veryActive` | Client vocabulary; normalized from database spellings |
@@ -7757,6 +7917,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Camera `with_note` | `true` when words were added after the shutter; `false` for Skip, an empty note, the setting switched off, the packet-label handoff, or a device with no camera (no photo, so no note is sent) | `data/snap.ts`; camera `Meal Logged` only, absent on every other method. The note's text is diary content and is never sent |
 | Entry `changed` | Any supplied patch fields among `when`, `quantity`, `plate`, `serving`, `name`, `note`, `icon`, `photo`, `overrides` | `data/entries.ts`; field names only, never edited values |
 | Share `platform` | `instagram`, `tiktok`, `xiaohongshu`, `facebook`, `threads`, `x` | `features/settings/social.ts`; requested external shortcut, not verified sharing |
+| Import `platform` | `instagram`, `tiktok`, `youtube`, `x`, `threads`, `facebook`, `rednote`, or `unknown` | `data/recipes.ts` (`Recipe Imported`); the platform the server read the link as, never the link or the post |
 | Entry deletion `source` | Calling source string, or `unknown` when absent | `data/entries.ts`; not an unrestricted note or an automatic screen name |
 | Health `provider` | Production providers `apple_health`, `health_connect`; database also declares `demo` for demo data | `lib/health/index.ts`, `database.types.ts`; count connection decisions separately from imported readings |
 | `widget` / `WidgetKind` | `kcal`, `water`, `weight`, `day`, `quick_log`, `today` | Native widget module; installed count measures kinds, not the number of widget instances |
@@ -8154,6 +8315,7 @@ without a deploy.
 | `review-recipe` | `review_recipe` | `REVIEW_RECIPE_PROMPT`, `_shared/recipe.ts` |
 | `suggest-meals` | `suggest_meals` | `SUGGEST_MEAL_PROMPT`, `_shared/suggest.ts` |
 | `moderate-submission` | `moderate_submission` | `REVIEW_PROMPT`, `social/review.ts` |
+| `import-video-recipe` | `import_video_recipe` | `IMPORT_VIDEO_RECIPE_PROMPT`, `_shared/video-recipe.ts` |
 
 - `_shared/prompts.ts` fetches each prompt with `POSTHOG_PROMPTS_API_KEY`
   ([Function secrets](#function-secrets)) and caches it in the isolate for 30
@@ -8308,7 +8470,7 @@ includes the optimistic camera/describe insert; it is not a persisted-meal total
 Investigate a new name, a sharp volume change, unexpected free-text properties,
 missing identity, or purchase events from a second producer.
 
-Automated checks: the inventory test (`inventory.test.ts`) checks all 71 names,
+Automated checks: the inventory test (`inventory.test.ts`) checks all 72 names,
 exact GA4 mappings, typed payloads, source-file existence and a nonempty
 trigger column, and forbids app-side settled revenue fields; `engagement.test.ts`
 covers install detection and the once-a-day claim; `posthog.test.ts` covers the

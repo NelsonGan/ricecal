@@ -65,6 +65,24 @@ create table public.recipes (
 
   -- Where the cook found it and their star are NOT here: see `recipe_private`.
 
+  -- Who made the video a recipe was imported from, shown to everybody who can
+  -- see the recipe ("From @wokwithmei on Instagram"). Written by the server
+  -- alone, out of the platform's own answer, and absent from both client
+  -- grants: a credit the client could write would be a way to put any name and
+  -- any link on a community card. `import_url` is the link the server rebuilt
+  -- from the platform and the post id, never the text somebody pasted, which is
+  -- why it can be shown when `recipe_private.source_url` cannot. Copies carry
+  -- all three, because the credit belongs to the dish rather than to whoever
+  -- saved it. `import_id`, the cache row it came from, is added in
+  -- `25_recipe_imports.sql`, which has to come after this table.
+  import_platform text check (
+    import_platform in ('instagram', 'tiktok', 'youtube', 'x', 'threads', 'facebook', 'rednote')
+  ),
+  import_author   text check (char_length(import_author) <= 80),
+  import_url      text check (
+    char_length(import_url) <= 500 and import_url ~* '^https://[^[:space:]]+$'
+  ),
+
   -- Publishing.
   --
   -- Two columns rather than one, because they are two different facts: the owner
@@ -306,10 +324,20 @@ begin
     return new;
   end if;
 
+  -- A recipe imported from a video is metered by the import allowance
+  -- instead (`claim_recipe_import`, five a month), and neither counts against
+  -- the other: a free account told it can import five videos a month and then
+  -- refused the fourth because it keeps three recipes would have been sold
+  -- something the database does not do. Only the server can set `import_id`.
+  if new.import_id is not null then
+    return new;
+  end if;
+
   if (
     select pg_catalog.count(*)
       from public.recipes r
      where r.owner_id = new.owner_id
+       and r.import_id is null
   ) >= public.free_recipe_limit() then
     raise exception 'recipe_limit_reached'
       using errcode = 'P0001',

@@ -51,6 +51,12 @@ jest.mock('@/data', () => ({
   useRecipes: (shelf: string, query: string) => mockUseRecipes(shelf, query),
   useRemoveEntry: () => ({ mutate: mockRemoveEntry }),
   useSelectedDate: () => ({ selectedDate: '2026-11-20', todayKey: '2026-11-21' }),
+  useVideoImportQuota: () => ({ data: { used: 0, limit: 5, remaining: 5, entitled: false } }),
+}))
+
+jest.mock('@/data/refusals', () => ({
+  openPaywall: jest.fn(),
+  proFeatureTitle: () => '',
 }))
 
 jest.mock('@/features/paywall', () => ({
@@ -274,4 +280,33 @@ it('shows no price and no quick log on a recipe with nothing in it yet', async (
 
   expect(screen.queryByText('0 kcal')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Add Telur dadar to today' })).toBeNull()
+})
+
+it('opens the video sheet from the plus, not gated as Pro, and hands a pasted link to the import screen', async () => {
+  await render(<RecipesTab />)
+
+  const add = await openAddSheet()
+  await user.press(within(add).getByRole('button', { name: 'Video' }))
+  await waitFor(() => expect(screen.queryByText('Add a recipe')).toBeNull())
+  await finishDismissing(add)
+
+  // A free account imports five a month, so this tile is not a Pro gate.
+  expect(mockRequirePro).not.toHaveBeenCalled()
+  const sheet = await finishShowing('Import from a video')
+  expect(screen.getByText('5 left this month')).toBeTruthy()
+
+  // Not a link we read: the button stays off and the field says why.
+  const field = screen.getByPlaceholderText('Paste a video link')
+  await fireEvent.changeText(field, 'nasi lemak')
+  expect(screen.getByText('That is not a link to a post we can read.')).toBeTruthy()
+
+  await fireEvent.changeText(field, 'Look! https://www.instagram.com/reel/CnkNjXVsAJv/?igsh=x')
+  await user.press(screen.getByRole('button', { name: 'Import recipe' }))
+  expect(mockPush).not.toHaveBeenCalled()
+
+  await finishDismissing(sheet)
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/recipe/import',
+    params: { url: 'https://www.instagram.com/reel/CnkNjXVsAJv/?igsh=x' },
+  })
 })

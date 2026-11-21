@@ -3,12 +3,20 @@ import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Keyboard, type TextInputInstance, View } from 'react-native'
 
-import { type Recipe, type RecipeShelf, useRecipeQuota, useRecipes } from '@/data'
+import {
+  type Recipe,
+  type RecipeShelf,
+  useRecipeQuota,
+  useRecipes,
+  useVideoImportQuota,
+} from '@/data'
+import { openPaywall, proFeatureTitle } from '@/data/refusals'
 import { InlineCamera } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import {
   AddRecipeTiles,
   DescribeRecipePanel,
+  ImportVideoPanel,
   RecipeCard,
   type RecipeStart,
   stageRecipeRead,
@@ -29,6 +37,7 @@ import {
   Sheet,
   Skeleton,
   Text,
+  useToast,
 } from '@/ui'
 
 const SHELVES: RecipeShelf[] = ['mine', 'community']
@@ -54,6 +63,8 @@ export default function RecipesTab() {
   const router = useRouter()
   const requirePro = useRequirePro()
   const quota = useRecipeQuota()
+  const imports = useVideoImportQuota()
+  const toast = useToast()
   const colors = useThemeColors()
   // Today, not the diary's selected day: see `useRecipeLogDate`.
   const { logDate } = useRecipeLogDate()
@@ -71,6 +82,7 @@ export default function RecipesTab() {
   const [addOpen, setAddOpen] = useState(false)
   const [camera, setCamera] = useState(false)
   const [describing, setDescribing] = useState(false)
+  const [importing, setImporting] = useState(false)
   // The describe sheet has actually been presented. `autoFocus` inside a
   // `Modal` is applied while the field is still off screen and routinely
   // dropped, so the field waits for `onShow` rather than for `visible`.
@@ -118,6 +130,18 @@ export default function RecipesTab() {
    * right back on the index page rather than on a separate chooser screen.
    */
   const startNew = (start: RecipeStart) => {
+    // A video import is its own allowance and never counts against the
+    // recipes kept, so the kept-recipe ceiling does not stand in front of it.
+    if (start === 'video') {
+      const left = imports.data
+      if (left && !left.entitled && left.remaining <= 0) {
+        openPaywall(toast, { title: proFeatureTitle('video_import'), feature: 'video_import' })
+        return
+      }
+      Keyboard.dismiss()
+      setImporting(true)
+      return
+    }
     if (quota.atLimit && !requirePro('new_recipe')) return
     if (start === 'manual') {
       router.push('/recipe/edit')
@@ -129,8 +153,10 @@ export default function RecipesTab() {
     else setDescribing(true)
   }
 
+  // Not gated on the kept-recipe ceiling any more: the sheet also holds Video,
+  // which a free account at three recipes can still use. The other three tiles
+  // ask in `startNew`.
   const openAddSheet = () => {
-    if (quota.atLimit && !requirePro('new_recipe')) return
     Keyboard.dismiss()
     setAddOpen(true)
   }
@@ -160,6 +186,15 @@ export default function RecipesTab() {
     }
     setDescribing(false)
   }
+
+  const submitVideo = (url: string) => {
+    if (!importing) return
+    afterSheet.current = () => router.push({ pathname: '/recipe/import', params: { url } })
+    setImporting(false)
+  }
+
+  // Free accounts only: Pro's ceiling is an abuse limit and is never printed.
+  const importsLeft = imports.data && !imports.data.entitled ? imports.data.remaining : undefined
 
   /**
    * One serving, into today. Not gated, for the reason the detail screen gives:
@@ -335,6 +370,22 @@ export default function RecipesTab() {
         onShow={() => setDescribeReady(true)}
       >
         {describeReady ? <DescribeRecipePanel autoFocus onSubmit={submitDescription} /> : null}
+      </Sheet>
+
+      <Sheet
+        visible={importing}
+        onClose={() => setImporting(false)}
+        onDismiss={flushAfterSheet}
+        title={t('recipes:import.title')}
+        titleAction={
+          importsLeft !== undefined ? (
+            <Text variant="caption">{t('recipes:import.left', { count: importsLeft })}</Text>
+          ) : undefined
+        }
+        closeLabel={t('common:action.close')}
+        scrollable={false}
+      >
+        <ImportVideoPanel onSubmit={submitVideo} />
       </Sheet>
     </Screen>
   )

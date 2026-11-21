@@ -1,7 +1,7 @@
-// The recipe endpoint: fill a form in from a photo, and review one for the
-// community.
+// The recipe endpoint: fill a form in from a photo, review one for the
+// community, and import one from a cooking video (`import.ts`).
 //
-// Two actions rather than two functions, for the reason `photos` gives: each
+// Actions rather than functions, for the reason `photos` gives: each
 // function costs a config block, an import map and a restart of the local stack,
 // and these two share their auth, body handling and error shape.
 //
@@ -40,6 +40,7 @@ import {
   reviewRecipe,
   toIngredientRow,
 } from '../_shared/recipe.ts'
+import { handleImport, type ImportRequest } from './import.ts'
 
 type ReadRequest = {
   action: 'read'
@@ -54,7 +55,7 @@ type ReadRequest = {
   mock?: RecipeMockSteer
 }
 type ReviewRequest = { action: 'review'; recipe_id?: string; mock?: RecipeMockSteer }
-type RecipeRequest = ReadRequest | ReviewRequest
+type RecipeRequest = ReadRequest | ReviewRequest | ImportRequest
 
 /** The photo, base64'd for the vision call. Same shape as scan-meal's. */
 async function fetchPhoto(path: string): Promise<string> {
@@ -227,6 +228,12 @@ Deno.serve(async (req: Request) => {
         error: error instanceof Error ? error.message : 'could not read the photo',
       })
     }
+  }
+
+  // -- IMPORT: a cooking video becomes a recipe. Metered by its own monthly
+  // allowance rather than by scans; see `import.ts`.
+  if (body.action === 'import') {
+    return handleImport(body, { db, userId, meter, loadForReview })
   }
 
   // -- REVIEW: the gate in front of the community tab.

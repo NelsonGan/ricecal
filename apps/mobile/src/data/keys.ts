@@ -125,6 +125,11 @@ export const keys = {
    * it; the literal segment cannot collide with a shelf name.
    */
   recipeCount: (userId: string) => ['recipes', userId, 'count'] as const,
+  /**
+   * This month's video imports against the allowance. Not under the shelves'
+   * prefix: an import moves it, and nothing else that moves a shelf does.
+   */
+  videoImports: (userId: string) => ['video-imports', userId] as const,
   /** One recipe, asked for by row id inside the app or bearer slug from a shared link. */
   recipe: (reference: string) => ['recipe', reference] as const,
   recipeIngredients: (reference: string) => ['recipe-ingredients', reference] as const,

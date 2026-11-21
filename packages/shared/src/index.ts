@@ -20,7 +20,7 @@ export const SCHEMA_VERSION = '6'
  *
  * Copies. Postgres holds the original of each (`free_daily_scans()`,
  * `free_recipe_limit()`, `free_routine_limit()`,
- * `free_photo_retention_days()`), because a limit the client is trusted to
+ * `free_monthly_imports()`, `free_photo_retention_days()`), because a limit the client is trusted to
  * apply only applies to people running the client. These
  * are what the comparison table and the toasts say, and they have to change
  * with the database: a paywall promising three scans while the database allows
@@ -35,6 +35,12 @@ export const SCHEMA_VERSION = '6'
  */
 export const FREE_DAILY_SCANS = 3
 export const FREE_RECIPES = 3
+/**
+ * Recipes a free account may import from a video each month
+ * (`free_monthly_imports()`). Imported recipes do not count against
+ * `FREE_RECIPES`; the two are separate allowances.
+ */
+export const FREE_VIDEO_IMPORTS = 5
 export const FREE_ROUTINES = 3
 /** Groups a free account may lead at once; joining others is never limited. */
 export const FREE_GROUPS = 2
