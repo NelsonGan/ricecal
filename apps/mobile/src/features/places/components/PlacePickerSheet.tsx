@@ -71,9 +71,9 @@ const SNAP_METERS = 40
 /** How many listed places get a pin on the map. */
 const PINS = 12
 /**
- * How far the sheet's rounded top reaches up over the map (its `-mt-5`).
- * Anything drawn at the map's bottom edge sits this much higher, or the sheet
- * covers it: the locate button was half hidden behind it.
+ * How far the sheet's rounded top reaches up over the map. Anything drawn at
+ * the map's bottom edge sits this much higher, or the sheet covers it: the
+ * locate button was half hidden behind it.
  */
 const SHEET_OVERLAP = 20
 
