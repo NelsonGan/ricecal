@@ -1516,6 +1516,7 @@ export const ja = {
       write: '書く',
       photo: '写真',
       describe: '説明',
+      quota: '無料 {{used}}/{{count}}',
     },
 
     card: {
@@ -1534,9 +1535,8 @@ export const ja = {
     },
 
     empty: {
-      mineTitle: 'まだレシピがありません',
-      mineBody: '書くか、鍋を撮るか、言葉で説明してください。',
       communityTitle: 'まだ共有はありません',
+      communityBody: '自分のレシピをメニューから共有しましょう。',
       filteredTitle: 'まだ何もありません',
       filteredBody: '別の絞り込みを試してください。',
     },
@@ -1574,6 +1574,7 @@ export const ja = {
       name: '名前',
       namePlaceholder: 'なんと呼んでいますか',
       changePicture: '画像を変更',
+      change: '変更',
       replacePhotoTitle: '代わりにイラストを使いますか',
       replacePhotoBody: 'このレシピの写真は削除されます。',
       replacePhotoConfirm: 'イラストを使う',
@@ -1585,7 +1586,7 @@ export const ja = {
       source: '出典',
       sourcePlaceholder: 'リールや投稿へのリンク',
       sourceInvalid: 'そのリンクは正しくないようです',
-      perServing: '1 人前 {{kcal}} kcal',
+      perServing: '1 人前 {{kcal}} kcal（{{count}} 人分）',
       ingredients: '材料',
       ingredientsCount: '材料 · {{count}}',
       addIngredient: '材料を追加',
@@ -1661,7 +1662,6 @@ export const ja = {
       noSteps: '手順は書かれていません。',
       noIngredients: '材料はまだありません。',
       addToDay: '今日に追加',
-      added: 'その日に追加しました',
       saveCopy: '自分のレシピに保存',
       savedCopy: '自分のレシピに保存しました',
       saveCopyFailed: 'それは保存できませんでした。もう一度お試しください。',

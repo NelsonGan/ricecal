@@ -1508,6 +1508,7 @@ export const zhHans = {
       write: '手写',
       photo: '照片',
       describe: '描述',
+      quota: '免费 {{used}}/{{count}}',
     },
 
     card: {
@@ -1526,9 +1527,8 @@ export const zhHans = {
     },
 
     empty: {
-      mineTitle: '还没有食谱',
-      mineBody: '写下来、拍一下锅，或者描述一下。',
       communityTitle: '还没有人分享',
+      communityBody: '从你的食谱菜单里分享一个吧。',
       filteredTitle: '这里还没有',
       filteredBody: '换个筛选试试。',
     },
@@ -1565,6 +1565,7 @@ export const zhHans = {
       name: '名称',
       namePlaceholder: '你管它叫什么？',
       changePicture: '换一张图',
+      change: '更换',
       replacePhotoTitle: '改用一张插图？',
       replacePhotoBody: '这个食谱的照片会被删掉。',
       replacePhotoConfirm: '用插图',
@@ -1576,7 +1577,7 @@ export const zhHans = {
       source: '来源',
       sourcePlaceholder: '短视频或帖子的链接',
       sourceInvalid: '这个链接看起来不对',
-      perServing: '每份 {{kcal}} 千卡',
+      perServing: '每份 {{kcal}} kcal，共 {{count}} 份',
       ingredients: '食材',
       ingredientsCount: '食材 · {{count}}',
       addIngredient: '添加一样食材',
@@ -1652,7 +1653,6 @@ export const zhHans = {
       noSteps: '没有写下步骤。',
       noIngredients: '还没有写下食材。',
       addToDay: '加到今天',
-      added: '已加到你这一天',
       saveCopy: '保存到我的食谱',
       savedCopy: '已保存到你的食谱',
       saveCopyFailed: '这个没能保存。再试一次。',

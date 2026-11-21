@@ -1520,6 +1520,7 @@ export const vi = {
       write: 'Tự viết',
       photo: 'Ảnh',
       describe: 'Mô tả',
+      quota: '{{used}}/{{count}} miễn phí',
     },
 
     card: {
@@ -1538,9 +1539,8 @@ export const vi = {
     },
 
     empty: {
-      mineTitle: 'Chưa có công thức nào',
-      mineBody: 'Tự viết, chụp nồi hoặc mô tả nó.',
       communityTitle: 'Chưa ai chia sẻ',
+      communityBody: 'Chia sẻ công thức của bạn từ menu của nó.',
       filteredTitle: 'Chưa có gì ở đây',
       filteredBody: 'Thử bộ lọc khác.',
     },
@@ -1578,6 +1578,7 @@ export const vi = {
       name: 'TÊN',
       namePlaceholder: 'Bạn gọi nó là gì?',
       changePicture: 'Đổi hình',
+      change: 'Đổi',
       replacePhotoTitle: 'Dùng hình vẽ thay thế?',
       replacePhotoBody: 'Ảnh chụp của công thức này sẽ bị xoá.',
       replacePhotoConfirm: 'Dùng hình vẽ',
@@ -1589,7 +1590,7 @@ export const vi = {
       source: 'NGUỒN',
       sourcePlaceholder: 'Liên kết tới reel hoặc bài đăng',
       sourceInvalid: 'Liên kết đó có vẻ không đúng',
-      perServing: '{{kcal}} kcal mỗi khẩu phần',
+      perServing: '{{kcal}} kcal mỗi phần, cho {{count}} người',
       ingredients: 'NGUYÊN LIỆU',
       ingredientsCount: 'NGUYÊN LIỆU · {{count}}',
       addIngredient: 'Thêm một nguyên liệu',
@@ -1665,7 +1666,6 @@ export const vi = {
       noSteps: 'Không có bước nào được viết ra.',
       noIngredients: 'Chưa ghi nguyên liệu nào.',
       addToDay: 'Thêm vào hôm nay',
-      added: 'Đã thêm vào ngày của bạn',
       saveCopy: 'Lưu vào công thức của tôi',
       savedCopy: 'Đã lưu vào công thức của bạn',
       saveCopyFailed: 'Không lưu được cái đó. Thử lại.',

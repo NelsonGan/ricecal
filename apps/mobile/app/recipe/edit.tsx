@@ -2,7 +2,7 @@ import { FREE_RECIPES } from '@ricecal/shared'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, View } from 'react-native'
+import { ActivityIndicator, type TextInputInstance, View } from 'react-native'
 
 import type { IconRef, RecipeIngredientInput, RecipeTag, ScannedRecipe } from '@/data'
 import {
@@ -127,6 +127,7 @@ export default function RecipeFormScreen() {
    * so "is it empty" cannot be the test the way it is for the name.
    */
   const pictureChosen = useRef(false)
+  const nameField = useRef<TextInputInstance>(null)
   /** The upload behind the picture tile, which is a second or two on a real photo. */
   const [attaching, setAttaching] = useState(false)
   /** A drawing waiting on the confirmation, because choosing it discards a photo. */
@@ -354,8 +355,11 @@ export default function RecipeFormScreen() {
   }
 
   const commit = async () => {
+    // Save stays live without a name and says why here: a dead button at the
+    // foot of a long form explains nothing, and the name is off screen by then.
     if (!ready) {
       toast.show({ title: t('recipes:edit.nameRequired'), tone: 'warning' })
+      nameField.current?.focus()
       return
     }
     // Checked here rather than left to the column's check, which would refuse
@@ -462,12 +466,15 @@ export default function RecipeFormScreen() {
                 with what Save is about to write. */}
             {items.length > 0 ? (
               <Text variant="label" className="text-center">
+                {/* With the servings beside it, so a pot for four left at the
+                    default of one stands out here rather than in the diary. */}
                 {t('recipes:edit.perServing', {
                   kcal: totals.perServing.kcal.toLocaleString(),
+                  count: servings,
                 })}
               </Text>
             ) : null}
-            <Button fullWidth loading={save.isPending} disabled={!ready} onPress={commit}>
+            <Button fullWidth loading={save.isPending} onPress={commit}>
               {t('recipes:edit.save')}
             </Button>
           </View>
@@ -508,6 +515,7 @@ export default function RecipeFormScreen() {
           />
 
           <TextField
+            ref={nameField}
             label={t('recipes:edit.name')}
             value={name}
             onChangeText={(next) => {
@@ -807,6 +815,16 @@ function RecipePicture({
         <Icon {...icon} size={100} />
       ) : (
         <Icon set="food" name="cooking-pot" size={100} />
+      )}
+      {/* Says the box is a control: a grey box with a drawing in it reads as a
+          picture, not as a place to change one. */}
+      {attaching ? null : (
+        <View className="absolute bottom-2 right-2 flex-row items-center gap-1.5 rounded-full bg-inverse/90 px-3 py-1">
+          <Icon set="ui" name="edit" size={14} />
+          <Text variant="caption" className="text-on-inverse">
+            {t('edit.change')}
+          </Text>
+        </View>
       )}
     </Tappable>
   )

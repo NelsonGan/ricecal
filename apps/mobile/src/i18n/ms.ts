@@ -1542,6 +1542,7 @@ export const ms = {
       write: 'Tulis',
       photo: 'Gambar',
       describe: 'Terangkan',
+      quota: '{{used}} daripada {{count}} percuma',
     },
 
     card: {
@@ -1560,9 +1561,8 @@ export const ms = {
     },
 
     empty: {
-      mineTitle: 'Belum ada resipi',
-      mineBody: 'Tulis sendiri, ambil gambar periuk atau terangkannya.',
       communityTitle: 'Belum ada yang dikongsi',
+      communityBody: 'Kongsi resipi anda dari menunya.',
       filteredTitle: 'Belum ada apa-apa di sini',
       filteredBody: 'Cuba penapis lain.',
     },
@@ -1600,6 +1600,7 @@ export const ms = {
       name: 'NAMA',
       namePlaceholder: 'Apa anda panggil ia?',
       changePicture: 'Tukar gambar',
+      change: 'Tukar',
       replacePhotoTitle: 'Guna lukisan sebaliknya?',
       replacePhotoBody: 'Foto resipi ini akan dibuang.',
       replacePhotoConfirm: 'Guna lukisan',
@@ -1611,7 +1612,7 @@ export const ms = {
       source: 'SUMBER',
       sourcePlaceholder: 'Pautan ke reel atau siaran',
       sourceInvalid: 'Pautan itu nampak tidak betul',
-      perServing: '{{kcal}} kcal setiap hidangan',
+      perServing: '{{kcal}} kcal sehidang, untuk {{count}}',
       ingredients: 'BAHAN',
       ingredientsCount: 'BAHAN · {{count}}',
       addIngredient: 'Tambah satu bahan',
@@ -1687,7 +1688,6 @@ export const ms = {
       noSteps: 'Tiada langkah ditulis.',
       noIngredients: 'Tiada bahan ditulis.',
       addToDay: 'Tambah ke hari ini',
-      added: 'Ditambah ke hari anda',
       saveCopy: 'Simpan ke resipi saya',
       savedCopy: 'Disimpan ke resipi anda',
       saveCopyFailed: 'Tidak dapat menyimpan yang itu. Cuba lagi.',

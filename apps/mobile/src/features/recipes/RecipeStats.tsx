@@ -43,22 +43,24 @@ export function RecipeStats({
   )
 }
 
+/**
+ * The icon over the words rather than beside them: three across a 375pt phone
+ * left about 40pt for "1 h 30 min" beside a 28pt icon, and it cut off.
+ */
 function Stat({ icon, label, value }: { icon: IconProps; label: string; value: string }) {
   return (
     <View
-      className="min-w-0 flex-1 flex-row items-center gap-2 rounded-tile border-[3px] border-line bg-surface px-3 py-2.5"
+      className="min-w-0 flex-1 items-center gap-1 rounded-tile border-[3px] border-line bg-surface px-2 py-2.5"
       accessible
       accessibilityLabel={`${label}, ${value}`}
     >
-      <Icon {...icon} size={28} />
-      <View className="min-w-0 flex-1">
-        <Text variant="caption" numberOfLines={1}>
-          {label}
-        </Text>
-        <Text variant="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
-          {value}
-        </Text>
-      </View>
+      <Icon {...icon} size={26} />
+      <Text variant="label" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+        {value}
+      </Text>
+      <Text variant="caption" numberOfLines={1}>
+        {label}
+      </Text>
     </View>
   )
 }

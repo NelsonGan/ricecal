@@ -1,4 +1,4 @@
-import { render as rntlRender, screen, userEvent } from '@testing-library/react-native'
+import { fireEvent, render as rntlRender, screen, userEvent } from '@testing-library/react-native'
 import type { ReactElement, ReactNode } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -29,7 +29,7 @@ jest.mock('@/data', () => ({
   useRecipes: (shelf: string, query: string, filter: unknown) =>
     mockUseRecipes(shelf, query, filter),
   useRemoveEntry: () => ({ mutate: mockRemoveEntry }),
-  useSelectedDate: () => ({ selectedDate: '2026-11-21' }),
+  useSelectedDate: () => ({ selectedDate: '2026-11-20', todayKey: '2026-11-21' }),
 }))
 
 jest.mock('@/features/paywall', () => ({
@@ -116,7 +116,18 @@ it('keeps the answer on screen while the same shelf refetches', async () => {
   mockUseRecipes.mockReturnValue({ data: [], isPending: false, isFetching: true })
   await render(<RecipesTab />)
 
-  expect(screen.getByText('No recipes yet')).toBeTruthy()
+  // An empty shelf of your own is the Add card, not skeletons.
+  expect(screen.getByText('Add a recipe')).toBeTruthy()
+})
+
+it('steps the Add card aside once the shelf has a few recipes', async () => {
+  mockUseRecipes.mockReturnValue({
+    data: [1, 2, 3, 4].map((n) => ({ ...RECIPE, id: `r${n}`, name: `Recipe ${n}` })),
+    isPending: false,
+  })
+  await render(<RecipesTab />)
+
+  expect(screen.queryByText('Add a recipe')).toBeNull()
 })
 
 it('offers favourites on your own shelf only', async () => {
@@ -128,8 +139,12 @@ it('offers favourites on your own shelf only', async () => {
   expect(screen.queryByText('Add a recipe')).toBeNull()
 })
 
-it('logs one serving from the card', async () => {
+it('logs one serving from the card into today, not the day the diary is on', async () => {
   await render(<RecipesTab />)
+  // The plus sits under the photo, so it waits for the photo's height.
+  for (const photo of screen.getAllByTestId('recipe-card-photo')) {
+    await fireEvent(photo, 'layout', { nativeEvent: { layout: { height: 120 } } })
+  }
 
   await user.press(screen.getByRole('button', { name: 'Add Kari ayam to today' }))
   expect(mockLog).toHaveBeenCalledWith(

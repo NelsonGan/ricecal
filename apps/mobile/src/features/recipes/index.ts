@@ -27,16 +27,14 @@ export {
   sourceHost,
   totalMinutes,
 } from './cooking'
+export { useCookStep, useTickedIngredients } from './cookSession'
 export { DescribeRecipePanel, type DescribeRecipePanelProps } from './DescribeRecipePanel'
-export {
-  IngredientChecklist,
-  type IngredientChecklistProps,
-  useTickedIngredients,
-} from './IngredientChecklist'
+export { IngredientChecklist, type IngredientChecklistProps } from './IngredientChecklist'
 export {
   IngredientSheet,
   type IngredientSheetProps,
 } from './IngredientSheet'
+export { LogRecipeSheet, type LogRecipeSheetProps } from './LogRecipeSheet'
 export { NewRecipeChooser, type NewRecipeChooserProps } from './NewRecipeChooser'
 export { ReadingRecipe, type ReadingRecipeProps } from './ReadingRecipe'
 export { RecipeCard, type RecipeCardProps } from './RecipeCard'
@@ -54,3 +52,4 @@ export { recipeLink } from './share'
 export { useCopyRecipe } from './useCopyRecipe'
 export { useDurationText } from './useDurationText'
 export { useIngredientMeasure } from './useIngredientMeasure'
+export { useLogRecipe, useRecipeLogDate } from './useLogRecipe'

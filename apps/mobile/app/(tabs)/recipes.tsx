@@ -9,11 +9,8 @@ import {
   type Recipe,
   type RecipeQueryFilter,
   type RecipeShelf,
-  useLogFood,
   useRecipeQuota,
   useRecipes,
-  useRemoveEntry,
-  useSelectedDate,
 } from '@/data'
 import { useRequirePro } from '@/features/paywall'
 import {
@@ -21,7 +18,8 @@ import {
   RecipeCard,
   type RecipeFilter,
   type RecipeStart,
-  recipeLog,
+  useLogRecipe,
+  useRecipeLogDate,
 } from '@/features/recipes'
 import { ScreenTitle } from '@/features/shared'
 import { useDebouncedValue } from '@/lib/use-debounce'
@@ -35,12 +33,14 @@ import {
   SearchField,
   SegmentedControl,
   Skeleton,
-  useToast,
 } from '@/ui'
 
 const SHELVES: RecipeShelf[] = ['mine', 'community']
 
 const SKELETON_CARDS = ['c1', 'c2', 'c3', 'c4'] as const
+
+/** How many recipes your shelf holds before the Add card steps aside. */
+const ADD_CARD_UNTIL = 4
 
 /**
  * The Recipes tab: everything this account cooks, and what other people share.
@@ -59,13 +59,12 @@ const SKELETON_CARDS = ['c1', 'c2', 'c3', 'c4'] as const
 export default function RecipesTab() {
   const { t } = useTranslation(['recipes', 'common'])
   const router = useRouter()
-  const toast = useToast()
   const requirePro = useRequirePro()
   const quota = useRecipeQuota()
   const colors = useThemeColors()
-  const { selectedDate } = useSelectedDate()
-  const logFood = useLogFood()
-  const removeEntry = useRemoveEntry()
+  // Today, not the diary's selected day: see `useRecipeLogDate`.
+  const { logDate } = useRecipeLogDate()
+  const { log } = useLogRecipe()
 
   const [shelf, setShelf] = useState<RecipeShelf>('mine')
   const [filter, setFilter] = useState<RecipeFilter>('all')
@@ -93,6 +92,12 @@ export default function RecipesTab() {
   const loading = isPending
   const searched = activeQuery.trim().length > 0
   const narrowed = searched || filter !== 'all'
+  /**
+   * The three ways in, while your shelf is still short. Past a few recipes it
+   * was most of the first screen on every visit, and the plus in the bar opens
+   * the same three choices.
+   */
+  const showAdd = shelf === 'mine' && !narrowed && !loading && recipes.length < ADD_CARD_UNTIL
 
   // Favourites are a star on your own rows, so the chip is only on your shelf.
   const filters: RecipeFilter[] = [
@@ -126,26 +131,11 @@ export default function RecipesTab() {
   }
 
   /**
-   * One serving, into the day the diary is on. Not gated, for the reason the
-   * detail screen gives: logging a pot reaches no model and costs nothing.
+   * One serving, into today. Not gated, for the reason the detail screen gives:
+   * logging a pot reaches no model and costs nothing. `useLogRecipe` offers the
+   * undo, which matters on a plus this easy to reach.
    */
-  const logOne = (recipe: Recipe) => {
-    const logDate = selectedDate
-    logFood.mutate(recipeLog(recipe, 1, logDate), {
-      // With an undo, because the plus sits on the corner of a card that is
-      // itself a button, and a tap meant for the card lands on it.
-      onSuccess: (row) =>
-        toast.show({
-          title: t('recipes:card.logged', { name: recipe.name }),
-          tone: 'success',
-          action: {
-            label: t('common:action.undo'),
-            onPress: () => removeEntry.mutate({ id: row.id, logDate, source: 'quickAdd' }),
-          },
-        }),
-      onError: () => toast.show({ title: t('recipes:edit.saveFailed'), tone: 'error' }),
-    })
-  }
+  const logOne = (recipe: Recipe) => log(recipe, 1, logDate)
 
   return (
     <Screen>
@@ -227,7 +217,12 @@ export default function RecipesTab() {
         ))}
       </ScrollView>
 
-      {shelf === 'mine' && !narrowed ? <AddRecipeCard onStart={startNew} /> : null}
+      {showAdd ? (
+        <AddRecipeCard
+          onStart={startNew}
+          free={quota.limit != null ? { used: quota.count, limit: quota.limit } : undefined}
+        />
+      ) : null}
 
       {/* The wait holds the grid's two-column shape, so the answer landing does
           not jump a stack of rows into wide cards. */}
@@ -258,10 +253,12 @@ export default function RecipesTab() {
             description={t('recipes:empty.filteredBody')}
             icon={{ set: 'ui', name: 'filter' }}
           />
-        ) : (
+        ) : showAdd ? null : (
+          // Your own empty shelf has the Add card above, which already says
+          // everything an empty state would.
           <EmptyState
-            title={t(`recipes:empty.${shelf}Title`)}
-            description={shelf === 'mine' ? t('recipes:empty.mineBody') : undefined}
+            title={t('recipes:empty.communityTitle')}
+            description={t('recipes:empty.communityBody')}
             icon={{ set: 'food', name: 'cooking-pot' }}
           />
         )

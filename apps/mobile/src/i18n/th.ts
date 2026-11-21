@@ -1507,6 +1507,7 @@ export const th = {
       write: 'เขียนเอง',
       photo: 'รูปถ่าย',
       describe: 'บรรยาย',
+      quota: 'ใช้แล้ว {{used}} จาก {{count}} ฟรี',
     },
 
     card: {
@@ -1525,9 +1526,8 @@ export const th = {
     },
 
     empty: {
-      mineTitle: 'ยังไม่มีสูตรอาหาร',
-      mineBody: 'เขียนเอง ถ่ายรูปหม้อ หรือบรรยายมัน',
       communityTitle: 'ยังไม่มีใครแชร์',
+      communityBody: 'แชร์สูตรของคุณจากเมนูของสูตรนั้น',
       filteredTitle: 'ยังไม่มีอะไรตรงนี้',
       filteredBody: 'ลองตัวกรองอื่น',
     },
@@ -1564,6 +1564,7 @@ export const th = {
       name: 'ชื่อ',
       namePlaceholder: 'คุณเรียกมันว่าอะไร',
       changePicture: 'เปลี่ยนรูป',
+      change: 'เปลี่ยน',
       replacePhotoTitle: 'ใช้ภาพวาดแทนไหม',
       replacePhotoBody: 'รูปถ่ายของสูตรอาหารนี้จะถูกลบ',
       replacePhotoConfirm: 'ใช้ภาพวาด',
@@ -1575,7 +1576,7 @@ export const th = {
       source: 'ที่มา',
       sourcePlaceholder: 'ลิงก์ของคลิปหรือโพสต์',
       sourceInvalid: 'ลิงก์นั้นดูไม่ถูกต้อง',
-      perServing: '{{kcal}} แคล ต่อที่',
+      perServing: '{{kcal}} kcal ต่อที่ สำหรับ {{count}} ที่',
       ingredients: 'ส่วนประกอบ',
       ingredientsCount: 'ส่วนประกอบ · {{count}}',
       addIngredient: 'เพิ่มส่วนประกอบ',
@@ -1651,7 +1652,6 @@ export const th = {
       noSteps: 'ไม่ได้เขียนขั้นตอนไว้',
       noIngredients: 'ยังไม่มีวัตถุดิบ',
       addToDay: 'เพิ่มลงวันนี้',
-      added: 'เพิ่มลงวันของคุณแล้ว',
       saveCopy: 'บันทึกลงสูตรอาหารของฉัน',
       savedCopy: 'บันทึกลงสูตรอาหารของคุณแล้ว',
       saveCopyFailed: 'บันทึกอันนั้นไม่ได้ ลองอีกครั้ง',

@@ -1505,6 +1505,7 @@ export const bn = {
       write: 'লিখুন',
       photo: 'ছবি',
       describe: 'বর্ণনা',
+      quota: '{{count}}টির মধ্যে {{used}}টি ফ্রি',
     },
 
     card: {
@@ -1523,9 +1524,8 @@ export const bn = {
     },
 
     empty: {
-      mineTitle: 'এখনো কোনো রেসিপি নেই',
-      mineBody: 'লিখে দিন, হাঁড়ির ছবি তুলুন বা বর্ণনা করুন।',
       communityTitle: 'এখনো কিছু ভাগ করা হয়নি',
+      communityBody: 'আপনার একটি রেসিপি তার মেনু থেকে শেয়ার করুন।',
       filteredTitle: 'এখানে এখনো কিছু নেই',
       filteredBody: 'অন্য ফিল্টার চেষ্টা করুন।',
     },
@@ -1562,6 +1562,7 @@ export const bn = {
       name: 'নাম',
       namePlaceholder: 'একে আপনি কী বলেন?',
       changePicture: 'ছবি বদলান',
+      change: 'বদলান',
       replacePhotoTitle: 'বরং একটি আঁকা ছবি দেবেন?',
       replacePhotoBody: 'এই রেসিপির তোলা ছবিটি সরিয়ে ফেলা হবে।',
       replacePhotoConfirm: 'আঁকা ছবি দিন',
@@ -1573,7 +1574,7 @@ export const bn = {
       source: 'উৎস',
       sourcePlaceholder: 'রিল বা পোস্টের লিঙ্ক',
       sourceInvalid: 'লিঙ্কটি ঠিক মনে হচ্ছে না',
-      perServing: 'প্রতি পরিবেশনে {{kcal}} kcal',
+      perServing: 'প্রতি পরিবেশনে {{kcal}} kcal, {{count}} জনের জন্য',
       ingredients: 'উপকরণ',
       ingredientsCount: 'উপকরণ · {{count}}',
       addIngredient: 'একটি উপকরণ যোগ করুন',
@@ -1649,7 +1650,6 @@ export const bn = {
       noSteps: 'কোনো ধাপ লেখা নেই।',
       noIngredients: 'কোনো উপকরণ লেখা নেই।',
       addToDay: 'আজকে যোগ করুন',
-      added: 'আপনার দিনে যোগ হয়েছে',
       saveCopy: 'আমার রেসিপিতে সংরক্ষণ করুন',
       savedCopy: 'আপনার রেসিপিতে সংরক্ষিত হয়েছে',
       saveCopyFailed: 'ওটি সংরক্ষণ করা গেল না। আবার চেষ্টা করুন।',

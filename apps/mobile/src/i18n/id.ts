@@ -1527,6 +1527,7 @@ export const id = {
       write: 'Tulis',
       photo: 'Foto',
       describe: 'Ceritakan',
+      quota: '{{used}} dari {{count}} gratis',
     },
 
     card: {
@@ -1545,9 +1546,8 @@ export const id = {
     },
 
     empty: {
-      mineTitle: 'Belum ada resep',
-      mineBody: 'Tulis sendiri, foto pancinya, atau ceritakan.',
       communityTitle: 'Belum ada yang dibagikan',
+      communityBody: 'Bagikan resepmu dari menunya.',
       filteredTitle: 'Belum ada apa-apa di sini',
       filteredBody: 'Coba filter lain.',
     },
@@ -1585,6 +1585,7 @@ export const id = {
       name: 'NAMA',
       namePlaceholder: 'Kamu menyebutnya apa?',
       changePicture: 'Ganti gambar',
+      change: 'Ganti',
       replacePhotoTitle: 'Pakai ilustrasi saja?',
       replacePhotoBody: 'Foto resep ini akan dihapus.',
       replacePhotoConfirm: 'Pakai ilustrasi',
@@ -1596,7 +1597,7 @@ export const id = {
       source: 'SUMBER',
       sourcePlaceholder: 'Tautan ke reel atau postingan',
       sourceInvalid: 'Tautan itu sepertinya tidak benar',
-      perServing: '{{kcal}} kkal per porsi',
+      perServing: '{{kcal}} kkal per porsi, untuk {{count}}',
       ingredients: 'BAHAN',
       ingredientsCount: 'BAHAN · {{count}}',
       addIngredient: 'Tambah sebuah bahan',
@@ -1672,7 +1673,6 @@ export const id = {
       noSteps: 'Tidak ada langkah yang ditulis.',
       noIngredients: 'Belum ada bahan yang ditulis.',
       addToDay: 'Tambahkan ke hari ini',
-      added: 'Ditambahkan ke harimu',
       saveCopy: 'Simpan ke resepku',
       savedCopy: 'Tersimpan ke resepmu',
       saveCopyFailed: 'Tidak bisa menyimpan yang itu. Coba lagi.',

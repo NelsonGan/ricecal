@@ -2927,12 +2927,30 @@ follow the number of people, a cook mode, and a source link to come back to.
 only, since the star is on your own rows), Under 30 min, and the six meal tags.
 Every chip narrows the query itself (`useRecipes`' third argument), before its
 100-row limit: "Under 30 min" reads `recipe_details.total_minutes`, prep plus
-cook, which is null when neither was given, so an untimed recipe is never quick. Your own shelf opens with three tiles, Write it, Photo
-and Describe, which go straight to `/recipe/edit?start=manual|photo|describe`
-and skip the chooser page; the plus still opens the chooser. Cards are two to a
-row, with the photo, the serving's calories and a plus that logs one serving to
-the day on screen, and under it the name and "1 h 10 min · 4 servings". Three to
-a row lost both the photo and that line.
+cook, which is null when neither was given, so an untimed recipe is never quick.
+
+While your shelf holds fewer than four recipes it opens with three tiles, Write
+it, Photo and Describe, which go straight to
+`/recipe/edit?start=manual|photo|describe` and skip the chooser page. Past that
+the card was most of the first screen on every visit, and the plus in the bar
+opens the same chooser. On a free account Photo and Describe carry a Pro badge
+and the card says "1 of 3 free", so neither paywall arrives unannounced.
+
+Cards are two to a row: the photo with the serving's calories, then the name
+with a small plus beside it that logs one serving, then "1 h 10 min · 4
+servings" across the card's whole width. Three to a row lost both the photo and
+that line. The plus sat on the photo's corner at first, where it was the same
+green plus as "New recipe" and caught taps meant for the picture. A recipe with
+no ingredients has no price, so it shows neither "0 kcal" nor the plus.
+
+**Which day a recipe logs into** (`useRecipeLogDate`): today, from the tab and
+everything opened from it, whatever day the diary was last left on. Using the
+diary's selected day filed tonight's dinner under yesterday for anybody who had
+looked back on Today. The log sheet is the exception: it passes its own day as
+`date` when it opens a recipe, and the button then says "Add" rather than "Add
+to today". Every way of logging (the card's plus, the recipe's sheet, the end of
+cook mode) goes through `useLogRecipe`, which confirms once the row is written
+and offers Undo.
 
 **The recipe.** Picture, name, meal chips, then three tiles (prep, cook,
 servings; a time nobody gave is left out rather than drawn as a dash) and the
@@ -2944,17 +2962,26 @@ not on the recipe: they are held in memory per recipe while the app is open, so
 cook mode and the recipe page share them, and nothing remembers yesterday's. The
 stepper changes amounts only, never what a serving costs. How much was EATEN is
 asked separately, in the sheet "Add to today" opens, so the page never has two
-steppers about servings that answer different questions. Your own has a heart
-(`useFavouriteRecipe`, optimistic) and the menu; somebody else's has a bookmark
-that saves a copy, and the report menu.
+steppers about servings that answer different questions (`LogRecipeSheet`,
+shared with cook mode). Your own has an edit button, a heart
+(`useFavouriteRecipe`, optimistic) and the menu, and an empty one offers "Add an
+ingredient" in place of logging. Somebody else's has a labelled "Save to my
+recipes" under the cook's name, since keeping it is often why the link was
+opened, and the report menu. With no photograph the drawing sits beside the name
+rather than in a box above it, so the ingredients start above the fold.
 
-**Cook mode**, `/recipe/cook?id=&servings=`, pages the method one step at a
-time in large type with the screen kept awake (`useKeepAwake`). Under each step
-are the ingredients it names at tonight's amounts. `ingredientsInStep` matches a
+**Cook mode**, `/recipe/cook?id=&servings=&date=`, pages the method one step at
+a time in large type with the screen kept awake (`useKeepAwake`). Tapping the
+step moves on, for hands too messy for the button, and each new step is
+announced to VoiceOver, which ignores a live region on iOS. Where the cook is
+lives beside the ticks (`useCookStep` in `cookSession.ts`), so closing cook mode
+to check something does not start it again from step 1. Under each step are the
+ingredients it names at tonight's amounts, tickable. `ingredientsInStep` matches a
 whole name, or its first word when that is four letters or more ("chicken" for
 "Chicken thigh"), and never the last word, which is the generic half: "sauce"
 would put the oyster sauce beside a step about the soy. The full list is one tap
-away in a sheet. The last step offers to log a serving.
+away in a sheet. The last step asks how much was eaten, in the same sheet as the
+recipe page, rather than logging one serving for somebody who had two.
 
 **What the row gained** (`20261121042151_recipe_manager.sql`), all nullable or
 defaulted, so 1.0.0 neither writes nor needs them and its updates leave them

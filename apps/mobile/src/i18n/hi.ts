@@ -1509,6 +1509,7 @@ export const hi = {
       write: 'लिखें',
       photo: 'फ़ोटो',
       describe: 'बताएं',
+      quota: '{{count}} में से {{used}} मुफ़्त',
     },
 
     card: {
@@ -1527,9 +1528,8 @@ export const hi = {
     },
 
     empty: {
-      mineTitle: 'अभी कोई रेसिपी नहीं',
-      mineBody: 'लिखें, बर्तन की फ़ोटो लें या बताएं।',
       communityTitle: 'अभी कुछ साझा नहीं हुआ',
+      communityBody: 'अपनी कोई रेसिपी उसके मेन्यू से शेयर करें।',
       filteredTitle: 'यहां अभी कुछ नहीं',
       filteredBody: 'कोई और फ़िल्टर आज़माएं।',
     },
@@ -1566,6 +1566,7 @@ export const hi = {
       name: 'नाम',
       namePlaceholder: 'आप इसे क्या कहते हैं?',
       changePicture: 'तस्वीर बदलें',
+      change: 'बदलें',
       replacePhotoTitle: 'इसकी जगह चित्र लगाएं?',
       replacePhotoBody: 'इस रेसिपी की फ़ोटो हटा दी जाएगी।',
       replacePhotoConfirm: 'चित्र लगाएं',
@@ -1577,7 +1578,7 @@ export const hi = {
       source: 'स्रोत',
       sourcePlaceholder: 'रील या पोस्ट का लिंक',
       sourceInvalid: 'यह लिंक सही नहीं लगता',
-      perServing: 'हर हिस्से में {{kcal}} kcal',
+      perServing: 'हर सर्विंग {{kcal}} kcal, {{count}} लोगों के लिए',
       ingredients: 'सामग्री',
       ingredientsCount: 'सामग्री · {{count}}',
       addIngredient: 'एक सामग्री जोड़ें',
@@ -1653,7 +1654,6 @@ export const hi = {
       noSteps: 'कोई क़दम लिखा नहीं गया।',
       noIngredients: 'कोई सामग्री नहीं लिखी गई।',
       addToDay: 'आज में जोड़ें',
-      added: 'आपके दिन में जुड़ गया',
       saveCopy: 'मेरी रेसिपी में सहेजें',
       savedCopy: 'आपकी रेसिपी में सहेज ली',
       saveCopyFailed: 'यह सहेजा नहीं जा सका। फिर कोशिश करें।',

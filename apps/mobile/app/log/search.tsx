@@ -121,7 +121,11 @@ function SearchScreen() {
           })
           goBack()
         }}
-        onOpenOwn={(recipe) => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
+        onOpenOwn={(recipe) =>
+          // The day this search is logging into, which the recipe page then
+          // logs into too. See `useRecipeLogDate`.
+          router.push({ pathname: '/recipe/[id]', params: { id: recipe.id, date: selectedDate } })
+        }
         onCreateOwn={() => {
           if (recipeQuota.atLimit && !requirePro('new_recipe')) return
           router.push('/recipe/edit')

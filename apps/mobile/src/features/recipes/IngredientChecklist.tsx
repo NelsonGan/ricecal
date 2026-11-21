@@ -1,4 +1,3 @@
-import { useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -18,40 +17,10 @@ export type IngredientChecklistProps = {
 }
 
 /**
- * Which ingredients are already in the pot, per recipe, for as long as the app
- * is open. In memory and shared, so a tick on the recipe page is still there in
- * cook mode and back again: they are two views of one session at the stove.
- * Never persisted, because a list that remembered yesterday's would open with
- * half of it struck through.
- */
-const tickStore = new Map<string, ReadonlySet<string>>()
-const listeners = new Set<() => void>()
-const NONE: ReadonlySet<string> = new Set()
-
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
-
-export function useTickedIngredients(recipeId: string) {
-  const ticked = useSyncExternalStore(subscribe, () => tickStore.get(recipeId) ?? NONE)
-  const toggle = (ingredientId: string) => {
-    const next = new Set(tickStore.get(recipeId) ?? NONE)
-    if (next.has(ingredientId)) next.delete(ingredientId)
-    else next.add(ingredientId)
-    tickStore.set(recipeId, next)
-    for (const listener of listeners) listener()
-  }
-  return [ticked, toggle] as const
-}
-
-/**
  * The shopping and mise en place list: every ingredient at tonight's amounts,
  * each one tickable so the cook knows what is already in the pot.
  *
- * The ticks are not on the recipe: see `useTickedIngredients`.
+ * The ticks are not on the recipe: see `useTickedIngredients` in `cookSession.ts`.
  */
 export function IngredientChecklist({
   ingredients,

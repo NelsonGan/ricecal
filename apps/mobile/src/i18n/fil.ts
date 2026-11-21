@@ -1542,6 +1542,7 @@ export const fil = {
       write: 'Isulat',
       photo: 'Litrato',
       describe: 'Ilarawan',
+      quota: '{{used}} sa {{count}} libre',
     },
 
     card: {
@@ -1560,9 +1561,8 @@ export const fil = {
     },
 
     empty: {
-      mineTitle: 'Wala pang recipe',
-      mineBody: 'Isulat ito, kunan ang kaldero o ilarawan.',
       communityTitle: 'Wala pang ibinabahagi',
+      communityBody: 'Ibahagi ang isa sa iyo mula sa menu nito.',
       filteredTitle: 'Wala pa rito',
       filteredBody: 'Subukan ang ibang filter.',
     },
@@ -1600,6 +1600,7 @@ export const fil = {
       name: 'PANGALAN',
       namePlaceholder: 'Ano ang tawag mo dito?',
       changePicture: 'Palitan ang larawan',
+      change: 'Palitan',
       replacePhotoTitle: 'Gumamit na lang ng drawing?',
       replacePhotoBody: 'Aalisin ang litrato ng recipe na ito.',
       replacePhotoConfirm: 'Gamitin ang drawing',
@@ -1611,7 +1612,7 @@ export const fil = {
       source: 'PINAGMULAN',
       sourcePlaceholder: 'Link sa reel o post',
       sourceInvalid: 'Mukhang mali ang link na iyon',
-      perServing: '{{kcal}} kcal kada serving',
+      perServing: '{{kcal}} kcal bawat serving, para sa {{count}}',
       ingredients: 'MGA SANGKAP',
       ingredientsCount: 'MGA SANGKAP · {{count}}',
       addIngredient: 'Magdagdag ng sangkap',
@@ -1687,7 +1688,6 @@ export const fil = {
       noSteps: 'Walang naisulat na hakbang.',
       noIngredients: 'Walang nakasulat na sangkap.',
       addToDay: 'Idagdag sa ngayong araw',
-      added: 'Naidagdag sa araw mo',
       saveCopy: 'I-save sa mga recipe ko',
       savedCopy: 'Na-save sa mga recipe mo',
       saveCopyFailed: 'Hindi ma-save iyon. Subukan ulit.',

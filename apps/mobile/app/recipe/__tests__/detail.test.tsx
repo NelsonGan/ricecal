@@ -74,11 +74,15 @@ jest.mock('@/features/paywall', () => ({ useRequirePro: () => jest.fn(() => true
 jest.mock('@/features/recipes', () => ({
   IngredientChecklist: () => null,
   RecipeStats: () => null,
+  LogRecipeSheet: ({ visible }: { visible: boolean }) => {
+    const { Text } = jest.requireActual('react-native') as typeof import('react-native')
+    return visible ? <Text>How much did you have?</Text> : null
+  },
   RecipeSteps: () => null,
-  recipeLog: jest.fn(),
   sourceHost: (url: string) => url,
   ShareSheet: () => null,
   useCopyRecipe: () => ({ copy: jest.fn(), busy: false }),
+  useRecipeLogDate: (date?: string) => ({ logDate: date ?? '2026-10-20', isToday: !date }),
   useTickedIngredients: () => [new Set(), jest.fn()],
 }))
 jest.mock('@/features/shared', () => ({ MealPhoto: () => null }))

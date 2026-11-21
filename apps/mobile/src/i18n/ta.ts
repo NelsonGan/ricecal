@@ -1516,6 +1516,7 @@ export const ta = {
       write: 'எழுது',
       photo: 'படம்',
       describe: 'விவரி',
+      quota: '{{count}} இல் {{used}} இலவசம்',
     },
 
     card: {
@@ -1534,9 +1535,8 @@ export const ta = {
     },
 
     empty: {
-      mineTitle: 'இன்னும் செய்முறை இல்லை',
-      mineBody: 'எழுதுங்கள், பானையைப் படம் எடுங்கள் அல்லது விவரியுங்கள்.',
       communityTitle: 'இன்னும் எதுவும் பகிரப்படவில்லை',
+      communityBody: 'உங்கள் செய்முறையை அதன் மெனுவிலிருந்து பகிருங்கள்.',
       filteredTitle: 'இங்கே இன்னும் எதுவும் இல்லை',
       filteredBody: 'வேறு வடிகட்டியை முயற்சியுங்கள்.',
     },
@@ -1574,6 +1574,7 @@ export const ta = {
       name: 'பெயர்',
       namePlaceholder: 'இதை என்ன அழைக்கிறீர்கள்?',
       changePicture: 'படத்தை மாற்று',
+      change: 'மாற்று',
       replacePhotoTitle: 'அதற்குப் பதில் ஓவியம் வேண்டுமா?',
       replacePhotoBody: 'இந்தச் செய்முறையின் புகைப்படம் நீக்கப்படும்.',
       replacePhotoConfirm: 'ஓவியத்தைப் பயன்படுத்து',
@@ -1585,7 +1586,7 @@ export const ta = {
       source: 'மூலம்',
       sourcePlaceholder: 'ரீல் அல்லது பதிவின் இணைப்பு',
       sourceInvalid: 'அந்த இணைப்பு சரியாகத் தெரியவில்லை',
-      perServing: 'ஒரு பங்குக்கு {{kcal}} kcal',
+      perServing: 'ஒரு பரிமாறலுக்கு {{kcal}} kcal, {{count}} பேருக்கு',
       ingredients: 'பொருட்கள்',
       ingredientsCount: 'பொருட்கள் · {{count}}',
       addIngredient: 'ஒரு பொருளைச் சேர்',
@@ -1661,7 +1662,6 @@ export const ta = {
       noSteps: 'படிகள் எழுதப்படவில்லை.',
       noIngredients: 'பொருட்கள் எதுவும் எழுதப்படவில்லை.',
       addToDay: 'இன்றைக்குச் சேர்',
-      added: 'உங்கள் நாளில் சேர்க்கப்பட்டது',
       saveCopy: 'என் செய்முறைகளில் சேமி',
       savedCopy: 'உங்கள் செய்முறைகளில் சேமிக்கப்பட்டது',
       saveCopyFailed: 'அதைச் சேமிக்க முடியவில்லை. மீண்டும் முயற்சியுங்கள்.',

@@ -46,6 +46,7 @@ export const recipes = {
     write: 'Write it',
     photo: 'Photo',
     describe: 'Describe',
+    quota: '{{used}} of {{count}} free',
   },
 
   card: {
@@ -65,9 +66,8 @@ export const recipes = {
   },
 
   empty: {
-    mineTitle: 'No recipes yet',
-    mineBody: 'Write one in, snap the pot or describe it.',
     communityTitle: 'Nothing shared yet',
+    communityBody: 'Share one of yours from its menu.',
     filteredTitle: 'Nothing here yet',
     filteredBody: 'Try another filter.',
   },
@@ -122,6 +122,7 @@ export const recipes = {
     name: 'NAME',
     namePlaceholder: 'What do you call it?',
     changePicture: 'Change the picture',
+    change: 'Change',
     /**
      * The one choice in this form that throws something away: a drawing over a
      * photograph of the real pot.
@@ -140,7 +141,7 @@ export const recipes = {
     sourcePlaceholder: 'Link to the reel or post',
     sourceInvalid: 'That link does not look right',
     /** Over the save button. */
-    perServing: '{{kcal}} kcal per serving',
+    perServing: '{{kcal}} kcal per serving, serves {{count}}',
     ingredients: 'INGREDIENTS',
     ingredientsCount: 'INGREDIENTS · {{count}}',
     addIngredient: 'Add an ingredient',
@@ -251,7 +252,6 @@ export const recipes = {
     noSteps: 'No steps written down.',
     noIngredients: 'No ingredients written down.',
     addToDay: 'Add to today',
-    added: 'Added to your day',
     saveCopy: 'Save to my recipes',
     savedCopy: 'Saved to your recipes',
     saveCopyFailed: 'Could not save that one. Try again.',

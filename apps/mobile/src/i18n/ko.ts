@@ -1511,6 +1511,7 @@ export const ko = {
       write: '직접 쓰기',
       photo: '사진',
       describe: '설명',
+      quota: '무료 {{used}}/{{count}}',
     },
 
     card: {
@@ -1529,9 +1530,8 @@ export const ko = {
     },
 
     empty: {
-      mineTitle: '아직 레시피가 없습니다',
-      mineBody: '직접 쓰거나, 냄비를 찍거나, 말로 설명해 보세요.',
       communityTitle: '아직 공유된 것이 없습니다',
+      communityBody: '내 레시피를 메뉴에서 공유해 보세요.',
       filteredTitle: '아직 아무것도 없습니다',
       filteredBody: '다른 필터를 골라 보세요.',
     },
@@ -1568,6 +1568,7 @@ export const ko = {
       name: '이름',
       namePlaceholder: '이 요리를 뭐라고 부르시나요?',
       changePicture: '그림 바꾸기',
+      change: '변경',
       replacePhotoTitle: '대신 그림을 쓸까요?',
       replacePhotoBody: '이 레시피의 사진은 지워집니다.',
       replacePhotoConfirm: '그림 사용',
@@ -1579,7 +1580,7 @@ export const ko = {
       source: '출처',
       sourcePlaceholder: '릴스나 게시물 링크',
       sourceInvalid: '링크가 올바르지 않은 것 같습니다',
-      perServing: '1인분당 {{kcal}} kcal',
+      perServing: '1인분 {{kcal}} kcal, {{count}}인분',
       ingredients: '재료',
       ingredientsCount: '재료 · {{count}}',
       addIngredient: '재료 추가',
@@ -1655,7 +1656,6 @@ export const ko = {
       noSteps: '적어둔 조리 순서가 없습니다.',
       noIngredients: '적어 둔 재료가 없어요.',
       addToDay: '오늘에 추가',
-      added: '오늘에 추가했습니다',
       saveCopy: '내 레시피에 저장',
       savedCopy: '내 레시피에 저장했습니다',
       saveCopyFailed: '그건 저장하지 못했습니다. 다시 시도하세요.',

@@ -312,7 +312,9 @@ function LogSheet() {
       pathname: '/log/search',
       params: { q: search.query, tracked: search.tracked ? '1' : '0', source: 'mine' },
     })
-    router.push({ pathname: '/recipe/[id]', params: { id: recipeId } })
+    // The sheet's day rides along: a recipe opened from the log sheet on an
+    // earlier day logs into that day, where the Recipes tab logs into today.
+    router.push({ pathname: '/recipe/[id]', params: { id: recipeId, date: selectedDate } })
   }
 
   /**

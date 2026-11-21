@@ -1508,6 +1508,7 @@ export const zhHant = {
       write: '自己寫',
       photo: '照片',
       describe: '描述',
+      quota: '免費 {{used}}/{{count}}',
     },
 
     card: {
@@ -1526,9 +1527,8 @@ export const zhHant = {
     },
 
     empty: {
-      mineTitle: '還沒有食譜',
-      mineBody: '自己寫、拍下整鍋，或用文字描述。',
       communityTitle: '還沒有人分享',
+      communityBody: '從你的食譜選單分享一個吧。',
       filteredTitle: '這裡還沒有東西',
       filteredBody: '換個篩選試試。',
     },
@@ -1565,6 +1565,7 @@ export const zhHant = {
       name: '名稱',
       namePlaceholder: '你都叫它什麼？',
       changePicture: '換一張圖',
+      change: '更換',
       replacePhotoTitle: '改用一張插圖？',
       replacePhotoBody: '這個食譜的照片會被刪掉。',
       replacePhotoConfirm: '用插圖',
@@ -1576,7 +1577,7 @@ export const zhHant = {
       source: '來源',
       sourcePlaceholder: '短片或貼文的連結',
       sourceInvalid: '這個連結看起來不對',
-      perServing: '每份 {{kcal}} 大卡',
+      perServing: '每份 {{kcal}} kcal，共 {{count}} 份',
       ingredients: '食材',
       ingredientsCount: '食材 · {{count}}',
       addIngredient: '新增一樣食材',
@@ -1652,7 +1653,6 @@ export const zhHant = {
       noSteps: '沒有寫下步驟。',
       noIngredients: '還沒有寫下食材。',
       addToDay: '加到今天',
-      added: '已加到你這一天',
       saveCopy: '儲存到我的食譜',
       savedCopy: '已儲存到你的食譜',
       saveCopyFailed: '這個沒能儲存。再試一次。',

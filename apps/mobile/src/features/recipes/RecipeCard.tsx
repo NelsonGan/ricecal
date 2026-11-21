@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -21,7 +22,7 @@ export type RecipeCardProps = {
  * Two columns rather than the three the Settings shelf had, because a cook
  * picks dinner by the picture and by how long it takes, and at a third of the
  * width neither the photo nor "1 h 10 min · 6 servings" survived. The calorie
- * pill and the plus share the photo; the plus is the one-tap log this app
+ * pill stays on the photo; the plus beside the name is the one-tap log this app
  * exists for, so eating the same curry three days running is three taps.
  */
 export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
@@ -35,6 +36,9 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
   // A recipe with nothing in it yet has no price. "0 kcal" over its picture
   // reads as a fault, and a plus that logs it would put an empty row in the day.
   const priced = recipe.ingredientCount > 0
+  const logs = Boolean(onLog && priced)
+  /** Where the photo ends, which is where the plus beside the name sits. */
+  const [photoHeight, setPhotoHeight] = useState(0)
   const minutes = totalMinutes(recipe)
   const meta = [
     minutes != null ? duration(minutes) : null,
@@ -47,17 +51,25 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
     <View className="w-[48%]">
       {/* One button for the card, and the plus over it rather than inside: a
           press target inside another reads to a screen reader as one label
-          with a stray button in it. The plus sits on the photo's corner, so the
-          name and the time below keep the card's whole width. */}
+          with a stray button in it. */}
       <Tappable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={[recipe.name, priced ? `${calories} ${unit}` : null, meta]
+        accessibilityLabel={[
+          recipe.name,
+          recipe.isFavourite ? t('recipes:card.favourite') : null,
+          priced ? `${calories} ${unit}` : null,
+          meta,
+        ]
           .filter(Boolean)
           .join(', ')}
         className="gap-2"
       >
-        <View className="aspect-[4/3] items-center justify-center overflow-hidden rounded-tile border-[3px] border-line bg-track">
+        <View
+          testID="recipe-card-photo"
+          onLayout={(event) => setPhotoHeight(event.nativeEvent.layout.height)}
+          className="aspect-[4/3] items-center justify-center overflow-hidden rounded-tile border-[3px] border-line bg-track"
+        >
           {photo ? (
             <MealPhoto source={photo} />
           ) : resolvingPhoto ? (
@@ -82,7 +94,9 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
         </View>
 
         <View className="gap-0.5">
-          <Text variant="label" numberOfLines={2}>
+          {/* The name leaves the plus its room; the time line under it runs
+              the card's whole width, so "1 h 30 min · 12 servings" fits. */}
+          <Text variant="label" numberOfLines={2} className={logs ? 'pr-[34px]' : undefined}>
             {recipe.name}
           </Text>
           <Text variant="caption" numberOfLines={1}>
@@ -91,16 +105,20 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
         </View>
       </Tappable>
 
-      {onLog && priced ? (
-        <View className="absolute right-1.5 top-1.5">
+      {/* Beside the name, as the mockup had it, rather than on the photo's
+          corner: there it was the same green plus as "New recipe" in the
+          header, and a tap meant for the picture landed on it. Placed once the
+          photo has a height, because the card's width decides it. */}
+      {logs && photoHeight > 0 ? (
+        <View className="absolute right-0" style={{ top: photoHeight + 6 }}>
           <IconButton
             variant="primary"
-            size="xs"
-            hitSlop={6}
+            size="xxs"
+            hitSlop={8}
             accessibilityLabel={t('recipes:card.log', { name: recipe.name })}
             onPress={onLog}
           >
-            <Icon set="ui" name="plus" size={18} tintColor={colors.onPandan} />
+            <Icon set="ui" name="plus" size={14} tintColor={colors.onPandan} />
           </IconButton>
         </View>
       ) : null}
