@@ -1187,7 +1187,7 @@ same My recipes results instead of Today or All foods. `openOwn` and `openCreate
 sit beside `openPicked`, and the page does not focus its field when any of them
 sent it, since a keyboard would come up under the screen on top.
 
-Five tabs (Today, Social, Recipes, Trends, Me) on the headless `expo-router/ui`
+Five tabs (Today, Recipes, Social, Trends, Me) on the headless `expo-router/ui`
 Tabs rather than a styled navigator, because `NavBar` and `NavItem` are the
 design system's and a native tab bar cannot be made to look like them.
 
@@ -2918,9 +2918,9 @@ than the only one.
 
 ### The Recipes tab
 
-The fifth tab, between Social and Trends, built from mockups of the screens a
+The tab after Today (Social keeps the centre), built from mockups of the screens a
 recipe manager has (Paprika, Mela, Crouton, ReciMe were the reference points):
-a library led by pictures and filters, an overview before cooking, amounts that
+a library led by pictures and search, an overview before cooking, amounts that
 follow the number of people, a cook mode, and a source link to come back to.
 
 **The shelf.** Mine or Community, and search. There was a row of filter chips
@@ -3184,7 +3184,7 @@ Everyone or Followers. With automatic posting off, only pressing Post creates a 
 does not undo the meal. The source is one committed entry owned by the caller;
 the server records that reference and accepts no client-supplied author or food.
 
-The feed is the lower half of Social, the second bottom tab, under the
+The feed is the lower half of Social, the centre bottom tab, under the
 viewer's groups (see [Groups](#groups)). Its Following and Discover tabs and
 its filter head the list, below the groups, and scroll away with it; switching
 either keeps the list where it is rather than remounting it, so the groups

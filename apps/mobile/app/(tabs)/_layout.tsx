@@ -54,8 +54,9 @@ export const unstable_settings = { anchor: 'today' }
  * Five tabs across the full width of a floating bar. Workouts is not one of
  * them: it is a page, opened from a tile beside the water on Today and from
  * Me. Social holds both the feed and the groups, which were a tab each.
- * Recipes was "My foods", a row in Settings, until it grew a cook mode. The
- * add button floats over Today alone, where logging happens. See `NavBar`.
+ * Recipes was "My foods", a row in Settings, until it grew a cook mode; it sits
+ * next to Today and Social keeps the centre. The add button floats over Today
+ * alone, where logging happens. See `NavBar`.
  *
  * Still the headless `expo-router/ui` tabs rather than a styled navigator,
  * because `NavBar` / `NavItem` are the design system's and a native tab bar
@@ -123,6 +124,10 @@ function SignedInTabs() {
               <NavItem label={t('nav.today')} icon={{ set: 'ui', name: 'home' }} />
             </TabTrigger>
 
+            <TabTrigger name="recipes" href="/recipes" asChild>
+              <NavItem label={t('recipes:title')} icon={{ set: 'food', name: 'cooking-pot' }} />
+            </TabTrigger>
+
             <TabTrigger name="social" href="/social" asChild>
               <NavItem
                 label={t('social:title')}
@@ -130,10 +135,6 @@ function SignedInTabs() {
                 badge={inviteCount}
                 badgeLabel={t('groups:invites')}
               />
-            </TabTrigger>
-
-            <TabTrigger name="recipes" href="/recipes" asChild>
-              <NavItem label={t('recipes:title')} icon={{ set: 'food', name: 'cooking-pot' }} />
             </TabTrigger>
 
             <TabTrigger name="trends" href="/trends" asChild>
