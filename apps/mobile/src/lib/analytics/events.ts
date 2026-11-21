@@ -267,7 +267,7 @@ export type Events = {
    * A place picked by hand in the picker, once the entry saved it. The
    * automatic tag is `Meal Logged`'s `located` instead.
    */
-  'Meal Location Set': { source: 'current' | 'recent' | 'search' }
+  'Meal Location Set': { source: 'current' | 'nearby' | 'recent' | 'search' }
   /** The food map, once per visit, with how many places the period opened on. */
   'Food Map Opened': { places: number }
   /** The one-time "Remember where you eat?" sheet, at most once per install and account. */

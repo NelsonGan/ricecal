@@ -33,7 +33,7 @@ import { AppMap, mapsModule } from './AppMap'
 import { MapGestures, pointFor, type ScreenPoint } from './MapGestures'
 
 /** How a place was chosen, for analytics. */
-export type PlaceSource = 'current' | 'recent' | 'search'
+export type PlaceSource = 'current' | 'nearby' | 'recent' | 'search'
 
 type Props = {
   visible: boolean
@@ -169,6 +169,9 @@ export function PlacePickerSheet({
   useEffect(() => {
     if (!visible || !center || searching) return undefined
     const id = ++settleId.current
+    // The old spot's name is not this one's: until the new one is named the
+    // pin is on nothing, and Use this spot waits rather than saving the last.
+    setSpot(null)
     const timer = setTimeout(() => {
       setNearby((now) => (now.kind === 'done' ? now : { kind: 'loading' }))
       nearbyPlaces({ ...center, language })
@@ -244,10 +247,11 @@ export function PlacePickerSheet({
     if (selected) return selected
     if (center) {
       const under = list.find((place) => distanceMeters(center, place) <= SNAP_METERS)
-      if (under) return { place: under, source: 'search' as const }
+      if (under)
+        return { place: under, source: searching ? ('search' as const) : ('nearby' as const) }
     }
     return spot ? { place: spot, source: 'current' as const } : null
-  }, [selected, center, list, spot])
+  }, [selected, center, list, spot, searching])
 
   /** A tap on the map, matched to the listed place whose pin is under it (see `MapGestures`). */
   const tapAt = (point: ScreenPoint) => {
@@ -260,7 +264,7 @@ export function PlacePickerSheet({
       })
       .filter((candidate) => candidate.distance <= 26)
       .sort((a, b) => a.distance - b.distance)[0]
-    if (hit) jumpTo(hit.place, searching ? 'search' : 'recent')
+    if (hit) jumpTo(hit.place, searching ? 'search' : 'nearby')
   }
 
   const jumpTo = (place: PlaceResult, source: PlaceSource) => {
@@ -340,7 +344,7 @@ export function PlacePickerSheet({
                     tracksViewChanges={false}
                     onPress={(event) => {
                       event.stopPropagation()
-                      jumpTo(place, searching ? 'search' : 'recent')
+                      jumpTo(place, searching ? 'search' : 'nearby')
                     }}
                     accessibilityLabel={place.name}
                   >
@@ -468,7 +472,7 @@ export function PlacePickerSheet({
                 return (
                   <Tappable
                     key={placeKey(place)}
-                    onPress={() => jumpTo(place, searching ? 'search' : 'recent')}
+                    onPress={() => jumpTo(place, searching ? 'search' : 'nearby')}
                     accessibilityRole="button"
                     accessibilityState={{ selected: on }}
                     accessibilityLabel={[place.name, distance].filter(Boolean).join(', ')}

@@ -184,11 +184,14 @@ export function nearbyPath(request: ReverseRequest): string {
   const lat = Number(round(request.latitude, NEARBY_COORD_DECIMALS))
   const lng = Number(round(request.longitude, NEARBY_COORD_DECIMALS))
   const point = `${lat.toFixed(NEARBY_COORD_DECIMALS)},${lng.toFixed(NEARBY_COORD_DECIMALS)}`
+  // Clamped, so a point by a pole or the antimeridian still asks Apple a box
+  // it accepts (a little smaller on that side).
+  const clamp = (value: number, limit: number) => Math.max(-limit, Math.min(limit, value))
   const box = [
-    lat + NEARBY_HALF_SPAN,
-    lng + NEARBY_HALF_SPAN,
-    lat - NEARBY_HALF_SPAN,
-    lng - NEARBY_HALF_SPAN,
+    clamp(lat + NEARBY_HALF_SPAN, 90),
+    clamp(lng + NEARBY_HALF_SPAN, 180),
+    clamp(lat - NEARBY_HALF_SPAN, 90),
+    clamp(lng - NEARBY_HALF_SPAN, 180),
   ]
     .map((value) => value.toFixed(NEARBY_COORD_DECIMALS))
     .join(',')

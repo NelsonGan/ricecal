@@ -51,3 +51,26 @@ export function useLocatedEntries({ enabled = true }: { enabled?: boolean } = {}
     enabled,
   })
 }
+
+/**
+ * Whether this account has tagged any meal, for Today's map button while
+ * Locations is off: one row's id from the partial index, not the entries.
+ */
+export function useHasLocatedEntries({ enabled = true }: { enabled?: boolean } = {}) {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: [...keys.located(userId), 'any'] as const,
+    queryFn: async () => {
+      const rows = unwrap(
+        await supabase
+          .from('food_logs')
+          .select('id')
+          .eq('user_id', userId)
+          .not('latitude', 'is', null)
+          .limit(1),
+      )
+      return rows.length > 0
+    },
+    enabled,
+  })
+}

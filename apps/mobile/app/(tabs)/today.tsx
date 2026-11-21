@@ -17,7 +17,7 @@ import {
   useDayLog,
   useDeleteActivitySession,
   useDeleteWorkout,
-  useLocatedEntries,
+  useHasLocatedEntries,
   usePendingSnaps,
   useRemoveEntry,
   useSelectedDate,
@@ -382,11 +382,11 @@ function TodayContent() {
   const [calendar, setCalendar] = useState(false)
   // The food map's way in (README: Meal locations): while Locations is on, or
   // once any meal has a place, so turning Locations off never hides a map of
-  // places already saved. The read is the map's own, asked only when off.
+  // places already saved. One row's id, asked only when off.
   const userId = useUserId()
   const { enabled: locationsOn } = useLocationsPreference(userId)
-  const located = useLocatedEntries({ enabled: !locationsOn })
-  const showMap = locationsOn || (located.data?.length ?? 0) > 0
+  const anyLocated = useHasLocatedEntries({ enabled: !locationsOn })
+  const showMap = locationsOn || anyLocated.data === true
   /**
    * The month the grid is showing. Seeded from the strip's day and re-seeded
    * each time the calendar opens, or coming back a week later would land on

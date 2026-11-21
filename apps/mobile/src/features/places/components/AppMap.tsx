@@ -1,5 +1,11 @@
 import { forwardRef, type ReactNode } from 'react'
-import { Platform, type StyleProp, StyleSheet, type ViewStyle } from 'react-native'
+import {
+  Platform,
+  type StyleProp,
+  StyleSheet,
+  TurboModuleRegistry,
+  type ViewStyle,
+} from 'react-native'
 import type MapViewType from 'react-native-maps'
 import type { EdgePadding, MapPressEvent, MapStyleElement, Region } from 'react-native-maps'
 
@@ -18,6 +24,12 @@ let loaded: MapsModule | null | undefined
 export function mapsModule(): MapsModule | null {
   if (loaded !== undefined) return loaded
   try {
+    // Asked first: the JS loads on any build, and a MapView without its
+    // native half is a red screen rather than an exception.
+    if (!TurboModuleRegistry.get('RNMapsAirModule')) {
+      loaded = null
+      return loaded
+    }
     const mod = require('react-native-maps') as MapsModule
     loaded = mod?.default ? mod : null
   } catch {

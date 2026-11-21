@@ -392,12 +392,15 @@ export function toLocation(
  * clears the lot, and a partial write would trip `food_logs_location_complete`.
  */
 export function locationColumns(location: EntryLocation | null) {
+  // Cut to the columns' checks: a geocoder's long name would otherwise fail
+  // the whole insert, and the meal with it.
+  const cut = (value: string | undefined, max: number) => (value ? value.slice(0, max) : null)
   return {
     latitude: location?.latitude ?? null,
     longitude: location?.longitude ?? null,
-    location_name: location?.name ?? null,
-    location_address: location?.address ?? null,
-    location_id: location?.placeId ?? null,
-    location_category: location?.category ?? null,
+    location_name: location ? location.name.slice(0, 200) : null,
+    location_address: cut(location?.address, 300),
+    location_id: cut(location?.placeId, 200),
+    location_category: cut(location?.category, 64),
   }
 }

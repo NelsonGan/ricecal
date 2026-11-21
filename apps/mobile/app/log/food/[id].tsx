@@ -987,27 +987,36 @@ function FoodDetail() {
     // free tier is a diary you can keep by searching and scanning, with the
     // model behind the wall. Editing was never gated either: a lapsed
     // subscription must not lock somebody out of their own diary.
-    logFood.mutate({
-      snapshot: snapshotFromFood(food, chosen),
-      quantity,
-      logDate: selectedDate,
-      // Only what was actually chosen. `shownIcon` would write the food's own
-      // drawing onto the row as an override, which is not an override at all.
-      icon,
-      // And a photo taken while composing this row, which the picker offers as
-      // the alternative to a drawing. Never both: taking one clears the other.
-      photoPath: shot?.path,
-      // Two doors lead here and `entry_source` calls both `search`: a packet
-      // held up to the camera, and a dish picked out of the list. This branch
-      // only runs with no `existing` entry, so there is no third case.
-      method: packet ? 'barcode' : 'search',
-      // What the Where card shows, once it shows anything: the user's own pick,
-      // a removal, or the automatic tag that has already landed. Before that,
-      // nothing, and the data layer tags the row when the fix lands.
-      location:
-        draftLocation !== undefined ? draftLocation : autoLocation ? autoLocation : undefined,
-    })
-    if (draftLocation) track('Meal Location Set', { source: draftSource.current ?? 'search' })
+    logFood.mutate(
+      {
+        snapshot: snapshotFromFood(food, chosen),
+        quantity,
+        logDate: selectedDate,
+        // Only what was actually chosen. `shownIcon` would write the food's own
+        // drawing onto the row as an override, which is not an override at all.
+        icon,
+        // And a photo taken while composing this row, which the picker offers as
+        // the alternative to a drawing. Never both: taking one clears the other.
+        photoPath: shot?.path,
+        // Two doors lead here and `entry_source` calls both `search`: a packet
+        // held up to the camera, and a dish picked out of the list. This branch
+        // only runs with no `existing` entry, so there is no third case.
+        method: packet ? 'barcode' : 'search',
+        // What the Where card shows, once it shows anything: the user's own pick,
+        // a removal, or the automatic tag that has already landed. Before that,
+        // nothing, and the data layer tags the row when the fix lands.
+        location:
+          draftLocation !== undefined ? draftLocation : autoLocation ? autoLocation : undefined,
+      },
+      {
+        // Only once the meal, and the place with it, is saved.
+        onSuccess: () => {
+          if (draftLocation && draftSource.current) {
+            track('Meal Location Set', { source: draftSource.current })
+          }
+        },
+      },
+    )
     // The insert carries it now, so it is not an orphan for the unmount effect
     // to sweep up on the way out.
     orphanShot.current = undefined

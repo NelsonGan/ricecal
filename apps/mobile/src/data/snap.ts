@@ -56,15 +56,18 @@ export type DescribeInput = {
  * head start; past this the scan goes untagged rather than waiting on the GPS.
  */
 const LOCATION_WAIT_MS = 3000
+/** A typed meal has no upload to hide the wait behind, so it takes only a fix already at hand. */
+const LOCATION_WAIT_TYPED_MS = 400
 
 /** The location if it lands in time, else none. Never throws: a meal outranks its address. */
 function settleLocation(
   location: Promise<EntryLocation | null> | undefined,
+  waitMs: number,
 ): Promise<EntryLocation | null> {
   if (!location) return Promise.resolve(null)
   return Promise.race([
     location.catch(() => null),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), LOCATION_WAIT_MS)),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), waitMs)),
   ])
 }
 
@@ -260,7 +263,10 @@ function useRecogniseMeal() {
             throw settled(error instanceof Error ? error : new Error('upload failed'))
           }
         }
-        const where = await settleLocation(location)
+        const where = await settleLocation(
+          location,
+          photoUri ? LOCATION_WAIT_MS : LOCATION_WAIT_TYPED_MS,
+        )
         return scanMeal({ photoPath: path, text, logDate, barcode, note, location: where })
       }
 

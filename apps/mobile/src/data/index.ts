@@ -64,7 +64,7 @@ export {
   type WeightReading,
 } from './history'
 export { keys } from './keys'
-export { type LocatedEntry, useLocatedEntries } from './located'
+export { type LocatedEntry, useHasLocatedEntries, useLocatedEntries } from './located'
 export { toEntry, toFood, toIcon, toRecipe, toRecipeIngredient } from './mappers'
 export { useBlockAuthor, useReportRecipe } from './moderation'
 export {
