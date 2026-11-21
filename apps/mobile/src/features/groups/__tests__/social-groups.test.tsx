@@ -1,5 +1,6 @@
+import { ScrollView } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { fireEvent, render, screen } from '@/test-utils'
+import { act, fireEvent, render, screen, within } from '@/test-utils'
 import '@/i18n'
 import type { GroupSummary } from '@/data/groups'
 import { SocialGroups } from '../SocialGroups'
@@ -11,6 +12,7 @@ const METRICS = {
 }
 
 const mockPush = jest.fn()
+let mockFocusCallbacks: (() => void)[] = []
 let mockGroups: GroupSummary[] = []
 let mockFetching = false
 let mockError = false
@@ -46,7 +48,9 @@ jest.mock('../Board', () => {
 jest.mock('../InviteSheet', () => ({ InviteSheet: () => null }))
 jest.mock('@/data', () => ({ useUserId: () => 'me' }))
 jest.mock('expo-router', () => ({
-  useFocusEffect: jest.fn(),
+  useFocusEffect: (callback: () => void) => {
+    mockFocusCallbacks.push(callback)
+  },
   useIsFocused: () => true,
   useRouter: () => ({ push: mockPush }),
 }))
@@ -71,6 +75,7 @@ const social = (inView = true) => (
 
 beforeEach(() => {
   mockPush.mockClear()
+  mockFocusCallbacks = []
   mockRefetch.mockReset()
   // As React Query does: a successful fetch stamps the list anew.
   mockRefetch.mockImplementation(async () => {
@@ -208,4 +213,94 @@ it('forgets a group the first list after a failed ask leaves out', async () => {
   mockGroups = [...mockGroups, group('left-it', 'Old Crew')]
   await view.rerender(social())
   expect(screen.getByText('board g1')).toBeOnTheScreen()
+})
+
+const tabNames = () =>
+  screen.getAllByRole('tab').map((tab) => String(within(tab).getByText(/.+/).props.children))
+
+it('puts a remembered group at the front of the pill row on launch', async () => {
+  mockGroups = [
+    group('g1', 'Test Two'),
+    group('g2', 'Makan Buddies'),
+    group('g3', 'Gym Crew'),
+    group('g4', 'Family Table'),
+  ]
+  setOpenGroup('me', 'g4')
+
+  await render(social())
+  expect(tabNames()).toEqual(['Family Table', 'Test Two', 'Makan Buddies', 'Gym Crew'])
+  expect(screen.getByRole('tab', { name: 'Family Table' }).props.accessibilityState).toEqual({
+    selected: true,
+  })
+  expect(screen.getByText('board g4')).toBeOnTheScreen()
+})
+
+it('keeps the pill row still on tap, then moves the chosen group to the front on relaunch', async () => {
+  mockGroups = [
+    group('g1', 'Test Two'),
+    group('g2', 'Makan Buddies'),
+    group('g3', 'Gym Crew'),
+    group('g4', 'Family Table'),
+  ]
+
+  const first = await render(social())
+  expect(tabNames()).toEqual(['Test Two', 'Makan Buddies', 'Gym Crew', 'Family Table'])
+
+  await fireEvent.press(screen.getByRole('tab', { name: 'Family Table' }))
+  expect(screen.getByText('board g4')).toBeOnTheScreen()
+  // Tapping in place does not jump the pill out from under the finger.
+  expect(tabNames()).toEqual(['Test Two', 'Makan Buddies', 'Gym Crew', 'Family Table'])
+
+  await first.unmount()
+
+  // Second launch starts with the remembered group at the front.
+  await render(social())
+  expect(tabNames()).toEqual(['Family Table', 'Test Two', 'Makan Buddies', 'Gym Crew'])
+  expect(screen.getByText('board g4')).toBeOnTheScreen()
+})
+
+it('moves a group chosen outside the pill row to the front and rewinds the strip', async () => {
+  const scrollTo = jest.spyOn(ScrollView.prototype, 'scrollTo').mockImplementation(() => {})
+  mockGroups = [
+    group('g1', 'Test Two'),
+    group('g2', 'Makan Buddies'),
+    group('g3', 'Gym Crew'),
+    group('g4', 'Family Table'),
+  ]
+
+  await render(social())
+  scrollTo.mockClear()
+
+  await act(() => {
+    setOpenGroup('me', 'g3')
+  })
+
+  expect(tabNames()).toEqual(['Gym Crew', 'Test Two', 'Makan Buddies', 'Family Table'])
+  expect(scrollTo).toHaveBeenCalledWith({ x: 0, animated: false })
+  scrollTo.mockRestore()
+})
+
+it('moves a tapped group to the front and rewinds the strip when returning to Social', async () => {
+  const scrollTo = jest.spyOn(ScrollView.prototype, 'scrollTo').mockImplementation(() => {})
+  mockGroups = [
+    group('g1', 'Test Two'),
+    group('g2', 'Makan Buddies'),
+    group('g3', 'Gym Crew'),
+    group('g4', 'Family Table'),
+  ]
+
+  await render(social())
+  await fireEvent.press(screen.getByRole('tab', { name: 'Family Table' }))
+  expect(tabNames()).toEqual(['Test Two', 'Makan Buddies', 'Gym Crew', 'Family Table'])
+
+  scrollTo.mockClear()
+  // Focus callbacks are pushed on each render; invoke the latest pair once.
+  const latest = mockFocusCallbacks.slice(-2)
+  await act(() => {
+    for (const callback of latest) callback()
+  })
+
+  expect(tabNames()).toEqual(['Family Table', 'Test Two', 'Makan Buddies', 'Gym Crew'])
+  expect(scrollTo).toHaveBeenCalledWith({ x: 0, animated: false })
+  scrollTo.mockRestore()
 })

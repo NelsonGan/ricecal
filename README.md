@@ -3578,7 +3578,11 @@ pending invites.
 ### On Social
 
 Social opens on the viewer's groups: a row of pills to switch group, ending in
-**Groups** (with the invite count), and the chosen group's card. The card is
+**Groups** (with the invite count), and the chosen group's card. The chosen
+group is pinned to the front of the pill row on launch, when returning to
+Social, and when picked from **Groups** or a notification, so a group further
+down the list is visible without scrolling; tapping a pill in place leaves the
+row still while browsing. The card is
 the group's name, how many have logged today, the first three rows of today's
 board (`BoardPreview`; the server puts the viewer first) and the chat row. A
 tap on its header or on **See all** pushes the full board (`/group/board`),

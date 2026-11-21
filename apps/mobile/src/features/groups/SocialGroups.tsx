@@ -1,7 +1,7 @@
 import { useFocusEffect, useIsFocused, useRouter } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ScrollView, View } from 'react-native'
+import { ScrollView, type ScrollViewInstance, View } from 'react-native'
 import { useUserId } from '@/data'
 import {
   type GroupSummary,
@@ -41,6 +41,28 @@ export function SocialGroups({ inView }: { inView: boolean }) {
   const remembered = useOpenGroup(userId)
   const list = groups.data ?? []
   const chosen = list.find((group) => group.id === remembered)
+  // Which group sits first in the pill row. Starts at the remembered choice on
+  // mount, and syncs again when a group is chosen outside this row (from
+  // Groups, a notification or an account switch) or when returning to Social,
+  // so a group further down the list is visible at the start instead of
+  // scrolled out of sight. Tapping a pill in place leaves the row still until
+  // then so pills do not jump out from under the finger.
+  const chipsRef = useRef<ScrollViewInstance>(null)
+  const rememberedRef = useRef(remembered)
+  rememberedRef.current = remembered
+  const inPlaceRef = useRef<string | null>(null)
+  const prevUserIdRef = useRef(userId)
+  const [front, setFront] = useState<string | null>(remembered)
+  useEffect(() => {
+    const switchedUser = prevUserIdRef.current !== userId
+    prevUserIdRef.current = userId
+    if (switchedUser || remembered !== inPlaceRef.current) {
+      inPlaceRef.current = null
+      setFront(remembered)
+      chipsRef.current?.scrollTo({ x: 0, animated: false })
+    }
+  }, [userId, remembered])
+  const ordered = useMemo(() => orderGroupChips(list, front), [list, front])
   // A group just made or joined is chosen before the list has it, and so is
   // one a notification opened that this phone has not listed yet: ask the
   // server once and wait for the answer rather than show another group's
@@ -78,6 +100,9 @@ export function SocialGroups({ inView }: { inView: boolean }) {
   useFocusEffect(
     useCallback(() => {
       setAsk((current) => (current?.state === 'failed' ? null : current))
+      inPlaceRef.current = null
+      setFront(rememberedRef.current)
+      chipsRef.current?.scrollTo({ x: 0, animated: false })
     }, []),
   )
   const waiting = !answered && !(asked && ask.state === 'failed')
@@ -108,10 +133,14 @@ export function SocialGroups({ inView }: { inView: boolean }) {
   return (
     <View className="gap-3 pt-1">
       <GroupChips
-        groups={list}
+        scrollRef={chipsRef}
+        groups={ordered}
         selected={selected?.id ?? null}
         inviteCount={inviteCount}
-        onSelect={(id) => setOpenGroup(userId, id)}
+        onSelect={(id) => {
+          inPlaceRef.current = id
+          setOpenGroup(userId, id)
+        }}
         onMore={openGroups}
       />
       {selected ? (
@@ -141,17 +170,33 @@ export function SocialGroups({ inView }: { inView: boolean }) {
 }
 
 /**
+ * Moves `frontId` to the head of the chip row while keeping the rest in the
+ * server's order.
+ */
+function orderGroupChips(
+  groups: readonly GroupSummary[],
+  frontId: string | null,
+): readonly GroupSummary[] {
+  if (!frontId) return groups
+  const index = groups.findIndex((group) => group.id === frontId)
+  if (index <= 0) return groups
+  return [groups[index], ...groups.slice(0, index), ...groups.slice(index + 1)]
+}
+
+/**
  * The viewer's groups as a row of flat pills, then one that opens the Groups
  * page: every group with its details, the invites waiting (its badge), a new
  * group and the public ones to join.
  */
 function GroupChips({
+  scrollRef,
   groups,
   selected,
   inviteCount,
   onSelect,
   onMore,
 }: {
+  scrollRef: RefObject<ScrollViewInstance | null>
   groups: readonly GroupSummary[]
   selected: string | null
   inviteCount: number
@@ -161,6 +206,7 @@ function GroupChips({
   const { t } = useTranslation('groups')
   return (
     <ScrollView
+      ref={scrollRef}
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerClassName="gap-2 px-gutter"
