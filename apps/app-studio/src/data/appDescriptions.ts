@@ -49,12 +49,13 @@ A day over budget gets "a bit over today, tomorrow is a new count." Never a tell
 Terms of Use: https://ricecal.app/terms
 Privacy Policy: https://ricecal.app/privacy
 Contact: https://ricecal.app/contact`,
-    whatsNew: `- Revamped the progress charts
-- Added a soft ding when a workout is finished
-- Revamped the look of shared meal photos
-- Fixed food search while typing in Pinyin
+    whatsNew: `- Added a recipe box with a step by step cook mode
+- Added meal locations and a food map
+- Added cups and spoons for logging food
+- Revamped the feed and groups into one tab
+- Fixed synced workouts showing up more than once
 
-Good food, good mood.`,
+Home cooking always tastes better.`,
   },
 
   ms: {
@@ -83,12 +84,13 @@ Hari yang terlebih sedikit dapat "lebih sedikit hari ini, esok kiraan baharu." B
 Terma Penggunaan: https://ricecal.app/terms
 Dasar Privasi: https://ricecal.app/privacy
 Hubungi kami: https://ricecal.app/contact`,
-    whatsNew: `- Mereka bentuk semula carta kemajuan
-- Menambah bunyi lembut apabila senaman selesai
-- Mereka bentuk semula rupa foto hidangan yang dikongsi
-- Membaiki carian makanan semasa menaip dalam Pinyin
+    whatsNew: `- Menambah kotak resipi dengan mod memasak langkah demi langkah
+- Menambah lokasi makan dan peta makanan
+- Menambah cawan dan sudu untuk mencatat makanan
+- Memperbaharui suapan dan kumpulan menjadi satu tab
+- Membaiki senaman yang disegerakkan muncul lebih daripada sekali
 
-Makanan sedap, hati gembira.`,
+Masakan rumah sentiasa lebih sedap.`,
   },
 
   zh: {
@@ -117,12 +119,13 @@ Makanan sedap, hati gembira.`,
 使用条款：https://ricecal.app/terms
 隐私政策：https://ricecal.app/privacy
 联系我们：https://ricecal.app/contact`,
-    whatsNew: `- 重新设计了进度图表
-- 新增了运动结束时的轻柔提示音
-- 重新设计了分享的餐食照片
-- 修复了拼音输入时的食物搜索问题
+    whatsNew: `- 新增了食谱收藏和分步烹饪模式
+- 新增了用餐地点和美食地图
+- 新增了用杯和汤匙记录食物
+- 重新设计了动态和小组并合为一页
+- 修复了同步的训练重复出现的问题
 
-美食带来好心情。`,
+家常菜总是最香。`,
   },
 
   id: {
@@ -151,12 +154,13 @@ Hari yang lewat sedikit dapat "hari ini sedikit lebih, besok hitungan baru." Buk
 Ketentuan Penggunaan: https://ricecal.app/terms
 Kebijakan Privasi: https://ricecal.app/privacy
 Kontak: https://ricecal.app/contact`,
-    whatsNew: `- Mendesain ulang grafik kemajuan
-- Menambahkan bunyi lembut saat olahraga selesai
-- Mendesain ulang tampilan foto makanan yang dibagikan
-- Memperbaiki pencarian makanan saat mengetik dengan Pinyin
+    whatsNew: `- Menambahkan kotak resep dengan mode memasak langkah demi langkah
+- Menambahkan lokasi makan dan peta makan
+- Menambahkan cangkir dan sendok untuk mencatat makanan
+- Memperbarui linimasa dan grup menjadi satu tab
+- Memperbaiki latihan tersinkron yang muncul lebih dari sekali
 
-Makanan enak, hati senang.`,
+Masakan rumah selalu lebih nikmat.`,
   },
 
   th: {
@@ -185,12 +189,13 @@ Makanan enak, hati senang.`,
 ข้อกำหนดการใช้งาน: https://ricecal.app/terms
 นโยบายความเป็นส่วนตัว: https://ricecal.app/privacy
 ติดต่อเรา: https://ricecal.app/contact`,
-    whatsNew: `- ออกแบบกราฟความคืบหน้าใหม่
-- เพิ่มเสียงเบา ๆ เมื่อออกกำลังกายเสร็จ
-- ออกแบบรูปอาหารที่แชร์ใหม่
-- แก้ไขการค้นหาอาหารขณะพิมพ์ด้วยพินอิน
+    whatsNew: `- เพิ่มกล่องสูตรอาหารพร้อมโหมดทำอาหารทีละขั้นตอน
+- เพิ่มสถานที่ของมื้ออาหารและแผนที่อาหาร
+- เพิ่มหน่วยถ้วยและช้อนสำหรับบันทึกอาหาร
+- ปรับโฉมฟีดและกลุ่มให้รวมเป็นแท็บเดียว
+- แก้ไขปัญหาการออกกำลังกายที่ซิงค์แล้วแสดงซ้ำ
 
-อาหารอร่อย ใจก็เป็นสุข`,
+อาหารฝีมือที่บ้านอร่อยที่สุดเสมอ`,
   },
 
   vi: {
@@ -219,12 +224,13 @@ Ngày quá một chút sẽ nhận được "hôm nay hơi quá, mai đếm lạ
 Điều khoản sử dụng: https://ricecal.app/terms
 Chính sách bảo mật: https://ricecal.app/privacy
 Liên hệ: https://ricecal.app/contact`,
-    whatsNew: `- Thiết kế lại biểu đồ tiến độ
-- Thêm âm thanh nhẹ khi hoàn thành buổi tập
-- Thiết kế lại ảnh món ăn được chia sẻ
-- Sửa lỗi tìm món ăn khi gõ bằng Pinyin
+    whatsNew: `- Thêm hộp công thức với chế độ nấu từng bước
+- Thêm nơi ăn cho bữa ăn và bản đồ ẩm thực
+- Thêm cốc và thìa để ghi món ăn
+- Làm mới bảng tin và nhóm thành một thẻ
+- Khắc phục lỗi buổi tập đã đồng bộ bị lặp lại
 
-Ăn ngon, lòng vui.`,
+Cơm nhà luôn ngon nhất.`,
   },
 
   ja: {
@@ -253,12 +259,13 @@ Apple Health または Health Connect をつなぐと、消費した分が食べ
 利用規約：https://ricecal.app/terms
 プライバシーポリシー：https://ricecal.app/privacy
 お問い合わせ：https://ricecal.app/contact`,
-    whatsNew: `- 進捗グラフを一新しました
-- 運動の終了時に鳴るやさしい音を追加しました
-- 共有する食事写真のデザインを一新しました
-- ピンイン入力中の食品検索の問題を修正しました
+    whatsNew: `- ステップごとの調理モード付きレシピ帳を追加しました
+- 食事の場所とフードマップを追加しました
+- カップや大さじでの記録を追加しました
+- フィードとグループを1つのタブに刷新しました
+- 同期したワークアウトが重複する問題を修正しました
 
-おいしい食事は心も満たします。`,
+家庭料理はいつだっていちばんおいしい。`,
   },
 
   ko: {
@@ -287,12 +294,13 @@ Apple Health나 Health Connect를 연결하면 소모한 칼로리가 먹을 수
 이용약관: https://ricecal.app/terms
 개인정보처리방침: https://ricecal.app/privacy
 문의: https://ricecal.app/contact`,
-    whatsNew: `- 진행 차트를 새롭게 디자인했습니다
-- 운동을 마치면 울리는 부드러운 소리를 추가했습니다
-- 공유하는 식사 사진을 새롭게 디자인했습니다
-- 병음 입력 중 음식 검색 문제를 수정했습니다
+    whatsNew: `- 단계별 요리 모드가 있는 레시피 모음을 추가했습니다
+- 식사 위치와 푸드 맵을 추가했습니다
+- 컵과 큰술 단위 기록을 추가했습니다
+- 피드와 그룹을 하나의 탭으로 새롭게 개편했습니다
+- 동기화된 운동이 중복되던 문제를 수정했습니다
 
-맛있는 음식은 기분도 좋게 합니다.`,
+집밥은 언제나 가장 맛있습니다.`,
   },
 
   hi: {
@@ -321,12 +329,13 @@ Apple Health या Health Connect जोड़िए और जो कैलो
 उपयोग की शर्तें: https://ricecal.app/terms
 गोपनीयता नीति: https://ricecal.app/privacy
 संपर्क: https://ricecal.app/contact`,
-    whatsNew: `- प्रगति चार्ट नए सिरे से बनाए गए
-- वर्कआउट पूरा होने पर हल्की ध्वनि जोड़ी गई
-- साझा भोजन फ़ोटो का रूप नया किया गया
-- पिनयिन में टाइप करते समय भोजन खोज ठीक की गई
+    whatsNew: `- क़दम-दर-क़दम कुकिंग मोड के साथ रेसिपी बॉक्स जोड़ा गया
+- भोजन की लोकेशन और फ़ूड मैप जोड़ा गया
+- भोजन दर्ज करने के लिए कप और चम्मच जोड़े गए
+- फ़ीड और समूहों को एक टैब में नया रूप दिया गया
+- सिंक किए गए वर्कआउट के बार-बार दिखने की समस्या ठीक की गई
 
-अच्छा खाना मन खुश कर देता है।`,
+घर का खाना हमेशा सबसे स्वादिष्ट होता है।`,
   },
 
   ta: {
@@ -355,12 +364,13 @@ Apple Health அல்லது Health Connect உடன் இணைத்த�
 பயன்பாட்டு விதிமுறைகள்: https://ricecal.app/terms
 தனியுரிமைக் கொள்கை: https://ricecal.app/privacy
 தொடர்புக்கு: https://ricecal.app/contact`,
-    whatsNew: `- முன்னேற்ற வரைபடங்கள் புதுப்பிக்கப்பட்டன
-- உடற்பயிற்சி முடிந்ததும் மென்மையான ஒலி சேர்க்கப்பட்டது
-- பகிரும் உணவுப் படங்களின் தோற்றம் புதுப்பிக்கப்பட்டது
-- பின்யினில் தட்டச்சு செய்யும்போது உணவுத் தேடல் சரிசெய்யப்பட்டது
+    whatsNew: `- படிப்படியான சமையல் பயன்முறையுடன் செய்முறைப் பெட்டி சேர்க்கப்பட்டது
+- உணவு இருப்பிடங்களும் உணவு வரைபடமும் சேர்க்கப்பட்டன
+- உணவைப் பதிவுசெய்ய கப் மற்றும் கரண்டி அளவுகள் சேர்க்கப்பட்டன
+- ஊட்டமும் குழுக்களும் ஒரே தாவலாகப் புதுப்பிக்கப்பட்டன
+- ஒத்திசைத்த உடற்பயிற்சிகள் பலமுறை தோன்றுவது சரிசெய்யப்பட்டது
 
-நல்ல உணவு மனதை மகிழ்விக்கும்.`,
+வீட்டுச் சமையல் எப்போதும் சுவையானது.`,
   },
 
   bn: {
@@ -389,12 +399,13 @@ Apple Health বা Health Connect যুক্ত করলে শরীরচ�
 ব্যবহারের শর্তাবলি: https://ricecal.app/terms
 গোপনীয়তার নীতি: https://ricecal.app/privacy
 যোগাযোগ: https://ricecal.app/contact`,
-    whatsNew: `- অগ্রগতির চার্ট নতুনভাবে সাজানো হয়েছে
-- ওয়ার্কআউট শেষ হলে মৃদু শব্দ যোগ করা হয়েছে
-- শেয়ার করা খাবারের ছবির রূপ নতুন করা হয়েছে
-- পিনইনে টাইপ করার সময় খাবার খোঁজা ঠিক করা হয়েছে
+    whatsNew: `- ধাপে ধাপে রান্নার মোডসহ রেসিপি বক্স যোগ করা হয়েছে
+- খাবারের লোকেশন আর খাবারের ম্যাপ যোগ করা হয়েছে
+- খাবার লিখতে কাপ ও চামচ যোগ করা হয়েছে
+- ফিড আর গ্রুপ এক ট্যাবে নতুন করে সাজানো হয়েছে
+- সিঙ্ক করা ওয়ার্কআউট একাধিকবার দেখানো ঠিক করা হয়েছে
 
-ভালো খাবারে মন ভালো থাকে।`,
+ঘরের রান্না সবসময় সবচেয়ে মজার।`,
   },
 
   fil: {
@@ -423,12 +434,13 @@ Ang araw na lumagpas nang kaunti ay makakakuha ng "medyo lumagpas ngayon, bukas 
 Mga Tuntunin ng Paggamit: https://ricecal.app/terms
 Patakaran sa Privacy: https://ricecal.app/privacy
 Kontak: https://ricecal.app/contact`,
-    whatsNew: `- Binago ang disenyo ng mga chart ng progreso
-- Nagdagdag ng mahinang tunog kapag tapos na ang ehersisyo
-- Binago ang hitsura ng ibinahaging larawan ng pagkain
-- Inayos ang paghahanap ng pagkain habang nagta-type sa Pinyin
+    whatsNew: `- Nagdagdag ng recipe box na may hakbang-hakbang na cook mode
+- Nagdagdag ng lokasyon ng pagkain at mapa ng pagkain
+- Nagdagdag ng tasa at kutsara sa pag-log ng pagkain
+- Pinabago ang feed at mga grupo bilang iisang tab
+- Inayos ang mga na-sync na workout na lumalabas nang higit sa isang beses
 
-Masaya ang puso sa masarap na pagkain.`,
+Laging mas masarap ang lutong-bahay.`,
   },
 
   es: {
@@ -457,12 +469,13 @@ Un día pasado de la cuenta recibe "hoy te has pasado un poco, mañana se cuenta
 Términos de uso: https://ricecal.app/terms
 Política de privacidad: https://ricecal.app/privacy
 Contacto: https://ricecal.app/contact`,
-    whatsNew: `- Se renovaron los gráficos de progreso
-- Se añadió un sonido suave al terminar un entrenamiento
-- Se renovó el diseño de las fotos de comidas compartidas
-- Se corrigió la búsqueda de comidas al escribir en pinyin
+    whatsNew: `- Se añadió un recetario con modo cocina paso a paso
+- Se añadieron ubicaciones de comidas y un mapa de comidas
+- Se añadieron tazas y cucharas para registrar comidas
+- Se renovaron el feed y los grupos en una sola pestaña
+- Se corrigieron entrenamientos sincronizados que aparecían repetidos
 
-Buena comida, buen humor.`,
+La comida casera siempre sabe mejor.`,
   },
 
   fr: {
@@ -491,12 +504,13 @@ Une journée un peu au-dessus reçoit « un peu trop aujourd’hui, demain on re
 Conditions d’utilisation: https://ricecal.app/terms
 Politique de confidentialité: https://ricecal.app/privacy
 Contact: https://ricecal.app/contact`,
-    whatsNew: `- Refonte des graphiques de progression
-- Ajout d'un son doux à la fin d'un entraînement
-- Refonte des photos de plats partagées
-- Correction de la recherche de plats en saisie pinyin
+    whatsNew: `- Ajout d'un carnet de recettes avec un mode cuisine pas à pas
+- Ajout des lieux des repas et d'une carte des repas
+- Ajout des tasses et des cuillères pour noter les plats
+- Refonte du fil et des groupes en un seul onglet
+- Correction des entraînements synchronisés en double
 
-Bonne cuisine, bonne humeur.`,
+La cuisine maison a toujours meilleur goût.`,
   },
 
   de: {
@@ -525,12 +539,13 @@ Ein Tag über dem Budget bekommt „heute ein bisschen drüber, morgen wird neu 
 Nutzungsbedingungen: https://ricecal.app/terms
 Datenschutzrichtlinie: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Fortschrittsdiagramme neu gestaltet
-- Sanften Ton am Ende eines Workouts hinzugefügt
-- Geteilte Essensfotos neu gestaltet
-- Essenssuche beim Tippen mit Pinyin behoben
+    whatsNew: `- Rezeptsammlung mit Kochmodus Schritt für Schritt hinzugefügt
+- Essensorte und eine Essenskarte hinzugefügt
+- Tassen und Löffel zum Erfassen von Essen hinzugefügt
+- Feed und Gruppen in einem Tab überarbeitet
+- Doppelt angezeigte synchronisierte Workouts behoben
 
-Gutes Essen, gute Laune.`,
+Hausmannskost schmeckt einfach am besten.`,
   },
 
   pt: {
@@ -559,12 +574,13 @@ Um dia acima da meta recebe "passou um pouco hoje, amanhã a conta recomeça." N
 Termos de Uso: https://ricecal.app/terms
 Política de Privacidade: https://ricecal.app/privacy
 Contato: https://ricecal.app/contact`,
-    whatsNew: `- Renovados os gráficos de progresso
-- Adicionado um som suave ao terminar um treino
-- Renovado o visual das fotos de comidas compartilhadas
-- Corrigida a busca de comidas ao digitar em pinyin
+    whatsNew: `- Adicionado um livro de receitas com modo de cozinhar passo a passo
+- Adicionados os locais das refeições e um mapa de comidas
+- Adicionadas xícaras e colheres para registrar comidas
+- Renovados o feed e os grupos em uma única aba
+- Corrigidos treinos sincronizados que apareciam repetidos
 
-Comida boa traz bom humor.`,
+Comida caseira sempre tem mais sabor.`,
   },
 
   it: {
@@ -593,12 +609,13 @@ Una giornata sopra la soglia riceve "oggi un po’ oltre, domani si riconta." Ma
 Termini di utilizzo: https://ricecal.app/terms
 Informativa sulla privacy: https://ricecal.app/privacy
 Contatti: https://ricecal.app/contact`,
-    whatsNew: `- Rinnovati i grafici dei progressi
-- Aggiunto un suono delicato alla fine di un allenamento
-- Rinnovate le foto dei piatti condivisi
-- Corretta la ricerca dei piatti durante la digitazione in pinyin
+    whatsNew: `- Aggiunto un ricettario con modalità cucina passo dopo passo
+- Aggiunti i luoghi dei pasti e una mappa del cibo
+- Aggiunte tazze e cucchiai per registrare il cibo
+- Rinnovati feed e gruppi in un'unica scheda
+- Risolti gli allenamenti sincronizzati che apparivano doppi
 
-Buon cibo, buon umore.`,
+La cucina di casa ha sempre un sapore migliore.`,
   },
 
   nl: {
@@ -627,12 +644,13 @@ Een dag boven het budget krijgt "vandaag een beetje eroverheen, morgen telt opni
 Gebruiksvoorwaarden: https://ricecal.app/terms
 Privacybeleid: https://ricecal.app/privacy
 Contact: https://ricecal.app/contact`,
-    whatsNew: `- Voortgangsgrafieken vernieuwd
-- Zacht geluid toegevoegd aan het einde van een training
-- Gedeelde maaltijdfoto's vernieuwd
-- Eten zoeken tijdens typen in pinyin verholpen
+    whatsNew: `- Receptenbox met kookmodus stap voor stap toegevoegd
+- Eetlocaties en een eetkaart toegevoegd
+- Kopjes en lepels voor het vastleggen van eten toegevoegd
+- Feed en groepen vernieuwd tot één tabblad
+- Dubbel getoonde gesynchroniseerde trainingen opgelost
 
-Lekker eten, goed humeur.`,
+Thuis koken smaakt altijd het best.`,
   },
 
   ru: {
@@ -661,12 +679,13 @@ Lekker eten, goed humeur.`,
 Условия использования: https://ricecal.app/terms
 Политика конфиденциальности: https://ricecal.app/privacy
 Связаться с нами: https://ricecal.app/contact`,
-    whatsNew: `- Обновлены графики прогресса
-- Добавлен мягкий звук по окончании тренировки
-- Обновлён дизайн фото блюд для публикации
-- Исправлен поиск еды при вводе на пиньине
+    whatsNew: `- Добавлена книга рецептов с пошаговым режимом готовки
+- Добавлены места приёмов пищи и карта еды
+- Добавлены чашки и ложки для записи еды
+- Обновлены лента и группы в одной вкладке
+- Исправлены повторы синхронизированных тренировок
 
-Вкусная еда поднимает настроение.`,
+Домашняя еда всегда вкуснее.`,
   },
 
   tr: {
@@ -695,12 +714,13 @@ Bütçeyi biraz aşan gün "bugün biraz fazla oldu, yarın sayım yeniden başl
 Kullanım Koşulları: https://ricecal.app/terms
 Gizlilik Politikası: https://ricecal.app/privacy
 İletişim: https://ricecal.app/contact`,
-    whatsNew: `- İlerleme grafikleri yenilendi
-- Antrenman bitince çalan yumuşak bir ses eklendi
-- Paylaşılan yemek fotoğrafları yenilendi
-- Pinyin ile yazarken yemek araması düzeltildi
+    whatsNew: `- Adım adım pişirme moduyla tarif kutusu eklendi
+- Yemek konumları ve yemek haritası eklendi
+- Yemek kaydı için bardak ve kaşık ölçüleri eklendi
+- Akış ve gruplar tek sekmede yenilendi
+- Eşitlenen antrenmanların tekrar görünmesi düzeltildi
 
-Güzel yemek gönlü şenlendirir.`,
+Ev yemeği her zaman daha lezzetlidir.`,
   },
 
   pl: {
@@ -729,12 +749,13 @@ Dzień ponad limit dostaje „dziś trochę więcej, jutro liczymy od nowa." Nig
 Warunki korzystania: https://ricecal.app/terms
 Polityka prywatności: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Odświeżono wykresy postępów
-- Dodano cichy dźwięk po zakończeniu treningu
-- Odświeżono wygląd udostępnianych zdjęć posiłków
-- Naprawiono wyszukiwanie jedzenia podczas pisania w pinyin
+    whatsNew: `- Dodano książkę przepisów z trybem gotowania krok po kroku
+- Dodano miejsca posiłków i mapę jedzenia
+- Dodano szklanki i łyżki do zapisywania jedzenia
+- Odświeżono kanał i grupy w jednej karcie
+- Naprawiono powielanie zsynchronizowanych treningów
 
-Dobre jedzenie poprawia humor.`,
+Domowe jedzenie zawsze smakuje najlepiej.`,
   },
 
   uk: {
@@ -763,12 +784,13 @@ Dobre jedzenie poprawia humor.`,
 Умови використання: https://ricecal.app/terms
 Політика конфіденційності: https://ricecal.app/privacy
 Зв’язатися з нами: https://ricecal.app/contact`,
-    whatsNew: `- Оновлено графіки прогресу
-- Додано м’який звук після завершення тренування
-- Оновлено вигляд фото страв для поширення
-- Виправлено пошук їжі під час введення піньїнем
+    whatsNew: `- Додано книгу рецептів із покроковим режимом готування
+- Додано місця прийомів їжі та мапу їжі
+- Додано чашки й ложки для запису їжі
+- Оновлено стрічку та групи в одній вкладці
+- Виправлено повтори синхронізованих тренувань
 
-Смачна їжа підіймає настрій.`,
+Домашня їжа завжди найсмачніша.`,
   },
 
   sv: {
@@ -797,12 +819,13 @@ En dag över budget får "lite över idag, imorgon räknas det om." Aldrig en ti
 Användarvillkor: https://ricecal.app/terms
 Integritetspolicy: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Förnyade framstegsdiagrammen
-- Lade till ett mjukt ljud när ett träningspass är klart
-- Förnyade utseendet på delade matfoton
-- Åtgärdade matsökning vid skrivning med pinyin
+    whatsNew: `- Lade till en receptsamling med ett matlagningsläge steg för steg
+- Lade till platser för måltider och en matkarta
+- Lade till koppar och skedar för att logga mat
+- Förnyade flödet och grupperna till en flik
+- Åtgärdade synkade träningspass som visades flera gånger
 
-God mat ger gott humör.`,
+Husmanskost smakar alltid bäst.`,
   },
 
   nb: {
@@ -831,12 +854,13 @@ En dag over budsjett får "litt over i dag, i morgen telles det på nytt." Aldri
 Bruksvilkår: https://ricecal.app/terms
 Personvernerklæring: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Fornyet fremgangsdiagrammene
-- La til en myk lyd når en treningsøkt er ferdig
-- Fornyet utseendet på delte matbilder
-- Rettet matsøk ved skriving med pinyin
+    whatsNew: `- La til en oppskriftssamling med en matlagingsmodus steg for steg
+- La til steder for måltider og et matkart
+- La til kopper og skjeer for å logge mat
+- Fornyet feeden og gruppene til én fane
+- Rettet synkede treningsøkter som dukket opp flere ganger
 
-God mat gir godt humør.`,
+Hjemmelaget mat smaker alltid best.`,
   },
 
   da: {
@@ -865,12 +889,13 @@ En dag over budgettet får "lidt over i dag, i morgen tælles der forfra." Aldri
 Brugsvilkår: https://ricecal.app/terms
 Privatlivspolitik: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Fornyede fremskridtsdiagrammerne
-- Tilføjede en blød lyd når en træning er færdig
-- Fornyede udseendet af delte madbilleder
-- Rettede madsøgning ved skrivning med pinyin
+    whatsNew: `- Tilføjede en opskriftssamling med en madlavningstilstand trin for trin
+- Tilføjede steder for måltider og et madkort
+- Tilføjede kopper og skeer til at logge mad
+- Fornyede feedet og grupperne til én fane
+- Rettede synkroniserede træninger der blev vist flere gange
 
-God mad giver godt humør.`,
+Hjemmelavet mad smager altid bedst.`,
   },
 };
 
