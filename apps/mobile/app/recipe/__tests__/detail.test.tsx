@@ -22,6 +22,8 @@ const mockIngredients = [
   },
 ]
 
+const mockRecipe: { current: Record<string, unknown> } = { current: {} }
+
 const RECIPE = {
   id: 'recipe-1',
   name: 'Family Mart Egg Mayo Sandwich',
@@ -35,6 +37,7 @@ const RECIPE = {
   tags: ['breakfast'],
   isFavourite: false,
   prepMinutes: 5,
+  ingredientCount: 1,
   perServing: { kcal: 217, carbs: 25.8, protein: 11.2, fat: 7.7 },
 }
 
@@ -58,7 +61,7 @@ jest.mock('@/data', () => ({
   useFavouriteRecipe: () => ({ mutate: mockFavourite }),
   useLogFood: () => ({ mutate: jest.fn(), isPending: false }),
   useMealPhotoUrl: () => ({ data: undefined, isLoading: false }),
-  useRecipe: () => ({ data: RECIPE, isPending: false }),
+  useRecipe: () => ({ data: { ...RECIPE, ...mockRecipe.current }, isPending: false }),
   useRecipeIngredients: () => ({ data: mockIngredients }),
   useRecipeQuota: () => ({ atLimit: false }),
   useReportRecipe: () => ({ mutateAsync: jest.fn() }),
@@ -155,4 +158,16 @@ it('asks how much was eaten before adding it to the day', async () => {
 
   await user.press(screen.getByText('Add to today'))
   expect(await screen.findByText('How much did you have?')).toBeOnTheScreen()
+})
+
+it('asks for ingredients rather than offering to log an empty recipe of your own', async () => {
+  mockRecipe.current = { ingredientCount: 0 }
+  const user = userEvent.setup()
+  await renderScreen()
+
+  expect(screen.queryByText('Add to today')).toBeNull()
+  expect(screen.queryByText('per serving')).toBeNull()
+  await user.press(screen.getByText('Add an ingredient'))
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/recipe/edit', params: { id: 'recipe-1' } })
+  mockRecipe.current = {}
 })

@@ -2939,8 +2939,9 @@ servings; a time nobody gave is left out rather than drawn as a dash) and the
 calories per serving with the three macros. Ingredients and Method are one tab
 each, since nobody reads both at once. Above the ingredients, "Cooking for"
 rescales every amount (`scaleIngredient`: only `amount` moves, the per-unit
-figures are the food's density) and each row can be ticked off. The ticks live
-on the screen, not the recipe: they are about one session at the stove. The
+figures are the food's density) and each row can be ticked off. The ticks are
+not on the recipe: they are held in memory per recipe while the app is open, so
+cook mode and the recipe page share them, and nothing remembers yesterday's. The
 stepper changes amounts only, never what a serving costs. How much was EATEN is
 asked separately, in the sheet "Add to today" opens, so the page never has two
 steppers about servings that answer different questions. Your own has a heart

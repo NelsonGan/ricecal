@@ -12,6 +12,7 @@ import {
   useLogFood,
   useRecipeQuota,
   useRecipes,
+  useRemoveEntry,
   useSelectedDate,
 } from '@/data'
 import { useRequirePro } from '@/features/paywall'
@@ -64,6 +65,7 @@ export default function RecipesTab() {
   const colors = useThemeColors()
   const { selectedDate } = useSelectedDate()
   const logFood = useLogFood()
+  const removeEntry = useRemoveEntry()
 
   const [shelf, setShelf] = useState<RecipeShelf>('mine')
   const [filter, setFilter] = useState<RecipeFilter>('all')
@@ -128,9 +130,19 @@ export default function RecipesTab() {
    * detail screen gives: logging a pot reaches no model and costs nothing.
    */
   const logOne = (recipe: Recipe) => {
-    logFood.mutate(recipeLog(recipe, 1, selectedDate), {
-      onSuccess: () =>
-        toast.show({ title: t('recipes:card.logged', { name: recipe.name }), tone: 'success' }),
+    const logDate = selectedDate
+    logFood.mutate(recipeLog(recipe, 1, logDate), {
+      // With an undo, because the plus sits on the corner of a card that is
+      // itself a button, and a tap meant for the card lands on it.
+      onSuccess: (row) =>
+        toast.show({
+          title: t('recipes:card.logged', { name: recipe.name }),
+          tone: 'success',
+          action: {
+            label: t('common:action.undo'),
+            onPress: () => removeEntry.mutate({ id: row.id, logDate, source: 'quickAdd' }),
+          },
+        }),
       onError: () => toast.show({ title: t('recipes:edit.saveFailed'), tone: 'error' }),
     })
   }

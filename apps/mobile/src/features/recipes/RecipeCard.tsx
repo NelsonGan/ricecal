@@ -32,6 +32,9 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
   const photo = storedImageSource(recipe.photoPath, photoUrl)
   const calories = recipe.perServing.kcal.toLocaleString()
   const unit = t('common:unit.kcal')
+  // A recipe with nothing in it yet has no price. "0 kcal" over its picture
+  // reads as a fault, and a plus that logs it would put an empty row in the day.
+  const priced = recipe.ingredientCount > 0
   const minutes = totalMinutes(recipe)
   const meta = [
     minutes != null ? duration(minutes) : null,
@@ -49,7 +52,9 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
       <Tappable
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={`${recipe.name}, ${calories} ${unit}, ${meta}`}
+        accessibilityLabel={[recipe.name, priced ? `${calories} ${unit}` : null, meta]
+          .filter(Boolean)
+          .join(', ')}
         className="gap-2"
       >
         <View className="aspect-[4/3] items-center justify-center overflow-hidden rounded-tile border-[3px] border-line bg-track">
@@ -67,11 +72,13 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
             </View>
           ) : null}
 
-          <View className="absolute bottom-1.5 right-1.5 rounded-full bg-inverse/90 px-2 py-0.5">
-            <Text variant="caption" className="text-on-inverse">
-              {calories} {unit}
-            </Text>
-          </View>
+          {priced ? (
+            <View className="absolute bottom-1.5 right-1.5 rounded-full bg-inverse/90 px-2 py-0.5">
+              <Text variant="caption" className="text-on-inverse">
+                {calories} {unit}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         <View className="gap-0.5">
@@ -84,7 +91,7 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
         </View>
       </Tappable>
 
-      {onLog ? (
+      {onLog && priced ? (
         <View className="absolute right-1.5 top-1.5">
           <IconButton
             variant="primary"

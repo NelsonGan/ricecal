@@ -57,7 +57,7 @@ export default function CookModeScreen() {
   const [index, setIndex] = useState(0)
   const [finished, setFinished] = useState(false)
   const [showIngredients, setShowIngredients] = useState(false)
-  const [ticked, toggleTick] = useTickedIngredients()
+  const [ticked, toggleTick] = useTickedIngredients(params.id ?? '')
 
   const header = (
     <AppBar

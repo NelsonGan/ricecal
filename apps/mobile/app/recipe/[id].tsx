@@ -100,7 +100,7 @@ export default function RecipeDetailScreen() {
    */
   const [cookingFor, setCookingFor] = useState<number | null>(null)
   /** Ingredients already in the pot. This visit only; see `IngredientChecklist`. */
-  const [ticked, toggleTick] = useTickedIngredients()
+  const [ticked, toggleTick] = useTickedIngredients(id ?? '')
   /**
    * How many servings are being logged. The chips in the log sheet are
    * shortcuts to values of it.
@@ -199,6 +199,7 @@ export default function RecipeDetailScreen() {
   }
 
   const cooking = cookingFor ?? recipe.servings
+  const priced = recipe.ingredientCount > 0
   const perServing = recipe.perServing
   // Proportional to the calories each macro contributes, which is the only
   // reading under which three bars of different nutrients are comparable.
@@ -302,16 +303,27 @@ export default function RecipeDetailScreen() {
               {t('recipes:detail.startCooking')}
             </Button>
           ) : null}
-          <Button
-            className="flex-1"
-            loading={logFood.isPending}
-            onPress={() => {
-              setQuantity(1)
-              setLogging(true)
-            }}
-          >
-            {t('recipes:detail.addToDay')}
-          </Button>
+          {/* Your own recipe with nothing in it yet costs nothing to log, so
+              the thing to do next is to fill it in. */}
+          {recipe.isMine && !priced ? (
+            <Button
+              className="flex-1"
+              onPress={() => router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })}
+            >
+              {t('recipes:edit.addIngredient')}
+            </Button>
+          ) : (
+            <Button
+              className="flex-1"
+              loading={logFood.isPending}
+              onPress={() => {
+                setQuantity(1)
+                setLogging(true)
+              }}
+            >
+              {t('recipes:detail.addToDay')}
+            </Button>
+          )}
         </View>
       }
     >
@@ -367,42 +379,46 @@ export default function RecipeDetailScreen() {
 
       <RecipeStats recipe={recipe} />
 
-      <Card>
-        <View className="flex-row items-center gap-4">
-          <View className="items-start">
-            <View className="flex-row items-baseline gap-1">
-              <Text variant="numeric" className="text-[30px] leading-[36px] text-pandan-ink">
-                {perServing.kcal.toLocaleString()}
-              </Text>
-              <Text variant="caption">{t('common:unit.kcal')}</Text>
+      {/* Left out until something is in the pot: "0 kcal" with three empty
+          bars reads as a broken figure rather than a missing one. */}
+      {priced ? (
+        <Card>
+          <View className="flex-row items-center gap-4">
+            <View className="items-start">
+              <View className="flex-row items-baseline gap-1">
+                <Text variant="numeric" className="text-[30px] leading-[36px] text-pandan-ink">
+                  {perServing.kcal.toLocaleString()}
+                </Text>
+                <Text variant="caption">{t('common:unit.kcal')}</Text>
+              </View>
+              <Text variant="meta">{t('recipes:detail.perServing')}</Text>
             </View>
-            <Text variant="meta">{t('recipes:detail.perServing')}</Text>
+            <View className="min-w-0 flex-1 gap-1.5">
+              <MacroBar
+                inline
+                label={t('common:macro.carbs')}
+                amount={t('common:unit.grams', { value: perServing.carbs })}
+                value={share.carbs}
+                tone="kaya"
+              />
+              <MacroBar
+                inline
+                label={t('common:macro.protein')}
+                amount={t('common:unit.grams', { value: perServing.protein })}
+                value={share.protein}
+                tone="hibiscus"
+              />
+              <MacroBar
+                inline
+                label={t('common:macro.fat')}
+                amount={t('common:unit.grams', { value: perServing.fat })}
+                value={share.fat}
+                tone="teh"
+              />
+            </View>
           </View>
-          <View className="min-w-0 flex-1 gap-1.5">
-            <MacroBar
-              inline
-              label={t('common:macro.carbs')}
-              amount={t('common:unit.grams', { value: perServing.carbs })}
-              value={share.carbs}
-              tone="kaya"
-            />
-            <MacroBar
-              inline
-              label={t('common:macro.protein')}
-              amount={t('common:unit.grams', { value: perServing.protein })}
-              value={share.protein}
-              tone="hibiscus"
-            />
-            <MacroBar
-              inline
-              label={t('common:macro.fat')}
-              amount={t('common:unit.grams', { value: perServing.fat })}
-              value={share.fat}
-              tone="teh"
-            />
-          </View>
-        </View>
-      </Card>
+        </Card>
+      ) : null}
 
       {/* With two panes, the picture and the overview stay on the left and the
           cooking (ingredients and method) goes on the right. */}

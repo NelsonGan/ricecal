@@ -11,6 +11,7 @@ import RecipesTab from '../recipes'
 const mockPush = jest.fn()
 const mockUseRecipes = jest.fn()
 const mockLog = jest.fn()
+const mockRemoveEntry = jest.fn()
 const mockRequirePro = jest.fn()
 
 jest.mock('expo-router', () => ({
@@ -27,6 +28,7 @@ jest.mock('@/data', () => ({
   useRecipeQuota: () => ({ count: 4, limit: null, atLimit: false, loading: false }),
   useRecipes: (shelf: string, query: string, filter: unknown) =>
     mockUseRecipes(shelf, query, filter),
+  useRemoveEntry: () => ({ mutate: mockRemoveEntry }),
   useSelectedDate: () => ({ selectedDate: '2026-11-21' }),
 }))
 
@@ -145,4 +147,15 @@ it('opens the form at the door that was picked', async () => {
     pathname: '/recipe/edit',
     params: { start: 'describe' },
   })
+})
+
+it('shows no price and no quick log on a recipe with nothing in it yet', async () => {
+  mockUseRecipes.mockReturnValue({
+    data: [{ ...QUICK, ingredientCount: 0, perServing: { kcal: 0, carbs: 0, protein: 0, fat: 0 } }],
+    isPending: false,
+  })
+  await render(<RecipesTab />)
+
+  expect(screen.queryByText('0 kcal')).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Add Telur dadar to today' })).toBeNull()
 })
