@@ -28,7 +28,7 @@ import {
   requireEntitlement,
   ScanLimitReached,
 } from '../_shared/entitlement.ts'
-import { json } from '../_shared/http.ts'
+import { json, respondWithin } from '../_shared/http.ts'
 import { mockActive, photoBase64 } from '../_shared/llm.ts'
 import { readSessionId } from '../_shared/posthog.ts'
 import { ownsKey, readObject } from '../_shared/r2.ts'
@@ -233,7 +233,7 @@ Deno.serve(async (req: Request) => {
   // -- IMPORT: a cooking video becomes a recipe. Metered by its own monthly
   // allowance rather than by scans; see `import.ts`.
   if (body.action === 'import') {
-    return handleImport(body, { db, userId, meter, loadForReview })
+    return respondWithin(handleImport(body, { db, userId, meter, loadForReview }))
   }
 
   // -- REVIEW: the gate in front of the community tab.

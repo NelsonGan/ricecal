@@ -3230,7 +3230,9 @@ video. The model is asked about a video once; everybody after gets the same
 draft with no model call (12 s for the first import of a TikTok on the local
 stack, 0.05 s for the second account). A video that is not a recipe is cached
 too, so pasting the same music video twice costs one look. A failure to read
-the post or a model outage is not cached, so it can be retried.
+the post or a model outage is not cached, so it can be retried, and neither is
+a "not a recipe" reached from the caption alone when there was a video the
+model failed to watch: that is the caption's verdict, not the video's.
 
 **What the server can read, signed out.** Each platform answers a server that
 is not logged in differently, and each reader takes only what that platform
@@ -3261,7 +3263,9 @@ Claude does not take video, so this route is billed to OpenRouter credits;
 `OPENROUTER_VIDEO_MODEL` changes it and `off` sends everything down the caption
 route without a deploy. Gemini 3.8 refuses `reasoning: { enabled: false }`
 with a 400, so its route sends `{ effort: 'low' }` and a 12,000 token ceiling.
-Any failure there falls back to the ordinary Haiku-then-Qwen chain with the
+Its long answers now and then carry a key with a quote wrong, so an answer that
+will not parse is asked for once more before giving up on the video. Any other
+failure there falls back to the ordinary Haiku-then-Qwen chain with the
 caption, the transcript, the linked recipe and the cover image. Both answer one
 prompt (`import-video-recipe`, hosted in PostHog like the rest), which reuses
 the describe path's `RECIPE_SHAPE` and `RECIPE_STEPS` and adds four things: is
@@ -3306,6 +3310,20 @@ free account keeps (`recipes_enforce_free_limit` skips a row with an
 month and refusing the fourth because three recipes are kept would sell
 something the database does not do. A free account at its three can still open
 the plus sheet for that reason; the other three tiles ask on tap.
+
+**An import outlasts a phone's patience.** A first import is 8 to 20 seconds
+and can be over a minute when the video model stalls and the caption route
+answers instead, while React Native on iOS gives up on a request after a minute
+of silence. So the action is wrapped in `respondWithin` (`_shared/http.ts`): an
+answer ready in five seconds is sent as it is, and a slower one becomes a 200
+JSON stream that writes a space every eight seconds and then the answer
+(leading whitespace is valid JSON). The late answer keeps its `code` in the
+body, which is what the app reads. The publish review of a new community recipe
+runs after the response (`EdgeRuntime.waitUntil`), outside the reviewer's
+hourly ceiling, since the import allowance already bounds it and a refusal
+would strand the card at pending. A rejected community recipe hands the card
+on, like an unpublished one: a rejection judges what its owner made of it, not
+the video.
 
 **The screen** starts the import as soon as it opens, since both ways in were
 the user saying "import this", and shows the link with three stages on a timer

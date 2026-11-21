@@ -99,7 +99,8 @@ export const IMPORT_VIDEO_RECIPE_PROMPT =
   'dish while somebody cooks it IS a recipe: write the dish out as it is normally ' +
   'cooked. So is a post that shows a dish the creator made and keeps the full ' +
   'recipe somewhere else ("link in bio", "recipe in the comments", "full recipe on ' +
-  'my website"): that is the commonest recipe post there is, so write the dish ' +
+  'my website"): that is the commonest recipe post there is, even when it reads ' +
+  "like a promotion of the creator's own blog or book, so write the dish " +
   'out as it is normally cooked, sized from what the post shows. When you have ' +
   'only the cover image, judge by the caption and the image together. If it is ' +
   'not a recipe, answer exactly {"is_recipe": false, "reason": ' +
@@ -179,11 +180,12 @@ export const VIDEO_ROUTE: ModelRoute | null =
       { ...routeFor(videoModel, 0.2), reasoning: { effort: 'low' } }
 
 /**
- * Long enough for a model to watch a three-minute video and write a recipe;
- * short enough that a stalled call still leaves the caption route time inside
- * the client's own wait.
+ * Long enough for a model to watch a three-minute video and write a recipe
+ * (a minute-long reel took 10 s); short enough that a stalled call still
+ * leaves the caption route its time inside the function's 150 s wall clock.
+ * The phone's own wait is not the limit: see `respondWithin`.
  */
-const VIDEO_TIMEOUT_MS = 70_000
+const VIDEO_TIMEOUT_MS = 45_000
 
 /** Fifteen ingredients with seven fields each, plus the steps and the times. */
 const MAX_TOKENS = 3000
@@ -323,30 +325,38 @@ export async function importVideoRecipe(
   const system = hostedSystem({ name: 'import-video-recipe', bundled: IMPORT_VIDEO_RECIPE_PROMPT })
 
   if (media.kind === 'video' && VIDEO_ROUTE) {
-    try {
-      const raw = await chatJSON(
-        meter,
-        'import_video_recipe',
-        [
-          { role: 'system', content: system },
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: postUserMessage(post, 'video') },
-              { type: 'video_url', video_url: { url: media.url } },
-            ],
-          },
-        ],
-        VIDEO_MAX_TOKENS,
-        { route: VIDEO_ROUTE, timeoutMs: VIDEO_TIMEOUT_MS },
-      )
-      return { recipe: shapeVideoRecipe(raw), analysedFrom: 'video' }
-    } catch (error) {
-      console.warn(
-        `[video-recipe] ${VIDEO_ROUTE.model} could not watch it (${
-          error instanceof Error ? error.message.slice(0, 120) : 'error'
-        }), reading the caption instead`,
-      )
+    // Twice at most, and only again for an answer that would not parse: the
+    // video model writes a long answer and now and then a key with its quote
+    // wrong, and the caption route that would answer instead cannot see the
+    // video at all. A timeout or an error is not retried.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const raw = await chatJSON(
+          meter,
+          'import_video_recipe',
+          [
+            { role: 'system', content: system },
+            {
+              role: 'user',
+              content: [
+                { type: 'text', text: postUserMessage(post, 'video') },
+                { type: 'video_url', video_url: { url: media.url } },
+              ],
+            },
+          ],
+          VIDEO_MAX_TOKENS,
+          { route: VIDEO_ROUTE, timeoutMs: VIDEO_TIMEOUT_MS },
+        )
+        return { recipe: shapeVideoRecipe(raw), analysedFrom: 'video' }
+      } catch (error) {
+        const unparsed = error instanceof SyntaxError
+        console.warn(
+          `[video-recipe] ${VIDEO_ROUTE.model} could not watch it (${
+            error instanceof Error ? error.message.slice(0, 120) : 'error'
+          })${unparsed && attempt === 0 ? ', asking again' : ', reading the caption instead'}`,
+        )
+        if (!unparsed) break
+      }
     }
   }
 

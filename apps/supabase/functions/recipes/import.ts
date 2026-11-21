@@ -15,7 +15,7 @@
 // it can be retried; a verdict is, so a dance clip costs one look.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { claimRecipeReview, type Meter } from '../_shared/entitlement.ts'
+import type { Meter } from '../_shared/entitlement.ts'
 import { json } from '../_shared/http.ts'
 import { mockActive, photoBase64 } from '../_shared/llm.ts'
 import { copyObject, deleteObject, newKey, r2Configured, writeObject } from '../_shared/r2.ts'
@@ -43,6 +43,7 @@ export type ImportRequest = {
 
 type ImportRow = {
   id: string
+  community_recipe_id: string | null
   status: 'recipe' | 'not_recipe'
   reason: string | null
   photo_key: string | null
@@ -50,7 +51,7 @@ type ImportRow = {
   author_handle: string | null
 }
 
-const IMPORT_COLUMNS = 'id, status, reason, photo_key, platform, author_handle'
+const IMPORT_COLUMNS = 'id, status, reason, photo_key, platform, author_handle, community_recipe_id'
 
 /** A cover is a picture for a card; past this it is not a cover. */
 const MAX_COVER_BYTES = 5 * 1024 * 1024
@@ -96,7 +97,13 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     const left = await allowance(db, userId)
     if (left && left.remaining <= 0) {
       return json(
-        { ok: false, code: 'import_limit', used: left.used, limit: left.monthly_limit },
+        {
+          ok: false,
+          code: 'import_limit',
+          platform: link.platform,
+          used: left.used,
+          limit: left.monthly_limit,
+        },
         429,
       )
     }
@@ -130,6 +137,18 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
       return json({ ok: false, code: 'failed', platform: link.platform })
     }
 
+    // A "not a recipe" reached without watching a video that was there to
+    // watch is the caption's verdict, not the video's: it is answered, and not
+    // cached, so the next import gets another look at the video itself.
+    if (!result.recipe.isRecipe && video.kind === 'video' && result.analysedFrom !== 'video') {
+      return json({
+        ok: false,
+        code: 'not_recipe',
+        platform: link.platform,
+        reason: result.recipe.reason,
+      })
+    }
+
     const id = crypto.randomUUID()
     let photoKey: string | null = null
     if (result.recipe.isRecipe && cover && r2Configured()) {
@@ -151,10 +170,10 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
         canonical_url: finalLink.canonicalUrl,
         status: result.recipe.isRecipe ? 'recipe' : 'not_recipe',
         draft: result.recipe.isRecipe ? cachedDraft(result.recipe) : null,
-        reason: result.recipe.isRecipe ? null : result.recipe.reason.slice(0, 500),
-        author_handle: fetched.author?.slice(0, 80) ?? null,
-        title: fetched.title?.slice(0, 300) ?? null,
-        caption: fetched.caption?.slice(0, 5000) ?? null,
+        reason: result.recipe.isRecipe ? null : clip(result.recipe.reason, 500),
+        author_handle: clip(fetched.author, 80),
+        title: clip(fetched.title, 300),
+        caption: clip(fetched.caption, 5000),
         analysed_from: result.analysedFrom,
         photo_key: photoKey,
         created_by: userId,
@@ -166,6 +185,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     )
     if (insertError) {
       console.error('[recipes/import] cache write failed:', insertError.message)
+      if (photoKey) await deleteObject(photoKey).catch(() => {})
       return json({ ok: false, code: 'failed', platform: link.platform })
     }
     row = await findImport(db, finalLink)
@@ -188,7 +208,14 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     .eq('import_id', row.id)
     .limit(1)
     .maybeSingle()
-  if (mine) return done({ recipeId: mine.id, existing: true, community: false, row })
+  if (mine) {
+    return done({
+      recipeId: mine.id,
+      existing: true,
+      community: mine.id === row.community_recipe_id,
+      row,
+    })
+  }
 
   let photoPath: string | null = null
   if (row.photo_key && r2Configured()) {
@@ -222,16 +249,24 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
   if (!made.allowed || !made.recipe_id) {
     if (photoPath) await deleteObject(photoPath).catch(() => {})
     return json(
-      { ok: false, code: 'import_limit', used: made.used, limit: made.monthly_limit },
+      {
+        ok: false,
+        code: 'import_limit',
+        platform: row.platform,
+        used: made.used,
+        limit: made.monthly_limit,
+      },
       429,
     )
   }
   if (made.existing && photoPath) await deleteObject(photoPath).catch(() => {})
 
   // The community recipe has not been read yet: this import made it, or the
-  // review that should have run when somebody else's did never finished.
+  // review that should have run when somebody else's did never finished. In
+  // the background where the runtime allows it: the user is waiting for their
+  // own recipe, which the verdict does not change.
   if (made.community_recipe_id && made.community_review === 'pending') {
-    await review(ctx, made.community_recipe_id, mock)
+    afterResponse(review(ctx, made.community_recipe_id, mock))
   }
 
   return done({
@@ -320,9 +355,12 @@ async function videoFor(post: FetchedPost): Promise<PostMedia> {
  * anything but a clear verdict leaves the recipe pending, and invisible.
  */
 async function review(ctx: ImportContext, recipeId: string, mock: RecipeMockSteer | undefined) {
-  const { db, userId, meter } = ctx
+  const { db, meter } = ctx
+  // Not behind `claim_recipe_review`'s hourly ceiling. That ceiling stops a
+  // loop of `{action: 'review'}` calls; this review runs at most once per video
+  // that becomes a community recipe, which the import allowance and the hourly
+  // run ceiling already bound, and refusing it would strand the card pending.
   try {
-    if (!(await claimRecipeReview(db, userId))) return
     const loaded = await ctx.loadForReview(db, recipeId)
     if (!loaded) return
     const verdict = await reviewRecipe(
@@ -351,6 +389,30 @@ async function review(ctx: ImportContext, recipeId: string, mock: RecipeMockStee
   } catch (error) {
     console.error('[recipes/import] review failed, left pending:', errorText(error))
   }
+}
+
+/**
+ * At most `max` characters, cut between code points. `slice` counts UTF-16
+ * units, and a cut through an emoji leaves half a surrogate pair, which
+ * Postgres refuses in JSON: the cache write would fail for that video every
+ * time, since the caption it reads is the same every time.
+ */
+export function clip(value: string | null | undefined, max: number): string | null {
+  if (!value) return null
+  const points = Array.from(value)
+  return points.length <= max ? value : points.slice(0, max).join('')
+}
+
+/**
+ * Work the response does not wait for. The edge runtime keeps the isolate alive
+ * for a promise handed to `EdgeRuntime.waitUntil`; anywhere else (a test, a
+ * plain Deno) it simply runs, unawaited, and logs its own failures.
+ */
+function afterResponse(work: Promise<unknown>) {
+  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
+    .EdgeRuntime
+  if (runtime?.waitUntil) runtime.waitUntil(work)
+  else work.catch(() => {})
 }
 
 function errorText(error: unknown): string {

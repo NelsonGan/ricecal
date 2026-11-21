@@ -409,12 +409,16 @@ begin
     return;
   end if;
 
-  -- Still on the shelf? An unpublished or deleted original stops being the
-  -- community recipe, and this import takes its place.
+  -- Still on the shelf, or on its way there? An unpublished, deleted or
+  -- rejected original stops being the community recipe, and this import takes
+  -- its place: a rejection is a verdict on what its owner made of it (an edit
+  -- turned into an advert), not on the video, and everybody after would
+  -- otherwise be counted as saving a recipe none of them can see.
   select r.id, r.review_status into v_community, v_review
     from public.recipes r
    where r.id = imp.community_recipe_id
-     and r.is_public;
+     and r.is_public
+     and r.review_status <> 'rejected';
 
   d := imp.draft;
 

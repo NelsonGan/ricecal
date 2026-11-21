@@ -338,3 +338,37 @@ Deno.test('the mock answers a recipe shaped for import_recipe_for', async () => 
   eq(tags.recipe.prepMinutes, null, 'a negative time is no time')
   eq(tags.recipe.cookMinutes, 2880, 'two days at most')
 })
+
+Deno.test('a caption is clipped between code points, never through an emoji', async () => {
+  const { clip } = await import('../recipes/import.ts')
+  const text = `${'a'.repeat(4)}🍜🍜`
+  const clipped = clip(text, 5)
+  eq(clipped, 'aaaa🍜', 'five code points, the emoji whole')
+  eq(JSON.stringify(clipped).includes('\\ud'), false, 'no lone surrogate reaches Postgres')
+  eq(clip(null, 5), null, 'nothing stays nothing')
+})
+
+Deno.test('a slow answer is kept alive with spaces and still parses as its JSON', async () => {
+  const { respondWithin } = await import('./http.ts')
+  const fast = await respondWithin(
+    Promise.resolve(new Response('{"ok":true}', { status: 429 })),
+    50,
+  )
+  eq(fast.status, 429, 'a fast answer keeps its status')
+
+  const slow = respondWithin(
+    new Promise<Response>((resolve) =>
+      setTimeout(
+        () => resolve(new Response('{"ok":false,"code":"import_limit"}', { status: 429 })),
+        120,
+      ),
+    ),
+    20,
+    30,
+  )
+  const res = await slow
+  eq(res.status, 200, 'a late answer is a 200 stream')
+  const body = await res.text()
+  eq(body.startsWith(' '), true, 'kept alive with whitespace')
+  eq((JSON.parse(body) as { code: string }).code, 'import_limit', 'and the code survives')
+})

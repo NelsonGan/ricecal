@@ -325,7 +325,7 @@ begin
   end if;
 
   -- A recipe imported from a video is metered by the import allowance
-  -- instead (`claim_recipe_import`, five a month), and neither counts against
+  -- instead (claimed in `import_recipe_for`, five a month), and neither counts against
   -- the other: a free account told it can import five videos a month and then
   -- refused the fourth because it keeps three recipes would have been sold
   -- something the database does not do. Only the server can set `import_id`.

@@ -14,11 +14,12 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(24);
+select plan(26);
 
 \set first  'd1d1d1d1-0000-4000-8000-000000000001'
 \set second 'd1d1d1d1-0000-4000-8000-000000000002'
 \set third  'd1d1d1d1-0000-4000-8000-000000000003'
+\set fourth 'd1d1d1d1-0000-4000-8000-000000000004'
 \set video  'd1d1d1d1-0000-4000-8000-0000000000aa'
 \set dance  'd1d1d1d1-0000-4000-8000-0000000000bb'
 
@@ -26,7 +27,8 @@ insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, ra
 values
   (:'first',  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'ri-first@example.test',  '{}'::jsonb, '{}'::jsonb, now(), now()),
   (:'second', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'ri-second@example.test', '{}'::jsonb, '{}'::jsonb, now(), now()),
-  (:'third',  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'ri-third@example.test',  '{}'::jsonb, '{}'::jsonb, now(), now());
+  (:'third',  '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'ri-third@example.test',  '{}'::jsonb, '{}'::jsonb, now(), now()),
+  (:'fourth', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'ri-fourth@example.test', '{}'::jsonb, '{}'::jsonb, now(), now());
 
 -- All three free: no subscription row.
 
@@ -251,6 +253,26 @@ select is(
   (select community_recipe_id from public.recipe_imports where id = :'video'),
   (select id from public.recipes where owner_id = :'third' and import_id = :'video'),
   'and the cache points at it'
+);
+
+
+-- A REJECTED ONE DOES TOO ----------------------------------------------------
+
+-- Its owner turned it into something the reviewer refused. The video is still
+-- a recipe, so the next importer's goes up for review in its place.
+update public.recipes set review_status = 'rejected'
+ where owner_id = :'third' and import_id = :'video';
+
+select results_eq(
+  format($$select is_community, community_review::text from public.import_recipe_for(%L, %L)$$, :'fourth', :'video'),
+  $$values (true, 'pending')$$,
+  'once the community recipe is rejected, the next importer''s takes its place'
+);
+
+select is(
+  (select source_recipe_id from public.recipes where owner_id = :'fourth' and import_id = :'video'),
+  null::uuid,
+  'without being counted as a save of the rejected one'
 );
 
 

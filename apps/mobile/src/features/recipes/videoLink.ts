@@ -25,7 +25,7 @@ const HOSTS: Array<[RegExp, VideoPlatform]> = [
   [/(^|\.)(instagram\.com|instagr\.am)$/, 'instagram'],
   [/(^|\.)tiktok\.com$/, 'tiktok'],
   [/(^|\.)(youtube\.com|youtu\.be)$/, 'youtube'],
-  [/(^|\.)(x\.com|twitter\.com|fxtwitter\.com|vxtwitter\.com)$/, 'x'],
+  [/(^|\.)(x\.com|twitter\.com|fxtwitter\.com|vxtwitter\.com|fixupx\.com)$/, 'x'],
   [/^t\.co$/, 'x'],
   [/(^|\.)threads\.(net|com)$/, 'threads'],
   [/(^|\.)(facebook\.com|fb\.com|fb\.watch)$/, 'facebook'],

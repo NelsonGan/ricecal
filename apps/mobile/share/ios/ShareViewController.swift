@@ -101,7 +101,14 @@ final class ShareViewController: UIViewController {
       let link = candidates
         .sorted { ($0.rank, $0.order) < ($1.rank, $1.order) }
         .lazy
-        .compactMap { SharedLink.webURL($0.text) ?? SharedLink.firstWebURL(in: $0.text) }
+        // A URL attachment is a link already and is taken whole. Text is only
+        // ever searched: since iOS 17 `URL(string:)` percent-encodes what it
+        // cannot parse rather than failing, so "https://vm.tiktok.com/X/ Look!"
+        // read whole would be one link with the sentence in its path, where
+        // Android's match stops at the space.
+        .compactMap { $0.rank == 0
+          ? SharedLink.webURL($0.text) ?? SharedLink.firstWebURL(in: $0.text)
+          : SharedLink.firstWebURL(in: $0.text) }
         .first
       completion(link)
     }
