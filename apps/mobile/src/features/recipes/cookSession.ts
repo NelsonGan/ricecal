@@ -36,6 +36,16 @@ export function useTickedIngredients(recipeId: string) {
   return [ticked, toggle] as const
 }
 
+/**
+ * The meal is done: the next visit starts at step 1 with nothing ticked. Without
+ * this an app left in memory opened a recipe days later already struck through.
+ */
+export function forgetCookSession(recipeId: string) {
+  ticks.delete(recipeId)
+  steps.delete(recipeId)
+  changed()
+}
+
 /** The step cook mode is on, zero-based. Reset to the start once the meal is done. */
 export function useCookStep(recipeId: string) {
   const step = useSyncExternalStore(subscribe, () => steps.get(recipeId) ?? 0)

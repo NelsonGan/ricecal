@@ -6,6 +6,7 @@ import { AccessibilityInfo, View } from 'react-native'
 
 import { useRecipe, useRecipeIngredients } from '@/data'
 import {
+  forgetCookSession,
   IngredientChecklist,
   ingredientsInStep,
   LogRecipeSheet,
@@ -68,12 +69,13 @@ export default function CookModeScreen() {
   // Not on arrival, where the header already says where the cook is.
   const announced = useRef<string | null>(null)
   useEffect(() => {
-    if (!step) return
+    // Finishing resets the step to the first, which is not a step to read out.
+    if (!step || finished) return
     if (announced.current !== null && announced.current !== step) {
       AccessibilityInfo.announceForAccessibility(step)
     }
     announced.current = step
-  }, [step])
+  }, [step, finished])
 
   const header = (
     <AppBar
@@ -139,8 +141,8 @@ export default function CookModeScreen() {
   const priced = recipe.ingredientCount > 0
   const advance = () => {
     if (last) {
-      // Done with this pot: the next visit starts at the top.
-      setIndex(0)
+      // Done with this pot: the next visit starts at the top, unticked.
+      forgetCookSession(params.id ?? '')
       setFinished(true)
     } else setIndex(index + 1)
   }
@@ -191,7 +193,9 @@ export default function CookModeScreen() {
           recipe={recipe}
           logDate={logDate}
           isToday={isToday}
-          onLogged={() => goBack()}
+          // From the log sheet (it passes its day), back to it, as the recipe
+          // page does; otherwise back to the recipe.
+          onLogged={() => (params.date ? router.dismissTo('/log/search') : goBack())}
         />
       </Screen>
     )

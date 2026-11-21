@@ -22,7 +22,7 @@ export {
   parseMinutes,
   sourceHost,
 } from './cooking'
-export { useCookStep, useTickedIngredients } from './cookSession'
+export { forgetCookSession, useCookStep, useTickedIngredients } from './cookSession'
 export { DescribeRecipePanel, type DescribeRecipePanelProps } from './DescribeRecipePanel'
 export { IngredientChecklist, type IngredientChecklistProps } from './IngredientChecklist'
 export {

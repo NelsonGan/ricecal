@@ -68,7 +68,9 @@ export function useRecipes(shelf: RecipeShelf, query = '') {
       // tens of thousands of dishes cannot be ranked by substring matching; a
       // shelf of recipes is tens of rows, and ranking tens of rows is something
       // a person does by reading them.
-      if (needle) request = request.ilike('name', `%${needle}%`)
+      // `%` and `_` are wildcards to `ilike`: escaped, so "50%" finds the dish
+      // called that and a lone "_" is not a match for every recipe.
+      if (needle) request = request.ilike('name', `%${needle.replace(/[\\%_]/g, '\\$&')}%`)
 
       return unwrap(await request.limit(100)).map(toRecipe)
     },

@@ -136,7 +136,6 @@ export type Database = {
           external_id: string
           kind: string
           provider: Database['public']['Enums']['health_provider']
-          source_name: string | null
           started_at: string
           user_id: string
         }
@@ -145,7 +144,6 @@ export type Database = {
           external_id: string
           kind: string
           provider: Database['public']['Enums']['health_provider']
-          source_name?: string | null
           started_at: string
           user_id: string
         }
@@ -154,7 +152,6 @@ export type Database = {
           external_id?: string
           kind?: string
           provider?: Database['public']['Enums']['health_provider']
-          source_name?: string | null
           started_at?: string
           user_id?: string
         }
@@ -484,14 +481,8 @@ export type Database = {
           item_icon_set: Database['public']['Enums']['icon_set'] | null
           item_name: string
           item_place: Database['public']['Enums']['food_place'] | null
-          latitude: number | null
-          location_address: string | null
-          location_category: string | null
-          location_id: string | null
-          location_name: string | null
           log_date: string
           logged_at: string
-          longitude: number | null
           note: string | null
           override_carbs_g: number | null
           override_fat_g: number | null
@@ -532,14 +523,8 @@ export type Database = {
           item_icon_set?: Database['public']['Enums']['icon_set'] | null
           item_name: string
           item_place?: Database['public']['Enums']['food_place'] | null
-          latitude?: number | null
-          location_address?: string | null
-          location_category?: string | null
-          location_id?: string | null
-          location_name?: string | null
           log_date?: string
           logged_at?: string
-          longitude?: number | null
           note?: string | null
           override_carbs_g?: number | null
           override_fat_g?: number | null
@@ -580,14 +565,8 @@ export type Database = {
           item_icon_set?: Database['public']['Enums']['icon_set'] | null
           item_name?: string
           item_place?: Database['public']['Enums']['food_place'] | null
-          latitude?: number | null
-          location_address?: string | null
-          location_category?: string | null
-          location_id?: string | null
-          location_name?: string | null
           log_date?: string
           logged_at?: string
-          longitude?: number | null
           note?: string | null
           override_carbs_g?: number | null
           override_fat_g?: number | null
@@ -2887,14 +2866,8 @@ export type Database = {
           item_brand: string | null
           item_name: string | null
           kcal: number | null
-          latitude: number | null
-          location_address: string | null
-          location_category: string | null
-          location_id: string | null
-          location_name: string | null
           log_date: string | null
           logged_at: string | null
-          longitude: number | null
           note: string | null
           override_carbs_g: number | null
           override_fat_g: number | null

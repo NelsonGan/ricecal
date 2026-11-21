@@ -22,10 +22,11 @@ export function RecipeStats({
   const duration = useDurationText()
   type Item = { key: string; label: string; value: string }
   const items: Item[] = []
-  if (recipe.prepMinutes != null) {
+  // A zero is a time nobody really gave, and "Prep 0 min" says otherwise.
+  if (recipe.prepMinutes) {
     items.push({ key: 'prep', label: t('detail.prep'), value: duration(recipe.prepMinutes) })
   }
-  if (recipe.cookMinutes != null) {
+  if (recipe.cookMinutes) {
     items.push({ key: 'cook', label: t('detail.cook'), value: duration(recipe.cookMinutes) })
   }
   items.push({ key: 'serves', label: '', value: t('servings', { count: recipe.servings }) })

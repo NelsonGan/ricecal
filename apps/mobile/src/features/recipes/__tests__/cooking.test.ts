@@ -19,6 +19,7 @@ describe('totalMinutes', () => {
     expect(totalMinutes({ prepMinutes: 20, cookMinutes: 50 })).toBe(70)
     expect(totalMinutes({ cookMinutes: 15 })).toBe(15)
     expect(totalMinutes({})).toBeUndefined()
+    expect(totalMinutes({ prepMinutes: 0, cookMinutes: 0 })).toBeUndefined()
   })
 })
 

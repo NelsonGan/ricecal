@@ -11,10 +11,13 @@ import { snapshotFromRecipe } from '@/data/snapshot'
  * the arithmetic the tests pin.
  */
 
-/** Prep plus cook, or undefined when the cook gave neither. */
+/**
+ * Prep plus cook, or undefined when the cook gave neither, or gave nothing but
+ * zeros: "0 min" on a card reads as a recipe that takes no time.
+ */
 export function totalMinutes(recipe: Pick<Recipe, 'prepMinutes' | 'cookMinutes'>) {
-  if (recipe.prepMinutes == null && recipe.cookMinutes == null) return undefined
-  return (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0)
+  const total = (recipe.prepMinutes ?? 0) + (recipe.cookMinutes ?? 0)
+  return total > 0 ? total : undefined
 }
 
 /**

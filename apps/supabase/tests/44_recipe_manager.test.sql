@@ -12,7 +12,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(18);
+select plan(19);
 
 \set cook   'c0c0c0c0-0000-4000-8000-000000000001'
 \set reader 'c0c0c0c0-0000-4000-8000-000000000002'
@@ -130,6 +130,17 @@ select throws_ok(
            values (%L, %L, 'https://spam.example')$$, :'recipe_id', :'reader'),
   '42501', null,
   'a reader cannot attach a row to somebody else''s recipe'
+);
+
+-- The reader's own recipe and its row, to try moving that row onto the cook's.
+insert into public.recipes (owner_id, name, servings) values (:'reader', 'rm-fixture-reader', 1);
+select id as reader_recipe from public.recipes where name = 'rm-fixture-reader' \gset
+insert into public.recipe_private (recipe_id, owner_id) values (:'reader_recipe', :'reader');
+
+select throws_ok(
+  format($$update public.recipe_private set recipe_id = %L where recipe_id = %L$$, :'recipe_id', :'reader_recipe'),
+  '42501', null,
+  'nor move their own row onto somebody else''s recipe'
 );
 
 select lives_ok(

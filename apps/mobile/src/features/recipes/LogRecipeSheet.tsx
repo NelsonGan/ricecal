@@ -50,16 +50,19 @@ export function LogRecipeSheet({
   // The whole pot is the end of the scale, and a pot that feeds one still
   // reaches two, for the second sandwich.
   const max = Math.max(recipe.servings, 2)
+  // Per serving times servings, as the diary entry will be, rather than the
+  // pot's own total: the figure here is the figure the day will show.
   const kcal = Math.round(recipe.perServing.kcal * quantity)
   /**
    * Half, then every whole serving while there is room for them, then the
-   * whole pot at the end. Past six a scale of numbers is a ruler, so a big pot
-   * marks half, the middle and the end.
+   * whole pot at the end. Past four, "Whole pot" at the end runs into the mark
+   * before it and a scale of numbers becomes a ruler, so a bigger pot marks
+   * half, the middle and the end.
    */
   const potLabel = (value: number) =>
     value === recipe.servings ? t('recipes:detail.portion.pot') : servingsText(value)
   const wholes =
-    max <= 6 ? Array.from({ length: max }, (_, index) => index + 1) : [Math.round(max / 2), max]
+    max <= 4 ? Array.from({ length: max }, (_, index) => index + 1) : [Math.round(max / 2), max]
   const marks = [0.5, ...wholes].map((value) => ({ value, label: potLabel(value) }))
   // "Add to today" only when it is. From the log sheet on an earlier day the
   // entry goes to that day, and the button says no more than "Add".

@@ -639,9 +639,10 @@ create policy "recipe_private: read own"
   to authenticated
   using (owner_id = (select auth.uid()));
 
--- Only for a recipe of your own: without the `exists`, anybody could attach a
--- row to somebody else's recipe id and, through the view's join, nothing would
--- show, but the row would sit there under their recipe.
+-- Only for a recipe of your own, on insert and on update alike: without the
+-- `exists`, anybody could attach a row to somebody else's recipe id (or move
+-- their own row onto it), and since `recipe_id` is the primary key, that cook
+-- could then never write a link or a star for their own recipe.
 create policy "recipe_private: write own recipe"
   on public.recipe_private for insert
   to authenticated
@@ -657,7 +658,13 @@ create policy "recipe_private: update own"
   on public.recipe_private for update
   to authenticated
   using (owner_id = (select auth.uid()))
-  with check (owner_id = (select auth.uid()));
+  with check (
+    owner_id = (select auth.uid())
+    and exists (
+      select 1 from public.recipes r
+      where r.id = recipe_id and r.owner_id = (select auth.uid())
+    )
+  );
 
 create policy "recipe_private: delete own"
   on public.recipe_private for delete

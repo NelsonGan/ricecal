@@ -231,7 +231,9 @@ CREATE POLICY "recipe_private: update own" ON public.recipe_private
   FOR UPDATE
   TO authenticated
   USING ((owner_id = ( SELECT auth.uid() AS uid)))
-  WITH CHECK ((owner_id = ( SELECT auth.uid() AS uid)));
+  WITH CHECK (((owner_id = ( SELECT auth.uid() AS uid)) AND (EXISTS ( SELECT 1
+   FROM public.recipes r
+  WHERE ((r.id = recipe_private.recipe_id) AND (r.owner_id = ( SELECT auth.uid() AS uid)))))));
 
 CREATE POLICY "recipe_private: write own recipe" ON public.recipe_private
   FOR INSERT
