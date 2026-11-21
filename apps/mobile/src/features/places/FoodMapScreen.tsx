@@ -56,8 +56,10 @@ const HOME_REGION = regionAround(HOME_COORDINATE, 0.4)
 /** One place, or places at one spot, shown at about a neighbourhood. */
 const ONE_SPOT_DELTA = 0.02
 
-/** The idle panel: the totals line and one row of place cards. */
-const PANEL_HEIGHT = 196
+/** The idle panel: the period and its totals over one row of place cards. */
+const PANEL_HEIGHT = 220
+
+const PERIOD_KINDS = ['week', 'month', 'all'] as const
 /** The selected place's floating card. */
 const PLACE_CARD_HEIGHT = 228
 const PLACE_CARD_WIDTH = 132
@@ -89,7 +91,6 @@ export function FoodMapScreen() {
   const showMe = enabled && here.status === 'ready'
   const [period, setPeriod] = useState<MapPeriod>({ kind: 'month', anchor: today() })
   const [selection, setSelection] = useState<Selection>(null)
-  const [choosingPeriod, setChoosingPeriod] = useState(false)
 
   const groups = useMemo(
     () => groupByPlace((located.data ?? []).filter((entry) => inPeriod(entry.logDate, period))),
@@ -259,7 +260,6 @@ export function FoodMapScreen() {
   const totalMeals = groups.reduce((sum, group) => sum + group.entries.length, 0)
   const totalKcal = groups.reduce((sum, group) => sum + group.kcal, 0)
 
-  // Short, because it sits in a pill between two arrows.
   const periodLabel = (() => {
     const range = periodRange(period)
     if (!range) return t('places:all')
@@ -357,103 +357,46 @@ export function FoodMapScreen() {
         )}
       </ReplayMask>
 
-      {/* One row of floating controls, one height and one surface: back, the
-          period with its arrows, and which kind of period. */}
+      {/* Back, and which kind of period, floating over the map. Which period
+          of that kind, with its arrows, heads the panel below. */}
       <View
-        className="absolute left-0 right-0 top-0 flex-row items-center gap-2 px-gutter"
-        style={{ paddingTop: insets.top + 6 }}
+        className="absolute left-0 right-0 top-0 h-10 items-center justify-center"
+        style={{ marginTop: insets.top + 6 }}
         pointerEvents="box-none"
       >
-        <RoundButton onPress={back} label={t('common:a11y.back')}>
-          <Chevron direction="left" color={colors.ink} />
-        </RoundButton>
-        <View
-          className="h-10 min-w-0 flex-1 flex-row items-center rounded-full bg-surface"
-          style={FLOAT_SHADOW}
-        >
-          {period.kind === 'all' ? null : (
-            <Tappable
-              className="h-10 w-10 items-center justify-center"
-              onPress={() => setPeriod((now) => shiftPeriod(now, -1))}
-              accessibilityRole="button"
-              accessibilityLabel={t('places:previous')}
-            >
-              <Chevron direction="left" size={8} color={colors.ink} />
-            </Tappable>
-          )}
-          <Text
-            className="min-w-0 flex-1 text-center font-display text-[17px] text-heading"
-            numberOfLines={1}
-          >
-            {periodLabel}
-          </Text>
-          {period.kind === 'all' ? null : (
-            <Tappable
-              className="h-10 w-10 items-center justify-center"
-              onPress={() => setPeriod((now) => shiftPeriod(now, 1))}
-              disabled={atLatest}
-              accessibilityRole="button"
-              accessibilityLabel={t('places:next')}
-              accessibilityState={{ disabled: atLatest }}
-            >
-              <Chevron direction="right" size={8} color={atLatest ? colors.faint : colors.ink} />
-            </Tappable>
-          )}
+        <View className="absolute left-gutter">
+          <RoundButton onPress={back} label={t('common:a11y.back')}>
+            <Chevron direction="left" color={colors.ink} />
+          </RoundButton>
         </View>
-        <Tappable
-          className="h-10 flex-row items-center gap-1.5 rounded-full bg-surface px-3.5"
+        <View
+          className="h-10 flex-row items-center rounded-full bg-surface p-1"
           style={FLOAT_SHADOW}
-          onPress={() => setChoosingPeriod((open) => !open)}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: choosingPeriod }}
-          accessibilityLabel={t(`places:${period.kind}`)}
+          accessibilityRole="tablist"
         >
-          <Text variant="label" className="text-heading">
-            {t(`places:${period.kind}Short`)}
-          </Text>
-          <Chevron direction="down" size={7} color={colors.ink} />
-        </Tappable>
-      </View>
-
-      {/* Which kind of period, as a small menu under its chip. The scrim under
-          it closes it on a tap anywhere else. */}
-      {choosingPeriod ? (
-        <>
-          <Tappable
-            haptics={false}
-            className="absolute inset-0"
-            onPress={() => setChoosingPeriod(false)}
-            accessibilityLabel={t('common:action.close')}
-          />
-          <View
-            className="absolute right-gutter min-w-[150px] overflow-hidden rounded-tile bg-surface py-1"
-            style={[FLOAT_SHADOW, { top: insets.top + 54 }]}
-          >
-            {(['week', 'month', 'all'] as const).map((kind) => (
+          {PERIOD_KINDS.map((kind) => {
+            const on = period.kind === kind
+            return (
               <Tappable
                 key={kind}
-                onPress={() => {
-                  setChoosingPeriod(false)
-                  setPeriod((now) => ({ ...now, kind }))
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: period.kind === kind }}
-                className="flex-row items-center justify-between gap-3 px-4 py-2.5"
+                onPress={() => setPeriod((now) => ({ ...now, kind }))}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={t(`places:${kind}`)}
+                className={
+                  on
+                    ? 'h-8 justify-center rounded-full bg-pandan px-4'
+                    : 'h-8 justify-center rounded-full px-4'
+                }
               >
-                <Text
-                  variant="label"
-                  className={period.kind === kind ? 'text-pandan-ink' : undefined}
-                >
-                  {t(`places:${kind}`)}
+                <Text variant="label" className={on ? 'text-on-pandan' : 'text-heading'}>
+                  {t(`places:${kind}Short`)}
                 </Text>
-                {period.kind === kind ? (
-                  <Icon set="ui" name="check" size={14} tintColor={colors.pandan} />
-                ) : null}
               </Tappable>
-            ))}
-          </View>
-        </>
-      ) : null}
+            )
+          })}
+        </View>
+      </View>
 
       {/* Locate and fit, stacked over the panel's top right corner. */}
       <View className="absolute right-gutter gap-2" style={{ bottom: panelHeight + 12 }}>
@@ -484,9 +427,37 @@ export function FoodMapScreen() {
           <View className="items-center pt-2">
             <View className="h-1 w-9 rounded-full bg-track" />
           </View>
+          {selection?.kind === 'cluster' ? null : (
+            <View className="flex-row items-center gap-2 px-gutter pt-1">
+              <View className="min-w-0 flex-1">
+                <Text variant="heading" numberOfLines={1}>
+                  {periodLabel}
+                </Text>
+                {groups.length > 0 ? (
+                  <Text variant="meta" numberOfLines={1}>
+                    {totals}
+                  </Text>
+                ) : null}
+              </View>
+              {period.kind === 'all' ? null : (
+                <>
+                  <PagerButton
+                    direction="left"
+                    onPress={() => setPeriod((now) => shiftPeriod(now, -1))}
+                    label={t('places:previous')}
+                  />
+                  <PagerButton
+                    direction="right"
+                    onPress={() => setPeriod((now) => shiftPeriod(now, 1))}
+                    label={t('places:next')}
+                    disabled={atLatest}
+                  />
+                </>
+              )}
+            </View>
+          )}
           {located.isPending ? (
             <View className="gap-3 px-gutter pt-3">
-              <Skeleton className="h-[20px] w-[220px]" />
               <View className="flex-row gap-3">
                 <Skeleton className="h-[120px] w-[132px] rounded-tile" />
                 <Skeleton className="h-[120px] w-[132px] rounded-tile" />
@@ -508,24 +479,24 @@ export function FoodMapScreen() {
             </View>
           ) : (
             <>
-              <View className="flex-row items-center justify-between px-gutter pb-2 pt-2">
-                <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
-                  {selection?.kind === 'cluster'
-                    ? t('places:placesHere', { count: cards.length })
-                    : totals}
-                </Text>
-                {selection?.kind === 'cluster' ? (
+              {selection?.kind === 'cluster' ? (
+                <View className="flex-row items-center justify-between px-gutter pt-1">
+                  <Text variant="heading" numberOfLines={1} className="min-w-0 flex-1">
+                    {t('places:placesHere', { count: cards.length })}
+                  </Text>
                   <Tappable
                     onPress={() => setSelection(null)}
                     accessibilityRole="button"
                     accessibilityLabel={t('common:action.close')}
-                    className="p-1"
+                    hitSlop={8}
+                    className="h-8 w-8 items-center justify-center rounded-full bg-surface-alt"
                   >
                     <Icon set="ui" name="close" size={12} tintColor={colors.muted} />
                   </Tappable>
-                ) : null}
-              </View>
+                </View>
+              ) : null}
               <ScrollView
+                className="mt-3"
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{ paddingHorizontal: 20, gap: 10, alignItems: 'flex-start' }}
@@ -544,6 +515,34 @@ export function FoodMapScreen() {
         </View>
       )}
     </View>
+  )
+}
+
+/** The panel's earlier and later arrows, round and outlined. */
+function PagerButton({
+  direction,
+  onPress,
+  label,
+  disabled = false,
+}: {
+  direction: 'left' | 'right'
+  onPress: () => void
+  label: string
+  disabled?: boolean
+}) {
+  const colors = useThemeColors()
+  return (
+    <Tappable
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled }}
+      hitSlop={4}
+      className="h-10 w-10 items-center justify-center rounded-full border border-line"
+    >
+      <Chevron direction={direction} size={8} color={disabled ? colors.faint : colors.ink} />
+    </Tappable>
   )
 }
 

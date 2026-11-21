@@ -4375,9 +4375,11 @@ Locations is on or once any meal has a place.
 photographed plate, else its drawing, with a count. Places group by Apple's id,
 else by name at a point rounded to about 11 m. Places that crowd at the current
 zoom merge into a green bubble that zooms in when tapped, or lists its places
-once it cannot split (places at one exact point never split). The panel under
-the map is one line of totals and a row of place cards; a selected place is a
-floating card with its meals, each opening the entry. Periods are Monday to
+once it cannot split (places at one exact point never split). Over the map
+float a back button and a Week / Month / All switch. The panel under it is
+headed by the period ("November 2026") with its earlier and later arrows, then
+one line of totals and a row of place cards; a selected place is a floating card
+with its meals, each opening the entry. Periods are Monday to
 Sunday weeks, calendar months and all time, by `log_date`. It reads one query
 (`useLocatedEntries`, the newest 2,000 tagged entries, served by the partial
 index `food_logs_user_located_idx`) and filters it per period.
@@ -4416,8 +4418,8 @@ react-native-maps release fixes #6052. Inside the picker's modal it needs a
 `GestureHandlerRootView` of its own, as `Sheet` has.
 
 **The header is drawn, not iconed.** Over a map, a clay arrow at 12pt reads as
-a blob, so the food map's back, period arrows and menu chevron are `Chevron`, a
-bordered square turned to point.
+a blob, so the food map's back and period arrows are `Chevron`, a bordered
+square turned to point.
 
 **Both map modules are required lazily** (`mapsModule()`, `locationModule()`),
 so a dev client built before them keeps running this JavaScript: the map draws

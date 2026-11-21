@@ -1,6 +1,6 @@
 import { View } from 'react-native'
 
-const TURN = { left: '45deg', right: '-135deg', down: '-45deg', up: '135deg' } as const
+const TURN = { left: '45deg', right: '-135deg' } as const
 
 /**
  * A thin chevron, drawn rather than an icon: the app's icons are clay
@@ -19,14 +19,7 @@ export function Chevron({
   // The turned square's corner points out of its box, so it is nudged back
   // toward the way it points to look centred.
   const nudge = size * 0.2
-  const offset =
-    direction === 'left'
-      ? { marginLeft: nudge }
-      : direction === 'right'
-        ? { marginRight: nudge }
-        : direction === 'down'
-          ? { marginBottom: nudge }
-          : { marginTop: nudge }
+  const offset = direction === 'left' ? { marginLeft: nudge } : { marginRight: nudge }
   return (
     <View
       style={{
