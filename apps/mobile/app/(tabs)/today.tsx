@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from '
 import { useTranslation } from 'react-i18next'
 import { useWindowDimensions, View } from 'react-native'
 import {
+  type ActivitySession,
   dateKey,
   ENTRY_FOOD_ID,
   type Entry,
@@ -14,6 +15,8 @@ import {
   useActivityDay,
   useActivitySessions,
   useDayLog,
+  useDeleteActivitySession,
+  useDeleteWorkout,
   usePendingSnaps,
   useRemoveEntry,
   useSelectedDate,
@@ -22,9 +25,10 @@ import {
   useStreak,
   useTargets,
   useWorkoutsOn,
+  type WorkoutSummary,
 } from '@/data'
 import { socialEntryPost } from '@/data/social'
-import { count, SessionItem } from '@/features/activity'
+import { count, SessionItem, useSessionLabel } from '@/features/activity'
 import {
   createDeleteGate,
   MonthCalendar,
@@ -37,7 +41,14 @@ import { useProNudge } from '@/features/paywall'
 import { usePhotoRemovalNotice } from '@/features/photoRemovals/usePhotoRemovalNotice'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
-import { openLogger, useHasActiveWorkout, WorkoutItem, WorkoutsTile } from '@/features/workouts'
+import {
+  openLogger,
+  removeWorkoutFromHealth,
+  useAskedDelete,
+  useHasActiveWorkout,
+  WorkoutItem,
+  WorkoutsTile,
+} from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
 import { useOnline } from '@/lib/online'
@@ -135,7 +146,7 @@ function LaunchOffers() {
  * placeholder is worse than no ring.
  */
 function TodayContent() {
-  const { t } = useTranslation(['logging', 'common', 'social'])
+  const { t } = useTranslation(['logging', 'common', 'social', 'workouts', 'activity'])
   const router = useRouter()
   const focused = useIsFocused()
   const toast = useToast()
@@ -244,6 +255,33 @@ function TodayContent() {
   const sessions = (useActivitySessions(selectedDate).data ?? []).filter(
     (session) => !savedToHealth.has(session.externalId),
   )
+  // A workout swipes to its delete as a meal does, but asks first with the
+  // same words its own page uses: a logged one takes its sets and its Apple
+  // Health copy with it, and neither comes back from a swipe.
+  const removeWorkout = useDeleteWorkout()
+  const askWorkout = useAskedDelete<WorkoutSummary>({
+    title: t('workouts:detail.deleteTitle'),
+    description: (workout) =>
+      workout.healthWorkoutId
+        ? `${t('workouts:detail.deleteBody')} ${t('workouts:detail.deleteHealth')}`
+        : t('workouts:detail.deleteBody'),
+    remove: (workout) => removeWorkout.mutateAsync(workout.id),
+    failed: t('common:offline.unreachableTitle'),
+    done: async (workout) => {
+      toast.show({ title: t('logging:added.removedToast') })
+      await removeWorkoutFromHealth(workout.healthWorkoutId, workout.id)
+    },
+  })
+  const removeSession = useDeleteActivitySession()
+  const sessionLabel = useSessionLabel()
+  const askSession = useAskedDelete<ActivitySession>({
+    title: t('activity:workout.deleteTitle'),
+    description: (session) =>
+      t('activity:workout.deleteBody', { provider: t(`activity:provider.${session.provider}`) }),
+    remove: (session) => removeSession.mutateAsync(session.id),
+    failed: t('common:offline.unreachableTitle'),
+    done: () => toast.show({ title: t('logging:added.removedToast') }),
+  })
 
   /**
    * Everything under the strip waits together.
@@ -767,29 +805,22 @@ function TodayContent() {
                 ...workouts.map((workout) => ({
                   key: `workout-${workout.id}`,
                   at: workout.startedAt,
-                  node: (
-                    <WorkoutItem
-                      workout={workout}
-                      onPress={() =>
-                        router.push({ pathname: '/workout/[id]', params: { id: workout.id } })
-                      }
-                    />
-                  ),
+                  node: <WorkoutItem workout={workout} />,
+                  onPress: () =>
+                    router.push({ pathname: '/workout/[id]', params: { id: workout.id } }),
+                  onDelete: () => askWorkout.ask(workout),
                 })),
                 ...sessions.map((session) => ({
                   key: session.id,
                   at: session.startedAt,
-                  node: (
-                    <SessionItem
-                      session={session}
-                      onPress={() =>
-                        router.push({
-                          pathname: '/activity/workout/[id]',
-                          params: { id: session.id },
-                        })
-                      }
-                    />
-                  ),
+                  node: <SessionItem session={session} />,
+                  label: sessionLabel(session),
+                  onPress: () =>
+                    router.push({
+                      pathname: '/activity/workout/[id]',
+                      params: { id: session.id },
+                    }),
+                  onDelete: () => askSession.ask(session),
                 })),
               ]}
               onPressEntry={(entry) =>
@@ -821,6 +852,8 @@ function TodayContent() {
         </Aside>
       )}
 
+      {askWorkout.dialog}
+      {askSession.dialog}
       <ConfirmSheet
         visible={Boolean(sharedDelete)}
         onClose={() => {

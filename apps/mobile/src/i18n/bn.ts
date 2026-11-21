@@ -899,6 +899,8 @@ export const bn = {
       nameField: 'নাম',
       numbersReset: 'অ্যাপের সংখ্যা ব্যবহার করুন',
       servingWord: 'পরিবেশন',
+      servingCount_one: '{{value}} পরিবেশন',
+      servingCount_other: '{{value}} পরিবেশন',
       measureIn: 'যে এককে মাপবেন',
       amount: 'পরিমাণ',
       quickFix: {

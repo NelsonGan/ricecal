@@ -929,6 +929,8 @@ export const ms = {
       nameField: 'Nama',
       numbersReset: 'Guna angka apl',
       servingWord: 'bahagian',
+      servingCount_one: '{{value}} bahagian',
+      servingCount_other: '{{value}} bahagian',
       measureIn: 'Ukur dalam',
       amount: 'Jumlah',
       quickFix: {

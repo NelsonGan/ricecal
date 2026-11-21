@@ -20,7 +20,7 @@ export {
   syncedAgo,
 } from './format'
 export { HeartRateCard } from './HeartRateCard'
-export { SessionItem, type SessionItemProps } from './SessionItem'
+export { SessionItem, type SessionItemProps, useSessionLabel } from './SessionItem'
 export { WorkoutDetails } from './WorkoutDetails'
 export {
   asWorkoutKind,

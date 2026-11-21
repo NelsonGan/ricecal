@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 
 import { amountText, type MeasureUnit } from '@/lib/measures'
-import { formatPortion } from '@/lib/portions'
+import { formatPortion, type PortionWords } from '@/lib/portions'
 
 /**
  * The figure an amount in a unit reads as. Whole grams and millilitres, with
@@ -40,5 +40,19 @@ export function useMeasureText() {
       t(`measure.${unit}`, { count: pluralCount(amount), value: measureFigure(unit, amount) }),
     /** "tbsp", "cups": the unit alone, agreeing with the figure beside it. */
     unit: (unit: MeasureUnit, count = 1) => t(`measureUnit.${unit}`, { count: pluralCount(count) }),
+  }
+}
+
+/**
+ * What `portionLabel` needs to say an amount in the app's language: servings
+ * counted in its own word, and units as `useMeasureText` says them.
+ */
+export function usePortionWords(): PortionWords {
+  const { t } = useTranslation('logging')
+  const measure = useMeasureText()
+  return {
+    servings: (quantity) =>
+      t('detail.servingCount', { count: pluralCount(quantity), value: formatPortion(quantity) }),
+    measured: measure.amount,
   }
 }

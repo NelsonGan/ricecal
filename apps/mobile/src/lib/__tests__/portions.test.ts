@@ -1,4 +1,10 @@
-import { eatenQuantity, portionLabel, servingUnit } from '@/lib/portions'
+import {
+  eatenQuantity,
+  formatPortion,
+  type PortionWords,
+  portionLabel,
+  servingUnit,
+} from '@/lib/portions'
 
 /**
  * Serving labels out of the catalogue import.
@@ -54,18 +60,94 @@ describe('servingUnit', () => {
   })
 })
 
+// Every case here is a label and quantity real diary rows carry, out of a
+// group-by over `food_logs`. The row said "serving" under nearly every meal,
+// "0.5 × bowl" for half a bowl, "eggs" for two of them and "ml" for 250 ml.
 describe('portionLabel', () => {
-  it('says nothing about the count at one', () => {
-    expect(portionLabel(1, '1 plate', 'serving')).toBe('plate')
+  const words: PortionWords = {
+    servings: (q) => `${formatPortion(q)} ${q > 1 ? 'servings' : 'serving'}`,
+    measured: (amount, unit) => `${amount} ${unit}`,
+  }
+  const say = (quantity: number, label: string | null) => portionLabel(quantity, label, words)
+
+  it('says nothing for one plain serving', () => {
+    expect(say(1, '1 serving')).toBeNull()
+    expect(say(1, 'Quantity not specified')).toBeNull()
+    expect(say(1, '')).toBeNull()
+    expect(say(1, null)).toBeNull()
   })
 
-  it('multiplies above and below one', () => {
-    expect(portionLabel(2, '1 plate', 'serving')).toBe('2 × plate')
-    expect(portionLabel(0.5, '1 bowl', 'serving')).toBe('0.5 × bowl')
+  it('counts servings in the caller’s word otherwise', () => {
+    expect(say(0.5, '1 serving')).toBe('½ serving')
+    expect(say(2, '1 serving')).toBe('2 servings')
+    expect(say(1.5, 'Quantity not specified')).toBe('1½ servings')
+    // A code the import wrote is still a unit it can read.
+    expect(say(1.5, '383 GRM')).toBe('574.5 g')
   })
 
-  it('falls back to the caller’s word when the label is unusable', () => {
-    expect(portionLabel(2, '383 GRM', 'serving')).toBe('2 × serving')
+  it('multiplies a count of servings the label carries', () => {
+    expect(say(1, '2 servings')).toBe('2 servings')
+    expect(say(2, '0.5 serving')).toBeNull()
+    expect(say(1, '0.5 serving')).toBe('½ serving')
+  })
+
+  it('counts a thing in quarters, agreeing with the number', () => {
+    expect(say(1, '1 plate')).toBe('1 plate')
+    expect(say(0.5, '1 bowl')).toBe('½ bowl')
+    expect(say(2, '1 piece')).toBe('2 pieces')
+    expect(say(1.5, '1 glass (300 ml)')).toBe('1½ glasses')
+    expect(say(2, '1 whole egg')).toBe('2 whole eggs')
+  })
+
+  it('keeps a × for a word it cannot inflect', () => {
+    expect(say(0.5, '1 bungkus')).toBe('½ bungkus')
+    expect(say(2, '1 bungkus')).toBe('2 × bungkus')
+    expect(say(2, '1 egg without shell (50 g)')).toBe('2 × egg without shell')
+  })
+
+  it('keeps a count that is part of the portion, and multiplies it', () => {
+    // Stripped of its count, "2 eggs" read "eggs".
+    expect(say(1, '2 eggs')).toBe('2 eggs')
+    expect(say(2, '2 eggs')).toBe('4 eggs')
+    expect(say(0.5, '2 pieces')).toBe('1 piece')
+    expect(say(1, '2 slice')).toBe('2 slices')
+    expect(say(1, '6 inch sub')).toBe('6 inch sub')
+    expect(say(2, '6 inch sub')).toBe('2 × 6 inch sub')
+    expect(say(1, '1 1/2 slices')).toBe('1½ slices')
+  })
+
+  it('counts a thing written without a count as one of it', () => {
+    expect(say(1, 'plate')).toBe('plate')
+    expect(say(2, 'plate')).toBe('2 plates')
+    // An object's own keys are not words it can inflect.
+    expect(say(2, '1 constructor')).toBe('2 × constructor')
+  })
+
+  it('says a measurement as an amount, multiplied out', () => {
+    expect(say(1.5, '100 g')).toBe('150 g')
+    expect(say(2, '15.0g')).toBe('30 g')
+    expect(say(0.5, '200 ml')).toBe('100 ml')
+    expect(say(2, '1 tbsp')).toBe('2 tbsp')
+    expect(say(1, '1 tablespoon (12 g)')).toBe('1 tbsp')
+    // These read "ml" and "g".
+    expect(say(1, '250 ml (250 ml)')).toBe('250 ml')
+    expect(say(1, '25g, 1 sachet')).toBe('25 g')
+    // A tenth of a gram, not "31.25 g".
+    expect(say(0.25, '125 g')).toBe('31.3 g')
+  })
+
+  it('reads a portion or a size by the measurement in its bracket', () => {
+    expect(say(1, '1 portion (100 g)')).toBe('100 g')
+    expect(say(2, '1 serving (100 g)')).toBe('200 g')
+    expect(say(0.5, 'Regular (350 ml)')).toBe('175 ml')
+    expect(say(1, '1 whole (118 g)')).toBe('118 g')
+    // A thing keeps its name: "1 bowl" says more than 400 g of soup.
+    expect(say(1, '1 bowl (400 g)')).toBe('1 bowl')
+  })
+
+  it('leaves a word with no count as written', () => {
+    expect(say(1, 'Half')).toBe('half')
+    expect(say(1, 'Large')).toBe('large')
   })
 })
 
@@ -86,21 +168,6 @@ describe('eatenQuantity', () => {
     expect(eatenQuantity({ quantity: 0.1, plateQuantity: 3 })).toBe(0.3)
     expect(eatenQuantity({ quantity: 0.25, plateQuantity: 0.03 })).toBe(0.01)
     expect(eatenQuantity({ quantity: 20, plateQuantity: 20 })).toBe(100)
-  })
-})
-
-// A portion that is a unit reads as an amount of it: the diary said
-// "1.5 × 100 g" for what somebody would call 150 g.
-describe('portionLabel with units', () => {
-  const measured = (amount: number, unit: string) => `${amount} ${unit}`
-
-  it('says the amount for a portion that is a unit', () => {
-    expect(portionLabel(1.5, '100 g', 'serving', measured)).toBe('150 g')
-    expect(portionLabel(2, '1 tbsp', 'serving', measured)).toBe('2 tbsp')
-  })
-
-  it('counts a portion that is a thing, as before', () => {
-    expect(portionLabel(2, '1 plate', 'serving', measured)).toBe('2 × plate')
   })
 })
 

@@ -433,6 +433,12 @@ export const logging = {
      * ("1 medium paper (8-5/8\" dia)") or a code ("383 GRM").
      */
     servingWord: 'serving',
+    /**
+     * A diary row's portion when all it says is servings: "½ serving",
+     * "2 servings". One serving says nothing, and the row leaves it out.
+     */
+    servingCount_one: '{{value}} serving',
+    servingCount_other: '{{value}} servings',
     /** The unit switch under the portion stepper, read out. */
     measureIn: 'Measure in',
     /** The portion stepper read out when it counts a unit (grams, spoons) rather than servings. */

@@ -918,6 +918,8 @@ export const id = {
       nameField: 'Nama',
       numbersReset: 'Pakai angka aplikasi',
       servingWord: 'porsi',
+      servingCount_one: '{{value}} porsi',
+      servingCount_other: '{{value}} porsi',
       measureIn: 'Ukur dalam',
       amount: 'Jumlah',
       quickFix: {

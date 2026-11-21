@@ -1,4 +1,4 @@
-import { leadingAmount, type MeasureUnit, measureOf } from './measures'
+import { labelAmount, leadingAmount, type MeasureUnit, NUMBER, parseNumber } from './measures'
 import { roundHalfUp } from './nutrition'
 
 /**
@@ -81,31 +81,207 @@ export function servingUnit(raw: string | null | undefined): string | null {
     .replace(/\s+/g, ' ')
     .trim()
 
-  // A leftover digit or inch mark means what remains is still a measurement
-  // ("9-5 dia", "8 onz"), not a unit anybody eats in.
-  if (!cleaned || JUNK.has(cleaned) || cleaned.length > 18 || /[\d"']/.test(cleaned)) return null
-  return cleaned
+  return readsAsWord(cleaned) ? cleaned : null
 }
 
 /**
- * "2 × plate", "plate". The multiplier is dropped at one, where it says
- * nothing, and the label falls back to the caller's word for a portion.
+ * Whether a cleaned label is something a person would say. A leftover digit
+ * or inch mark means it is still a measurement ("9-5 dia", "8 onz"), not a
+ * unit anybody eats in.
+ */
+function readsAsWord(text: string): boolean {
+  return Boolean(text) && !JUNK.has(text) && text.length <= 18 && !/[\d"']/.test(text)
+}
+
+/** The caller's translated ways of saying an amount. See `portionLabel`. */
+export type PortionWords = {
+  /** "½ serving", "2 servings": the app's own word, counted. */
+  servings: (quantity: number) => string
+  /** "150 g", "2 tbsp". */
+  measured: (amount: number, unit: MeasureUnit) => string
+}
+
+/** Words that say "a portion" without saying of what. */
+const GENERIC = new Set(['serving', 'servings', 'portion', 'portions'])
+
+/**
+ * Sizes, which say nothing on their own once the measurement in their bracket
+ * is known: "Regular (350 ml)" is 350 ml, and half of it is 175 ml rather than
+ * "0.5 × regular".
+ */
+const SIZES = new Set(['regular', 'tall', 'grande', 'venti', 'small', 'medium', 'large', 'whole'])
+
+/**
+ * The things a portion is counted in, singular and plural. Serving labels are
+ * stored in English whatever the app is read in (see `aiLanguage` in common),
+ * so this is about the data rather than the interface. Only these are
+ * inflected: a word that is not here keeps a "×" rather than being guessed at,
+ * which is how "bungkus" would have become "bunguses".
+ */
+const PLURALS: Record<string, string> = {
+  apple: 'apples',
+  bag: 'bags',
+  ball: 'balls',
+  banana: 'bananas',
+  bar: 'bars',
+  biscuit: 'biscuits',
+  bottle: 'bottles',
+  bowl: 'bowls',
+  box: 'boxes',
+  bun: 'buns',
+  burger: 'burgers',
+  cake: 'cakes',
+  can: 'cans',
+  carton: 'cartons',
+  claypot: 'claypots',
+  cob: 'cobs',
+  cone: 'cones',
+  cookie: 'cookies',
+  cracker: 'crackers',
+  cup: 'cups',
+  donut: 'donuts',
+  drumstick: 'drumsticks',
+  dumpling: 'dumplings',
+  egg: 'eggs',
+  fillet: 'fillets',
+  fruit: 'fruits',
+  glass: 'glasses',
+  handful: 'handfuls',
+  jar: 'jars',
+  leg: 'legs',
+  mug: 'mugs',
+  muffin: 'muffins',
+  nugget: 'nuggets',
+  pack: 'packs',
+  packet: 'packets',
+  patty: 'patties',
+  piece: 'pieces',
+  plate: 'plates',
+  pot: 'pots',
+  roll: 'rolls',
+  sachet: 'sachets',
+  sandwich: 'sandwiches',
+  sausage: 'sausages',
+  scoop: 'scoops',
+  set: 'sets',
+  skewer: 'skewers',
+  slice: 'slices',
+  stick: 'sticks',
+  tablespoon: 'tablespoons',
+  tart: 'tarts',
+  teaspoon: 'teaspoons',
+  thigh: 'thighs',
+  tub: 'tubs',
+  wing: 'wings',
+  wrap: 'wraps',
+}
+const SINGULARS = Object.fromEntries(Object.entries(PLURALS).map(([one, many]) => [many, one]))
+
+/** "whole egg" → "whole eggs" at more than one, or null for a word not listed. */
+function inflect(noun: string, amount: number): string | null {
+  const words = noun.split(' ')
+  const last = words[words.length - 1]
+  // `hasOwn`, as `unitOf` does: the word is whatever the import wrote, and
+  // `PLURALS['constructor']` is a function.
+  const one = Object.hasOwn(PLURALS, last)
+    ? last
+    : Object.hasOwn(SINGULARS, last)
+      ? SINGULARS[last]
+      : null
+  if (!one) return null
+  words[words.length - 1] = amount > 1 ? PLURALS[one] : one
+  return words.join(' ')
+}
+
+/**
+ * A label split into the count it leads with and the thing it counts: "2 eggs"
+ * is two of "eggs", "Half" is no count of "half". The noun is null when what is
+ * left is a measurement or import junk rather than a word, the same test
+ * `servingUnit` makes.
+ */
+function countedNoun(raw: string): { count: number | null; noun: string | null } {
+  const label = raw.trim().toLowerCase()
+  // The number the measurement reader takes, so "1 1/2 slices" is one and a
+  // half slices rather than one of "1/2 slices".
+  const lead = label.match(LEADING_COUNT)
+  const count = lead ? parseNumber(lead[1]) : null
+  const noun = label
+    .slice(lead ? lead[0].length : 0)
+    .replace(/\([^)]*\)/g, ' ')
+    .split(',')[0]
+    .replace(/\s+/g, ' ')
+    .trim()
+  const usable = !JUNK.has(label) && readsAsWord(noun)
+  return { count: count && Number.isFinite(count) ? count : null, noun: usable ? noun : null }
+}
+const LEADING_COUNT = new RegExp(String.raw`^${NUMBER}\s*`)
+
+/**
+ * How much of a dish a diary row was, the way a person would say it: "½ bowl",
+ * "2 plates", "150 g", "4 eggs". Null for one plain serving, which is what
+ * nearly every row is and so says nothing: "6:18 pm · serving" under a plate
+ * that was simply eaten is a word the eye has to read and throw away.
  *
- * A portion that is a unit ("100 g", "1 tbsp") is an AMOUNT rather than a count
- * of portions, and reads as one: "150 g", "2 tbsp", where it used to say
- * "1.5 × 100 g". `measured` is the caller's translated way of saying it; without
- * one the label is used as written.
+ * - A label that is a measurement reads as an amount of it, multiplied out:
+ *   "100 g" at 1.5 is "150 g", "250 ml (250 ml)" is "250 ml".
+ * - A portion or a size with a measurement in brackets reads as that
+ *   measurement: "1 portion (100 g)" is "100 g", "Regular (350 ml)" is "350 ml".
+ * - A thing is counted in quarters, without a "×" where the noun can agree
+ *   with the number: "½ bowl", "1½ plates", and "2 eggs" at 2 is "4 eggs".
+ * - A bare serving is counted in the caller's word: "½ serving", "2 servings".
  */
 export function portionLabel(
   quantity: number,
   raw: string | null | undefined,
-  fallback: string,
-  measured?: (amount: number, unit: MeasureUnit) => string,
-) {
-  const measure = measured ? measureOf(raw) : null
-  if (measure && measured) return measured(roundHalfUp(quantity * measure.block, 2), measure.unit)
-  const unit = servingUnit(raw) ?? fallback
-  return quantity === 1 ? unit : `${quantity} × ${unit}`
+  words: PortionWords,
+): string | null {
+  const label = (raw ?? '').trim()
+  const amountOf = (count: number) => roundHalfUp(count * quantity, 2)
+  // A tenth of a gram is as fine as a diary row needs: a quarter of 125 g said
+  // "31.25 g".
+  const measured = ({ count, unit }: { count: number; unit: MeasureUnit }) =>
+    words.measured(
+      unit === 'g' || unit === 'ml' ? roundHalfUp(count * quantity, 1) : amountOf(count),
+      unit,
+    )
+
+  const lead = leadingAmount(label)
+  if (lead) return measured(lead)
+
+  const { count, noun } = countedNoun(label)
+  const bracket = labelAmount(label.match(/\([^)]*\)/)?.[0] ?? '')
+  if (bracket && (!noun || GENERIC.has(noun) || SIZES.has(noun))) {
+    return measured(bracket)
+  }
+  if (!noun) return quantity === 1 ? null : words.servings(quantity)
+  // "2 servings" is two of them, so its count is multiplied as "2 eggs" is.
+  if (GENERIC.has(noun)) {
+    const servings = amountOf(count ?? 1)
+    return servings === 1 ? null : words.servings(servings)
+  }
+
+  const times = formatPortion(quantity)
+  if (count === null) {
+    // "Plate" is one plate, so two of it are "2 plates" as "1 plate" is.
+    const agreed = quantity === 1 ? null : inflect(noun, quantity)
+    if (agreed) return `${times} ${agreed}`
+    // "Half", "Large": no count to agree with, so the word stands as written.
+    return quantity === 1 ? noun : `${times} × ${noun}`
+  }
+  if (count === 1) {
+    const agreed = inflect(noun, quantity)
+    if (agreed) return `${times} ${agreed}`
+    // Under one, "½ bungkus" reads fine uninflected; over one it needs the ×.
+    return quantity <= 1 ? `${times} ${noun}` : `${times} × ${noun}`
+  }
+  // "2 eggs", "6 inch sub": the count is part of the portion, so it is what
+  // gets multiplied, and "2 slice" as the catalogue wrote it agrees as well.
+  const total = amountOf(count)
+  const agreed = inflect(noun, total)
+  if (agreed) return `${formatPortion(total)} ${agreed}`
+  return quantity === 1
+    ? `${formatPortion(count)} ${noun}`
+    : `${times} × ${formatPortion(count)} ${noun}`
 }
 
 /**

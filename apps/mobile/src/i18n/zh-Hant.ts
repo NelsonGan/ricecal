@@ -904,6 +904,8 @@ export const zhHant = {
       nameField: '名稱',
       numbersReset: '用 App 算的數字',
       servingWord: '份',
+      servingCount_one: '{{value}} 份',
+      servingCount_other: '{{value}} 份',
       measureIn: '計量單位',
       amount: '用量',
       quickFix: {

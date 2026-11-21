@@ -925,6 +925,8 @@ export const fil = {
       nameField: 'Pangalan',
       numbersReset: 'Gamitin ang numero ng app',
       servingWord: 'serving',
+      servingCount_one: '{{value}} serving',
+      servingCount_other: '{{value}} serving',
       measureIn: 'Sukatin sa',
       amount: 'Dami',
       quickFix: {

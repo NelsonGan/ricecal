@@ -909,6 +909,8 @@ export const ja = {
       nameField: '名前',
       numbersReset: 'アプリの数値を使う',
       servingWord: '人前',
+      servingCount_one: '{{value}}人前',
+      servingCount_other: '{{value}}人前',
       measureIn: '単位',
       amount: '量',
       quickFix: {

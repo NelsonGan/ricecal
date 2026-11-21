@@ -25,7 +25,7 @@ export {
   type Tracking,
 } from './catalogue'
 export * from './copy'
-export { useDeleteConfirm } from './deleteConfirm'
+export { useAskedDelete, useDeleteConfirm } from './deleteConfirm'
 export { ExerciseArt } from './ExerciseArt'
 export { nextSet, WorkoutEffects } from './effects'
 export { useEnergyBody } from './energyBody'

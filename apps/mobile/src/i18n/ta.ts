@@ -908,6 +908,8 @@ export const ta = {
       nameField: 'பெயர்',
       numbersReset: 'செயலியின் எண்களைப் பயன்படுத்து',
       servingWord: 'பங்கு',
+      servingCount_one: '{{value}} பங்கு',
+      servingCount_other: '{{value}} பங்குகள்',
       measureIn: 'அளவிடும் அலகு',
       amount: 'அளவு',
       quickFix: {

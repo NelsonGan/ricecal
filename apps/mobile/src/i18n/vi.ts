@@ -908,6 +908,8 @@ export const vi = {
       nameField: 'Tên',
       numbersReset: 'Dùng số liệu của ứng dụng',
       servingWord: 'khẩu phần',
+      servingCount_one: '{{value}} khẩu phần',
+      servingCount_other: '{{value}} khẩu phần',
       measureIn: 'Đo bằng',
       amount: 'Lượng',
       quickFix: {

@@ -3,7 +3,7 @@ import { ActivityIndicator, View } from 'react-native'
 
 import type { IconRef } from '@/data'
 import { storedImageSource, useMealPhotoUrl } from '@/data'
-import { cn, Icon, Skeleton, Tappable, Text } from '@/ui'
+import { Badge, cn, Icon, Skeleton, Tappable, Text } from '@/ui'
 import { MealPhoto } from './MealPhoto'
 
 const valueTones = {
@@ -53,6 +53,16 @@ export type ItemRowProps = {
   /** "1 plate", "8:20 am", "Mamak · 1 piece". */
   detail?: string
   /**
+   * Small tinted pills after the detail: on Today, the portion ("½ bowl") and
+   * a workout's length. Pills rather than more of the detail line, because
+   * "6:48 pm · 0.5 × bowl · …" read as one run-on string, and a pill only on
+   * the rows whose portion is not one plain serving is what makes the odd
+   * ones findable at a glance.
+   */
+  tags?: readonly string[]
+  /** Meals tag in pandan; workouts in hibiscus, matching their burned figure. */
+  tagTone?: 'pandan' | 'hibiscus'
+  /**
    * Optional, because most of the catalogue has no drawing: millions of imported
    * foods against a few hundred illustrations. A row with neither an icon nor a
    * photo falls back to `PLACEHOLDER_ICON`.
@@ -78,8 +88,8 @@ export type ItemRowProps = {
   /** Put the value directly below the title instead of at the right edge. */
   valueUnderTitle?: boolean
   /**
-   * A smaller tile, one line of title, and the figure stacked over its unit, for
-   * a list dense enough to read a day at a glance. See `ROW_TILE_COMPACT`.
+   * A smaller tile and the figure stacked over its unit, for a list dense
+   * enough to read a day at a glance. See `ROW_TILE_COMPACT`.
    */
   compact?: boolean
   /** Calories burned read in hibiscus; everything else in ink. */
@@ -107,6 +117,8 @@ export function ItemRow({
   title,
   titleLines = 2,
   detail,
+  tags = [],
+  tagTone = 'pandan',
   icon,
   photoUri,
   photoPath,
@@ -189,15 +201,34 @@ export function ItemRow({
             on the row and the tile took width from it — "Char kuey teow with
             prawns" truncated to "Char kuey teow wi…", which is the half that
             says least. Both lines plus the detail come to 69pt against a 72pt
-            tile, so a wrapped title costs no height and the rows stay even. */}
-        <Text variant="bodyStrong" numberOfLines={compact ? 1 : titleLines}>
+            tile, so a wrapped title costs no height and the rows stay even.
+            Compact rows wrap too, and grow a little for it: one line made
+            "Economy rice with fried chicken and curry vegetables" into
+            "Economy rice with fried chick…" on Today, which is the dish
+            without the part that says what was in it. */}
+        <Text variant="bodyStrong" numberOfLines={titleLines}>
           {title}
         </Text>
         {valueUnderTitle && !busy ? valueLabel : null}
-        {detail ? (
+        {detail && tags.length === 0 ? (
           <Text variant="meta" numberOfLines={1}>
             {detail}
           </Text>
+        ) : detail || tags.length > 0 ? (
+          // Wraps rather than truncating: a pill cut in half says nothing,
+          // and at a large text size the second line is the honest cost.
+          <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-1">
+            {detail ? (
+              <Text variant="meta" numberOfLines={1}>
+                {detail}
+              </Text>
+            ) : null}
+            {tags.map((tag) => (
+              <Badge key={tag} tone={tagTone} size="sm" className="px-2 py-0.5">
+                {tag}
+              </Badge>
+            ))}
+          </View>
         ) : null}
       </View>
 
@@ -223,6 +254,7 @@ export function ItemRow({
         title,
         busy ? undefined : unit ? `${value} ${unit}` : String(value),
         detail,
+        ...tags,
       ]
         .filter(Boolean)
         .join(', ')}
