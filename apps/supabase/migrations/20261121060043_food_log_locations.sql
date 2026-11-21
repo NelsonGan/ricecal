@@ -15,6 +15,13 @@
 -- Transaction mode: transactional
 -- Boundary reason: default
 
+-- Lock the view before the table, in the order a diary read takes them. The
+-- first deploy deadlocked: the ALTERs held `food_logs` while the view's
+-- replacement waited on a read that held `food_log_details` and was waiting
+-- on `food_logs`. Locking the view first locks what it reads too, so a read
+-- either finishes before this starts or waits for it.
+LOCK TABLE public.food_log_details IN ACCESS EXCLUSIVE MODE;
+
 ALTER TABLE public.food_logs
   ADD COLUMN latitude double precision;
 
