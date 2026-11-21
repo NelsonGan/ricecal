@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { type LayoutChangeEvent, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -27,6 +27,13 @@ export type SliderProps = {
   accessibilityLabel?: string
   /** Formats both the readout and the end captions. */
   format?: (value: number) => string
+  /**
+   * Labelled points along the track, in place of the two end captions: a scale
+   * read at a glance ("½ 1 2 3 Whole pot") where the ends alone say only how
+   * far it goes. Each sits under the thumb's centre at that value, and the one
+   * the thumb is on is picked out.
+   */
+  marks?: Array<{ value: number; label: string }>
   disabled?: boolean
   className?: string
 }
@@ -52,8 +59,11 @@ export function Slider({
   format = (n) => n.toLocaleString(),
   disabled = false,
   className,
+  marks,
 }: SliderProps) {
   const width = useSharedValue(0)
+  /** The same width, for placing the marks, which are laid out in JS. */
+  const [trackWidth, setTrackWidth] = useState(0)
   const dragging = useSharedValue(false)
   const dragValue = useSharedValue(value)
 
@@ -65,6 +75,7 @@ export function Slider({
   const onLayout = useCallback(
     (event: LayoutChangeEvent) => {
       width.value = event.nativeEvent.layout.width
+      setTrackWidth(event.nativeEvent.layout.width)
     },
     [width],
   )
@@ -127,6 +138,16 @@ export function Slider({
           accessibilityRole="adjustable"
           accessibilityLabel={accessibilityLabel ?? label}
           accessibilityValue={{ min, max, now: value, text: format(value) }}
+          // "Adjustable" promises a swipe up or down moves it, and without these
+          // VoiceOver announced a slider that could not be moved at all. One
+          // step at a time, or a twentieth of the range when there is no step.
+          accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
+          onAccessibilityAction={(event) => {
+            if (disabled) return
+            const by = step > 0 ? step : (max - min) / 20
+            const next = event.nativeEvent.actionName === 'increment' ? value + by : value - by
+            onChange(Math.min(max, Math.max(min, Math.round(next * 1e6) / 1e6)))
+          }}
         >
           <View className="rounded-full bg-track" style={{ height: TRACK_HEIGHT }}>
             <Animated.View className="h-full rounded-full bg-pandan" style={fillStyle} />
@@ -138,14 +159,51 @@ export function Slider({
         </View>
       </GestureDetector>
 
-      <View className="flex-row justify-between">
-        <Text variant="caption" className="text-faint">
-          {format(min)}
-        </Text>
-        <Text variant="caption" className="text-faint">
-          {format(max)}
-        </Text>
-      </View>
+      {marks ? (
+        // Positioned on the thumb's travel, the same arithmetic as `thumbStyle`,
+        // so "2" sits exactly under a thumb resting on 2.
+        <View className="h-[20px]" importantForAccessibility="no-hide-descendants">
+          {trackWidth > 0
+            ? marks.map((mark) => {
+                const travel = Math.max(0, trackWidth - THUMB)
+                const centre = THUMB / 2 + ratio(mark.value, min, max) * travel
+                const first = mark.value <= min
+                const last = mark.value >= max
+                return (
+                  <Text
+                    key={mark.value}
+                    variant="caption"
+                    numberOfLines={1}
+                    className={cn(
+                      'absolute',
+                      mark.value === value ? 'text-pandan-ink' : 'text-faint',
+                    )}
+                    style={
+                      // The ends hang inward from the track's edges rather than
+                      // centring and spilling past them.
+                      last
+                        ? { right: 0 }
+                        : first
+                          ? { left: 0 }
+                          : { left: centre, width: 72, marginLeft: -36, textAlign: 'center' }
+                    }
+                  >
+                    {mark.label}
+                  </Text>
+                )
+              })
+            : null}
+        </View>
+      ) : (
+        <View className="flex-row justify-between">
+          <Text variant="caption" className="text-faint">
+            {format(min)}
+          </Text>
+          <Text variant="caption" className="text-faint">
+            {format(max)}
+          </Text>
+        </View>
+      )}
     </View>
   )
 }

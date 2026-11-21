@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
 import type { Recipe } from '@/data'
-import { Button, Chip, Sheet, Stepper, Text } from '@/ui'
+import { Button, Sheet, Slider, Text } from '@/ui'
 import { useLogRecipe } from './useLogRecipe'
 
 export type LogRecipeSheetProps = {
@@ -17,10 +17,23 @@ export type LogRecipeSheetProps = {
   onLogged?: () => void
 }
 
+/** "½", "1½", "2": a serving count the way it is said, not "1.5". */
+export function servingsText(value: number): string {
+  const whole = Math.floor(value)
+  const half = value - whole >= 0.5
+  if (!half) return whole.toLocaleString()
+  return whole === 0 ? '½' : `${whole.toLocaleString()}½`
+}
+
 /**
  * How much of the pot was eaten, then into the diary. Shared by the recipe page
  * and the end of cook mode, so somebody who had two bowls is asked rather than
  * logged one and left to correct it in the diary.
+ *
+ * One slider from half a serving to the whole pot, under the figure it moves.
+ * It replaced a stepper over a row of shortcut pills (Half, 1, 2, Whole pot),
+ * which asked the same question three ways at once. The calories are the big
+ * number because they are what the choice changes in the diary.
  */
 export function LogRecipeSheet({
   visible,
@@ -34,14 +47,20 @@ export function LogRecipeSheet({
   const { log, pending } = useLogRecipe()
   const [quantity, setQuantity] = useState(1)
 
-  const portions: Array<{ key: string; label: string; value: number }> = [
-    { key: 'half', label: t('recipes:detail.portion.half'), value: 0.5 },
-    { key: 'one', label: t('recipes:detail.portion.one'), value: 1 },
-    { key: 'two', label: t('recipes:detail.portion.two'), value: 2 },
-    ...(recipe.servings > 2
-      ? [{ key: 'pot', label: t('recipes:detail.portion.pot'), value: recipe.servings }]
-      : []),
-  ]
+  // The whole pot is the end of the scale, and a pot that feeds one still
+  // reaches two, for the second sandwich.
+  const max = Math.max(recipe.servings, 2)
+  const kcal = Math.round(recipe.perServing.kcal * quantity)
+  /**
+   * Half, then every whole serving while there is room for them, then the
+   * whole pot at the end. Past six a scale of numbers is a ruler, so a big pot
+   * marks half, the middle and the end.
+   */
+  const potLabel = (value: number) =>
+    value === recipe.servings ? t('recipes:detail.portion.pot') : servingsText(value)
+  const wholes =
+    max <= 6 ? Array.from({ length: max }, (_, index) => index + 1) : [Math.round(max / 2), max]
+  const marks = [0.5, ...wholes].map((value) => ({ value, label: potLabel(value) }))
   // "Add to today" only when it is. From the log sheet on an earlier day the
   // entry goes to that day, and the button says no more than "Add".
   const action = isToday ? t('recipes:detail.addToDay') : t('common:action.add')
@@ -69,39 +88,44 @@ export function LogRecipeSheet({
         </Button>
       }
     >
-      <View className="gap-4">
-        <Stepper
+      <View className="gap-5">
+        <View className="items-center gap-1">
+          <View className="flex-row items-baseline gap-1.5">
+            <Text variant="display" className="text-pandan-ink">
+              {kcal.toLocaleString()}
+            </Text>
+            <Text variant="label" className="text-muted">
+              {t('common:unit.kcal')}
+            </Text>
+          </View>
+          <Text variant="overline">
+            {/* "1½ OF 4", not "1.5 OF 4". The key has no plural forms, so the
+                count may be the spoken fraction rather than a number. */}
+            {t('recipes:detail.ofServings', {
+              count: servingsText(quantity) as unknown as number,
+              total: recipe.servings,
+            })}
+          </Text>
+        </View>
+
+        <Slider
           value={quantity}
           onChange={setQuantity}
-          step={0.5}
           min={0.5}
-          max={recipe.servings * 2}
-          unit={t('recipes:detail.servingLabel', { count: quantity })}
-          decrementLabel={t('common:a11y.decrease')}
-          incrementLabel={t('common:a11y.increase')}
+          max={max}
+          step={0.5}
+          accessibilityLabel={t('recipes:detail.logTitle')}
+          format={(value) =>
+            value === recipe.servings && value === max
+              ? t('recipes:detail.portion.pot')
+              : servingsText(value)
+          }
+          marks={marks}
         />
-        <View className="flex-row flex-wrap gap-2">
-          {portions.map((portion) => (
-            <Chip
-              key={portion.key}
-              selected={quantity === portion.value}
-              onPress={() => setQuantity(portion.value)}
-            >
-              {portion.label}
-            </Chip>
-          ))}
-        </View>
-        <View className="flex-row items-baseline justify-between">
-          <Text variant="overline">
-            {t('recipes:detail.ofServings', { count: quantity, total: recipe.servings })}
-          </Text>
-          <View className="flex-row items-baseline gap-1">
-            <Text variant="numeric" className="text-pandan-ink">
-              {Math.round(recipe.perServing.kcal * quantity).toLocaleString()}
-            </Text>
-            <Text variant="caption">{t('common:unit.kcal')}</Text>
-          </View>
-        </View>
+
+        <Text variant="meta" className="text-center">
+          {`${recipe.perServing.kcal.toLocaleString()} ${t('common:unit.kcal')} ${t('recipes:detail.perServing')}`}
+        </Text>
       </View>
     </Sheet>
   )

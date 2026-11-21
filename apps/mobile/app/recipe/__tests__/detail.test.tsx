@@ -73,6 +73,10 @@ jest.mock('@/data/refusals', () => ({ openPaywall: jest.fn() }))
 jest.mock('@/features/paywall', () => ({ useRequirePro: () => jest.fn(() => true) }))
 jest.mock('@/features/recipes', () => ({
   IngredientChecklist: () => null,
+  RecipeNutrition: () => {
+    const { Text } = jest.requireActual('react-native') as typeof import('react-native')
+    return <Text>per serving</Text>
+  },
   RecipeStats: () => null,
   LogRecipeSheet: ({ visible }: { visible: boolean }) => {
     const { Text } = jest.requireActual('react-native') as typeof import('react-native')

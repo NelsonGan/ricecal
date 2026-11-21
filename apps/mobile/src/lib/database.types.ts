@@ -2951,7 +2951,6 @@ export type Database = {
           total_carbs_g: number | null
           total_fat_g: number | null
           total_kcal: number | null
-          total_minutes: number | null
           total_protein_g: number | null
           updated_at: string | null
         }
@@ -3752,7 +3751,6 @@ export type Database = {
           total_carbs_g: number | null
           total_fat_g: number | null
           total_kcal: number | null
-          total_minutes: number | null
           total_protein_g: number | null
           updated_at: string | null
         }[]

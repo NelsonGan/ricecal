@@ -1521,13 +1521,6 @@ export const fil = {
       community: 'Komunidad',
     },
 
-    filter: {
-      label: 'Ipakita',
-      all: 'Lahat',
-      favourites: 'Paborito',
-      quick: 'Wala pang 30 min',
-    },
-
     tag: {
       breakfast: 'Almusal',
       lunch: 'Tanghalian',
@@ -1563,8 +1556,6 @@ export const fil = {
     empty: {
       communityTitle: 'Wala pang ibinabahagi',
       communityBody: 'Ibahagi ang isa sa iyo mula sa menu nito.',
-      filteredTitle: 'Wala pa rito',
-      filteredBody: 'Subukan ang ibang filter.',
     },
 
     servings_one: '{{count}} serving',
@@ -1664,12 +1655,7 @@ export const fil = {
     },
 
     detail: {
-      servingLabel_one: 'serving',
-      servingLabel_other: 'serving',
       portion: {
-        half: 'Kalahati',
-        one: '1 serving',
-        two: '2 serving',
         pot: 'Buong kaldero',
       },
       ofServings: '{{count}} SA {{total}} SERVING',

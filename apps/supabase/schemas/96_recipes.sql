@@ -102,14 +102,7 @@ select
   -- reader of a community recipe would otherwise see its cook's heart on the
   -- card and have no way to take it off. See `recipes.source_url`.
   case when r.owner_id = (select auth.uid()) then r.source_url end as source_url,
-  coalesce(r.owner_id = (select auth.uid()) and r.is_favourite, false) as is_favourite,
-  -- Prep plus cook, so the Recipes tab's "Under 30 min" chip is a filter the
-  -- server runs before its row limit rather than one the phone runs after it.
-  -- Null when neither was given: an untimed recipe is not a quick one.
-  case
-    when r.prep_minutes is null and r.cook_minutes is null then null
-    else coalesce(r.prep_minutes, 0) + coalesce(r.cook_minutes, 0)
-  end as total_minutes
+  coalesce(r.owner_id = (select auth.uid()) and r.is_favourite, false) as is_favourite
   -- `food_id` and `default_serving_id` were here, so a screen could log a pot
   -- through the catalogue without a second round trip for two ids it used once.
   -- There is no mirror to name and no portion row to point at: a pot is logged
@@ -178,8 +171,7 @@ as $$
     d.cook_minutes,
     d.tags,
     d.source_url,
-    d.is_favourite,
-    d.total_minutes
+    d.is_favourite
   from public.recipe_details d
   where (select auth.uid()) is not null
     and d.share_slug = p_share_slug

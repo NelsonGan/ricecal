@@ -1487,13 +1487,6 @@ export const zhHans = {
       community: '社区',
     },
 
-    filter: {
-      label: '显示',
-      all: '全部',
-      favourites: '收藏',
-      quick: '30 分钟内',
-    },
-
     tag: {
       breakfast: '早餐',
       lunch: '午餐',
@@ -1529,8 +1522,6 @@ export const zhHans = {
     empty: {
       communityTitle: '还没有人分享',
       communityBody: '从你的食谱菜单里分享一个吧。',
-      filteredTitle: '这里还没有',
-      filteredBody: '换个筛选试试。',
     },
 
     servings_one: '{{count}} 份',
@@ -1629,12 +1620,7 @@ export const zhHans = {
     },
 
     detail: {
-      servingLabel_one: '份',
-      servingLabel_other: '份',
       portion: {
-        half: '半份',
-        one: '1 份',
-        two: '2 份',
         pot: '整锅',
       },
       ofServings: '{{total}} 份中的 {{count}} 份',

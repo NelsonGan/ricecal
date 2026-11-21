@@ -1495,13 +1495,6 @@ export const ta = {
       community: 'சமூகம்',
     },
 
-    filter: {
-      label: 'காட்டு',
-      all: 'அனைத்தும்',
-      favourites: 'பிடித்தவை',
-      quick: '30 நிமிடத்திற்குள்',
-    },
-
     tag: {
       breakfast: 'காலை உணவு',
       lunch: 'மதிய உணவு',
@@ -1537,8 +1530,6 @@ export const ta = {
     empty: {
       communityTitle: 'இன்னும் எதுவும் பகிரப்படவில்லை',
       communityBody: 'உங்கள் செய்முறையை அதன் மெனுவிலிருந்து பகிருங்கள்.',
-      filteredTitle: 'இங்கே இன்னும் எதுவும் இல்லை',
-      filteredBody: 'வேறு வடிகட்டியை முயற்சியுங்கள்.',
     },
 
     servings_one: '{{count}} பங்கு',
@@ -1638,12 +1629,7 @@ export const ta = {
     },
 
     detail: {
-      servingLabel_one: 'பங்கு',
-      servingLabel_other: 'பங்குகள்',
       portion: {
-        half: 'பாதி',
-        one: '1 பங்கு',
-        two: '2 பங்குகள்',
         pot: 'முழுப் பானை',
       },
       ofServings: '{{total}} பங்குகளில் {{count}}',

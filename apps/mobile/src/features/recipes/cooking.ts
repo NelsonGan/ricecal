@@ -1,4 +1,4 @@
-import type { LogInput, Recipe, RecipeIngredientInput, RecipeTag } from '@/data'
+import type { LogInput, Recipe, RecipeIngredientInput } from '@/data'
 // The module itself rather than the `@/data` barrel, which would pull in the
 // client and the router and make this file anything but pure.
 import { snapshotFromRecipe } from '@/data/snapshot'
@@ -30,13 +30,6 @@ export function scaleIngredient<T extends Pick<RecipeIngredientInput, 'amount'>>
   if (servings <= 0 || cooking === servings) return item
   return { ...item, amount: (item.amount * cooking) / servings }
 }
-
-/**
- * The chips over the Recipes shelf: everything, the owner's favourites, quick
- * ones (`QUICK_RECIPE_MINUTES`), or one meal tag. Each one is a server filter;
- * see `RecipeQueryFilter`.
- */
-export type RecipeFilter = 'all' | 'favourites' | 'quick' | RecipeTag
 
 /**
  * Servings of a recipe as a diary entry. One builder for the card's plus, the

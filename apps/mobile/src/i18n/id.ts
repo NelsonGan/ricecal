@@ -1506,13 +1506,6 @@ export const id = {
       community: 'Komunitas',
     },
 
-    filter: {
-      label: 'Tampilkan',
-      all: 'Semua',
-      favourites: 'Favorit',
-      quick: 'Di bawah 30 mnt',
-    },
-
     tag: {
       breakfast: 'Sarapan',
       lunch: 'Makan siang',
@@ -1548,8 +1541,6 @@ export const id = {
     empty: {
       communityTitle: 'Belum ada yang dibagikan',
       communityBody: 'Bagikan resepmu dari menunya.',
-      filteredTitle: 'Belum ada apa-apa di sini',
-      filteredBody: 'Coba filter lain.',
     },
 
     servings_one: '{{count}} porsi',
@@ -1649,12 +1640,7 @@ export const id = {
     },
 
     detail: {
-      servingLabel_one: 'porsi',
-      servingLabel_other: 'porsi',
       portion: {
-        half: 'Setengah',
-        one: '1 porsi',
-        two: '2 porsi',
         pot: 'Seluruh panci',
       },
       ofServings: '{{count}} DARI {{total}} PORSI',

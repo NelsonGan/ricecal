@@ -4,8 +4,7 @@
 -- source link and the owner's favourite star. All nullable or defaulted, so a
 -- build already in a store neither writes nor needs them, and its updates leave
 -- them as they were. The client's column grants grow to cover them.
--- `recipe_details` shows the link and the star to their owner only, and adds
--- `total_minutes` so the tab's "Under 30 min" chip filters on the server.
+-- `recipe_details` shows the link and the star to their owner only.
 --
 -- Hand-arranged from `pnpm db:diff`, which dropped and recreated
 -- `recipe_details` and, with it, `get_shared_recipe` (which returns its rows). A
@@ -250,11 +249,7 @@ CREATE OR REPLACE VIEW public.recipe_details WITH (security_invoker=on) AS SELEC
             WHEN (r.owner_id = ( SELECT auth.uid() AS uid)) THEN r.source_url
             ELSE NULL::text
         END AS source_url,
-    COALESCE(((r.owner_id = ( SELECT auth.uid() AS uid)) AND r.is_favourite), false) AS is_favourite,
-        CASE
-            WHEN ((r.prep_minutes IS NULL) AND (r.cook_minutes IS NULL)) THEN NULL::integer
-            ELSE (COALESCE((r.prep_minutes)::integer, 0) + COALESCE((r.cook_minutes)::integer, 0))
-        END AS total_minutes
+    COALESCE(((r.owner_id = ( SELECT auth.uid() AS uid)) AND r.is_favourite), false) AS is_favourite
    FROM (public.recipes r
      LEFT JOIN LATERAL ( SELECT (count(*))::integer AS ingredient_count,
             sum((i.kcal_per_unit * i.amount)) AS kcal,
@@ -306,8 +301,7 @@ CREATE OR REPLACE FUNCTION public.get_shared_recipe (
     d.cook_minutes,
     d.tags,
     d.source_url,
-    d.is_favourite,
-    d.total_minutes
+    d.is_favourite
   from public.recipe_details d
   where (select auth.uid()) is not null
     and d.share_slug = p_share_slug

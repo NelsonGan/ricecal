@@ -1484,13 +1484,6 @@ export const bn = {
       community: 'কমিউনিটি',
     },
 
-    filter: {
-      label: 'দেখান',
-      all: 'সব',
-      favourites: 'প্রিয়',
-      quick: '৩০ মিনিটের কম',
-    },
-
     tag: {
       breakfast: 'সকালের খাবার',
       lunch: 'দুপুরের খাবার',
@@ -1526,8 +1519,6 @@ export const bn = {
     empty: {
       communityTitle: 'এখনো কিছু ভাগ করা হয়নি',
       communityBody: 'আপনার একটি রেসিপি তার মেনু থেকে শেয়ার করুন।',
-      filteredTitle: 'এখানে এখনো কিছু নেই',
-      filteredBody: 'অন্য ফিল্টার চেষ্টা করুন।',
     },
 
     servings_one: '{{count}} পরিবেশন',
@@ -1626,12 +1617,7 @@ export const bn = {
     },
 
     detail: {
-      servingLabel_one: 'পরিবেশন',
-      servingLabel_other: 'পরিবেশন',
       portion: {
-        half: 'অর্ধেক',
-        one: '১ পরিবেশন',
-        two: '২ পরিবেশন',
         pot: 'গোটা হাঁড়ি',
       },
       ofServings: '{{total}} পরিবেশনের মধ্যে {{count}}',

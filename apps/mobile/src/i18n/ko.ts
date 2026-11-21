@@ -1490,13 +1490,6 @@ export const ko = {
       community: '커뮤니티',
     },
 
-    filter: {
-      label: '보기',
-      all: '전체',
-      favourites: '즐겨찾기',
-      quick: '30분 이내',
-    },
-
     tag: {
       breakfast: '아침',
       lunch: '점심',
@@ -1532,8 +1525,6 @@ export const ko = {
     empty: {
       communityTitle: '아직 공유된 것이 없습니다',
       communityBody: '내 레시피를 메뉴에서 공유해 보세요.',
-      filteredTitle: '아직 아무것도 없습니다',
-      filteredBody: '다른 필터를 골라 보세요.',
     },
 
     servings_one: '{{count}}인분',
@@ -1632,12 +1623,7 @@ export const ko = {
     },
 
     detail: {
-      servingLabel_one: '인분',
-      servingLabel_other: '인분',
       portion: {
-        half: '반 인분',
-        one: '1인분',
-        two: '2인분',
         pot: '냄비 전체',
       },
       ofServings: '{{total}}인분 중 {{count}}',

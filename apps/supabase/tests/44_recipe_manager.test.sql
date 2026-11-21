@@ -11,7 +11,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(17);
+select plan(16);
 
 \set cook   'c0c0c0c0-0000-4000-8000-000000000001'
 \set reader 'c0c0c0c0-0000-4000-8000-000000000002'
@@ -47,10 +47,10 @@ select id as recipe_id, share_slug as slug
   from public.recipes where name = 'rm-fixture-kari' \gset
 
 select results_eq(
-  format($$select prep_minutes::int, cook_minutes::int, tags, source_url, is_favourite, total_minutes
+  format($$select prep_minutes::int, cook_minutes::int, tags, source_url, is_favourite
              from public.recipe_details where id = %L$$, :'recipe_id'),
-  $$values (20, 50, '{lunch,dinner}'::text[], 'https://www.instagram.com/reel/abc'::text, true, 70)$$,
-  'the owner reads every new column back through the view, and prep plus cook'
+  $$values (20, 50, '{lunch,dinner}'::text[], 'https://www.instagram.com/reel/abc'::text, true)$$,
+  'the owner reads every new column back through the view'
 );
 
 select lives_ok(
@@ -117,11 +117,6 @@ select is(
   'and so is the cook''s star, which would otherwise draw on the reader''s card'
 );
 
-select is(
-  (select total_minutes from public.recipe_details where id = :'recipe_id'),
-  65,
-  'the reader gets the total time, for the quick filter'
-);
 
 select is(
   (select source_url from public.get_shared_recipe(:'slug')),

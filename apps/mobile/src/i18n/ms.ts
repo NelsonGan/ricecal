@@ -1521,13 +1521,6 @@ export const ms = {
       community: 'Komuniti',
     },
 
-    filter: {
-      label: 'Tunjuk',
-      all: 'Semua',
-      favourites: 'Kegemaran',
-      quick: 'Bawah 30 min',
-    },
-
     tag: {
       breakfast: 'Sarapan',
       lunch: 'Makan tengah hari',
@@ -1563,8 +1556,6 @@ export const ms = {
     empty: {
       communityTitle: 'Belum ada yang dikongsi',
       communityBody: 'Kongsi resipi anda dari menunya.',
-      filteredTitle: 'Belum ada apa-apa di sini',
-      filteredBody: 'Cuba penapis lain.',
     },
 
     servings_one: '{{count}} hidangan',
@@ -1664,12 +1655,7 @@ export const ms = {
     },
 
     detail: {
-      servingLabel_one: 'hidangan',
-      servingLabel_other: 'hidangan',
       portion: {
-        half: 'Separuh',
-        one: '1 hidangan',
-        two: '2 hidangan',
         pot: 'Seluruh periuk',
       },
       ofServings: '{{count}} DARIPADA {{total}} HIDANGAN',

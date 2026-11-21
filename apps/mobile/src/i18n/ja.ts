@@ -1495,13 +1495,6 @@ export const ja = {
       community: 'みんなの',
     },
 
-    filter: {
-      label: '表示',
-      all: 'すべて',
-      favourites: 'お気に入り',
-      quick: '30 分以内',
-    },
-
     tag: {
       breakfast: '朝食',
       lunch: '昼食',
@@ -1537,8 +1530,6 @@ export const ja = {
     empty: {
       communityTitle: 'まだ共有はありません',
       communityBody: '自分のレシピをメニューから共有しましょう。',
-      filteredTitle: 'まだ何もありません',
-      filteredBody: '別の絞り込みを試してください。',
     },
 
     servings_one: '{{count}} 人前',
@@ -1638,12 +1629,7 @@ export const ja = {
     },
 
     detail: {
-      servingLabel_one: '人前',
-      servingLabel_other: '人前',
       portion: {
-        half: '半人前',
-        one: '1 人前',
-        two: '2 人前',
         pot: '鍋ごと',
       },
       ofServings: '{{total}} 人前のうち {{count}}',

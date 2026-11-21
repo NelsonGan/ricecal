@@ -1487,13 +1487,6 @@ export const zhHant = {
       community: '社群',
     },
 
-    filter: {
-      label: '顯示',
-      all: '全部',
-      favourites: '最愛',
-      quick: '30 分鐘內',
-    },
-
     tag: {
       breakfast: '早餐',
       lunch: '午餐',
@@ -1529,8 +1522,6 @@ export const zhHant = {
     empty: {
       communityTitle: '還沒有人分享',
       communityBody: '從你的食譜選單分享一個吧。',
-      filteredTitle: '這裡還沒有東西',
-      filteredBody: '換個篩選試試。',
     },
 
     servings_one: '{{count}} 份',
@@ -1629,12 +1620,7 @@ export const zhHant = {
     },
 
     detail: {
-      servingLabel_one: '份',
-      servingLabel_other: '份',
       portion: {
-        half: '半份',
-        one: '1 份',
-        two: '2 份',
         pot: '整鍋',
       },
       ofServings: '{{total}} 份中的 {{count}} 份',

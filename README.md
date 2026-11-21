@@ -2923,11 +2923,10 @@ recipe manager has (Paprika, Mela, Crouton, ReciMe were the reference points):
 a library led by pictures and filters, an overview before cooking, amounts that
 follow the number of people, a cook mode, and a source link to come back to.
 
-**The shelf.** Mine or Community, then a row of chips: All, Favourites (yours
-only, since the star is on your own rows), Under 30 min, and the six meal tags.
-Every chip narrows the query itself (`useRecipes`' third argument), before its
-100-row limit: "Under 30 min" reads `recipe_details.total_minutes`, prep plus
-cook, which is null when neither was given, so an untimed recipe is never quick.
+**The shelf.** Mine or Community, and search. There was a row of filter chips
+under the shelf control (Favourites, Under 30 min, the six meal tags); it made
+the top of the tab busy for a shelf most people keep short, and it went. The
+meal tags and the star stay on the recipe itself.
 
 While your shelf holds fewer than four recipes it opens with three tiles, Write
 it, Photo and Describe, which go straight to
@@ -2952,22 +2951,29 @@ to today". Every way of logging (the card's plus, the recipe's sheet, the end of
 cook mode) goes through `useLogRecipe`, which confirms once the row is written
 and offers Undo.
 
-**The recipe.** Picture, name, meal chips, then three tiles (prep, cook,
-servings; a time nobody gave is left out rather than drawn as a dash) and the
-calories per serving with the three macros. Ingredients and Method are one tab
+**The recipe.** The drawing beside the name (or a photograph above it), one
+quiet line under the name ("From Aisyah · Lunch · Dinner"), one soft strip for
+prep, cook and servings (a time nobody gave is left out rather than drawn as a
+dash), then the calories per serving large, over a single bar split by the
+energy each macro contributes, with their grams on one line. It was a stack of
+boxes: an author row, a save button, tag chips, three bordered tiles and a
+nutrition card with three bars, and the redesign (from mockups) is mostly what
+it took away. Ingredients and Method are one tab
 each, since nobody reads both at once. Above the ingredients, "Cooking for"
 rescales every amount (`scaleIngredient`: only `amount` moves, the per-unit
 figures are the food's density) and each row can be ticked off. The ticks are
 not on the recipe: they are held in memory per recipe while the app is open, so
 cook mode and the recipe page share them, and nothing remembers yesterday's. The
-stepper changes amounts only, never what a serving costs. How much was EATEN is
-asked separately, in the sheet "Add to today" opens, so the page never has two
-steppers about servings that answer different questions (`LogRecipeSheet`,
-shared with cook mode). Your own has an edit button, a heart
+control is two small buttons beside "Cooking for 4" and changes amounts only,
+never what a serving costs. How much was EATEN is asked separately, in the sheet
+"Add to today" opens (`LogRecipeSheet`, shared with cook mode): the calories
+large, and one slider from half a serving to the whole pot with its scale marked
+under it (½ 1 2 3 Whole pot; a big pot marks half, the middle and the end). It
+replaced a stepper over a row of Half / 1 / 2 / Whole pot pills, which asked the
+same question three ways at once. Your own has an edit button, a heart
 (`useFavouriteRecipe`, optimistic) and the menu, and an empty one offers "Add an
-ingredient" in place of logging. Somebody else's has a labelled "Save to my
-recipes" under the cook's name, since keeping it is often why the link was
-opened, and the report menu. With no photograph the drawing sits beside the name
+ingredient" in place of logging. Somebody else's has a bookmark in the bar that
+saves a copy, and the report menu. With no photograph the drawing sits beside the name
 rather than in a box above it, so the ingredients start above the fold.
 
 **Cook mode**, `/recipe/cook?id=&servings=&date=`, pages the method one step at

@@ -19,17 +19,6 @@ export const recipes = {
     community: 'Community',
   },
 
-  /**
-   * The chips over the shelf. `quick` is prep plus cook, so a recipe with no
-   * times written down is never "quick": it may be, but nothing says so.
-   */
-  filter: {
-    label: 'Show',
-    all: 'All',
-    favourites: 'Favourites',
-    quick: 'Under 30 min',
-  },
-
   /** Meal tags. Keys of `recipes.tags`; the database refuses any other. */
   tag: {
     breakfast: 'Breakfast',
@@ -68,8 +57,6 @@ export const recipes = {
   empty: {
     communityTitle: 'Nothing shared yet',
     communityBody: 'Share one of yours from its menu.',
-    filteredTitle: 'Nothing here yet',
-    filteredBody: 'Try another filter.',
   },
 
   /** The count under a food's name in a list. */
@@ -215,20 +202,7 @@ export const recipes = {
   },
 
   detail: {
-    /**
-     * The word under the stepper's number, and it has to agree with it.
-     *
-     * A count-bearing key with no `{{count}}` in the text: the stepper draws
-     * the figure itself, one line above, so a unit carrying its own copy of it
-     * would read "3 3 servings". The count is passed for the plural rule and
-     * for nothing else.
-     */
-    servingLabel_one: 'serving',
-    servingLabel_other: 'servings',
     portion: {
-      half: 'Half',
-      one: '1 serving',
-      two: '2 servings',
       pot: 'Whole pot',
     },
     ofServings: '{{count}} OF {{total}} SERVINGS',

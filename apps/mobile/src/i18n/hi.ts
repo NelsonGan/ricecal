@@ -1488,13 +1488,6 @@ export const hi = {
       community: 'समुदाय',
     },
 
-    filter: {
-      label: 'दिखाएं',
-      all: 'सभी',
-      favourites: 'पसंदीदा',
-      quick: '30 मिनट से कम',
-    },
-
     tag: {
       breakfast: 'नाश्ता',
       lunch: 'दोपहर का खाना',
@@ -1530,8 +1523,6 @@ export const hi = {
     empty: {
       communityTitle: 'अभी कुछ साझा नहीं हुआ',
       communityBody: 'अपनी कोई रेसिपी उसके मेन्यू से शेयर करें।',
-      filteredTitle: 'यहां अभी कुछ नहीं',
-      filteredBody: 'कोई और फ़िल्टर आज़माएं।',
     },
 
     servings_one: '{{count}} हिस्सा',
@@ -1630,12 +1621,7 @@ export const hi = {
     },
 
     detail: {
-      servingLabel_one: 'हिस्सा',
-      servingLabel_other: 'हिस्से',
       portion: {
-        half: 'आधा',
-        one: '1 हिस्सा',
-        two: '2 हिस्से',
         pot: 'पूरा बर्तन',
       },
       ofServings: '{{total}} हिस्सों में से {{count}}',

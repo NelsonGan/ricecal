@@ -1486,13 +1486,6 @@ export const th = {
       community: 'ชุมชน',
     },
 
-    filter: {
-      label: 'แสดง',
-      all: 'ทั้งหมด',
-      favourites: 'รายการโปรด',
-      quick: 'ไม่เกิน 30 นาที',
-    },
-
     tag: {
       breakfast: 'มื้อเช้า',
       lunch: 'มื้อกลางวัน',
@@ -1528,8 +1521,6 @@ export const th = {
     empty: {
       communityTitle: 'ยังไม่มีใครแชร์',
       communityBody: 'แชร์สูตรของคุณจากเมนูของสูตรนั้น',
-      filteredTitle: 'ยังไม่มีอะไรตรงนี้',
-      filteredBody: 'ลองตัวกรองอื่น',
     },
 
     servings_one: '{{count}} ที่',
@@ -1628,12 +1619,7 @@ export const th = {
     },
 
     detail: {
-      servingLabel_one: 'ที่',
-      servingLabel_other: 'ที่',
       portion: {
-        half: 'ครึ่งที่',
-        one: '1 ที่',
-        two: '2 ที่',
         pot: 'ทั้งหม้อ',
       },
       ofServings: '{{count}} จาก {{total}} ที่',

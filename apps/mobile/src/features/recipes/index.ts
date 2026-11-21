@@ -21,7 +21,6 @@ export {
   MAX_MINUTES,
   normaliseSourceUrl,
   parseMinutes,
-  type RecipeFilter,
   recipeLog,
   scaleIngredient,
   sourceHost,
@@ -43,7 +42,7 @@ export {
   RecipeIngredientEditor,
   type RecipeIngredientEditorProps,
 } from './RecipeIngredientEditor'
-export { RecipeStats } from './RecipeStats'
+export { RecipeNutrition, RecipeStats } from './RecipeStats'
 export { RecipeSteps, splitSteps } from './RecipeSteps'
 export { RecipeTile, type RecipeTileProps } from './RecipeTile'
 export { ShareSheet, type ShareSheetProps } from './ShareSheet'

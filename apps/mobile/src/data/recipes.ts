@@ -39,23 +39,12 @@ export type RecipeShelf = 'mine' | 'community'
 
 const RECIPE_COLUMNS = '*'
 
-/** What "quick" means on the Recipes tab: on the table in half an hour, prep included. */
-export const QUICK_RECIPE_MINUTES = 30
-
-/**
- * What the Recipes tab's chips narrow a shelf to, on the server and before the
- * row limit: one meal tag, the owner's favourites, or quick ones
- * (`recipe_details.total_minutes`, prep plus cook).
- */
-export type RecipeQueryFilter = { tag?: RecipeTag; favourites?: boolean; quick?: boolean }
-
-export function useRecipes(shelf: RecipeShelf, query = '', filter: RecipeQueryFilter = {}) {
+export function useRecipes(shelf: RecipeShelf, query = '') {
   const userId = useUserId()
   const needle = query.trim()
-  const filterKey = filter.favourites ? 'favourites' : filter.quick ? 'quick' : (filter.tag ?? '')
 
   return useQuery({
-    queryKey: keys.recipes(userId, shelf, needle, filterKey),
+    queryKey: keys.recipes(userId, shelf, needle),
     queryFn: async (): Promise<Recipe[]> => {
       let request = supabase.from('recipe_details').select(RECIPE_COLUMNS)
 
@@ -80,9 +69,6 @@ export function useRecipes(shelf: RecipeShelf, query = '', filter: RecipeQueryFi
       // shelf of recipes is tens of rows, and ranking tens of rows is something
       // a person does by reading them.
       if (needle) request = request.ilike('name', `%${needle}%`)
-      if (filter.tag) request = request.contains('tags', [filter.tag])
-      if (filter.favourites) request = request.eq('is_favourite', true)
-      if (filter.quick) request = request.lte('total_minutes', QUICK_RECIPE_MINUTES)
 
       return unwrap(await request.limit(100)).map(toRecipe)
     },

@@ -1499,13 +1499,6 @@ export const vi = {
       community: 'Cộng đồng',
     },
 
-    filter: {
-      label: 'Hiển thị',
-      all: 'Tất cả',
-      favourites: 'Yêu thích',
-      quick: 'Dưới 30 phút',
-    },
-
     tag: {
       breakfast: 'Bữa sáng',
       lunch: 'Bữa trưa',
@@ -1541,8 +1534,6 @@ export const vi = {
     empty: {
       communityTitle: 'Chưa ai chia sẻ',
       communityBody: 'Chia sẻ công thức của bạn từ menu của nó.',
-      filteredTitle: 'Chưa có gì ở đây',
-      filteredBody: 'Thử bộ lọc khác.',
     },
 
     servings_one: '{{count}} khẩu phần',
@@ -1642,12 +1633,7 @@ export const vi = {
     },
 
     detail: {
-      servingLabel_one: 'khẩu phần',
-      servingLabel_other: 'khẩu phần',
       portion: {
-        half: 'Một nửa',
-        one: '1 khẩu phần',
-        two: '2 khẩu phần',
         pot: 'Cả nồi',
       },
       ofServings: '{{count}} TRÊN {{total}} KHẨU PHẦN',

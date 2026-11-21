@@ -19,15 +19,12 @@ jest.mock('expo-router', () => ({
 }))
 
 jest.mock('@/data', () => ({
-  isRecipeTag: jest.requireActual('@/data/types').isRecipeTag,
-  RECIPE_TAGS: jest.requireActual('@/data/types').RECIPE_TAGS,
   snapshotFromRecipe: (recipe: { name: string }) => ({ name: recipe.name }),
   storedImageSource: () => undefined,
   useLogFood: () => ({ mutate: mockLog, isPending: false }),
   useMealPhotoUrl: () => ({ data: undefined, isLoading: false }),
   useRecipeQuota: () => ({ count: 4, limit: null, atLimit: false, loading: false }),
-  useRecipes: (shelf: string, query: string, filter: unknown) =>
-    mockUseRecipes(shelf, query, filter),
+  useRecipes: (shelf: string, query: string) => mockUseRecipes(shelf, query),
   useRemoveEntry: () => ({ mutate: mockRemoveEntry }),
   useSelectedDate: () => ({ selectedDate: '2026-11-20', todayKey: '2026-11-21' }),
 }))
@@ -99,19 +96,6 @@ it('shows each recipe with its time and servings', async () => {
   expect(screen.getByText('10 min · 1 serving')).toBeTruthy()
 })
 
-it('narrows by meal, by time and by star on the server, before its row limit', async () => {
-  await render(<RecipesTab />)
-
-  await user.press(screen.getByRole('button', { name: 'Dinner' }))
-  expect(mockUseRecipes).toHaveBeenLastCalledWith('mine', '', { tag: 'dinner' })
-
-  await user.press(screen.getByRole('button', { name: 'Under 30 min' }))
-  expect(mockUseRecipes).toHaveBeenLastCalledWith('mine', '', { quick: true })
-
-  await user.press(screen.getByRole('button', { name: 'Favourites' }))
-  expect(mockUseRecipes).toHaveBeenLastCalledWith('mine', '', { favourites: true })
-})
-
 it('keeps the answer on screen while the same shelf refetches', async () => {
   mockUseRecipes.mockReturnValue({ data: [], isPending: false, isFetching: true })
   await render(<RecipesTab />)
@@ -130,13 +114,14 @@ it('steps the Add card aside once the shelf has a few recipes', async () => {
   expect(screen.queryByText('Add a recipe')).toBeNull()
 })
 
-it('offers favourites on your own shelf only', async () => {
+it('keeps the Add card to your own shelf, and has no filter row', async () => {
   await render(<RecipesTab />)
-  expect(screen.getByRole('button', { name: 'Favourites' })).toBeTruthy()
+  expect(screen.getByText('Add a recipe')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Favourites' })).toBeNull()
 
   await user.press(screen.getByRole('tab', { name: 'Community' }))
-  expect(screen.queryByRole('button', { name: 'Favourites' })).toBeNull()
   expect(screen.queryByText('Add a recipe')).toBeNull()
+  expect(mockUseRecipes).toHaveBeenLastCalledWith('community', '')
 })
 
 it('logs one serving from the card into today, not the day the diary is on', async () => {

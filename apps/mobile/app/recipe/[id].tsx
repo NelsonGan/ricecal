@@ -19,6 +19,7 @@ import {
 import {
   IngredientChecklist,
   LogRecipeSheet,
+  RecipeNutrition,
   RecipeStats,
   RecipeSteps,
   ShareSheet,
@@ -36,23 +37,23 @@ import {
   Aside,
   Button,
   Card,
-  Chip,
   ConfirmSheet,
   EmptyState,
   Icon,
   IconButton,
-  MacroBar,
   Screen,
   SegmentedControl,
   Sheet,
   Skeleton,
-  Stepper,
   Tappable,
   Text,
   useToast,
 } from '@/ui'
 
 type Section = 'ingredients' | 'method'
+
+/** The most people "Cooking for" goes up to: the column's own ceiling on servings. */
+const MAX_COOKING_FOR = 100
 
 /**
  * One recipe, and what you can do with it: read it, cook it, log it.
@@ -192,10 +193,18 @@ export default function RecipeDetailScreen() {
 
   const cooking = cookingFor ?? recipe.servings
   const priced = recipe.ingredientCount > 0
+  const metaLine = [
+    recipe.isMine
+      ? null
+      : t('recipes:fromAuthor', { name: recipe.authorName || t('recipes:someCook') }),
+    ...recipe.tags.map((tag) => t(`recipes:tag.${tag}`)),
+  ]
+    .filter(Boolean)
+    .join(' · ')
   const perServing = recipe.perServing
   // Proportional to the calories each macro contributes, which is the only
   // reading under which three bars of different nutrients are comparable.
-  const share = energyShare(perServing)
+  const _share = energyShare(perServing)
   // Logging is NOT GATED, and on somebody else's recipe either. Logging a pot
   // writes an entry from figures somebody typed, reaches no model and costs
   // nothing, so it is free for the same reason searching the catalogue is. What
@@ -255,6 +264,20 @@ export default function RecipeDetailScreen() {
                     name={recipe.isFavourite ? 'heart-filled' : 'heart'}
                     size={22}
                   />
+                </IconButton>
+              ) : null}
+              {/* Somebody else's: keep a copy. In the bar, beside the menu,
+                  where the mockups put it; a labelled button in the page made
+                  the title block the busiest thing on screen. */}
+              {!recipe.isMine ? (
+                <IconButton
+                  size="sm"
+                  variant="neutral"
+                  accessibilityLabel={t('recipes:detail.saveCopy')}
+                  disabled={copying}
+                  onPress={copy}
+                >
+                  <Icon set="ui" name="bookmark" size={20} />
                 </IconButton>
               ) : null}
               {recipe.isMine || reportable ? (
@@ -321,105 +344,30 @@ export default function RecipeDetailScreen() {
         </View>
       ) : null}
 
-      <View className="gap-2">
-        {/* With no photograph the drawing sits beside the name rather than in a
-            box of its own above it: most recipes have no photo, and the 130pt
-            box pushed the ingredients below the fold on a small phone. */}
-        <View className="flex-row items-center gap-3">
-          {photo || resolvingPhoto ? null : (
-            <View className="h-[64px] w-[64px] items-center justify-center rounded-tile bg-track">
-              <Icon {...(recipe.icon ?? { set: 'food', name: 'cooking-pot' })} size={52} />
-            </View>
-          )}
+      {/* The name, and one quiet line under it: who wrote it (on somebody
+          else's) and which meals it is for. That line replaced an author row,
+          a labelled save button and a row of tag chips, three things stacked
+          under the title before anything about the food itself. */}
+      <View className="flex-row items-center gap-3">
+        {/* With no photograph the drawing sits beside the name rather than in
+            a box of its own above it, so the ingredients start higher. */}
+        {photo || resolvingPhoto ? null : (
+          <Icon {...(recipe.icon ?? { set: 'food', name: 'cooking-pot' })} size={72} />
+        )}
+        <View className="min-w-0 flex-1 gap-0.5">
           {/* A cook's own name for their own pot, so it is as long as they made it. */}
-          <Text variant="title" accessibilityRole="header" className="min-w-0 flex-1">
+          <Text variant="title" accessibilityRole="header">
             {recipe.name}
           </Text>
+          {metaLine ? <Text variant="meta">{metaLine}</Text> : null}
         </View>
-
-        {/* Who cooked it, on somebody else's. Absent on your own, where the
-            answer is you. */}
-        {!recipe.isMine ? (
-          <View className="flex-row items-center gap-2">
-            <Icon set="ui" name="profile" size={16} />
-            <Text variant="meta" className="flex-1">
-              {t('recipes:fromAuthor', { name: recipe.authorName || t('recipes:someCook') })}
-            </Text>
-          </View>
-        ) : null}
-
-        {/* Labelled, and in the page rather than a bare icon in the bar: keeping
-            a friend's recipe is often why their link was opened. */}
-        {!recipe.isMine ? (
-          <Button
-            variant="secondary"
-            size="sm"
-            className="self-start"
-            loading={copying}
-            leftIcon={<Icon set="ui" name="bookmark" size={18} />}
-            onPress={copy}
-          >
-            {t('recipes:detail.saveCopy')}
-          </Button>
-        ) : null}
-
-        {recipe.tags.length > 0 ? (
-          <View className="flex-row flex-wrap gap-2">
-            {recipe.tags.map((tag) => (
-              <Chip key={tag} soft>
-                {t(`recipes:tag.${tag}`)}
-              </Chip>
-            ))}
-          </View>
-        ) : null}
       </View>
 
       <RecipeStats recipe={recipe} />
 
-      {/* Left out until something is in the pot: "0 kcal" with three empty
-          bars reads as a broken figure rather than a missing one. */}
-      {priced ? (
-        <Card>
-          <View className="flex-row items-center gap-4">
-            <View
-              className="items-start"
-              accessible
-              accessibilityLabel={`${perServing.kcal.toLocaleString()} ${t('common:unit.kcal')} ${t('recipes:detail.perServing')}`}
-            >
-              <View className="flex-row items-baseline gap-1">
-                <Text variant="numeric" className="text-[30px] leading-[36px] text-pandan-ink">
-                  {perServing.kcal.toLocaleString()}
-                </Text>
-                <Text variant="caption">{t('common:unit.kcal')}</Text>
-              </View>
-              <Text variant="meta">{t('recipes:detail.perServing')}</Text>
-            </View>
-            <View className="min-w-0 flex-1 gap-1.5">
-              <MacroBar
-                inline
-                label={t('common:macro.carbs')}
-                amount={t('common:unit.grams', { value: perServing.carbs })}
-                value={share.carbs}
-                tone="kaya"
-              />
-              <MacroBar
-                inline
-                label={t('common:macro.protein')}
-                amount={t('common:unit.grams', { value: perServing.protein })}
-                value={share.protein}
-                tone="hibiscus"
-              />
-              <MacroBar
-                inline
-                label={t('common:macro.fat')}
-                amount={t('common:unit.grams', { value: perServing.fat })}
-                value={share.fat}
-                tone="teh"
-              />
-            </View>
-          </View>
-        </Card>
-      ) : null}
+      {/* Left out until something is in the pot: "0 kcal" reads as a broken
+          figure rather than a missing one. */}
+      {priced ? <RecipeNutrition perServing={recipe.perServing} /> : null}
 
       {/* With two panes, the picture and the overview stay on the left and the
           cooking (ingredients and method) goes on the right. */}
@@ -438,20 +386,35 @@ export default function RecipeDetailScreen() {
             {ingredients.length > 0 ? (
               <View className="gap-1">
                 {/* Changes the amounts and nothing else. What a serving costs
-                    is the same however many are at the table. */}
+                    is the same however many are at the table. Two small
+                    buttons rather than the form's stepper: this is a setting
+                    over a list, not the thing the page is for. */}
                 <View className="flex-row items-center justify-between gap-3 pb-2">
-                  <Text variant="bodyStrong">{t('recipes:detail.cookingFor')}</Text>
-                  <Stepper
-                    value={cooking}
-                    onChange={(next) => setCookingFor(Math.round(next))}
-                    step={1}
-                    min={1}
-                    max={Math.max(100, recipe.servings)}
-                    format={(value) => String(Math.round(value))}
-                    decrementLabel={t('common:a11y.decrease')}
-                    incrementLabel={t('common:a11y.increase')}
-                    className="w-[150px]"
-                  />
+                  <Text variant="bodyStrong" accessibilityRole="text">
+                    {`${t('recipes:detail.cookingFor')} ${cooking}`}
+                  </Text>
+                  <View className="flex-row items-center gap-2">
+                    <IconButton
+                      size="xs"
+                      variant="neutral"
+                      hitSlop={6}
+                      disabled={cooking <= 1}
+                      accessibilityLabel={t('common:a11y.decrease')}
+                      onPress={() => setCookingFor(Math.max(1, cooking - 1))}
+                    >
+                      <Icon set="ui" name="minus" size={16} tintColor={colors.ink} />
+                    </IconButton>
+                    <IconButton
+                      size="xs"
+                      variant="neutral"
+                      hitSlop={6}
+                      disabled={cooking >= MAX_COOKING_FOR}
+                      accessibilityLabel={t('common:a11y.increase')}
+                      onPress={() => setCookingFor(Math.min(MAX_COOKING_FOR, cooking + 1))}
+                    >
+                      <Icon set="ui" name="plus" size={16} tintColor={colors.ink} />
+                    </IconButton>
+                  </View>
                 </View>
                 <IngredientChecklist
                   ingredients={ingredients}
