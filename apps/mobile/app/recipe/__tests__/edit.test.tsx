@@ -9,14 +9,18 @@ const mockRead = jest.fn()
 const mockUpload = jest.fn()
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
+const mockSave = jest.fn()
+
+const mockParams: { current: Record<string, string> } = { current: {} }
 
 jest.mock('expo-router', () => ({
-  useLocalSearchParams: () => ({}),
+  useLocalSearchParams: () => mockParams.current,
   useRouter: () => ({ replace: mockReplace }),
 }))
 
 jest.mock('@/data', () => ({
   isRecipeLimit: () => false,
+  RECIPE_TAGS: ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink'],
   removeMealPhoto: jest.fn(() => Promise.resolve()),
   storedImageSource: () => undefined,
   uploadMealPhoto: (uri: string) => mockUpload(uri),
@@ -27,7 +31,7 @@ jest.mock('@/data', () => ({
   useRecipe: () => ({ data: undefined }),
   useRecipeIngredients: () => ({ data: undefined }),
   useSettings: () => ({ data: { units: 'metric' } }),
-  useSaveRecipe: () => ({ mutateAsync: jest.fn(), isPending: false }),
+  useSaveRecipe: () => ({ mutateAsync: mockSave, isPending: false }),
 }))
 
 jest.mock('@/data/refusals', () => ({
@@ -82,6 +86,8 @@ jest.mock('@/features/recipes', () => {
       )
     },
     IngredientSheet: () => null,
+    normaliseSourceUrl: jest.requireActual('@/features/recipes/cooking').normaliseSourceUrl,
+    parseMinutes: jest.requireActual('@/features/recipes/cooking').parseMinutes,
     NewRecipeChooser: ({
       onManual,
       onPhoto,
@@ -176,6 +182,26 @@ jest.mock('@/ui', () => {
       </Pressable>
     ),
     Card: ({ children }: { children: import('react').ReactNode }) => <View>{children}</View>,
+    Chip: ({
+      children,
+      selected,
+      onPress,
+    }: {
+      children: import('react').ReactNode
+      selected?: boolean
+      onPress?: () => void
+    }) => (
+      <Pressable accessibilityRole="button" accessibilityState={{ selected }} onPress={onPress}>
+        <Text>{children}</Text>
+      </Pressable>
+    ),
+    FormCard: ({ children }: { children: import('react').ReactNode }) => <View>{children}</View>,
+    FormRow: ({ label, children }: { label: string; children?: import('react').ReactNode }) => (
+      <View>
+        <Text>{label}</Text>
+        {children}
+      </View>
+    ),
     cn: (...values: unknown[]) => values.filter(Boolean).join(' '),
     ConfirmSheet: () => null,
     Icon: () => null,
@@ -235,15 +261,23 @@ jest.mock('@/ui', () => {
       value,
       onChangeText,
       placeholder,
+      error,
     }: {
       label?: string
       value?: string
       onChangeText?: (text: string) => void
       placeholder?: string
+      error?: string
     }) => (
       <View>
         {label ? <Text>{label}</Text> : null}
-        <TextInput value={value} onChangeText={onChangeText} placeholder={placeholder} />
+        <TextInput
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          accessibilityLabel={label}
+        />
+        {error ? <Text>{error}</Text> : null}
       </View>
     ),
     useToast: () => ({ show: jest.fn(), dismiss: jest.fn() }),
@@ -267,6 +301,8 @@ const DRAFT: ScannedRecipe = {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  mockParams.current = {}
+  mockSave.mockResolvedValue({ id: 'new-recipe' })
   mockRead.mockResolvedValue(DRAFT)
   mockUpload.mockResolvedValue('meals/user-1/recipe.jpg')
 })
@@ -278,7 +314,7 @@ async function describe(text: string) {
   await fireEvent.press(screen.getByRole('button', { name: 'Fill in the form' }))
 }
 
-it('fills the new-food form from an AI description', async () => {
+it('fills the new-recipe form from an AI description', async () => {
   await render(<RecipeFormScreen />)
 
   await describe('Chicken curry, feeds four')
@@ -290,7 +326,7 @@ it('fills the new-food form from an AI description', async () => {
   expect(screen.getByText('Simmer until the chicken is tender.')).toBeOnTheScreen()
 })
 
-it('uploads and fills the new-food form from an AI photo read', async () => {
+it('uploads and fills the new-recipe form from an AI photo read', async () => {
   await render(<RecipeFormScreen />)
 
   await fireEvent.press(screen.getByRole('button', { name: 'Photo' }))
@@ -315,4 +351,51 @@ it('keeps manual answers when AI is used after returning to the chooser', async 
 
   await waitFor(() => expect(screen.getByDisplayValue('My curry')).toBeOnTheScreen())
   expect(screen.getByText('Chicken thigh')).toBeOnTheScreen()
+})
+
+it('opens straight onto the form from the tab, and saves times, meals and source', async () => {
+  mockParams.current = { start: 'manual' }
+  await render(<RecipeFormScreen />)
+
+  await fireEvent.changeText(screen.getByPlaceholderText('What do you call it?'), 'Kari ayam')
+  await fireEvent.changeText(screen.getByLabelText('Prep time'), '20')
+  await fireEvent.changeText(screen.getByLabelText('Cook time'), '50')
+  await fireEvent.press(screen.getByRole('button', { name: 'Dinner' }))
+  await fireEvent.press(screen.getByRole('button', { name: 'Lunch' }))
+  await fireEvent.changeText(
+    screen.getByPlaceholderText('Link to the reel or post'),
+    'instagram.com/reel/abc',
+  )
+  await fireEvent.press(screen.getByText('Save recipe'))
+
+  await waitFor(() =>
+    expect(mockSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Kari ayam',
+        prepMinutes: 20,
+        cookMinutes: 50,
+        tags: ['lunch', 'dinner'],
+        sourceUrl: 'https://instagram.com/reel/abc',
+      }),
+    ),
+  )
+})
+
+it('refuses a source that is not a link, and says so', async () => {
+  mockParams.current = { start: 'manual' }
+  await render(<RecipeFormScreen />)
+
+  await fireEvent.changeText(screen.getByPlaceholderText('What do you call it?'), 'Kari ayam')
+  await fireEvent.changeText(screen.getByPlaceholderText('Link to the reel or post'), 'my nan')
+  await fireEvent.press(screen.getByText('Save recipe'))
+
+  expect(await screen.findByText('That link does not look right')).toBeOnTheScreen()
+  expect(mockSave).not.toHaveBeenCalled()
+})
+
+it('opens the describe sheet when the tab sent us to describe', async () => {
+  mockParams.current = { start: 'describe' }
+  await render(<RecipeFormScreen />)
+
+  expect(await screen.findByPlaceholderText(/Kari ayam/)).toBeOnTheScreen()
 })

@@ -136,6 +136,7 @@ export type Database = {
           external_id: string
           kind: string
           provider: Database['public']['Enums']['health_provider']
+          source_name: string | null
           started_at: string
           user_id: string
         }
@@ -144,6 +145,7 @@ export type Database = {
           external_id: string
           kind: string
           provider: Database['public']['Enums']['health_provider']
+          source_name?: string | null
           started_at: string
           user_id: string
         }
@@ -152,6 +154,7 @@ export type Database = {
           external_id?: string
           kind?: string
           provider?: Database['public']['Enums']['health_provider']
+          source_name?: string | null
           started_at?: string
           user_id?: string
         }
@@ -1765,59 +1768,74 @@ export type Database = {
       recipes: {
         Row: {
           author_name: string
+          cook_minutes: number | null
           created_at: string
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string
+          is_favourite: boolean
           is_public: boolean
           name: string
           owner_id: string | null
           photo_path: string | null
+          prep_minutes: number | null
           review_note: string | null
           review_status: Database['public']['Enums']['recipe_review']
           saved_count: number
           servings: number
           share_slug: string
           source_recipe_id: string | null
+          source_url: string | null
           steps: string | null
+          tags: string[]
           updated_at: string
         }
         Insert: {
           author_name?: string
+          cook_minutes?: number | null
           created_at?: string
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
+          is_favourite?: boolean
           is_public?: boolean
           name: string
           owner_id?: string | null
           photo_path?: string | null
+          prep_minutes?: number | null
           review_note?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           saved_count?: number
           servings?: number
           share_slug: string
           source_recipe_id?: string | null
+          source_url?: string | null
           steps?: string | null
+          tags?: string[]
           updated_at?: string
         }
         Update: {
           author_name?: string
+          cook_minutes?: number | null
           created_at?: string
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
+          is_favourite?: boolean
           is_public?: boolean
           name?: string
           owner_id?: string | null
           photo_path?: string | null
+          prep_minutes?: number | null
           review_note?: string | null
           review_status?: Database['public']['Enums']['recipe_review']
           saved_count?: number
           servings?: number
           share_slug?: string
           source_recipe_id?: string | null
+          source_url?: string | null
           steps?: string | null
+          tags?: string[]
           updated_at?: string
         }
         Relationships: [
@@ -2903,17 +2921,20 @@ export type Database = {
       recipe_details: {
         Row: {
           author_name: string | null
+          cook_minutes: number | null
           created_at: string | null
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
           ingredient_count: number | null
+          is_favourite: boolean | null
           is_mine: boolean | null
           is_official: boolean | null
           is_public: boolean | null
           name: string | null
           owner_id: string | null
           photo_path: string | null
+          prep_minutes: number | null
           review_note: string | null
           review_status: Database['public']['Enums']['recipe_review'] | null
           saved_count: number | null
@@ -2924,7 +2945,9 @@ export type Database = {
           servings: number | null
           share_slug: string | null
           source_recipe_id: string | null
+          source_url: string | null
           steps: string | null
+          tags: string[] | null
           total_carbs_g: number | null
           total_fat_g: number | null
           total_kcal: number | null
@@ -3698,17 +3721,20 @@ export type Database = {
         Args: { p_share_slug: string }
         Returns: {
           author_name: string | null
+          cook_minutes: number | null
           created_at: string | null
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
           ingredient_count: number | null
+          is_favourite: boolean | null
           is_mine: boolean | null
           is_official: boolean | null
           is_public: boolean | null
           name: string | null
           owner_id: string | null
           photo_path: string | null
+          prep_minutes: number | null
           review_note: string | null
           review_status: Database['public']['Enums']['recipe_review'] | null
           saved_count: number | null
@@ -3719,7 +3745,9 @@ export type Database = {
           servings: number | null
           share_slug: string | null
           source_recipe_id: string | null
+          source_url: string | null
           steps: string | null
+          tags: string[] | null
           total_carbs_g: number | null
           total_fat_g: number | null
           total_kcal: number | null

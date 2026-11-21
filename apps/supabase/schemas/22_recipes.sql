@@ -48,6 +48,34 @@ create table public.recipes (
   -- paragraph.
   steps         text check (char_length(steps) <= 4000),
 
+  -- What a cook reads before deciding to make it tonight. Both optional, in
+  -- minutes, and capped at two days so an overnight marinade fits and a typo of
+  -- 30000 does not.
+  prep_minutes  smallint check (prep_minutes between 0 and 2880),
+  cook_minutes  smallint check (cook_minutes between 0 and 2880),
+
+  -- Which meals it is for, from a fixed set of keys rather than free text: the
+  -- app translates them, the Recipes tab filters on them, and a word nobody
+  -- reviews cannot be a way to put text in front of the community. Widening the
+  -- set is a new key here and in the app; narrowing it would orphan rows a
+  -- released app wrote.
+  tags          text[] not null default '{}' check (
+    tags <@ array['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink']::text[]
+  ),
+
+  -- Where the cook found it: a reel, a post, a blog. Shown to its owner only
+  -- (`recipe_details` nulls it for anybody else), because the reviewer never
+  -- reads it and a link on a community card is an advert waiting to happen.
+  -- A copy does not carry it.
+  source_url    text check (
+    char_length(source_url) <= 2000 and source_url ~* '^https?://[^[:space:]]+$'
+  ),
+
+  -- The owner's own star. On the row rather than in a table of its own because
+  -- only an owner can favourite: a community recipe somebody likes is saved as
+  -- a copy, which then has a star of its own.
+  is_favourite  boolean not null default false,
+
   -- Publishing.
   --
   -- Two columns rather than one, because they are two different facts: the owner
@@ -487,10 +515,14 @@ grant select, delete on public.recipes to authenticated;
 -- are absent for a quieter reason: they are derived, and a client that could
 -- write them could credit somebody else, collide two share links, vote for its
 -- own recipe, or point at a dish it did not cook.
-grant insert (owner_id, name, servings, steps, icon_set, icon_name, photo_path)
-  on public.recipes to authenticated;
-grant update (name, photo_path, icon_set, icon_name, servings, steps)
-  on public.recipes to authenticated;
+grant insert (
+  owner_id, name, servings, steps, icon_set, icon_name, photo_path,
+  prep_minutes, cook_minutes, tags, source_url, is_favourite
+) on public.recipes to authenticated;
+grant update (
+  name, photo_path, icon_set, icon_name, servings, steps,
+  prep_minutes, cook_minutes, tags, source_url, is_favourite
+) on public.recipes to authenticated;
 grant select, insert, update, delete on public.recipes to service_role;
 
 -- A SECOND, RESTRICTIVE read policy sits on top of this one, in

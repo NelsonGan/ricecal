@@ -868,7 +868,7 @@ still composing, and the field reports them as its value, so "pineapple" came
 in as "pi ne a p p le" and found nothing. Hundreds of searches a week did, most
 of them from Malaysia. It is removed on the query side only, never in
 `normalize`, which the stored columns are written with. The app's search panel
-removes it too, for My foods and Past foods, which never reach the Worker; the
+removes it too, for My recipes and Past foods, which never reach the Worker; the
 field itself keeps it, because the keyboard owns that text until it commits.
 
 ### Loading it
@@ -1180,14 +1180,14 @@ Replacing straight to the dish, which is what the barcode scanner still does,
 left it standing on Today, so backing out of a portion nobody had decided on
 threw the search away and made the user type it again.
 
-**My foods hands off the same way**, and carries `?source=mine` as well as the
+**My recipes hands off the same way**, and carries `?source=mine` as well as the
 query, because what has to survive that trip is the TAB. That applies both when
 opening an existing food and when tapping "New food": backing out returns to the
-same My foods results instead of Today or All foods. `openOwn` and `openCreate`
+same My recipes results instead of Today or All foods. `openOwn` and `openCreate`
 sit beside `openPicked`, and the page does not focus its field when any of them
 sent it, since a keyboard would come up under the screen on top.
 
-Four tabs (Today, Social, Trends, Me) on the headless `expo-router/ui`
+Five tabs (Today, Social, Recipes, Trends, Me) on the headless `expo-router/ui`
 Tabs rather than a styled navigator, because `NavBar` and `NavItem` are the
 design system's and a native tab bar cannot be made to look like them.
 
@@ -1223,9 +1223,11 @@ day" list, a workout opens `activity/workout/[id]`, and a health store is
 connected in Settings, Health. The tab's steps, balance and history pages had no
 other way in and are gone with it.
 
-My foods is in Settings. The old `/recipes` URL redirects there, while
-`/recipe/[id]` and `/recipe/edit` still open individual recipes. Those two have
-a layout of their own that waits for the session,
+Recipes is a tab again, `app/(tabs)/recipes.tsx` (see
+[The Recipes tab](#the-recipes-tab)). `/settings/foods`, where it lived while it
+was "My foods", redirects to it, so an old link still lands. `/recipe/[id]`,
+`/recipe/edit` and `/recipe/cook` open one recipe, and they have a layout of
+their own that waits for the session,
 because a shared recipe is a link and a link is opened cold, before the keychain
 read has finished.
 
@@ -1941,14 +1943,13 @@ different features depending on who had written the dish, and the one word
 somebody types is the same word either way. The widget still asks for
 `?panel=recipes` — it is native, and it is on home screens built against a
 version of the app that had the tile — so `openingPanel` maps that name to
-search opened on My foods rather than letting it fall through to the camera.
+search opened on My recipes rather than letting it fall through to the camera.
 
 ### Search has three tabs, and only the first is the catalogue
 
 `FoodSearchPanel` puts one field over three lists. **All foods** is the
 catalogue: 48,000 shared rows, ranked by the Worker, asked over the network on a
-debounce. **My foods** is what this account wrote itself, newest first, which the
-database calls a recipe. **Past foods** is what it has eaten before, newest
+debounce. **My recipes** is what this account wrote itself, newest first. **Past foods** is what it has eaten before, newest
 first, filtered on the phone as you type.
 
 **One field above all three**, because the word somebody types is the same word
@@ -1995,9 +1996,9 @@ deleting a picture the other still points at — so `snapshotFromEntry` carries
 out of this tab came back as the empty-plate placeholder. See "Every entry
 carries the dish's own drawing".
 
-**My foods writes on the plus and opens on the row**, which is the split the
+**My recipes writes on the plus and opens on the row**, which is the split the
 shelf itself makes: how many servings is a question with an answer screen, and
-"one, the way I always have it" should not need it. An empty My foods offers the
+"one, the way I always have it" should not need it. An empty My recipes offers the
 form, because somebody searching for food they have not written yet is exactly
 who should be told it can be written.
 
@@ -2845,15 +2846,14 @@ A shared pot has no serving size, which is where logging breaks down. So a user
 can write a food of their own: two answers, what went in and how many it feeds,
 entered once, and every future log of it is one tap.
 
-**The word on screen is "food"; everything in the code says "recipe".** The
-tables, the view, the RPCs, the routes, the hooks and the i18n namespace are all
-`recipe`, and they stay that way — a released app is talking to those tables and
-renaming one is deleting it (see "The store holds copies of the app you cannot
-recall"). What changed is the copy, because half of what people write down is a
-sandwich they make the same way every morning, and nobody calls that a recipe.
-`Food` is already the catalogue's row type, which is why the client did not
-follow the copy: two things called `Food` would be worse than one honest
-mismatch, written down here.
+**The word on screen is "recipe" again, and the code never stopped saying it.**
+The tables, the view, the RPCs, the routes, the hooks and the i18n namespace are
+all `recipe`, and they stay that way: a released app is talking to those tables
+and renaming one is deleting it (see "The store holds copies of the app you
+cannot recall"). The copy said "food" for a while, when this was a row in
+Settings and half of what people wrote down was a sandwich. A tab of its own,
+with times, meal tags and a cook mode, is a recipe box, and the people who open
+it cook, so the copy followed the code back.
 
 **A recipe was a `foods` row, and is not any more.** It had to be, once:
 `food_logs.food_id` was not null and referenced the catalogue, and everything
@@ -2894,11 +2894,9 @@ picked in the ingredient sheet converts the amount in the field (400 g of milk i
 1.64 cups), and the custom ingredient form does not, since it knows nothing about
 the food but the figures typed for it.
 
-**Two shelves, one grid.** Mine and the community. Which one a tile is on is a
+**Two shelves, one grid.** Mine and the community. Which one a card is on is a
 property of the row: community is somebody else's that is both public and
-approved. Each shelf is three columns of image-led tiles: the serving calories sit
-over the artwork and the food name sits below it. The rest belongs on the detail
-screen.
+approved. See [The Recipes tab](#the-recipes-tab) for the grid itself.
 
 There was a third, the RiceCal kitchen: `owner_id is null`, so "official and
 owned by Farah" could not be spelled. Nothing was ever put on it, and a
@@ -2917,6 +2915,61 @@ the reader exactly what it said it cost on the day they ate it. `save_recipe_cop
 is still there and still the way to get an editable copy of your own, with
 `source_recipe_id` for provenance — it is the second button on that screen rather
 than the only one.
+
+### The Recipes tab
+
+The fifth tab, between Social and Trends, built from mockups of the screens a
+recipe manager has (Paprika, Mela, Crouton, ReciMe were the reference points):
+a library led by pictures and filters, an overview before cooking, amounts that
+follow the number of people, a cook mode, and a source link to come back to.
+
+**The shelf.** Mine or Community, then a row of chips: All, Favourites (yours
+only, since the star is on your own rows), Under 30 min, and the six meal tags.
+A tag or the favourites narrow the query (`useRecipes`' third argument);
+"Under 30 min" is prep plus cook, a sum PostgREST cannot filter on, so the tab
+filters what came back. Your own shelf opens with three tiles, Write it, Photo
+and Describe, which go straight to `/recipe/edit?start=manual|photo|describe`
+and skip the chooser page; the plus still opens the chooser. Cards are two to a
+row, with the photo, the serving's calories and a plus that logs one serving to
+the day on screen, and under it the name and "1 h 10 min · 4 servings". Three to
+a row lost both the photo and that line.
+
+**The recipe.** Picture, name, meal chips, then three tiles (prep, cook,
+servings; a time nobody gave is left out rather than drawn as a dash) and the
+calories per serving with the three macros. Ingredients and Method are one tab
+each, since nobody reads both at once. Above the ingredients, "Cooking for"
+rescales every amount (`scaleIngredient`: only `amount` moves, the per-unit
+figures are the food's density) and each row can be ticked off. The ticks live
+on the screen, not the recipe: they are about one session at the stove. The
+stepper changes amounts only, never what a serving costs. How much was EATEN is
+asked separately, in the sheet "Add to today" opens, so the page never has two
+steppers about servings that answer different questions. Your own has a heart
+(`useFavouriteRecipe`, optimistic) and the menu; somebody else's has a bookmark
+that saves a copy, and the report menu.
+
+**Cook mode**, `/recipe/cook?id=&servings=`, pages the method one step at a
+time in large type with the screen kept awake (`useKeepAwake`). Under each step
+are the ingredients it names at tonight's amounts. `ingredientsInStep` matches a
+whole name, or its first word when that is four letters or more ("chicken" for
+"Chicken thigh"), and never the last word, which is the generic half: "sauce"
+would put the oyster sauce beside a step about the soy. The full list is one tap
+away in a sheet. The last step offers to log a serving.
+
+**What the row gained** (`20261121042151_recipe_manager.sql`), all nullable or
+defaulted, so 1.0.0 neither writes nor needs them and its updates leave them
+alone:
+
+| column | |
+|---|---|
+| `prep_minutes`, `cook_minutes` | 0 to 2,880 (two days, for an overnight marinade) |
+| `tags` | `text[]` from a fixed set (`breakfast`, `lunch`, `dinner`, `snack`, `dessert`, `drink`), checked in the database. Keys, so the app translates them and nothing free-text reaches the community. Adding one is a new key in the check and in `RECIPE_TAGS`; removing one would orphan rows a released app wrote. |
+| `source_url` | http(s), no whitespace, 2,000 characters. The owner's bookmark: `recipe_details` and `get_shared_recipe` null it for anybody else, and a copy does not carry it, because the reviewer never reads it and a link on a community card is an advert. This is where an imported reel will record where it came from. |
+| `is_favourite` | the owner's star. A community recipe somebody likes is saved as a copy, which has a star of its own. |
+
+None of them is in the review-reset trigger: tags and minutes carry no free
+text, and the link is never shown to anyone else. Copies (`save_recipe_copy`,
+`save_shared_recipe_copy`) carry the times and tags. `tests/44_recipe_manager.test.sql`
+covers the grants, the checks, the owner-only link and the copy.
 
 ### Sharing a food by link
 
@@ -3101,10 +3154,9 @@ The feed is the lower half of Social, the second bottom tab, under the
 viewer's groups (see [Groups](#groups)). Its Following and Discover tabs and
 its filter head the list, below the groups, and scroll away with it; switching
 either keeps the list where it is rather than remounting it, so the groups
-above do not reload. Pulling the feed down refreshes the groups too. **My foods** moves into the Nutrition
-settings card on Me, retaining both the personal and community recipe shelves.
-Existing recipe routes and database contracts survive; the old recipes tab
-route redirects to Settings. Feed and recipes are separate concepts: a post
+above do not reload. Pulling the feed down refreshes the groups too. Recipes,
+which spent a while as "My foods" in the Nutrition card on Me, is a tab of its
+own again with both shelves. Feed and recipes are separate concepts: a post
 says what somebody ate, while a recipe describes food somebody can make and
 log.
 
@@ -7459,7 +7511,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Entry deletion `source` | Calling source string, or `unknown` when absent | `data/entries.ts`; not an unrestricted note or an automatic screen name |
 | Health `provider` | Production providers `apple_health`, `health_connect`; database also declares `demo` for demo data | `lib/health/index.ts`, `database.types.ts`; count connection decisions separately from imported readings |
 | `widget` / `WidgetKind` | `kcal`, `water`, `weight`, `day`, `quick_log`, `today` | Native widget module; installed count measures kinds, not the number of widget instances |
-| Widget `target` | `open`, `camera`, `search`, `barcode`, `recipes`, `water`, `weight` | Legacy recipes deep links still report recipes while opening My foods |
+| Widget `target` | `open`, `camera`, `search`, `barcode`, `recipes`, `water`, `weight` | Legacy recipes deep links still report recipes while opening My recipes |
 | Moderation `reason` / `ReportReason` | `inappropriate`, `spam`, `dangerous`, `stolen` | Controlled report category; no recipe, author or report text |
 | Rating `trigger` / `RatingTrigger` | `meal_milestone`, `review_opened`, `manual` | App rating question, not a store review result |
 | Rating skip `reason` / `RatingSkipReason` | `too_soon_after_install`, `too_soon_after_update`, `too_few_meals`, `too_few_active_days`, `asked_recently`, `asked_on_this_version` | `lib/rating/state.ts`; first failing gate at a checkpoint |

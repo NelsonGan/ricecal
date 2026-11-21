@@ -9,6 +9,18 @@ import RecipeDetailScreen from '../[id]'
 const mockPush = jest.fn()
 const mockReplace = jest.fn()
 const mockRemove = jest.fn(() => Promise.resolve())
+const mockFavourite = jest.fn()
+const mockIngredients = [
+  {
+    id: 'i1',
+    name: 'Egg',
+    amount: 2,
+    unit: 'piece',
+    perUnit: { kcal: 72, carbs: 0, protein: 6, fat: 5 },
+    macros: { kcal: 144, carbs: 0, protein: 12, fat: 10 },
+    position: 0,
+  },
+]
 
 const RECIPE = {
   id: 'recipe-1',
@@ -19,7 +31,10 @@ const RECIPE = {
   authorName: null,
   photoPath: null,
   servings: 1,
-  steps: [],
+  steps: 'Toast the bread.\nSpread the egg mayo.',
+  tags: ['breakfast'],
+  isFavourite: false,
+  prepMinutes: 5,
   perServing: { kcal: 217, carbs: 25.8, protein: 11.2, fat: 7.7 },
 }
 
@@ -40,10 +55,11 @@ jest.mock('@/data', () => ({
   storedImageSource: () => undefined,
   useBlockAuthor: () => ({ mutateAsync: jest.fn() }),
   useDeleteRecipe: () => ({ mutateAsync: mockRemove }),
+  useFavouriteRecipe: () => ({ mutate: mockFavourite }),
   useLogFood: () => ({ mutate: jest.fn(), isPending: false }),
   useMealPhotoUrl: () => ({ data: undefined, isLoading: false }),
   useRecipe: () => ({ data: RECIPE, isPending: false }),
-  useRecipeIngredients: () => ({ data: [] }),
+  useRecipeIngredients: () => ({ data: mockIngredients }),
   useRecipeQuota: () => ({ atLimit: false }),
   useReportRecipe: () => ({ mutateAsync: jest.fn() }),
   useSaveRecipeCopy: () => ({ mutateAsync: jest.fn() }),
@@ -53,10 +69,12 @@ jest.mock('@/data', () => ({
 jest.mock('@/data/refusals', () => ({ openPaywall: jest.fn() }))
 jest.mock('@/features/paywall', () => ({ useRequirePro: () => jest.fn(() => true) }))
 jest.mock('@/features/recipes', () => ({
+  IngredientChecklist: () => null,
+  RecipeStats: () => null,
   RecipeSteps: () => null,
+  sourceHost: (url: string) => url,
   ShareSheet: () => null,
   useCopyRecipe: () => ({ copy: jest.fn(), busy: false }),
-  useIngredientMeasure: () => () => '',
 }))
 jest.mock('@/features/shared', () => ({ MealPhoto: () => null }))
 jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))
@@ -83,18 +101,18 @@ it('asks to delete only once the menu has finished closing', async () => {
   await renderScreen()
 
   await user.press(screen.getByLabelText('More options'))
-  await user.press(await screen.findByText('Delete food'))
+  await user.press(await screen.findByText('Delete recipe'))
 
   // Presenting the confirm while the menu is still dismissing is what iOS
   // silently drops, so it must wait for the menu's own dismissal.
-  expect(screen.queryByText('Delete this food?')).toBeNull()
+  expect(screen.queryByText('Delete this recipe?')).toBeNull()
 
   await finishDismissing()
-  expect(await screen.findByText('Delete this food?')).toBeOnTheScreen()
+  expect(await screen.findByText('Delete this recipe?')).toBeOnTheScreen()
 
   await user.press(screen.getByText('Delete'))
   await waitFor(() => expect(mockRemove).toHaveBeenCalledWith({ id: 'recipe-1', photoPath: null }))
-  expect(mockReplace).toHaveBeenCalledWith('/settings/foods')
+  expect(mockReplace).toHaveBeenCalledWith('/recipes')
 })
 
 it('opens the editor once the menu has finished closing', async () => {
@@ -107,4 +125,32 @@ it('opens the editor once the menu has finished closing', async () => {
 
   await finishDismissing()
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/recipe/edit', params: { id: 'recipe-1' } })
+})
+
+it('stars your own recipe from the bar', async () => {
+  const user = userEvent.setup()
+  await renderScreen()
+
+  await user.press(screen.getByLabelText('Favourite'))
+  expect(mockFavourite).toHaveBeenCalledWith({ id: 'recipe-1', favourite: true })
+})
+
+it('starts cook mode at the number being cooked for', async () => {
+  const user = userEvent.setup()
+  await renderScreen()
+
+  await user.press(screen.getByLabelText('Increase'))
+  await user.press(screen.getByText('Cook'))
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/recipe/cook',
+    params: { id: 'recipe-1', servings: '2' },
+  })
+})
+
+it('asks how much was eaten before adding it to the day', async () => {
+  const user = userEvent.setup()
+  await renderScreen()
+
+  await user.press(screen.getByText('Add to today'))
+  expect(await screen.findByText('How much did you have?')).toBeOnTheScreen()
 })

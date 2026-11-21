@@ -91,7 +91,16 @@ select
   round(coalesce(t.kcal, 0)      / greatest(r.servings, 1))::integer    as serving_kcal,
   round(coalesce(t.carbs_g, 0)   / greatest(r.servings, 1), 1)::numeric as serving_carbs_g,
   round(coalesce(t.protein_g, 0) / greatest(r.servings, 1), 1)::numeric as serving_protein_g,
-  round(coalesce(t.fat_g, 0)     / greatest(r.servings, 1), 1)::numeric as serving_fat_g
+  round(coalesce(t.fat_g, 0)     / greatest(r.servings, 1), 1)::numeric as serving_fat_g,
+
+  -- Last, so the view only ever grows at the end and the functions returning
+  -- its rows keep their shape. A released app selects `*` and ignores them.
+  r.prep_minutes,
+  r.cook_minutes,
+  r.tags,
+  -- The owner's bookmark, and nobody else's business. See `recipes.source_url`.
+  case when r.owner_id = (select auth.uid()) then r.source_url end as source_url,
+  r.is_favourite
   -- `food_id` and `default_serving_id` were here, so a screen could log a pot
   -- through the catalogue without a second round trip for two ids it used once.
   -- There is no mirror to name and no portion row to point at: a pot is logged
@@ -155,7 +164,12 @@ as $$
     d.serving_kcal,
     d.serving_carbs_g,
     d.serving_protein_g,
-    d.serving_fat_g
+    d.serving_fat_g,
+    d.prep_minutes,
+    d.cook_minutes,
+    d.tags,
+    d.source_url,
+    d.is_favourite
   from public.recipe_details d
   where (select auth.uid()) is not null
     and d.share_slug = p_share_slug
@@ -341,12 +355,15 @@ begin
   -- the original author's key could never be signed for its new owner, so the
   -- tile would be permanently blank. Worse, it would ALIAS: the original author
   -- deleting their recipe deletes that object, and every copy of it goes dark.
-  -- The illustration copies, because a drawing belongs to nobody.
+  -- The illustration copies, because a drawing belongs to nobody. So do the
+  -- times and meal tags; the source link and the star stay with their owner.
   insert into public.recipes (
-    owner_id, name, icon_set, icon_name, servings, steps, source_recipe_id
+    owner_id, name, icon_set, icon_name, servings, steps, source_recipe_id,
+    prep_minutes, cook_minutes, tags
   )
   values (
-    v_user, src.name, src.icon_set, src.icon_name, src.servings, src.steps, src.id
+    v_user, src.name, src.icon_set, src.icon_name, src.servings, src.steps, src.id,
+    src.prep_minutes, src.cook_minutes, src.tags
   )
   returning id into v_new;
 
@@ -444,10 +461,12 @@ begin
   -- Photographs stay with their owner. See save_recipe_copy for why the icon
   -- can copy and an R2 object key cannot.
   insert into public.recipes (
-    owner_id, name, icon_set, icon_name, servings, steps, source_recipe_id
+    owner_id, name, icon_set, icon_name, servings, steps, source_recipe_id,
+    prep_minutes, cook_minutes, tags
   )
   values (
-    v_user, src.name, src.icon_set, src.icon_name, src.servings, src.steps, src.id
+    v_user, src.name, src.icon_set, src.icon_name, src.servings, src.steps, src.id,
+    src.prep_minutes, src.cook_minutes, src.tags
   )
   returning id into v_new;
 

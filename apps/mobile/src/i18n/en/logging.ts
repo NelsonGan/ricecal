@@ -256,22 +256,22 @@ export const logging = {
     clear: 'Clear search',
     /**
      * The three lists one field searches. "All foods" rather than "Catalogue",
-     * which is our word and nobody else's. "My foods" is the food this account
+     * which is our word and nobody else's. "My recipes" is what this account
      * wrote itself, and "Past foods" is what it has eaten before: two different
      * claims on the word "my", which is why the second one names the time
      * instead. Recency is how that list is sorted, not what it is.
      */
     tabs: 'Which foods to search',
     tabCatalogue: 'All foods',
-    tabMine: 'My foods',
+    tabMine: 'My recipes',
     tabPast: 'Past foods',
     /** Nothing written yet, which is the tab's whole job to fix. */
-    mineEmptyTitle: 'No foods of your own yet',
+    mineEmptyTitle: 'No recipes of your own yet',
     mineEmptyBody:
       'A shared pot has no serving size. Write down what went in and how many it feeds, once, and logging it is one tap from then on.',
     /** There is a shelf; nothing on it matches what was typed. */
-    mineNoMatchBody: 'None of your foods match that.',
-    mineOfflineBody: 'Your foods live on the server. This will load once you are back online.',
+    mineNoMatchBody: 'None of your recipes match that.',
+    mineOfflineBody: 'Your recipes live on the server. This will load once you are back online.',
     /** Nobody has logged anything yet. Not a failure, so not phrased as one. */
     pastEmptyTitle: 'Nothing logged yet',
     pastEmptyBody: 'Meals you log turn up here, ready to add again.',

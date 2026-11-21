@@ -11,7 +11,7 @@ import { removeMealPhoto } from './photos'
 import { refusalFrom, ScanLimitError } from './refusals'
 import { useUserId } from './session'
 import { useEntitlement } from './subscription'
-import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeUnit } from './types'
+import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeTag, RecipeUnit } from './types'
 
 /**
  * Home cooking.
@@ -39,12 +39,20 @@ export type RecipeShelf = 'mine' | 'community'
 
 const RECIPE_COLUMNS = '*'
 
-export function useRecipes(shelf: RecipeShelf, query = '') {
+/**
+ * What the Recipes tab's chips narrow a shelf to on the server: one meal tag,
+ * or the owner's favourites. "Quick" is not here, because prep plus cook is a
+ * sum PostgREST cannot filter on; the tab filters that one itself.
+ */
+export type RecipeQueryFilter = { tag?: RecipeTag; favourites?: boolean }
+
+export function useRecipes(shelf: RecipeShelf, query = '', filter: RecipeQueryFilter = {}) {
   const userId = useUserId()
   const needle = query.trim()
+  const filterKey = filter.favourites ? 'favourites' : (filter.tag ?? '')
 
   return useQuery({
-    queryKey: keys.recipes(userId, shelf, needle),
+    queryKey: keys.recipes(userId, shelf, needle, filterKey),
     queryFn: async (): Promise<Recipe[]> => {
       let request = supabase.from('recipe_details').select(RECIPE_COLUMNS)
 
@@ -69,6 +77,8 @@ export function useRecipes(shelf: RecipeShelf, query = '') {
       // shelf of recipes is tens of rows, and ranking tens of rows is something
       // a person does by reading them.
       if (needle) request = request.ilike('name', `%${needle}%`)
+      if (filter.tag) request = request.contains('tags', [filter.tag])
+      if (filter.favourites) request = request.eq('is_favourite', true)
 
       return unwrap(await request.limit(100)).map(toRecipe)
     },
@@ -265,6 +275,10 @@ export type RecipeInput = {
    */
   previousPhotoPath?: string
   ingredients: RecipeIngredientInput[]
+  prepMinutes?: number | null
+  cookMinutes?: number | null
+  tags?: RecipeTag[]
+  sourceUrl?: string | null
 }
 
 /**
@@ -310,6 +324,10 @@ export function useSaveRecipe() {
         icon_set: input.icon?.set ?? null,
         icon_name: input.icon?.name ?? null,
         photo_path: input.photoPath ?? null,
+        prep_minutes: input.prepMinutes ?? null,
+        cook_minutes: input.cookMinutes ?? null,
+        tags: input.tags ?? [],
+        source_url: input.sourceUrl?.trim() || null,
       }
 
       const saved = input.id
@@ -404,6 +422,45 @@ export function useSaveRecipe() {
       queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
       invalidateGroupBoards(queryClient, userId)
+    },
+  })
+}
+
+/**
+ * Star one of your own recipes, or take the star off. Optimistic, because a
+ * heart that waits a round trip to fill reads as a missed tap; the shelves and
+ * the recipe are refetched either way, so a refused write puts it back.
+ */
+export function useFavouriteRecipe() {
+  const userId = useUserId()
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ id, favourite }: { id: string; favourite: boolean }) => {
+      unwrap(
+        await supabase
+          .from('recipes')
+          .update({ is_favourite: favourite })
+          .eq('id', id)
+          .eq('owner_id', userId)
+          .select('id'),
+      )
+    },
+    onMutate: ({ id, favourite }) => {
+      queryClient.setQueryData<Recipe | null>(keys.recipe(id), (current) =>
+        current ? { ...current, isFavourite: favourite } : current,
+      )
+      queryClient.setQueriesData<Recipe[]>({ queryKey: keys.recipesAll(userId) }, (current) =>
+        Array.isArray(current)
+          ? current.map((recipe) =>
+              recipe.id === id ? { ...recipe, isFavourite: favourite } : recipe,
+            )
+          : current,
+      )
+    },
+    onSettled: (_data, _error, { id }) => {
+      queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.recipe(id) })
     },
   })
 }

@@ -1,3 +1,4 @@
+import * as Linking from 'expo-linking'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -10,6 +11,7 @@ import {
   storedImageSource,
   useBlockAuthor,
   useDeleteRecipe,
+  useFavouriteRecipe,
   useLogFood,
   useMealPhotoUrl,
   useRecipe,
@@ -17,7 +19,14 @@ import {
   useReportRecipe,
   useSelectedDate,
 } from '@/data'
-import { RecipeSteps, ShareSheet, useCopyRecipe, useIngredientMeasure } from '@/features/recipes'
+import {
+  IngredientChecklist,
+  RecipeStats,
+  RecipeSteps,
+  ShareSheet,
+  sourceHost,
+  useCopyRecipe,
+} from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
 import { energyShare } from '@/lib/nutrition'
@@ -30,39 +39,44 @@ import {
   Chip,
   ConfirmSheet,
   cn,
-  Divider,
   EmptyState,
   Icon,
   IconButton,
   MacroBar,
   Screen,
+  SegmentedControl,
   Sheet,
   Skeleton,
   Stepper,
+  Tappable,
   Text,
   useToast,
 } from '@/ui'
 
+type Section = 'ingredients' | 'method'
+
 /**
- * One food somebody wrote, and what you can do with it.
+ * One recipe, and what you can do with it: read it, cook it, log it.
  *
- * Your own logs into the day and can be shared. Somebody else's does BOTH: it
- * logs into the day, and it can be kept as a copy of your own to edit.
+ * The page is laid out in the order a cook uses it. The picture and the name,
+ * then the overview that decides whether it is tonight's dinner (prep, cook,
+ * servings, what a serving costs), then the ingredients at tonight's amounts or
+ * the method, one tab each, since nobody reads both at once. The footer holds
+ * the two things somebody came here to do: start cooking, or add it to the day.
+ *
+ * Your own can be starred, edited, shared and deleted. Somebody else's can be
+ * logged and cooked too, and kept as a copy of your own to change.
  *
  * Logging somebody else's used to be impossible, and the reason was real at the
  * time: a logged entry referenced the recipe's mirror catalogue row, so editing
- * a recipe repriced every entry that ever pointed at it and logging somebody
- * else's would have put their future corrections into your past diary. The
- * mirror went with the catalogue. An entry is a snapshot now — `recipe_id` is
- * provenance and nothing reads back through it — so a community dish costs the
- * reader exactly what it said it cost on the day they ate it, and making them
- * save a copy first was a step that no longer protected anything.
+ * a recipe repriced every entry that ever pointed at it. The mirror went with
+ * the catalogue. An entry is a snapshot now, so a community dish costs the
+ * reader exactly what it said it cost on the day they ate it.
  */
 export default function RecipeDetailScreen() {
   const { t } = useTranslation(['recipes', 'common'])
-  const ingredientMeasure = useIngredientMeasure()
   const router = useRouter()
-  const goBack = useBack('/settings/foods')
+  const goBack = useBack('/recipes')
   const toast = useToast()
   const colors = useThemeColors()
 
@@ -72,17 +86,26 @@ export default function RecipeDetailScreen() {
 
   const { selectedDate } = useSelectedDate()
   const logFood = useLogFood()
+  const favourite = useFavouriteRecipe()
   const { copy: copyRecipe, busy: copying } = useCopyRecipe()
   const remove = useDeleteRecipe()
   const report = useReportRecipe()
   const block = useBlockAuthor()
 
+  const [section, setSection] = useState<Section>('ingredients')
   /**
-   * How many servings are being logged. Not a portion id: the mirror's base
-   * portion is one serving, so "how many" is the entry's quantity and the chips
-   * below are shortcuts to values of it.
+   * How many the pot is being cooked for tonight. Null follows the recipe's own
+   * servings, so it is right before the recipe has loaded and after an edit.
+   */
+  const [cookingFor, setCookingFor] = useState<number | null>(null)
+  /** Ingredients already in the pot. This visit only; see `IngredientChecklist`. */
+  const [ticked, setTicked] = useState<ReadonlySet<string>>(new Set())
+  /**
+   * How many servings are being logged. The chips in the log sheet are
+   * shortcuts to values of it.
    */
   const [quantity, setQuantity] = useState(1)
+  const [logging, setLogging] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [menu, setMenu] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -102,7 +125,7 @@ export default function RecipeDetailScreen() {
   const photo = storedImageSource(recipe?.photoPath, photoUrl)
 
   /**
-   * Whether this food has an author who could be reported or blocked. Somebody
+   * Whether this recipe has an author who could be reported or blocked. Somebody
    * else's, and with a cook on it to name.
    */
   const reportable = Boolean(recipe && !recipe.isMine && recipe.ownerId)
@@ -119,7 +142,7 @@ export default function RecipeDetailScreen() {
     try {
       await report.mutateAsync({ recipeId: recipe.id, reason })
       toast.show({ title: t('recipes:report.done') })
-      router.replace('/settings/foods')
+      router.replace('/recipes')
     } catch {
       toast.show({ title: t('recipes:report.failed'), tone: 'error' })
     }
@@ -131,7 +154,7 @@ export default function RecipeDetailScreen() {
     try {
       await block.mutateAsync(recipe.ownerId)
       toast.show({ title: t('recipes:report.blocked') })
-      router.replace('/settings/foods')
+      router.replace('/recipes')
     } catch {
       toast.show({ title: t('recipes:report.failed'), tone: 'error' })
     }
@@ -142,8 +165,9 @@ export default function RecipeDetailScreen() {
       <Screen
         header={<AppBar title="" onBack={() => goBack()} backLabel={t('common:a11y.back')} />}
       >
-        <Skeleton className="h-[130px] w-full" />
-        <Skeleton className="h-[120px] w-full" />
+        <Skeleton className="h-[260px] w-full" />
+        <Skeleton className="h-[32px] w-2/3" />
+        <Skeleton className="h-[64px] w-full" />
       </Screen>
     )
   }
@@ -173,15 +197,12 @@ export default function RecipeDetailScreen() {
     )
   }
 
-  const kcal = Math.round(recipe.perServing.kcal * quantity)
-  const macros = {
-    carbs: Math.round(recipe.perServing.carbs * quantity * 10) / 10,
-    protein: Math.round(recipe.perServing.protein * quantity * 10) / 10,
-    fat: Math.round(recipe.perServing.fat * quantity * 10) / 10,
-  }
+  const cooking = cookingFor ?? recipe.servings
+  const perServing = recipe.perServing
   // Proportional to the calories each macro contributes, which is the only
   // reading under which three bars of different nutrients are comparable.
-  const share = energyShare(macros)
+  const share = energyShare(perServing)
+  const logKcal = Math.round(perServing.kcal * quantity)
 
   const portions: Array<{ key: string; label: string; value: number }> = [
     { key: 'half', label: t('recipes:detail.portion.half'), value: 0.5 },
@@ -193,10 +214,10 @@ export default function RecipeDetailScreen() {
   ]
 
   const addToDay = () => {
-    // NOT GATED, and on somebody else's food either. Logging a pot writes an
+    // NOT GATED, and on somebody else's recipe either. Logging a pot writes an
     // entry from figures somebody typed, reaches no model and costs nothing, so
     // it is free for the same reason searching the catalogue is. What a free
-    // account is limited on is how many foods it may KEEP, which is checked
+    // account is limited on is how many recipes it may KEEP, which is checked
     // where one is created rather than where one is logged.
     logFood.mutate({
       snapshot: snapshotFromRecipe(recipe),
@@ -205,8 +226,8 @@ export default function RecipeDetailScreen() {
       source: 'quickAdd',
       method: 'recipe',
     })
+    setLogging(false)
     toast.show({ title: t('recipes:detail.added'), tone: 'success' })
-    goBack()
   }
 
   const copy = async () => {
@@ -214,74 +235,105 @@ export default function RecipeDetailScreen() {
     if (newId) router.replace({ pathname: '/recipe/[id]', params: { id: newId } })
   }
 
+  const toggleTick = (ingredientId: string) =>
+    setTicked((current) => {
+      const next = new Set(current)
+      if (next.has(ingredientId)) next.delete(ingredientId)
+      else next.add(ingredientId)
+      return next
+    })
+
+  const startCooking = () =>
+    router.push({
+      pathname: '/recipe/cook',
+      params: { id, servings: String(cooking) },
+    })
+
   return (
     <Screen
       header={
         <AppBar
-          title={recipe.name}
-          /* A cook's own name for their own pot, so it is as long as they made
-             it: the same reason the logged-entry screen takes two lines. Every
-             other bar in the app names a screen and stays on one. */
-          titleLines={2}
+          title=""
           onBack={() => goBack()}
           backLabel={t('common:a11y.back')}
-          /* On a community food too, and that is guideline 1.2 rather than a
+          /* On a community recipe too, and that is guideline 1.2 rather than a
              nicety: an app whose users read each other's writing has to offer a
              way to report it and a way to never see that cook again. */
           action={
-            recipe.isMine || reportable ? (
-              <IconButton
-                size="sm"
-                accessibilityLabel={t('common:a11y.more')}
-                onPress={() => (recipe.isMine ? setMenu(true) : setReporting(true))}
-              >
-                <Icon set="ui" name="more-vertical" size={20} tintColor={colors.muted} />
-              </IconButton>
-            ) : undefined
+            <View className="flex-row items-center gap-2">
+              {recipe.isMine ? (
+                <IconButton
+                  size="sm"
+                  variant="neutral"
+                  accessibilityLabel={
+                    recipe.isFavourite ? t('recipes:card.unfavourite') : t('recipes:card.favourite')
+                  }
+                  accessibilityState={{ selected: recipe.isFavourite }}
+                  onPress={() =>
+                    favourite.mutate({ id: recipe.id, favourite: !recipe.isFavourite })
+                  }
+                >
+                  <Icon
+                    set="system"
+                    name={recipe.isFavourite ? 'heart-filled' : 'heart'}
+                    size={22}
+                  />
+                </IconButton>
+              ) : (
+                <IconButton
+                  size="sm"
+                  variant="neutral"
+                  accessibilityLabel={t('recipes:detail.saveCopy')}
+                  disabled={copying}
+                  onPress={copy}
+                >
+                  <Icon set="ui" name="bookmark" size={20} />
+                </IconButton>
+              )}
+              {recipe.isMine || reportable ? (
+                <IconButton
+                  size="sm"
+                  variant="neutral"
+                  accessibilityLabel={t('common:a11y.more')}
+                  onPress={() => (recipe.isMine ? setMenu(true) : setReporting(true))}
+                >
+                  <Icon set="ui" name="more-vertical" size={20} tintColor={colors.muted} />
+                </IconButton>
+              ) : null}
+            </View>
           }
         />
       }
-      /* "Add to today" is the primary on both, because it is what somebody
-         reading a dish at a mealtime came to do. What sits beside it differs:
-         your own has a share button, and somebody else's has "Save to my
-         foods", which is the second thing you might want and not the first.
-         Keeping a copy is for the food you mean to cook again, and that is a
-         decision about next week rather than about lunch. */
+      /* "Add to today" is the primary, because it is what somebody reading a
+         dish at a mealtime came to do. "Start cooking" is beside it for the
+         person at the stove, on every recipe that has a method to page
+         through. */
       footer={
-        recipe.isMine ? (
-          <View className="flex-row items-center gap-2.5">
-            <Button className="flex-1" loading={logFood.isPending} onPress={addToDay}>
-              {t('recipes:detail.addToDay')}
+        <View className="flex-row items-center gap-2.5">
+          {recipe.steps ? (
+            <Button className="flex-1" variant="secondary" onPress={startCooking}>
+              {t('recipes:detail.startCooking')}
             </Button>
-            <IconButton
-              variant="neutral"
-              accessibilityLabel={t('recipes:share.action')}
-              onPress={() => setSharing(true)}
-            >
-              <Icon set="ui" name="share" size={22} />
-            </IconButton>
-          </View>
-        ) : (
-          <View className="gap-2.5">
-            <Button fullWidth loading={logFood.isPending} onPress={addToDay}>
-              {t('recipes:detail.addToDay')}
-            </Button>
-            <Button fullWidth variant="secondary" loading={copying} onPress={copy}>
-              {t('recipes:detail.saveCopy')}
-            </Button>
-          </View>
-        )
+          ) : null}
+          <Button
+            className="flex-1"
+            loading={logFood.isPending}
+            onPress={() => {
+              setQuantity(1)
+              setLogging(true)
+            }}
+          >
+            {t('recipes:detail.addToDay')}
+          </Button>
+        </View>
       }
     >
-      {/* Tall enough for the whole dish when there is a photograph of it, the
-          same two heights the logged-entry screen uses. At a flat 130pt a
-          photo of a pot came through as a letterbox strip across the middle of
-          it — the cook's own picture of their own cooking, cropped to a band.
-          A drawing keeps the short box: a 96pt illustration centred in a 260pt
+      {/* Tall enough for the whole dish when there is a photograph of it. A
+          drawing keeps the short box: a 96pt illustration centred in a 260pt
           frame is a small picture in a large empty one.
 
-          `resolvingPhoto` counts as having one, because it means the recipe HAS a
-          photograph and we are waiting on a URL for it. Left out, the box
+          `resolvingPhoto` counts as having one, because it means the recipe HAS
+          a photograph and we are waiting on a URL for it. Left out, the box
           opens short and grows by 130pt under the reader a moment later. */}
       <View
         className={cn(
@@ -293,28 +345,184 @@ export default function RecipeDetailScreen() {
           <MealPhoto source={photo} />
         ) : resolvingPhoto ? (
           <Skeleton width="100%" height={260} rounded={false} className="bg-line" />
-        ) : recipe.icon ? (
-          <Icon {...recipe.icon} size={96} />
         ) : (
-          <Icon set="food" name="cooking-pot" size={96} />
+          <Icon {...(recipe.icon ?? { set: 'food', name: 'cooking-pot' })} size={96} />
         )}
       </View>
 
-      {/* Who cooked it, on somebody else's. Absent on your own, where the answer
-          is you. */}
-      {!recipe.isMine ? (
-        <Card tone="water">
-          <View className="flex-row items-center gap-3">
-            <Icon set="ui" name="profile" size={18} />
+      <View className="gap-2">
+        {/* A cook's own name for their own pot, so it is as long as they made it. */}
+        <Text variant="title" accessibilityRole="header">
+          {recipe.name}
+        </Text>
+
+        {/* Who cooked it, on somebody else's. Absent on your own, where the
+            answer is you. */}
+        {!recipe.isMine ? (
+          <View className="flex-row items-center gap-2">
+            <Icon set="ui" name="profile" size={16} />
             <Text variant="meta" className="flex-1">
               {t('recipes:fromAuthor', { name: recipe.authorName || t('recipes:someCook') })}
             </Text>
           </View>
-        </Card>
-      ) : null}
+        ) : null}
+
+        {recipe.tags.length > 0 ? (
+          <View className="flex-row flex-wrap gap-2">
+            {recipe.tags.map((tag) => (
+              <Chip key={tag} soft>
+                {t(`recipes:tag.${tag}`)}
+              </Chip>
+            ))}
+          </View>
+        ) : null}
+      </View>
+
+      <RecipeStats recipe={recipe} />
 
       <Card>
-        <View className="gap-3">
+        <View className="flex-row items-center gap-4">
+          <View className="items-start">
+            <View className="flex-row items-baseline gap-1">
+              <Text variant="numeric" className="text-[30px] leading-[36px] text-pandan-ink">
+                {perServing.kcal.toLocaleString()}
+              </Text>
+              <Text variant="caption">{t('common:unit.kcal')}</Text>
+            </View>
+            <Text variant="meta">{t('recipes:detail.perServing')}</Text>
+          </View>
+          <View className="min-w-0 flex-1 gap-1.5">
+            <MacroBar
+              inline
+              label={t('common:macro.carbs')}
+              amount={t('common:unit.grams', { value: perServing.carbs })}
+              value={share.carbs}
+              tone="kaya"
+            />
+            <MacroBar
+              inline
+              label={t('common:macro.protein')}
+              amount={t('common:unit.grams', { value: perServing.protein })}
+              value={share.protein}
+              tone="hibiscus"
+            />
+            <MacroBar
+              inline
+              label={t('common:macro.fat')}
+              amount={t('common:unit.grams', { value: perServing.fat })}
+              value={share.fat}
+              tone="teh"
+            />
+          </View>
+        </View>
+      </Card>
+
+      {/* With two panes, the picture and the overview stay on the left and the
+          cooking (ingredients and method) goes on the right. */}
+      <Aside>
+        <SegmentedControl
+          options={[
+            { value: 'ingredients', label: t('recipes:detail.tabIngredients') },
+            { value: 'method', label: t('recipes:detail.tabMethod') },
+          ]}
+          value={section}
+          onChange={setSection}
+        />
+
+        {section === 'ingredients' ? (
+          <Card>
+            {ingredients.length > 0 ? (
+              <View className="gap-1">
+                {/* Changes the amounts and nothing else. What a serving costs
+                    is the same however many are at the table. */}
+                <View className="flex-row items-center justify-between gap-3 pb-2">
+                  <Text variant="bodyStrong">{t('recipes:detail.cookingFor')}</Text>
+                  <Stepper
+                    value={cooking}
+                    onChange={(next) => setCookingFor(Math.round(next))}
+                    step={1}
+                    min={1}
+                    max={Math.max(100, recipe.servings)}
+                    format={(value) => String(Math.round(value))}
+                    decrementLabel={t('common:a11y.decrease')}
+                    incrementLabel={t('common:a11y.increase')}
+                    className="w-[150px]"
+                  />
+                </View>
+                <IngredientChecklist
+                  ingredients={ingredients}
+                  servings={recipe.servings}
+                  cooking={cooking}
+                  ticked={ticked}
+                  onToggle={toggleTick}
+                />
+              </View>
+            ) : (
+              <Text variant="body" className="text-muted">
+                {t('recipes:detail.noIngredients')}
+              </Text>
+            )}
+          </Card>
+        ) : (
+          <Card
+            title={
+              recipe.isMine
+                ? t('recipes:detail.steps')
+                : t('recipes:detail.stepsFrom', {
+                    name: recipe.authorName || t('recipes:someCook'),
+                  })
+            }
+          >
+            {recipe.steps ? (
+              <RecipeSteps steps={recipe.steps} />
+            ) : (
+              <Text variant="body" className="text-muted">
+                {t('recipes:detail.noSteps')}
+              </Text>
+            )}
+          </Card>
+        )}
+
+        {/* The owner's bookmark to where it came from. Nobody else is sent it;
+            see `recipes.source_url`. */}
+        {recipe.sourceUrl ? (
+          <Tappable
+            className="flex-row items-center gap-3 rounded-tile border-[3px] border-line bg-surface px-4 py-3"
+            accessibilityRole="link"
+            accessibilityLabel={`${t('recipes:detail.source')}, ${sourceHost(recipe.sourceUrl)}`}
+            onPress={() => {
+              if (recipe.sourceUrl) Linking.openURL(recipe.sourceUrl).catch(() => {})
+            }}
+          >
+            <Icon set="ui" name="link" size={22} />
+            <View className="min-w-0 flex-1">
+              <Text variant="caption">{t('recipes:detail.source')}</Text>
+              <Text variant="label" numberOfLines={1}>
+                {sourceHost(recipe.sourceUrl)}
+              </Text>
+            </View>
+            <Icon set="ui" name="chevron-right" size={18} />
+          </Tappable>
+        ) : null}
+      </Aside>
+
+      {/* How much of the pot was eaten. A sheet rather than a stepper on the
+          page, because the page's own number is now how many it is cooked for,
+          and two steppers about servings on one screen answer two questions
+          nobody can tell apart. */}
+      <Sheet
+        visible={logging}
+        onClose={() => setLogging(false)}
+        title={t('recipes:detail.logTitle')}
+        closeLabel={t('common:action.close')}
+        scrollable={false}
+        footer={
+          <Button fullWidth loading={logFood.isPending} onPress={addToDay}>
+            {t('recipes:detail.addToDay')}
+          </Button>
+        }
+      >
+        <View className="gap-4">
           <Stepper
             value={quantity}
             onChange={setQuantity}
@@ -336,85 +544,19 @@ export default function RecipeDetailScreen() {
               </Chip>
             ))}
           </View>
-        </View>
-      </Card>
-
-      <Card>
-        <View className="gap-3">
           <View className="flex-row items-baseline justify-between">
-            <View className="flex-row items-baseline gap-1">
-              <Text variant="numeric" className="text-[30px] leading-[36px] text-pandan-ink">
-                {kcal.toLocaleString()}
-              </Text>
-              <Text variant="caption">{t('common:unit.kcal')}</Text>
-            </View>
             <Text variant="overline">
               {t('recipes:detail.ofServings', { count: quantity, total: recipe.servings })}
             </Text>
+            <View className="flex-row items-baseline gap-1">
+              <Text variant="numeric" className="text-pandan-ink">
+                {logKcal.toLocaleString()}
+              </Text>
+              <Text variant="caption">{t('common:unit.kcal')}</Text>
+            </View>
           </View>
-
-          <MacroBar
-            label={t('common:macro.carbs')}
-            amount={t('common:unit.grams', { value: macros.carbs })}
-            value={share.carbs}
-            tone="kaya"
-          />
-          <MacroBar
-            label={t('common:macro.protein')}
-            amount={t('common:unit.grams', { value: macros.protein })}
-            value={share.protein}
-            tone="hibiscus"
-          />
-          <MacroBar
-            label={t('common:macro.fat')}
-            amount={t('common:unit.grams', { value: macros.fat })}
-            value={share.fat}
-            tone="teh"
-          />
         </View>
-      </Card>
-
-      {/* With two panes, the picture, the portion and what it adds up to stay
-          together on the left, and the cooking (ingredients and method) goes on
-          the right. */}
-      <Aside>
-        {ingredients.length > 0 ? (
-          <Card title={t('recipes:detail.ingredients')}>
-            {ingredients.map((item, index) => (
-              <View key={item.id}>
-                {index > 0 ? <Divider /> : null}
-                <View className="flex-row items-center gap-2.5 py-2.5">
-                  <Text variant="bodyStrong" className="min-w-0 flex-1" numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text variant="meta">{ingredientMeasure(item)}</Text>
-                  <View className="flex-row items-baseline gap-1">
-                    <Text variant="numeric" className="text-[15px] leading-[20px]">
-                      {item.macros.kcal.toLocaleString()}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            ))}
-          </Card>
-        ) : null}
-
-        <Card
-          title={
-            recipe.isMine
-              ? t('recipes:detail.steps')
-              : t('recipes:detail.stepsFrom', { name: recipe.authorName || t('recipes:someCook') })
-          }
-        >
-          {recipe.steps ? (
-            <RecipeSteps steps={recipe.steps} />
-          ) : (
-            <Text variant="body" className="text-muted">
-              {t('recipes:detail.noSteps')}
-            </Text>
-          )}
-        </Card>
-      </Aside>
+      </Sheet>
 
       <ShareSheet visible={sharing} onClose={() => setSharing(false)} recipe={recipe} />
 
@@ -512,20 +654,9 @@ export default function RecipeDetailScreen() {
           await remove.mutateAsync({ id: recipe.id, photoPath: recipe.photoPath })
           setDeleting(false)
           toast.show({ title: t('recipes:detail.deleted'), tone: 'neutral' })
-          router.replace('/settings/foods')
+          router.replace('/recipes')
         }}
       />
     </Screen>
   )
 }
-
-/**
- * The four reasons, in the order they are offered.
- *
- * A list rather than four buttons written out, so the copy keys and the enum
- * cannot drift: `report_reason` in `schemas/01_enums.sql` has these four and
- * `recipes:report.*` has a line for each. Adding a fifth is a change in three
- * files that the compiler notices in two of them.
- *
- * Ordered by how likely it is to be the true reason rather than by severity.
- */
