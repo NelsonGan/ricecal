@@ -70,6 +70,12 @@ const MAX_QUERY = 120
 const SNAP_METERS = 40
 /** How many listed places get a pin on the map. */
 const PINS = 12
+/**
+ * How far the sheet's rounded top reaches up over the map. Anything drawn at
+ * the map's bottom edge sits this much higher, or the sheet covers it: the
+ * locate button was half hidden behind it.
+ */
+const SHEET_OVERLAP = 20
 
 type Listing =
   | { kind: 'idle' }
@@ -324,6 +330,7 @@ export function PlacePickerSheet({
                   ref={mapRef}
                   initialRegion={regionAround(initial)}
                   showsUserLocation={locating && here.status === 'ready'}
+                  legalLabelInsets={{ top: 0, right: 0, left: 8, bottom: SHEET_OVERLAP + 6 }}
                   onRegionChangeComplete={(region, details) => {
                     centerRef.current = { latitude: region.latitude, longitude: region.longitude }
                     if (!moving.current) setCenter(centerRef.current)
@@ -396,7 +403,7 @@ export function PlacePickerSheet({
             </View>
 
             {locating && here.status !== 'unavailable' ? (
-              <View className="absolute bottom-3 right-gutter">
+              <View className="absolute right-gutter" style={{ bottom: SHEET_OVERLAP + 12 }}>
                 <IconButton
                   size="xs"
                   variant="neutral"
@@ -409,7 +416,7 @@ export function PlacePickerSheet({
             ) : null}
           </View>
 
-          <View className="-mt-5 flex-1 rounded-t-sheet bg-surface">
+          <View className="flex-1 rounded-t-sheet bg-surface" style={{ marginTop: -SHEET_OVERLAP }}>
             <View className="items-center pt-2">
               <View className="h-1.5 w-10 rounded-full bg-track" />
             </View>
@@ -462,7 +469,9 @@ export function PlacePickerSheet({
                       onPress={() => jumpTo(place, listSource)}
                       accessibilityRole="button"
                       accessibilityState={{ selected: on }}
-                      accessibilityLabel={[place.name, distance].filter(Boolean).join(', ')}
+                      accessibilityLabel={[place.name, place.address, distance]
+                        .filter(Boolean)
+                        .join(', ')}
                       className={
                         on
                           ? '-mx-2 flex-row items-center gap-3 rounded-sm bg-pandan-soft px-2 py-2'
@@ -470,9 +479,18 @@ export function PlacePickerSheet({
                       }
                     >
                       <Icon {...placeCategoryIcon(place.category)} size={26} />
-                      <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
-                        {place.name}
-                      </Text>
+                      {/* The address under the name: two branches of one chain
+                          read the same, and only the street tells them apart. */}
+                      <View className="min-w-0 flex-1">
+                        <Text variant="label" numberOfLines={1}>
+                          {place.name}
+                        </Text>
+                        {place.address ? (
+                          <Text variant="caption" numberOfLines={1}>
+                            {place.address}
+                          </Text>
+                        ) : null}
+                      </View>
                       {distance ? <Text variant="caption">{distance}</Text> : null}
                       {on ? (
                         <Icon set="ui" name="check" size={16} tintColor={colors.pandan} />

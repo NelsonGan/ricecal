@@ -54,6 +54,8 @@ const ANDROID_DARK: MapStyleElement[] = [
 type AppMapProps = {
   initialRegion?: Region
   mapPadding?: EdgePadding
+  /** Where Apple's legal label sits (iOS), when something covers the map's corner. */
+  legalLabelInsets?: EdgePadding
   onRegionChangeComplete?: (region: Region, details?: { isGesture?: boolean }) => void
   /** The blue dot where the phone is. Needs location permission; ignored without it. */
   showsUserLocation?: boolean
@@ -75,6 +77,7 @@ export const AppMap = forwardRef<MapViewType, AppMapProps>(function AppMapImpl(
   {
     initialRegion,
     mapPadding,
+    legalLabelInsets,
     onRegionChangeComplete,
     onPress,
     onMapReady,
@@ -95,6 +98,7 @@ export const AppMap = forwardRef<MapViewType, AppMapProps>(function AppMapImpl(
       provider={Platform.OS === 'android' ? maps.PROVIDER_GOOGLE : maps.PROVIDER_DEFAULT}
       initialRegion={initialRegion}
       mapPadding={mapPadding}
+      legalLabelInsets={legalLabelInsets}
       userInterfaceStyle={isDark ? 'dark' : 'light'}
       customMapStyle={
         Platform.OS === 'android' ? (isDark ? ANDROID_DARK : ANDROID_LIGHT) : undefined

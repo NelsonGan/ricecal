@@ -10554,6 +10554,19 @@ for every account anyone had actually used. The fix is `security definer` (with
 `tests/15_account_deletion.test.sql` asserts the property over every table the
 cascade can reach rather than over the one function that had the bug.
 
+**A migration that alters a table and then replaces a view over it can deadlock
+with live reads.** A read through `food_log_details` locks the view, then
+`food_logs`; the meal locations migration locked `food_logs` with its `ALTER`s,
+then waited for the view. Production died with `deadlock detected`, the
+integration skipped the migration and the functions, and the store builds from
+the same merge shipped reading columns that did not exist. Previews never see it,
+because nothing reads a preview. Start such a migration with
+`DO $$ BEGIN LOCK TABLE <the view> IN ACCESS EXCLUSIVE MODE; END $$;`, which
+takes the view and every table under it in the order a read does. The `DO` is
+needed: the CLI applies migrations outside a transaction, where a bare `LOCK` is
+an error. After a merge that touches the schema,
+check the **Supabase Preview** check on the `main` commit, not just the PR's.
+
 **`supabase db diff` misses function grants.** Against the full local stack it
 reports no changes for `revoke`/`grant` deltas; the CI `migrations` job catches
 them. Five functions shipped executable by `PUBLIC` this way. After touching
