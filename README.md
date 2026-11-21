@@ -5403,9 +5403,10 @@ uv run scripts/exercise-art/process.py --only <id>
 ```
 
 `generate.mjs` sends each pose brief in `poses.mjs` to Codex image generation
-(the `image-generation` skill's script, pinned to Codex because the set was
-drawn there and a second model drifts the style) with `style-reference.png` attached, because a set drawn without one shared
-reference drifts into five styles by the fortieth image. It writes 1254 px PNGs
+with `style-reference.png` attached, because a set drawn without one shared
+reference drifts into five styles by the fortieth image. It goes through the
+`image-generation` skill's script pinned to Codex (`-b codex`), since the whole
+set was drawn there and another model draws another figure. It writes 1254 px PNGs
 to `~/.cache/ricecal/exercise-art`, outside the app folder because Metro watches
 that folder and reloads on every file that lands in it. `process.py` trims each
 to its outline, re-centres it with the same margin, and writes the WebP and the
