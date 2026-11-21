@@ -2929,11 +2929,13 @@ the top of the tab busy for a shelf most people keep short, and it went. The
 meal tags and the star stay on the recipe itself.
 
 While your shelf holds fewer than four recipes it opens with three tiles, Write
-it, Photo and Describe, which go straight to
-`/recipe/edit?start=manual|photo|describe` and skip the chooser page. Past that
-the card was most of the first screen on every visit, and the plus in the bar
-opens the same chooser. On a free account Photo and Describe carry a Pro badge
-and the card says "1 of 3 free", so neither paywall arrives unannounced.
+it, Photo and Describe. Past that the card steps aside and the plus in the bar
+opens the same three tiles in a sheet on the tab. Write it pushes `/recipe/edit`
+directly; Photo and Describe open their sheets over the Recipes tab and hand the
+captured photo or typed description to `/recipe/edit` (through `pendingRead.ts`)
+only once submitted, so backing out returns straight to the tab instead of a
+separate chooser page. On a free account Photo and Describe carry a Pro badge
+and the card and sheet say "1 of 3 free", so neither paywall arrives unannounced.
 
 Cards are two to a row: the photo with the serving's calories, then the name
 with a small plus beside it that logs one serving, then "1 h 10 min · 4

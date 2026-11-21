@@ -1534,10 +1534,6 @@ export const ko = {
 
     new: {
       title: '새 레시피',
-      manualLabel: '직접 입력',
-      aiLabel: 'AI 사용',
-      scanLabel: '사진',
-      describeLabel: '설명',
       scanTitle: '사진으로 채우기',
       describeTitle: '말로 설명하기',
       describePlaceholder: '카리 아얌. 닭다리살 600g, 코코넛밀크 한 캔, 감자 3개. 4인분.',

@@ -1565,10 +1565,6 @@ export const ms = {
 
     new: {
       title: 'Resipi baharu',
-      manualLabel: 'Isi sendiri',
-      aiLabel: 'Guna AI',
-      scanLabel: 'Gambar',
-      describeLabel: 'Terangkan',
       scanTitle: 'Isi daripada gambar',
       describeTitle: 'Terangkan ia',
       describePlaceholder:

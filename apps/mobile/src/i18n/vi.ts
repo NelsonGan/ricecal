@@ -1543,10 +1543,6 @@ export const vi = {
 
     new: {
       title: 'Công thức mới',
-      manualLabel: 'Tự điền',
-      aiLabel: 'Dùng AI',
-      scanLabel: 'Ảnh',
-      describeLabel: 'Mô tả',
       scanTitle: 'Điền từ một tấm ảnh',
       describeTitle: 'Mô tả nó',
       describePlaceholder:

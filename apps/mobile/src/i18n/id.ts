@@ -1550,10 +1550,6 @@ export const id = {
 
     new: {
       title: 'Resep baru',
-      manualLabel: 'Isi sendiri',
-      aiLabel: 'Pakai AI',
-      scanLabel: 'Foto',
-      describeLabel: 'Ceritakan',
       scanTitle: 'Isi dari sebuah foto',
       describeTitle: 'Ceritakan',
       describePlaceholder:

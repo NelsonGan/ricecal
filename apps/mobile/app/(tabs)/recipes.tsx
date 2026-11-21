@@ -4,18 +4,32 @@ import { useTranslation } from 'react-i18next'
 import { Keyboard, type TextInputInstance, View } from 'react-native'
 
 import { type Recipe, type RecipeShelf, useRecipeQuota, useRecipes } from '@/data'
+import { InlineCamera } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import {
   AddRecipeCard,
+  AddRecipeTiles,
+  DescribeRecipePanel,
   RecipeCard,
   type RecipeStart,
+  stageRecipeRead,
   useLogRecipe,
   useRecipeLogDate,
 } from '@/features/recipes'
 import { ScreenTitle } from '@/features/shared'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
-import { EmptyState, Icon, IconButton, Screen, SearchField, SegmentedControl, Skeleton } from '@/ui'
+import {
+  EmptyState,
+  Icon,
+  IconButton,
+  Screen,
+  SearchField,
+  SegmentedControl,
+  Sheet,
+  Skeleton,
+  Text,
+} from '@/ui'
 
 const SHELVES: RecipeShelf[] = ['mine', 'community']
 
@@ -39,7 +53,7 @@ const ADD_CARD_UNTIL = 4
  * people keep short, and search already narrows it, so it went.
  */
 export default function RecipesTab() {
-  const { t } = useTranslation(['recipes', 'common'])
+  const { t } = useTranslation(['recipes', 'common', 'paywall'])
   const router = useRouter()
   const requirePro = useRequirePro()
   const quota = useRecipeQuota()
@@ -57,6 +71,23 @@ export default function RecipesTab() {
   // debounce to catch up with a field that is no longer on screen.
   const activeQuery = searchOpen && query.trim().length > 0 ? debounced : ''
 
+  const [addOpen, setAddOpen] = useState(false)
+  const [camera, setCamera] = useState(false)
+  const [describing, setDescribing] = useState(false)
+  // The describe sheet has actually been presented. `autoFocus` inside a
+  // `Modal` is applied while the field is still off screen and routinely
+  // dropped, so the field waits for `onShow` rather than for `visible`.
+  const [describeReady, setDescribeReady] = useState(false)
+  // Queued work to run once the closing sheet's native Modal is gone. On iOS,
+  // opening a second sheet or pushing a route while a modal is still dismissing
+  // can be silently dropped.
+  const afterSheet = useRef<(() => void) | null>(null)
+  const flushAfterSheet = () => {
+    const next = afterSheet.current
+    afterSheet.current = null
+    next?.()
+  }
+
   const { data: recipes = [], isPending } = useRecipes(shelf, activeQuery)
 
   // Only while this shelf has never answered. A background refetch
@@ -67,9 +98,13 @@ export default function RecipesTab() {
   /**
    * The three ways in, while your shelf is still short. Past a few recipes it
    * was most of the first screen on every visit, and the plus in the bar opens
-   * the same three choices.
+   * the same three choices in a sheet.
    */
   const showAdd = shelf === 'mine' && !searched && !loading && recipes.length < ADD_CARD_UNTIL
+  // Not while the entitlement is still loading: until it lands every account
+  // looks free, and a Pro user saw "0 of 3 free" flash past.
+  const freeQuota =
+    !quota.loading && quota.limit != null ? { used: quota.count, limit: quota.limit } : undefined
 
   const toggleSearch = () => {
     if (!searchOpen) {
@@ -87,11 +122,52 @@ export default function RecipesTab() {
    * ceiling too (`recipes_enforce_free_limit`); this is the half that opens the
    * paywall instead of a form that cannot be saved. Reading a pot is Pro, and
    * asking here keeps the paywall on this screen rather than over an empty form.
+   *
+   * Photo and Describe open their sheets over this tab so backing out lands
+   * right back on the index page rather than on a separate chooser screen.
    */
-  const startNew = (start?: RecipeStart) => {
+  const startNew = (start: RecipeStart) => {
     if (quota.atLimit && !requirePro('new_recipe')) return
-    if ((start === 'photo' || start === 'describe') && !requirePro('read_recipe')) return
-    router.push({ pathname: '/recipe/edit', params: start ? { start } : {} })
+    if (start === 'manual') {
+      router.push('/recipe/edit')
+      return
+    }
+    if (!requirePro('read_recipe')) return
+    Keyboard.dismiss()
+    if (start === 'photo') setCamera(true)
+    else setDescribing(true)
+  }
+
+  const openAddSheet = () => {
+    if (quota.atLimit && !requirePro('new_recipe')) return
+    Keyboard.dismiss()
+    setAddOpen(true)
+  }
+
+  const chooseFromSheet = (start: RecipeStart) => {
+    if (!addOpen) return
+    afterSheet.current = () => startNew(start)
+    setAddOpen(false)
+  }
+
+  const capturePhoto = (uri: string | undefined) => {
+    if (!camera) return
+    if (uri) {
+      afterSheet.current = () => {
+        stageRecipeRead({ kind: 'photo', uri })
+        router.push({ pathname: '/recipe/edit', params: { read: '1' } })
+      }
+    }
+    setCamera(false)
+  }
+
+  const submitDescription = (described: string) => {
+    if (!describing) return
+    afterSheet.current = () => {
+      stageRecipeRead({ kind: 'text', text: described })
+      router.push({ pathname: '/recipe/edit', params: { read: '1' } })
+    }
+    setDescribing(false)
   }
 
   /**
@@ -129,7 +205,7 @@ export default function RecipesTab() {
               variant="primary"
               size="sm"
               accessibilityLabel={t('recipes:new.title')}
-              onPress={() => startNew()}
+              onPress={openAddSheet}
             >
               <Icon set="ui" name="plus" size={20} tintColor={colors.onPandan} />
             </IconButton>
@@ -162,18 +238,7 @@ export default function RecipesTab() {
         />
       ) : null}
 
-      {showAdd ? (
-        <AddRecipeCard
-          onStart={startNew}
-          // Not while the entitlement is still loading: until it lands every
-          // account looks free, and a Pro user saw "0 of 3 free" flash past.
-          free={
-            !quota.loading && quota.limit != null
-              ? { used: quota.count, limit: quota.limit }
-              : undefined
-          }
-        />
-      ) : null}
+      {showAdd ? <AddRecipeCard onStart={startNew} free={freeQuota} /> : null}
 
       {/* The wait holds the grid's two-column shape, so the answer landing does
           not jump a stack of rows into wide cards. */}
@@ -221,6 +286,62 @@ export default function RecipesTab() {
           ))}
         </View>
       ) : null}
+
+      <Sheet
+        visible={addOpen}
+        onClose={() => setAddOpen(false)}
+        onDismiss={flushAfterSheet}
+        title={t('recipes:add.title')}
+        titleAction={
+          freeQuota ? (
+            <Text variant="caption">
+              {t('recipes:add.quota', {
+                used: Math.min(freeQuota.used, freeQuota.limit),
+                count: freeQuota.limit,
+              })}
+            </Text>
+          ) : undefined
+        }
+        closeLabel={t('common:action.close')}
+        scrollable={false}
+      >
+        <AddRecipeTiles
+          onStart={chooseFromSheet}
+          proBadge={freeQuota ? t('paywall:table.pro') : undefined}
+        />
+      </Sheet>
+
+      <Sheet
+        visible={camera}
+        onClose={() => setCamera(false)}
+        onDismiss={flushAfterSheet}
+        title={t('recipes:new.scanTitle')}
+        closeLabel={t('common:action.close')}
+        // Full height with the camera filling it, as every camera in the app
+        // does. A recipe card or a page of a cookbook is small print, and the
+        // 310pt box this used to be made it smaller still.
+        fullHeight
+        fillBody
+        scrollable={false}
+      >
+        <InlineCamera fill onCapture={capturePhoto} />
+      </Sheet>
+
+      <Sheet
+        visible={describing}
+        onClose={() => setDescribing(false)}
+        onDismiss={() => {
+          setDescribeReady(false)
+          flushAfterSheet()
+        }}
+        title={t('recipes:new.describeTitle')}
+        closeLabel={t('common:action.close')}
+        fullHeight
+        scrollable={false}
+        onShow={() => setDescribeReady(true)}
+      >
+        {describeReady ? <DescribeRecipePanel autoFocus onSubmit={submitDescription} /> : null}
+      </Sheet>
     </Screen>
   )
 }

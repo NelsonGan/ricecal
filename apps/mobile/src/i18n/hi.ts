@@ -1532,10 +1532,6 @@ export const hi = {
 
     new: {
       title: 'नई रेसिपी',
-      manualLabel: 'खुद भरें',
-      aiLabel: 'AI का इस्तेमाल करें',
-      scanLabel: 'फ़ोटो',
-      describeLabel: 'बताएं',
       scanTitle: 'फ़ोटो से भरें',
       describeTitle: 'लिखकर बताएं',
       describePlaceholder: 'करी अयम। 600g चिकन थाई, एक डिब्बा नारियल दूध, 3 आलू। 4 लोगों के लिए।',

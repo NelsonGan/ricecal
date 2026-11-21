@@ -1539,10 +1539,6 @@ export const ja = {
 
     new: {
       title: '新しいレシピ',
-      manualLabel: '自分で入力',
-      aiLabel: 'AIを使う',
-      scanLabel: '写真',
-      describeLabel: '書く',
       scanTitle: '写真から埋める',
       describeTitle: '言葉で書く',
       describePlaceholder:

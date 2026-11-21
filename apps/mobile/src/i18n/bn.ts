@@ -1528,10 +1528,6 @@ export const bn = {
 
     new: {
       title: 'নতুন রেসিপি',
-      manualLabel: 'নিজে পূরণ করুন',
-      aiLabel: 'AI ব্যবহার করুন',
-      scanLabel: 'ছবি',
-      describeLabel: 'বর্ণনা',
       scanTitle: 'ছবি থেকে ভরুন',
       describeTitle: 'বর্ণনা করুন',
       describePlaceholder: 'কারি আয়াম। ৬০০g মুরগির রান, এক কৌটা নারকেল দুধ, ৩টি আলু। ৪ জনের জন্য।',

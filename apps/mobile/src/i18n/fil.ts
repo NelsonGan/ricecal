@@ -1565,10 +1565,6 @@ export const fil = {
 
     new: {
       title: 'Bagong recipe',
-      manualLabel: 'Ako ang maglalagay',
-      aiLabel: 'Gumamit ng AI',
-      scanLabel: 'Litrato',
-      describeLabel: 'Ilarawan',
       scanTitle: 'Punan mula sa litrato',
       describeTitle: 'Ilarawan ito',
       describePlaceholder:

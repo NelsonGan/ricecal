@@ -3,7 +3,7 @@ import { View } from 'react-native'
 
 import { Badge, Card, Icon, type IconProps, Squish, Text } from '@/ui'
 
-/** Which door into a new recipe was taken. `/recipe/edit?start=` carries it. */
+/** Which door into a new recipe was taken on the Recipes tab. */
 export type RecipeStart = 'manual' | 'photo' | 'describe'
 
 export type AddRecipeCardProps = {
@@ -15,13 +15,18 @@ export type AddRecipeCardProps = {
   free?: { used: number; limit: number }
 }
 
+export type AddRecipeTilesProps = {
+  onStart: (start: RecipeStart) => void
+  /** Shows a Pro badge on Photo and Describe for free accounts. */
+  proBadge?: string
+}
+
 /**
  * The three ways in, at the top of your own shelf.
  *
  * On the shelf rather than behind the plus alone, because the choice between
- * them is the first thing a new recipe asks, and answering it here saves the
- * chooser page in between. The plus still opens that page, for whoever reached
- * for it first.
+ * them is the first thing a new recipe asks. Once the shelf grows, the card
+ * steps aside and the plus in the bar opens the same three tiles in a sheet.
  */
 export function AddRecipeCard({ onStart, free }: AddRecipeCardProps) {
   const { t } = useTranslation(['recipes', 'paywall'])
@@ -39,26 +44,35 @@ export function AddRecipeCard({ onStart, free }: AddRecipeCardProps) {
       }
       contentClassName="gap-3"
     >
-      <View className="flex-row gap-2.5">
-        <AddTile
-          icon={{ set: 'system', name: 'guide-book' }}
-          label={t('recipes:add.write')}
-          onPress={() => onStart('manual')}
-        />
-        <AddTile
-          icon={{ set: 'system', name: 'camera' }}
-          label={t('recipes:add.photo')}
-          badge={pro}
-          onPress={() => onStart('photo')}
-        />
-        <AddTile
-          icon={{ set: 'system', name: 'sparkle' }}
-          label={t('recipes:add.describe')}
-          badge={pro}
-          onPress={() => onStart('describe')}
-        />
-      </View>
+      <AddRecipeTiles onStart={onStart} proBadge={pro} />
     </Card>
+  )
+}
+
+/** The three add-recipe tiles, shared by the shelf card and the plus sheet. */
+export function AddRecipeTiles({ onStart, proBadge }: AddRecipeTilesProps) {
+  const { t } = useTranslation('recipes')
+
+  return (
+    <View className="flex-row gap-2.5">
+      <AddTile
+        icon={{ set: 'system', name: 'guide-book' }}
+        label={t('add.write')}
+        onPress={() => onStart('manual')}
+      />
+      <AddTile
+        icon={{ set: 'system', name: 'camera' }}
+        label={t('add.photo')}
+        badge={proBadge}
+        onPress={() => onStart('photo')}
+      />
+      <AddTile
+        icon={{ set: 'system', name: 'sparkle' }}
+        label={t('add.describe')}
+        badge={proBadge}
+        onPress={() => onStart('describe')}
+      />
+    </View>
   )
 }
 

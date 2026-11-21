@@ -3,10 +3,12 @@ import '@/i18n'
 import { fireEvent, render, screen, waitFor } from '@testing-library/react-native'
 
 import type { ScannedRecipe } from '@/data'
+import { clearRecipeRead, stageRecipeRead } from '@/features/recipes'
 import RecipeFormScreen from '../edit'
 
 const mockRead = jest.fn()
 const mockUpload = jest.fn()
+const mockRemovePhoto = jest.fn((_path: string) => Promise.resolve())
 const mockBack = jest.fn()
 const mockReplace = jest.fn()
 const mockSave = jest.fn()
@@ -21,7 +23,7 @@ jest.mock('expo-router', () => ({
 jest.mock('@/data', () => ({
   isRecipeLimit: () => false,
   RECIPE_TAGS: ['breakfast', 'lunch', 'dinner', 'snack', 'dessert', 'drink'],
-  removeMealPhoto: jest.fn(() => Promise.resolve()),
+  removeMealPhoto: (path: string) => mockRemovePhoto(path),
   storedImageSource: () => undefined,
   uploadMealPhoto: (uri: string) => mockUpload(uri),
   useFood: () => ({ data: undefined }),
@@ -39,80 +41,21 @@ jest.mock('@/data/refusals', () => ({
   openPaywall: jest.fn(),
 }))
 
-jest.mock('@/features/logging', () => {
-  const { Pressable, Text } = jest.requireActual('react-native') as typeof import('react-native')
-  return {
-    IconPicker: () => null,
-    InlineCamera: ({ onCapture }: { onCapture: (uri: string | undefined) => void }) => (
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Capture photo"
-        onPress={() => onCapture('file:///recipe.jpg')}
-      >
-        <Text>Capture photo</Text>
-      </Pressable>
-    ),
-  }
-})
-
-jest.mock('@/features/paywall', () => ({
-  useRequirePro: () => jest.fn(() => true),
+jest.mock('@/features/logging', () => ({
+  IconPicker: () => null,
 }))
 
 jest.mock('@/features/recipes', () => {
-  const React = jest.requireActual('react') as typeof import('react')
-  const { Pressable, Text, TextInput, View } = jest.requireActual(
-    'react-native',
-  ) as typeof import('react-native')
+  const { Text, View } = jest.requireActual('react-native') as typeof import('react-native')
+  const pendingRead = jest.requireActual(
+    '@/features/recipes/pendingRead',
+  ) as typeof import('@/features/recipes/pendingRead')
 
   return {
-    DescribeRecipePanel: ({ onSubmit }: { onSubmit: (text: string) => void }) => {
-      const [text, setText] = React.useState('')
-      return (
-        <View>
-          <TextInput
-            value={text}
-            onChangeText={setText}
-            placeholder="Kari ayam. 600g chicken thigh, feeds 4."
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Fill in the form"
-            onPress={() => onSubmit(text)}
-          >
-            <Text>Fill in the form</Text>
-          </Pressable>
-        </View>
-      )
-    },
+    ...pendingRead,
     IngredientSheet: () => null,
     normaliseSourceUrl: jest.requireActual('@/features/recipes/cooking').normaliseSourceUrl,
     parseMinutes: jest.requireActual('@/features/recipes/cooking').parseMinutes,
-    NewRecipeChooser: ({
-      onManual,
-      onPhoto,
-      onDescribe,
-    }: {
-      onManual: () => void
-      onPhoto: () => void
-      onDescribe: () => void
-    }) => (
-      <View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Fill it in myself"
-          onPress={onManual}
-        >
-          <Text>Fill it in myself</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Photo" onPress={onPhoto}>
-          <Text>Photo</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Describe" onPress={onDescribe}>
-          <Text>Describe</Text>
-        </Pressable>
-      </View>
-    ),
     potTotals: () => ({
       total: { kcal: 0, carbs: 0, protein: 0, fat: 0 },
       perServing: { kcal: 0, carbs: 0, protein: 0, fat: 0 },
@@ -146,7 +89,6 @@ jest.mock('@/lib/navigation', () => ({
 }))
 
 jest.mock('@/ui', () => {
-  const React = jest.requireActual('react') as typeof import('react')
   const { Pressable, Text, TextInput, View } = jest.requireActual(
     'react-native',
   ) as typeof import('react-native')
@@ -203,7 +145,29 @@ jest.mock('@/ui', () => {
       </View>
     ),
     cn: (...values: unknown[]) => values.filter(Boolean).join(' '),
-    ConfirmSheet: () => null,
+    ConfirmSheet: ({
+      visible,
+      title,
+      onConfirm,
+      confirmLabel,
+    }: {
+      visible: boolean
+      title: string
+      onConfirm: () => void
+      confirmLabel: string
+    }) =>
+      visible ? (
+        <View>
+          <Text>{title}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={confirmLabel}
+            onPress={onConfirm}
+          >
+            <Text>{confirmLabel}</Text>
+          </Pressable>
+        </View>
+      ) : null,
     Icon: () => null,
     Screen: ({
       header,
@@ -220,22 +184,6 @@ jest.mock('@/ui', () => {
         {footer}
       </View>
     ),
-    Sheet: ({
-      visible,
-      onShow,
-      children,
-    }: {
-      visible: boolean
-      onShow?: () => void
-      children?: import('react').ReactNode
-    }) => {
-      const onShowRef = React.useRef(onShow)
-      onShowRef.current = onShow
-      React.useLayoutEffect(() => {
-        if (visible) onShowRef.current?.()
-      }, [visible])
-      return visible ? <View>{children}</View> : null
-    },
     Skeleton: () => null,
     Stepper: ({ value }: { value: number }) => <Text>{value}</Text>,
     Tappable: ({
@@ -301,36 +249,42 @@ const DRAFT: ScannedRecipe = {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  clearRecipeRead()
   mockParams.current = {}
   mockSave.mockResolvedValue({ id: 'new-recipe' })
   mockRead.mockResolvedValue(DRAFT)
   mockUpload.mockResolvedValue('meals/user-1/recipe.jpg')
 })
 
-async function describe(text: string) {
-  await fireEvent.press(screen.getByRole('button', { name: 'Describe' }))
-  const field = await screen.findByPlaceholderText(/Kari ayam/)
-  await fireEvent.changeText(field, text)
-  await fireEvent.press(screen.getByRole('button', { name: 'Fill in the form' }))
-}
-
-it('fills the new-recipe form from an AI description', async () => {
+it('opens straight onto the recipe form with no chooser page and closes back', async () => {
   await render(<RecipeFormScreen />)
 
-  await describe('Chicken curry, feeds four')
+  expect(screen.getByPlaceholderText('What do you call it?')).toBeOnTheScreen()
+  await fireEvent.press(screen.getByRole('button', { name: 'Close' }))
+  expect(mockBack).toHaveBeenCalledTimes(1)
+})
 
-  expect(mockRead).toHaveBeenCalledWith({ text: 'Chicken curry, feeds four' })
+it('fills the new-recipe form from a staged AI description and discards straight back', async () => {
+  stageRecipeRead({ kind: 'text', text: 'Chicken curry, feeds four' })
+  mockParams.current = { read: '1' }
+  await render(<RecipeFormScreen />)
+
+  await waitFor(() => expect(mockRead).toHaveBeenCalledWith({ text: 'Chicken curry, feeds four' }))
   expect(await screen.findByDisplayValue('Chicken curry')).toBeOnTheScreen()
   expect(screen.getByText('Chicken thigh')).toBeOnTheScreen()
   expect(screen.getByText('Fry the paste.')).toBeOnTheScreen()
   expect(screen.getByText('Simmer until the chicken is tender.')).toBeOnTheScreen()
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Close' }))
+  expect(await screen.findByText('Leave without saving?')).toBeOnTheScreen()
+  await fireEvent.press(screen.getByRole('button', { name: 'Discard' }))
+  expect(mockBack).toHaveBeenCalledTimes(1)
 })
 
-it('uploads and fills the new-recipe form from an AI photo read', async () => {
+it('uploads and fills the new-recipe form from a staged AI photo read', async () => {
+  stageRecipeRead({ kind: 'photo', uri: 'file:///recipe.jpg' })
+  mockParams.current = { read: '1' }
   await render(<RecipeFormScreen />)
-
-  await fireEvent.press(screen.getByRole('button', { name: 'Photo' }))
-  await fireEvent.press(screen.getByRole('button', { name: 'Capture photo' }))
 
   await waitFor(() => {
     expect(mockUpload).toHaveBeenCalledWith('file:///recipe.jpg')
@@ -340,21 +294,7 @@ it('uploads and fills the new-recipe form from an AI photo read', async () => {
   expect(screen.getByText('Chicken thigh')).toBeOnTheScreen()
 })
 
-it('keeps manual answers when AI is used after returning to the chooser', async () => {
-  await render(<RecipeFormScreen />)
-
-  await fireEvent.press(screen.getByRole('button', { name: 'Fill it in myself' }))
-  await fireEvent.changeText(screen.getByPlaceholderText('What do you call it?'), 'My curry')
-  await fireEvent.press(screen.getByRole('button', { name: 'Back' }))
-
-  await describe('Chicken curry, feeds four')
-
-  await waitFor(() => expect(screen.getByDisplayValue('My curry')).toBeOnTheScreen())
-  expect(screen.getByText('Chicken thigh')).toBeOnTheScreen()
-})
-
-it('opens straight onto the form from the tab, and saves times, meals and source', async () => {
-  mockParams.current = { start: 'manual' }
+it('saves times, meals and source from the form', async () => {
   await render(<RecipeFormScreen />)
 
   await fireEvent.changeText(screen.getByPlaceholderText('What do you call it?'), 'Kari ayam')
@@ -381,8 +321,27 @@ it('opens straight onto the form from the tab, and saves times, meals and source
   )
 })
 
+it('sweeps the uploaded photo if the screen unmounts before the upload resolves', async () => {
+  let resolveUpload: ((key: string) => void) | undefined
+  mockUpload.mockReturnValue(
+    new Promise<string>((resolve) => {
+      resolveUpload = resolve
+    }),
+  )
+  stageRecipeRead({ kind: 'photo', uri: 'file:///recipe.jpg' })
+  mockParams.current = { read: '1' }
+
+  const view = await render(<RecipeFormScreen />)
+  expect(screen.getByText('Reading photo')).toBeOnTheScreen()
+
+  await view.unmount()
+  resolveUpload?.('meals/user-1/orphaned.jpg')
+
+  await waitFor(() => expect(mockRemovePhoto).toHaveBeenCalledWith('meals/user-1/orphaned.jpg'))
+  expect(mockRead).not.toHaveBeenCalled()
+})
+
 it('refuses a source that is not a link, and says so', async () => {
-  mockParams.current = { start: 'manual' }
   await render(<RecipeFormScreen />)
 
   await fireEvent.changeText(screen.getByPlaceholderText('What do you call it?'), 'Kari ayam')
@@ -391,11 +350,4 @@ it('refuses a source that is not a link, and says so', async () => {
 
   expect(await screen.findByText('That link does not look right')).toBeOnTheScreen()
   expect(mockSave).not.toHaveBeenCalled()
-})
-
-it('opens the describe sheet when the tab sent us to describe', async () => {
-  mockParams.current = { start: 'describe' }
-  await render(<RecipeFormScreen />)
-
-  expect(await screen.findByPlaceholderText(/Kari ayam/)).toBeOnTheScreen()
 })

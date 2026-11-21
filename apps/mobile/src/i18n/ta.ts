@@ -1539,10 +1539,6 @@ export const ta = {
 
     new: {
       title: 'புதிய செய்முறை',
-      manualLabel: 'நானே நிரப்புகிறேன்',
-      aiLabel: 'AI-ஐ பயன்படுத்துங்கள்',
-      scanLabel: 'படம்',
-      describeLabel: 'விவரி',
       scanTitle: 'படத்திலிருந்து நிரப்பு',
       describeTitle: 'விவரித்துச் சொல்லுங்கள்',
       describePlaceholder:
