@@ -24,6 +24,7 @@ import { placeCategoryIcon } from '../lib/placeIcons'
 import {
   distanceMeters,
   formatDistance,
+  locationKey,
   placeKey,
   placeOfLocation,
   recentPlaces,
@@ -270,6 +271,8 @@ export function PlacePickerSheet({
   const save = () => {
     if (!pinned) return
     onClose()
+    // The place the entry already has: nothing to write and nothing picked.
+    if (current && placeKey(pinned.place) === locationKey(current)) return
     onSelect(toEntryLocation(pinned.place), pinned.source)
   }
 

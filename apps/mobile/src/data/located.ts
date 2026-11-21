@@ -59,7 +59,7 @@ export function useLocatedEntries({ enabled = true }: { enabled?: boolean } = {}
 export function useHasLocatedEntries({ enabled = true }: { enabled?: boolean } = {}) {
   const userId = useUserId()
   return useQuery({
-    queryKey: [...keys.located(userId), 'any'] as const,
+    queryKey: keys.locatedAny(userId),
     queryFn: async () => {
       const rows = unwrap(
         await supabase

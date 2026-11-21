@@ -393,12 +393,15 @@ export function toLocation(
  */
 export function locationColumns(location: EntryLocation | null) {
   // Cut to the columns' checks: a geocoder's long name would otherwise fail
-  // the whole insert, and the meal with it.
-  const cut = (value: string | undefined, max: number) => (value ? value.slice(0, max) : null)
+  // the whole insert, and the meal with it. By code point, so an emoji at the
+  // cut is dropped whole rather than leaving half a surrogate pair that
+  // Postgres refuses just the same. (`char_length` counts code points too.)
+  const cut = (value: string | undefined, max: number) =>
+    value ? Array.from(value).slice(0, max).join('') : null
   return {
     latitude: location?.latitude ?? null,
     longitude: location?.longitude ?? null,
-    location_name: location ? location.name.slice(0, 200) : null,
+    location_name: location ? cut(location.name, 200) : null,
     location_address: cut(location?.address, 300),
     location_id: cut(location?.placeId, 200),
     location_category: cut(location?.category, 64),

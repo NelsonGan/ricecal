@@ -196,10 +196,10 @@ async function describeOnDevice(coordinate: Coordinate): Promise<PlaceResult | n
  */
 export async function describeCoordinate(
   coordinate: Coordinate,
-  { language }: { language?: string | null } = {},
+  { language, remote = true }: { language?: string | null; remote?: boolean } = {},
 ): Promise<PlaceResult | null> {
   const onDevice = await describeOnDevice(coordinate)
-  if (onDevice) return onDevice
+  if (onDevice || !remote) return onDevice
   try {
     const remote = await reverseGeocodePlace({ ...coordinate, language })
     return remote

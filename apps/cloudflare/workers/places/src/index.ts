@@ -14,8 +14,8 @@
  * own `auth.ts`, imported rather than copied: two verifiers would drift).
  *
  * An edge-cache hit answers without touching anybody's daily allowance or
- * Apple; a miss checks the allowance, asks Apple, then counts one use and
- * caches the answer. Neither the query nor a coordinate is ever logged:
+ * Apple; a miss takes one use from the allowance, asks Apple (giving the use
+ * back if Apple fails), then caches the answer. Neither the query nor a coordinate is ever logged:
  * together they say where somebody eats.
  */
 
@@ -36,11 +36,11 @@ import {
 } from './places.ts'
 import {
   addressSubject,
-  checkQuota,
-  consumeQuota,
   pruneExpired,
   type QuotaEnv,
   type QuotaSubjects,
+  releaseQuota,
+  reserveQuota,
 } from './quota.ts'
 
 export interface Env extends PlacesEnv, QuotaEnv {
@@ -107,10 +107,10 @@ async function handlePlaces(
   if (Number(request.headers.get('content-length') ?? 0) > MAX_BODY_BYTES) {
     return json({ error: 'too_large' }, 413)
   }
+  const text = await readCapped(request, MAX_BODY_BYTES)
+  if (text === null) return json({ error: 'too_large' }, 413)
   let raw: unknown
   try {
-    const text = await request.text()
-    if (text.length > MAX_BODY_BYTES) return json({ error: 'too_large' }, 413)
     raw = JSON.parse(text)
   } catch {
     return json({ error: 'invalid_json' }, 400)
@@ -135,9 +135,9 @@ async function handlePlaces(
     user: userId,
     address: await addressSubject(request.headers.get('cf-connecting-ip') ?? 'unknown', now),
   }
-  let quota: Awaited<ReturnType<typeof checkQuota>>
+  let quota: Awaited<ReturnType<typeof reserveQuota>>
   try {
-    quota = await checkQuota(subjects, env, now)
+    quota = await reserveQuota(subjects, env, now)
   } catch (err) {
     // The database is down: answer an error rather than throw, and never ask
     // Apple without the allowance checked.
@@ -155,16 +155,42 @@ async function handlePlaces(
   } catch (err) {
     const error = err instanceof PlacesError ? err : new PlacesError('upstream', 502)
     logError('apple_failed', { reqId, kind, error: error.code })
+    // Apple answered nothing, so nothing is spent.
+    ctx.waitUntil(releaseQuota(subjects, env, now).catch(() => undefined))
     return json({ error: error.code }, error.status)
   }
-  ctx.waitUntil(
-    Promise.all([
-      consumeQuota(subjects, env, now).catch(() => undefined),
-      writeCachedPlaces(path, places),
-    ]),
-  )
+  ctx.waitUntil(writeCachedPlaces(path, places))
   log('places_ok', { reqId, kind, results: places.length })
   return json({ places }, 200)
+}
+
+/**
+ * The body as text, or null past `max` bytes. Read as a stream and stopped at
+ * the cap, so a body sent without a Content-Length (chunked) is never held in
+ * memory whole just to be refused.
+ */
+async function readCapped(request: Request, max: number): Promise<string | null> {
+  if (!request.body) return ''
+  const reader = request.body.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  for (;;) {
+    const { done, value } = await reader.read()
+    if (done) break
+    size += value.byteLength
+    if (size > max) {
+      await reader.cancel()
+      return null
+    }
+    chunks.push(value)
+  }
+  const bytes = new Uint8Array(size)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return new TextDecoder().decode(bytes)
 }
 
 function badRequest(reqId: string, kind: Kind, error: string): Response {

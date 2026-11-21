@@ -42,6 +42,12 @@ export type SnapInput = {
    * is also what Skip sends.
    */
   note?: string
+  /**
+   * Picked from the photo library rather than taken now, so where the phone is
+   * says nothing about where it was eaten: no automatic tag (README: Meal
+   * locations).
+   */
+  picked?: boolean
 }
 
 export type DescribeInput = {
@@ -176,15 +182,18 @@ function useRecogniseMeal() {
       text,
       barcode,
       note,
+      picked = false,
     }: {
       logDate: string
       photoUri?: string
       text?: string
       barcode?: string
       note?: string
+      picked?: boolean
     }): string => {
       // Started now, at the shutter, so the upload covers the GPS's wait.
-      const location = autoTagWanted(userId, logDate) ? autoTagLocation(userId, logDate) : undefined
+      const location =
+        !picked && autoTagWanted(userId, logDate) ? autoTagLocation(userId, logDate) : undefined
       // Not a database id: this row does not exist yet. Prefixed so nothing
       // mistakes it for one and tries to update it.
       const id = `snap-${Date.now()}-${Math.round(Math.random() * 1e6)}`

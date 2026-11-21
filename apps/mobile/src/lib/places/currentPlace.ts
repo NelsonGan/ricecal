@@ -22,7 +22,12 @@ import { type Coordinate, type PlaceResult, toEntryLocation } from './types'
 
 export type CurrentPlaceFailure = 'ask' | 'blocked' | 'services_off' | 'unavailable' | 'error'
 
-export type ResolvedPlace = { coordinate: Coordinate; place: PlaceResult }
+export type ResolvedPlace = {
+  coordinate: Coordinate
+  place: PlaceResult
+  /** False when neither geocoder named the spot and `place` is "Pinned location". */
+  named?: boolean
+}
 
 type Cached = ResolvedPlace & { at: number; language: string }
 
@@ -46,12 +51,18 @@ function pinnedPlace(coordinate: Coordinate): PlaceResult {
   }
 }
 
-async function locate(language: string): Promise<ResolvedPlace | CurrentPlaceFailure> {
+async function locate(
+  language: string,
+  remote: boolean,
+): Promise<ResolvedPlace | CurrentPlaceFailure> {
   try {
     const coordinate = await getCurrentCoordinate()
-    const place = (await describeCoordinate(coordinate, { language })) ?? pinnedPlace(coordinate)
-    cached = { coordinate, place, at: Date.now(), language }
-    return { coordinate, place }
+    const named = await describeCoordinate(coordinate, { language, remote })
+    // A spot left unnamed only because the Worker was not asked is not kept:
+    // the next caller who may ask it should.
+    const resolved = { coordinate, place: named ?? pinnedPlace(coordinate), named: Boolean(named) }
+    if (named || remote) cached = { ...resolved, at: Date.now(), language }
+    return resolved
   } catch (error) {
     const code = error instanceof CurrentLocationError ? error.code : 'no_fix'
     if (code === 'permission') return 'ask'
@@ -67,8 +78,11 @@ async function locate(language: string): Promise<ResolvedPlace | CurrentPlaceFai
  */
 export async function resolveCurrentPlace({
   fresh = false,
+  remote = true,
 }: {
   fresh?: boolean
+  /** Whether the Worker's Apple lookup may name a spot the phone cannot. */
+  remote?: boolean
 } = {}): Promise<ResolvedPlace | CurrentPlaceFailure> {
   const permission = await getLocationPermission()
   if (permission.status === 'unavailable') return 'unavailable'
@@ -76,10 +90,10 @@ export async function resolveCurrentPlace({
   const language = currentLanguage()
   const reusable = cached
   if (!fresh && reusable && reusable.language === language && Date.now() - reusable.at < REUSE_MS) {
-    return { coordinate: reusable.coordinate, place: reusable.place }
+    return { coordinate: reusable.coordinate, place: reusable.place, named: reusable.named }
   }
   // Two callers at once (the picker opening as a meal is tagged) share a fix.
-  inFlight ??= locate(language).finally(() => {
+  inFlight ??= locate(language, remote).finally(() => {
     inFlight = null
   })
   return inFlight
@@ -107,11 +121,23 @@ export function autoTagWanted(userId: string, logDate: string): boolean {
 export async function autoTagLocation(
   userId: string,
   logDate: string,
+  {
+    preview = false,
+  }: {
+    /**
+     * For a screen showing the tag before anything is saved: the phone's own
+     * geocoder only, so browsing dishes never spends Apple calls, and nothing
+     * when it cannot name the spot (the save then tags the row itself).
+     */
+    preview?: boolean
+  } = {},
 ): Promise<EntryLocation | null> {
   if (!autoTagWanted(userId, logDate)) return null
   try {
-    const resolved = await resolveCurrentPlace()
-    return typeof resolved === 'string' ? null : toEntryLocation(resolved.place)
+    const resolved = await resolveCurrentPlace({ remote: !preview })
+    if (typeof resolved === 'string') return null
+    if (preview && resolved.named === false) return null
+    return toEntryLocation(resolved.place)
   } catch {
     return null
   }

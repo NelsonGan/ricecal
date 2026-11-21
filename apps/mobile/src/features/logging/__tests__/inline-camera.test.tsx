@@ -216,6 +216,6 @@ describe('choosing from photos', () => {
     const onCapture = jest.fn()
     await render(<InlineCamera fill mode="meal" onCapture={onCapture} onScanned={jest.fn()} />)
     await fireEvent.press(screen.getByRole('button', { name: 'Choose from photos' }))
-    expect(onCapture).toHaveBeenCalledWith('file:///plate.jpg')
+    expect(onCapture).toHaveBeenCalledWith('file:///plate.jpg', 'library')
   })
 })

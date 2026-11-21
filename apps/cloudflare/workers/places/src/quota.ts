@@ -59,41 +59,52 @@ export async function addressSubject(ip: string, now: Date): Promise<string> {
   return `ip:${hex.slice(0, 32)}`
 }
 
-/** Whether both the user and the address may search again today (one read). */
-export async function checkQuota(
+/**
+ * Takes one use today for both the user and the address, and says whether
+ * either has now gone past its cap. Counted before Apple is asked, in one
+ * atomic upsert each, so searches arriving together cannot all read the same
+ * count and all get through. A refused search gives its uses back, or a user
+ * past their own cap would go on using up the address's allowance for
+ * everybody else on that network; so does a search Apple then fails
+ * (`releaseQuota`).
+ */
+export async function reserveQuota(
   subjects: QuotaSubjects,
   env: QuotaEnv,
   now: Date,
 ): Promise<QuotaDecision> {
   const limits = dailyLimits(env)
-  const { results } = await env.DB.prepare(
-    'SELECT subject, count FROM search_usage WHERE day_start = ?1 AND subject IN (?2, ?3)',
-  )
-    .bind(dayStart(now), subjects.user, subjects.address)
-    .all<{ subject: string; count: number }>()
-  const used = (subject: string) => results.find((row) => row.subject === subject)?.count ?? 0
-  if (used(subjects.user) >= limits.user) return { allowed: false, reachedBy: 'user' }
-  if (used(subjects.address) >= limits.address) return { allowed: false, reachedBy: 'address' }
-  return { allowed: true, reachedBy: null }
+  const start = dayStart(now)
+  const upsert = (subject: string) =>
+    env.DB.prepare(
+      `INSERT INTO search_usage (subject, day_start, count, expires_at)
+       VALUES (?1, ?2, 1, ?3)
+       ON CONFLICT(subject, day_start) DO UPDATE SET count = count + 1
+       RETURNING count`,
+    ).bind(subject, start, start + DAY_MS)
+  const [user, address] = await env.DB.batch<{ count: number }>([
+    upsert(subjects.user),
+    upsert(subjects.address),
+  ])
+  const count = (result: D1Result<{ count: number }> | undefined) =>
+    result?.results?.[0]?.count ?? Number.POSITIVE_INFINITY
+  const reachedBy =
+    count(user) > limits.user ? 'user' : count(address) > limits.address ? 'address' : null
+  if (reachedBy) await releaseQuota(subjects, env, now)
+  return { allowed: reachedBy === null, reachedBy }
 }
 
-/** Counts one use today for both (only after Apple answered). */
-export async function consumeQuota(
+/** Gives back a use `reserveQuota` took, for a search Apple did not answer. */
+export async function releaseQuota(
   subjects: QuotaSubjects,
   env: QuotaEnv,
   now: Date,
 ): Promise<void> {
-  const start = dayStart(now)
-  const db = env.DB
-  const upsert = (subject: string) =>
-    db
-      .prepare(
-        `INSERT INTO search_usage (subject, day_start, count, expires_at)
-         VALUES (?1, ?2, 1, ?3)
-         ON CONFLICT(subject, day_start) DO UPDATE SET count = count + 1`,
-      )
-      .bind(subject, start, start + DAY_MS)
-  await db.batch([upsert(subjects.user), upsert(subjects.address)])
+  const down = (subject: string) =>
+    env.DB.prepare(
+      'UPDATE search_usage SET count = MAX(count - 1, 0) WHERE subject = ?1 AND day_start = ?2',
+    ).bind(subject, dayStart(now))
+  await env.DB.batch([down(subjects.user), down(subjects.address)])
 }
 
 /** Drops the counters of days that are over (the daily cron). */

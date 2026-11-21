@@ -660,7 +660,7 @@ function FoodDetail() {
   useEffect(() => {
     if (!composeTagged) return
     let live = true
-    void autoTagLocation(userId, selectedDate).then((place) => {
+    void autoTagLocation(userId, selectedDate, { preview: true }).then((place) => {
       if (live) setAutoLocation(place)
     })
     return () => {

@@ -63,6 +63,8 @@ export const keys = {
    * map and the place picker's recent places (README: Meal locations).
    */
   located: (userId: string) => ['located', userId] as const,
+  /** Whether any meal is tagged, for Today's map button. Inside `located`, so it is invalidated with it. */
+  locatedAny: (userId: string) => ['located', userId, 'any'] as const,
   /**
    * One week of dots under the strip on Today: eaten, goal and movement per day.
    */

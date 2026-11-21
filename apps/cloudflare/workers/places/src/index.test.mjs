@@ -50,33 +50,27 @@ function fakeD1() {
   const rows = new Map()
   const statement = (sql, args = []) => ({
     bind: (...values) => statement(sql, values),
-    async all() {
-      const [day, ...subjects] = args
-      return {
-        results: subjects
-          .map((subject) => rows.get(`${subject}|${day}`))
-          .filter(Boolean)
-          .map(({ subject, count }) => ({ subject, count })),
-      }
-    },
     async run() {
       if (sql.startsWith('INSERT')) {
         const [subject, day, expires] = args
         const row = rows.get(`${subject}|${day}`) ?? { subject, count: 0, expires }
         row.count += 1
         rows.set(`${subject}|${day}`, row)
+        return { results: [{ count: row.count }] }
+      }
+      if (sql.startsWith('UPDATE')) {
+        const row = rows.get(`${args[0]}|${args[1]}`)
+        if (row) row.count = Math.max(row.count - 1, 0)
       } else if (sql.startsWith('DELETE')) {
         for (const [key, row] of rows) if (row.expires <= args[0]) rows.delete(key)
       }
-      return {}
+      return { results: [] }
     },
   })
   return {
     rows,
     prepare: (sql) => statement(sql.trim()),
-    async batch(statements) {
-      for (const s of statements) await s.run()
-    },
+    batch: (statements) => Promise.all(statements.map((s) => s.run())),
   }
 }
 
@@ -256,19 +250,19 @@ test('says not_configured without the key, and capacity when Apple is out of quo
     status: 503,
     body: { error: 'capacity' },
   })
-  // Nothing Apple refused is counted against anybody.
-  assert.equal(env.DB.rows.size, 0)
+  // Nothing Apple refused is counted against anybody: the uses are given back.
+  assert.deepEqual(
+    [...env.DB.rows.values()].map((row) => row.count),
+    [0, 0],
+  )
 })
 
 test('answers a JSON 503 and never asks Apple when the allowance cannot be read', async () => {
   env.DB = {
-    prepare: () => ({
-      bind: () => ({
-        all: async () => {
-          throw new Error('D1 down')
-        },
-      }),
-    }),
+    prepare: () => ({ bind: () => ({}) }),
+    batch: async () => {
+      throw new Error('D1 down')
+    },
   }
   assert.deepEqual(await call('/search', { query: 'kopi' }), {
     status: 503,
@@ -292,7 +286,33 @@ test('the per-minute limiter is keyed by the verified user', async () => {
   assert.deepEqual(keys, ['u9'])
 })
 
-test('refuses an oversized body before reading it', async () => {
+test('refuses an oversized body, with or without a Content-Length', async () => {
   const { status } = await call('/search', { query: 'kopi', pad: 'x'.repeat(5000) })
   assert.equal(status, 413)
+  const chunked = new ReadableStream({
+    start(controller) {
+      for (let i = 0; i < 10; i += 1) controller.enqueue(new TextEncoder().encode('x'.repeat(1000)))
+      controller.close()
+    },
+  })
+  const response = await worker.fetch(
+    new Request('https://places.ricecal.app/search', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${await userToken()}` },
+      body: chunked,
+      duplex: 'half',
+    }),
+    env,
+    ctx(),
+  )
+  assert.equal(response.status, 413)
+})
+
+test('searches sent together cannot all slip past the daily cap', async () => {
+  env.PLACES_DAILY_LIMIT = '2'
+  const results = await Promise.all(
+    ['a1', 'a2', 'a3', 'a4'].map((query) => call('/search', { query: `kopi ${query}` })),
+  )
+  assert.equal(results.filter((result) => result.status === 200).length, 2)
+  assert.equal(results.filter((result) => result.status === 429).length, 2)
 })

@@ -23,7 +23,9 @@ export type LocationColumns = {
 function text(value: unknown, max: number): string | null {
   if (typeof value !== 'string') return null
   const trimmed = value.replace(/\s+/g, ' ').trim()
-  return trimmed ? trimmed.slice(0, max) : null
+  // By code point, as the columns' `char_length` checks count, so an emoji at
+  // the cut goes whole rather than as half a surrogate pair.
+  return trimmed ? Array.from(trimmed).slice(0, max).join('') : null
 }
 
 export function readLocation(raw: unknown): LocationColumns | null {

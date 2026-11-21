@@ -138,6 +138,10 @@ export function shouldPersistQuery(query: Query): boolean {
   // A recipe shelf with something in its search field. The shelves themselves
   // have an empty one, and the count has none.
   if (area === 'recipes' && typeof fourth === 'string' && fourth !== '') return false
+  // The food map's tagged meals: up to 2,000 rows that would be re-serialised
+  // with every save and parsed at every launch for a screen opened rarely.
+  // The one-row "any tagged meal" flag behind Today's map button is kept.
+  if (area === 'located' && third !== 'any') return false
   // Never later than now: an answer stamped while the phone's clock was set
   // ahead would otherwise age out everything fetched since it was put back.
   const newest = Math.min(newestAnswer, Date.now())

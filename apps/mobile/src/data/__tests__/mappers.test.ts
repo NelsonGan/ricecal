@@ -214,3 +214,12 @@ describe('where an entry was eaten', () => {
     expect(Object.values(locationColumns(null)).every((value) => value === null)).toBe(true)
   })
 })
+
+describe('a long place name', () => {
+  it('is cut to the column, never through the middle of an emoji', () => {
+    const name = `${'a'.repeat(199)}🍜🍜`
+    const { location_name } = locationColumns({ latitude: 1, longitude: 2, name })
+    expect(Array.from(location_name ?? '')).toHaveLength(200)
+    expect(location_name?.endsWith('a🍜')).toBe(true)
+  })
+})

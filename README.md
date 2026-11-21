@@ -488,6 +488,7 @@ only emits structure:
 | `cron.schedule(…)` calls | a schedule is a row in `cron.job`, so it is data too |
 | a policy on `realtime.messages` | the table belongs to the Realtime service's schema, which the diff does not compare at all, so it emits neither the policy nor a drop for it; `20261022031315_group_chat_live.sql` restates it from `51_groups.sql` |
 | `ROWS n` on an existing function | the diff compares bodies and arguments, not the planner's row estimate, so changing only the hint emits nothing; a function the migration creates carries it |
+| a view that only gains columns at its end | the diff drops and recreates the view and everything built on it (`daily_nutrition` on `food_log_details`), losing their grants; the generated `CREATE VIEW` is kept but turned into `CREATE OR REPLACE` and the drops removed (`measured_portions`, `food_log_locations`). A second `pnpm db:diff` must then report nothing |
 
 Nothing schedules anything here any more, and there is no seed function left
 either — `seed_archetype_foods()` went with the archetypes — but the rule is
@@ -4447,7 +4448,10 @@ All three answer `{ places: PlaceResult[] }`.
   for a reverse lookup. Apple never sees the exact spot from a search.
 - **Caps**: 200 Apple calls a day per user and 1,000 per address (an account
   is cheap to make), plus 60 requests a minute per user (`PLACES_RL`). Cache
-  hits count against none of them. Daily counts live in D1
+  hits count against none of them. A use is taken before Apple is asked, in
+  one atomic upsert per counter, so searches sent together cannot all read
+  the same count and slip past; a refused search or one Apple fails gives it
+  back. Daily counts live in D1
   (`ricecal-d1-places`, `apps/cloudflare/d1/places/schema.sql`), addresses
   only as a hash salted with the day, pruned by a daily cron.
 - **Nothing about a search is logged**: no query, no coordinate.
