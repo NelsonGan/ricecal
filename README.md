@@ -2925,9 +2925,9 @@ follow the number of people, a cook mode, and a source link to come back to.
 
 **The shelf.** Mine or Community, then a row of chips: All, Favourites (yours
 only, since the star is on your own rows), Under 30 min, and the six meal tags.
-A tag or the favourites narrow the query (`useRecipes`' third argument);
-"Under 30 min" is prep plus cook, a sum PostgREST cannot filter on, so the tab
-filters what came back. Your own shelf opens with three tiles, Write it, Photo
+Every chip narrows the query itself (`useRecipes`' third argument), before its
+100-row limit: "Under 30 min" reads `recipe_details.total_minutes`, prep plus
+cook, which is null when neither was given, so an untimed recipe is never quick. Your own shelf opens with three tiles, Write it, Photo
 and Describe, which go straight to `/recipe/edit?start=manual|photo|describe`
 and skip the chooser page; the plus still opens the chooser. Cards are two to a
 row, with the photo, the serving's calories and a plus that logs one serving to
@@ -2964,7 +2964,7 @@ alone:
 | `prep_minutes`, `cook_minutes` | 0 to 2,880 (two days, for an overnight marinade) |
 | `tags` | `text[]` from a fixed set (`breakfast`, `lunch`, `dinner`, `snack`, `dessert`, `drink`), checked in the database. Keys, so the app translates them and nothing free-text reaches the community. Adding one is a new key in the check and in `RECIPE_TAGS`; removing one would orphan rows a released app wrote. |
 | `source_url` | http(s), no whitespace, 2,000 characters. The owner's bookmark: `recipe_details` and `get_shared_recipe` null it for anybody else, and a copy does not carry it, because the reviewer never reads it and a link on a community card is an advert. This is where an imported reel will record where it came from. |
-| `is_favourite` | the owner's star. A community recipe somebody likes is saved as a copy, which has a star of its own. |
+| `is_favourite` | the owner's star, which `recipe_details` shows to its owner only (false for anybody else), or every community card would wear its cook's heart. A community recipe somebody likes is saved as a copy, which has a star of its own. |
 
 None of them is in the review-reset trigger: tags and minutes carry no free
 text, and the link is never shown to anyone else. Copies (`save_recipe_copy`,
