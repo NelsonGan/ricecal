@@ -711,10 +711,10 @@ function broadcastIds(payload: Record<string, unknown>): string[] {
 const chatTopic = (groupId: string) => `group-chat:${groupId}`
 
 /**
- * The catch-up of each chat on screen. The viewer's own like runs them when it
- * lands, so its line does not wait on Realtime echoing it back: on the hosted
- * project that echo was not acted on, and the line waited for the thread's
- * three-minute poll.
+ * The catch-up of each chat on screen. The viewer's own like or dislike runs
+ * them when it lands, so its line does not wait on Realtime echoing it back:
+ * on the hosted project that echo was not acted on, and the line waited for
+ * the thread's three-minute poll.
  */
 const openChats = new Set<() => void>()
 
