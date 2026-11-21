@@ -101,6 +101,8 @@ export function FoodMapScreen() {
   // iOS gesture layer moves the camera every frame and MapKit reports each
   // move, which re-rendered the whole screen and every pin per frame. The
   // latest region is kept in a ref and committed when the gesture ends.
+  // MapKit reports nothing after the app's own `animateToRegion`, so a move
+  // the screen makes records where it went itself (`moveTo`).
   const [region, setRegion] = useState<MapRegion>(HOME_REGION)
   const regionRef = useRef<MapRegion>(HOME_REGION)
   const moving = useRef(false)
@@ -115,6 +117,14 @@ export function FoodMapScreen() {
     moving.current = false
     setRegion(regionRef.current)
   }, [])
+  const moveTo = useCallback(
+    (target: MapRegion | null, duration = 300) => {
+      if (!target) return
+      mapRef.current?.animateToRegion(target, duration)
+      onRegionChange(target)
+    },
+    [onRegionChange],
+  )
   // Fixed at the first render: react-native-maps re-applies a changed
   // `initialRegion` on the new architecture, which snapped every pan back.
   // Every later move is a fit (`fitAll`) or a tap.
@@ -139,14 +149,14 @@ export function FoodMapScreen() {
 
   const fitAll = useCallback(
     (animated: boolean) =>
-      fitMapToPoints(mapRef.current, groups, {
+      fitMapToPoints(mapRef.current, groups, moveTo, {
         minDelta: ONE_SPOT_DELTA,
         margin: { top: 48, right: 64, bottom: 32, left: 64 },
         mapPadding,
         animated,
         size: { width, height },
       }),
-    [groups, mapPadding, width, height],
+    [groups, mapPadding, width, height, moveTo],
   )
 
   // A fit closes the place panel first and frames the places once the panel is
@@ -192,11 +202,14 @@ export function FoodMapScreen() {
 
   // Read through refs, so the handlers stay the same across renders and the
   // pins' memo holds while the map moves.
-  const focusPlace = useCallback((group: PlaceGroup) => {
-    setSelection({ kind: 'place', key: group.key })
-    const delta = Math.min(regionRef.current.longitudeDelta, ONE_SPOT_DELTA)
-    mapRef.current?.animateToRegion(regionAround(group, delta), 300)
-  }, [])
+  const focusPlace = useCallback(
+    (group: PlaceGroup) => {
+      setSelection({ kind: 'place', key: group.key })
+      const delta = Math.min(regionRef.current.longitudeDelta, ONE_SPOT_DELTA)
+      moveTo(regionAround(group, delta))
+    },
+    [moveTo],
+  )
 
   const pressMarker = useCallback(
     (marker: PlaceMarker) => {
@@ -206,12 +219,12 @@ export function FoodMapScreen() {
       // cannot (places at one point, or past the last zoom) lists its places.
       if (marker.expansionZoom <= CLUSTER_MAX_ZOOM && marker.expansionZoom > zoom) {
         const delta = longitudeDeltaForZoom(marker.expansionZoom, width)
-        mapRef.current?.animateToRegion(regionAround(marker, delta), 300)
+        moveTo(regionAround(marker, delta))
         return
       }
       setSelection({ kind: 'cluster', keys: marker.groups.map((group) => group.key) })
     },
-    [focusPlace, width],
+    [focusPlace, moveTo, width],
   )
   const pressKey = useCallback(
     (key: string) => {
@@ -269,7 +282,7 @@ export function FoodMapScreen() {
     const me = here.coordinate
     if (!me) return
     setSelection(null)
-    mapRef.current?.animateToRegion(regionAround(me, ONE_SPOT_DELTA), 300)
+    moveTo(regionAround(me, ONE_SPOT_DELTA))
   }
 
   return (

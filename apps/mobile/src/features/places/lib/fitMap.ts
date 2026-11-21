@@ -1,9 +1,8 @@
 import { Platform } from 'react-native'
 import type { EdgePadding, Region } from 'react-native-maps'
 
-/** The two camera calls a fit needs (react-native-maps' MapView has both). */
+/** The camera call a fit needs beside `moveTo` (react-native-maps' MapView has it). */
 interface FittableMap {
-  animateToRegion(region: Region, duration?: number): void
   fitToCoordinates(
     coordinates: { latitude: number; longitude: number }[],
     options?: { edgePadding?: EdgePadding; animated?: boolean },
@@ -14,11 +13,14 @@ interface FittableMap {
  * Frames `points` on `map`: their bounds with `margin` around them, inside the
  * map's own `mapPadding`. Points that all sit on one spot (a single place, or
  * stalls in one food court) get a fixed `minDelta` view
- * instead, since a box of no size would zoom to street level.
+ * instead, since a box of no size would zoom to street level. A fit to a
+ * region goes through the caller's `moveTo`, which animates the map there and
+ * records where it went.
  */
 export function fitMapToPoints(
   map: FittableMap | null,
   points: readonly { latitude: number; longitude: number }[],
+  moveTo: (region: Region, duration: number) => void,
   {
     minDelta,
     margin,
@@ -42,7 +44,7 @@ export function fitMapToPoints(
       Math.abs(point.longitude - first.longitude) < minDelta / 10,
   )
   if (onOneSpot) {
-    map.animateToRegion(
+    moveTo(
       {
         latitude: first.latitude,
         longitude: first.longitude,
@@ -62,7 +64,7 @@ export function fitMapToPoints(
       width: size.width - mapPadding.left - mapPadding.right,
       height: size.height - mapPadding.top - mapPadding.bottom,
     }
-    map.animateToRegion(paddedRegion(points, open, margin), animated ? 350 : 0)
+    moveTo(paddedRegion(points, open, margin), animated ? 350 : 0)
     return
   }
   // Google Maps adds edgePadding to the map's own padding.

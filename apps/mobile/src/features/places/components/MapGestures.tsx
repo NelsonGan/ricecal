@@ -78,23 +78,27 @@ export function MapGestures({
   // a drag.
   const props = useRef({ size, onTap, onGestureStart, onGestureEnd })
   props.current = { size, onTap, onGestureStart, onGestureEnd }
+  /**
+   * The camera and scale at touch down, once MapKit has answered. A ref, not a
+   * variable inside the memo: the gesture callbacks get a copy of what they
+   * close over, so a plain variable set after touch down read as null in them
+   * and no drag moved the map.
+   */
+  const start = useRef<{ camera: Camera; scale: MapScale } | null>(null)
 
   const gestures = useMemo(() => {
-    /** The camera and scale at touch down, once MapKit has answered. */
-    let start: { camera: Camera; scale: MapScale } | null = null
-
     const read = () => {
       const map = mapRef.current
       if (!map) return
       const { size } = props.current
-      start = null
+      start.current = null
       void Promise.all([
         map.getCamera(),
         map.coordinateForPoint({ x: 0, y: 0 }),
         map.coordinateForPoint({ x: size.width, y: size.height }),
       ])
         .then(([camera, topLeft, bottomRight]) => {
-          start = { camera, scale: scaleFrom(topLeft, bottomRight, size) }
+          start.current = { camera, scale: scaleFrom(topLeft, bottomRight, size) }
         })
         .catch(() => undefined)
     }
@@ -108,14 +112,10 @@ export function MapGestures({
       .onStart(began)
       .onEnd(ended)
       .onUpdate((event) => {
-        if (!start) return
+        const at = start.current
+        if (!at) return
         mapRef.current?.setCamera({
-          center: pannedCenter(
-            start.camera.center,
-            start.scale,
-            event.translationX,
-            event.translationY,
-          ),
+          center: pannedCenter(at.camera.center, at.scale, event.translationX, event.translationY),
         })
       })
 
@@ -125,8 +125,9 @@ export function MapGestures({
       .onStart(began)
       .onEnd(ended)
       .onUpdate((event) => {
-        if (!start?.camera.altitude) return
-        mapRef.current?.setCamera({ altitude: pinchedAltitude(start.camera.altitude, event.scale) })
+        const at = start.current
+        if (!at?.camera.altitude) return
+        mapRef.current?.setCamera({ altitude: pinchedAltitude(at.camera.altitude, event.scale) })
       })
 
     const doubleTap = Gesture.Tap()
