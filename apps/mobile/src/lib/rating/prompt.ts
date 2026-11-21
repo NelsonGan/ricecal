@@ -186,6 +186,22 @@ export const ASK_DELAY_MS = 1200
  */
 let pending: ReturnType<typeof setTimeout> | null = null
 
+/** Whether the sheet is on screen, which it reports through `setRatingSheetOpen`. */
+let sheetOpen = false
+
+export function setRatingSheetOpen(open: boolean): void {
+  sheetOpen = open
+}
+
+/**
+ * Whether an ask is booked or its sheet is up, for another one-time sheet that
+ * must not stack on it (the Locations offer). Read rather than subscribed:
+ * a second listener on the bridge would count as a sheet that took the ask.
+ */
+export function ratingPromptBusy(): boolean {
+  return pending !== null || sheetOpen
+}
+
 function ask(userId: string, trigger: RatingTrigger, now: number): void {
   if (pending) return
   const verdict = checkRating(read(userId, now), now, appVersion())

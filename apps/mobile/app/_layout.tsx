@@ -348,6 +348,10 @@ function RootStack() {
           the search dropped the user two panels back, onto the dish. A page
           keeps the search over it and reveals the plate again. */}
       <Stack.Screen name="log/ingredients" />
+      {/* The food map pushes from Today's header: a full-bleed map with its own
+          floating back button. No swipe back: a sideways drag is the map's,
+          and with the gesture on, the map took no pan, pinch or tap at all. */}
+      <Stack.Screen name="food-map" options={{ gestureEnabled: false }} />
       {/* A recipe pushes from My foods in Settings or the log search.
 
           One entry, not two: the group has a layout of its own, because a

@@ -28,6 +28,9 @@ const PACKAGES_NEEDING_TRANSFORM = [
   'react-native-mmkv',
   'react-native-keyboard-controller',
   '@ricecal',
+  // The food map's clustering (README: Meal locations) ships ES modules only.
+  'supercluster',
+  'kdbush',
 ].join('|')
 
 /** @type {import('jest').Config} */

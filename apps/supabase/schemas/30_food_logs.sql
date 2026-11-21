@@ -186,6 +186,36 @@ create table public.food_logs (
   -- columns, and only one of them can be looking at the other's value.
   constraint food_logs_one_picture check (photo_path is null or icon_set is null),
 
+  -- Where it was eaten (README: Meal locations), set only once the user turns
+  -- Locations on and tags the entry: the phone's own fix named by its
+  -- geocoder, or a place from Apple Maps search through the places Worker.
+  -- Null on every row before that, and on every row an older build writes.
+  --
+  -- Not `place`: `item_place` above is the dish's kind of stall (mamak,
+  -- kopitiam), which the view already calls `place`, and two columns named
+  -- for different questions would be read as one.
+  --
+  -- Private to the owner. Nothing that copies an entry to the feed or a
+  -- group (`social_posts`, the board) reads these, and nothing must: a meal
+  -- shared is a plate, not an address.
+  latitude          double precision check (latitude between -90 and 90),
+  longitude         double precision check (longitude between -180 and 180),
+  -- What the row and the map print: "Village Park Restaurant", or a street.
+  location_name     text check (char_length(location_name) between 1 and 200),
+  -- The address under it, one line, without the name or the country.
+  location_address  text check (char_length(location_address) <= 300),
+  -- Apple's place id for a searched place, which is what groups two visits
+  -- into one place on the map; null for a bare spot.
+  location_id       text check (char_length(location_id) <= 200),
+  -- Apple's PoiCategory ("Restaurant", "Cafe"), for the place's icon.
+  location_category text check (char_length(location_category) <= 64),
+  -- A point with no name cannot be listed, and a name with no point cannot be
+  -- drawn, so the three come and go together.
+  constraint food_logs_location_complete check (
+    (latitude is null) = (longitude is null)
+    and (latitude is null) = (location_name is null)
+  ),
+
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now()
 
@@ -215,6 +245,11 @@ create index food_logs_user_food_idx on public.food_logs (user_id, food_id);
 -- Backs the estimate-backlog report: "which estimate rows are referenced most"
 -- is a count over this column.
 create index food_logs_scan_idx on public.food_logs (scan_id) where scan_id is not null;
+
+-- Backs the food map and the picker's recent places, which read only the
+-- entries that carry a location. Partial, because most rows never will.
+create index food_logs_user_located_idx
+  on public.food_logs (user_id, log_date desc) where latitude is not null;
 
 create trigger food_logs_set_updated_at
   before update on public.food_logs

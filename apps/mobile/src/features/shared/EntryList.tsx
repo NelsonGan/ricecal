@@ -258,7 +258,14 @@ function EntryRow({
       // When, and how much. Each answers a question the other does not: the
       // time is where in the day this was, the portion is what the calories
       // are for. One plain serving has no pill, so the ones that do stand out.
-      detail={formatTime(entry.loggedAt)}
+      // The place, when the meal has one, after the time and in the same
+      // line: "8:15 am · Village Park". The name only; the address is on the
+      // entry's own page.
+      detail={
+        entry.location
+          ? `${formatTime(entry.loggedAt)} · ${entry.location.name}`
+          : formatTime(entry.loggedAt)
+      }
       tags={portion ? [portion] : undefined}
       compact
       onPress={open}

@@ -61,6 +61,7 @@ import {
   type Vision,
   type VisionItem,
 } from '../_shared/llm.ts'
+import { readLocation } from '../_shared/location.ts'
 import { readSessionId } from '../_shared/posthog.ts'
 import { ownsKey, readObject } from '../_shared/r2.ts'
 
@@ -96,6 +97,14 @@ type ScanRequest = {
    * answer instead of the same dead end.
    */
   barcode?: string
+  /**
+   * Where the meal was eaten, when the person has Locations on (README: Meal
+   * locations): `{ latitude, longitude, name, address?, placeId?, category? }`.
+   * Written onto every entry the scan becomes. Absent from every older app and
+   * whenever Locations is off, and a malformed one is dropped rather than
+   * failing the scan; see `readLocation`.
+   */
+  location?: unknown
   mock?: MockSteer
 }
 
@@ -133,6 +142,7 @@ Deno.serve(async (req: Request) => {
   // anything past this is prose, and the model charges by the token for it.
   const description = photoPath ? '' : (body.text ?? '').trim().slice(0, 500)
   const note = photoNote(body.note, photoPath, barcode)
+  const location = readLocation(body.location)
   // Steering is a test affordance; outside mock mode it is ignored entirely.
   const mock = mockActive() ? body.mock : undefined
 
@@ -251,6 +261,7 @@ Deno.serve(async (req: Request) => {
           photoPath,
           suggestedEdits: [],
           source,
+          location,
         })
         await db.from('food_scan_items').insert({
           user_id: userId,
@@ -405,6 +416,7 @@ Deno.serve(async (req: Request) => {
         photoPath: firstEntry ? photoPath : null,
         suggestedEdits: item.suggested_edits ?? [],
         source,
+        location,
         // Only ever set on the typed path — the prompt that asks for it is the
         // one with no photograph behind it. See `writeEntry`.
         icon: item.icon ?? null,

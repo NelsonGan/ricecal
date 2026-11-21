@@ -6,6 +6,7 @@ import { logging } from './logging'
 import { news } from './news'
 import { onboarding } from './onboarding'
 import { paywall } from './paywall'
+import { places } from './places'
 import { profile } from './profile'
 import { progress } from './progress'
 import { recipes } from './recipes'
@@ -33,6 +34,7 @@ export const en = {
   progress,
   profile,
   paywall,
+  places,
   recipes,
   reviews,
   social,

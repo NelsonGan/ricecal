@@ -228,8 +228,15 @@ export type Events = {
    * the shutter. False is Skip or an empty note, and both are the photo alone.
    * Absent everywhere else, and on a camera log while the step is switched off
    * it is always false.
+   *
+   * `located` is whether the meal was tagged with where it was eaten (README:
+   * Meal locations): the automatic tag rides here rather than on an event of
+   * its own, which would double the busiest event in the plan. On the scan
+   * paths it says the scan asked for one: this fires at the commit, before the
+   * fix is known, and a fix that misses the scan's wait leaves the meal
+   * untagged. Absent with Locations or Auto-tag off.
    */
-  'Meal Logged': { method: LogMethod; date_offset: number; with_note?: boolean }
+  'Meal Logged': { method: LogMethod; date_offset: number; with_note?: boolean; located?: boolean }
   /**
    * What the cascade did with a photographed or typed meal.
    *
@@ -251,6 +258,20 @@ export type Events = {
   'Barcode Scanned': { outcome: 'found' | 'not_found' | 'error' }
   /** Save on the food detail screen. `changed` names what actually moved. */
   'Entry Updated': { changed: string[] }
+
+  // Meal locations (README: Meal locations). No coordinate, place name or
+  // search text is ever sent: together they say where somebody eats.
+  /** The Locations switch, from Settings or the one-time offer. */
+  'Locations Toggled': { enabled: boolean; source: 'settings' | 'offer' }
+  /**
+   * A place picked by hand in the picker, once the entry saved it. The
+   * automatic tag is `Meal Logged`'s `located` instead.
+   */
+  'Meal Location Set': { source: 'current' | 'recent' | 'search' }
+  /** The food map, once per visit, with how many places the period opened on. */
+  'Food Map Opened': { places: number }
+  /** The one-time "Remember where you eat?" sheet, at most once per install and account. */
+  'Locations Offer Shown': NoProps
   'Entry Deleted': { source: string }
   /**
    * The sparkle: a correction described in words. `from_chip` separates the

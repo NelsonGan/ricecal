@@ -149,6 +149,25 @@ export type Food = {
  */
 export type EntryStatus = 'analysing' | 'waiting' | 'failed' | 'nofood'
 
+/**
+ * Where an entry was eaten (README: Meal locations): the phone's own fix named
+ * by its geocoder, or a place from Apple Maps search. All six columns or none
+ * on the row, which a check constraint holds. Never shared: the feed and the
+ * groups copy a plate, not where it was eaten.
+ */
+export type EntryLocation = {
+  latitude: number
+  longitude: number
+  /** What the row and the map print: "Village Park Restaurant", or a street. */
+  name: string
+  /** One line, without the name or the country. */
+  address?: string
+  /** Apple's place id, which groups two visits into one place on the map. */
+  placeId?: string
+  /** Apple's PoiCategory ("Restaurant", "Cafe"). */
+  category?: string
+}
+
 export type Entry = {
   id: string
   quantity: number
@@ -221,6 +240,8 @@ export type Entry = {
    * "Half portion"), offered as chips over the fix-by-typing box.
    */
   suggestedEdits?: string[]
+  /** Where it was eaten, when the user tagged it. Absent on most rows. */
+  location?: EntryLocation
 }
 
 /** 'g' | 'ml' | 'piece'. What an ingredient's amount is counted in. */

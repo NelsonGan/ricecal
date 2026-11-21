@@ -14,9 +14,11 @@ export {
   ratingDismissed,
   ratingFeedbackOpened,
   ratingLiked,
+  ratingPromptBusy,
   recordMealLogged,
   recordReviewOpened,
   resetRatingStateForTest,
+  setRatingSheetOpen,
   subscribeToRatingPrompt,
 } from './prompt'
 export {

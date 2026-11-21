@@ -1,6 +1,7 @@
 import { isMeasureUnit, MEASURES, type MeasureUnit } from '@/lib/measures'
 import type {
   Entry,
+  EntryLocation,
   Food,
   FoodDetailsRow,
   FoodLogRow,
@@ -260,6 +261,12 @@ const ENTRY_COLUMN_NAMES = [
   'base_serving_ml',
   'ingredient_count',
   'plate_quantity',
+  'latitude',
+  'longitude',
+  'location_name',
+  'location_address',
+  'location_id',
+  'location_category',
 ] as const satisfies readonly (keyof FoodLogRow)[]
 
 export const ENTRY_COLUMNS = ENTRY_COLUMN_NAMES.join(',')
@@ -348,5 +355,49 @@ export function toEntry(row: EntryRow): Entry {
     suggestedEdits: Array.isArray(row.suggested_edits)
       ? row.suggested_edits.filter((edit): edit is string => typeof edit === 'string')
       : undefined,
+    location: toLocation(row),
+  }
+}
+
+/**
+ * The row's location, or undefined. A day cached before the view carried these
+ * columns rehydrates without them, which reads as no location rather than as
+ * a point at 0,0.
+ */
+export function toLocation(
+  row: Pick<
+    FoodLogRow,
+    | 'latitude'
+    | 'longitude'
+    | 'location_name'
+    | 'location_address'
+    | 'location_id'
+    | 'location_category'
+  >,
+): EntryLocation | undefined {
+  const { latitude, longitude, location_name: name } = row
+  if (typeof latitude !== 'number' || typeof longitude !== 'number' || !name) return undefined
+  return {
+    latitude,
+    longitude,
+    name,
+    ...(row.location_address ? { address: row.location_address } : {}),
+    ...(row.location_id ? { placeId: row.location_id } : {}),
+    ...(row.location_category ? { category: row.location_category } : {}),
+  }
+}
+
+/**
+ * The six `food_logs` columns for a location, all of them every time: `null`
+ * clears the lot, and a partial write would trip `food_logs_location_complete`.
+ */
+export function locationColumns(location: EntryLocation | null) {
+  return {
+    latitude: location?.latitude ?? null,
+    longitude: location?.longitude ?? null,
+    location_name: location?.name ?? null,
+    location_address: location?.address ?? null,
+    location_id: location?.placeId ?? null,
+    location_category: location?.category ?? null,
   }
 }

@@ -31,6 +31,7 @@ import {
   pickCandidate,
   type VisionItem,
 } from './llm.ts'
+import type { LocationColumns } from './location.ts'
 import {
   boundGramsToServing,
   defaultMacros,
@@ -1368,6 +1369,11 @@ export async function writeEntry(
      * is written below whatever this is.
      */
     icon?: { set: string; name: string } | null
+    /**
+     * Where it was eaten, already validated (`readLocation`). Every entry one
+     * photo becomes was eaten in the same place, so each carries it.
+     */
+    location?: LocationColumns | null
   },
 ): Promise<WrittenEntry> {
   const { resolved } = input
@@ -1408,6 +1414,7 @@ export async function writeEntry(
       scan_id: input.scanId,
       display_label: resolved.displayLabel,
       suggested_edits: input.suggestedEdits.length ? input.suggestedEdits : null,
+      ...(input.location ?? {}),
     })
     .select('id')
     .single()

@@ -8,6 +8,7 @@ const raw = {
   EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
   EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
   EXPO_PUBLIC_CATALOGUE_URL: process.env.EXPO_PUBLIC_CATALOGUE_URL,
+  EXPO_PUBLIC_PLACES_URL: process.env.EXPO_PUBLIC_PLACES_URL,
   EXPO_PUBLIC_RC_IOS_KEY: process.env.EXPO_PUBLIC_RC_IOS_KEY,
   EXPO_PUBLIC_RC_ANDROID_KEY: process.env.EXPO_PUBLIC_RC_ANDROID_KEY,
   EXPO_PUBLIC_RC_TEST_STORE_KEY: process.env.EXPO_PUBLIC_RC_TEST_STORE_KEY,
@@ -53,6 +54,13 @@ const schema = {
    * edge function in front of it could go.
    */
   EXPO_PUBLIC_CATALOGUE_URL: text,
+  /**
+   * The places Worker (README: The places Worker), reached with the user's
+   * JWT like the catalogue. Optional: unset is production, so no build needs
+   * a new setting, and a dev build points it at `wrangler dev` to try a
+   * Worker change.
+   */
+  EXPO_PUBLIC_PLACES_URL: optional(text),
   EXPO_PUBLIC_RC_IOS_KEY: text,
   EXPO_PUBLIC_RC_ANDROID_KEY: text,
   /**

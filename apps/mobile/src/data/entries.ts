@@ -1,14 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { dateOffset, type LogMethod, track } from '@/lib/analytics'
+import { autoTagLocation, autoTagWanted, recordMealForLocationsOffer } from '@/lib/places'
 import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { today, unwrap, unwrapOne } from './client'
 import { invalidateEatenTotals, invalidateEntryPosts, keys } from './keys'
+import { locationColumns } from './mappers'
 import { removeMealPhoto } from './photos'
 import { useUserId } from './session'
 import { type LogSnapshot, snapshotColumns } from './snapshot'
-import type { DayLog, EntrySource, IconRef } from './types'
+import type { DayLog, EntryLocation, EntrySource, IconRef } from './types'
 import { toDbSource } from './types'
 
 /**
@@ -34,6 +36,14 @@ export type LogInput = {
   icon?: IconRef
   /** The day it counts towards. Defaults to the day being viewed. */
   logDate: string
+  /**
+   * Where it was eaten (README: Meal locations). A location is written with
+   * the row. `null` is "no location", which the composing screen sends when
+   * the user removed the automatic one. Absent is the automatic tag, when the
+   * user has it on: applied after the insert (`tagAfterInsert`), so saving a
+   * meal never waits on the GPS.
+   */
+  location?: EntryLocation | null
   /**
    * How the user got here, for analytics and nothing else. Separate from
    * `source`, which is a column about how the numbers were obtained, where this
@@ -77,23 +87,28 @@ export function useLogFood() {
             ...((input.icon
               ? { icon_set: input.icon.set, icon_name: input.icon.name }
               : {}) as object),
+            ...(input.location ? locationColumns(input.location) : {}),
           })
           .select('id')
           .single(),
       ),
-    onSuccess: (_row, input) => {
+    onSuccess: (row, input) => {
+      const autoTag = input.location === undefined && autoTagWanted(userId, input.logDate)
       // On success rather than at the tap, unlike the scan paths: this write is
       // one statement and there is no optimistic row standing in for it, so a
       // failure here means no meal was logged at all.
       track('Meal Logged', {
         method: input.method ?? METHOD_FOR_SOURCE[input.source ?? 'search'],
         date_offset: dateOffset(input.logDate, today()),
+        ...(input.location || autoTag ? { located: true } : {}),
       })
+      if (autoTag) void tagAfterInsert(queryClient, userId, row.id, input.logDate)
       // Beside the event and for the same reason: this is the moment a meal
       // exists. It counts towards the rating prompt's milestone and may put the
       // sheet on screen a beat later. Synchronous and cannot throw, so nothing
       // below it is at risk. See `lib/rating`.
       recordMealLogged(userId)
+      recordMealForLocationsOffer(userId)
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       // Auto post may have published this entry in the same transaction.
       invalidateEntryPosts(queryClient, userId)
@@ -109,6 +124,39 @@ export function useLogFood() {
       invalidateEatenTotals(queryClient, userId)
     },
   })
+}
+
+/**
+ * The automatic tag, onto a meal that has just been saved: where the phone is,
+ * named by its own geocoder (README: Meal locations). The fix is usually
+ * cached from a moment ago and lands at once; a slow one lands seconds later
+ * and the row picks it up on the refetch.
+ *
+ * Only onto a row still without a place, so a place the user picked in the
+ * meantime is never overwritten. Never throws: the meal is saved either way,
+ * and a meal outranks its address.
+ */
+async function tagAfterInsert(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId: string,
+  id: string,
+  logDate: string,
+): Promise<void> {
+  try {
+    const location = await autoTagLocation(userId, logDate)
+    if (!location) return
+    const { error } = await supabase
+      .from('food_logs')
+      .update(locationColumns(location))
+      .eq('id', id)
+      .eq('user_id', userId)
+      .is('latitude', null)
+    if (error) return
+    queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
+    queryClient.invalidateQueries({ queryKey: keys.located(userId) })
+  } catch {
+    // Untagged, which is what Locations off would have been.
+  }
 }
 
 /**
@@ -128,6 +176,7 @@ function changedFields(patch: EntryPatch): string[] {
   if (patch.icon !== undefined) changed.push('icon')
   if (patch.photoPath !== undefined) changed.push('photo')
   if (patch.overrides !== undefined) changed.push('overrides')
+  if (patch.location !== undefined) changed.push('location')
   return changed
 }
 
@@ -207,6 +256,11 @@ export type EntryPatch = {
     protein?: number | null
     fat?: number | null
   }
+  /**
+   * Where it was eaten. `null` removes it; omitted leaves it alone. Always all
+   * six columns, since a check constraint refuses part of a location.
+   */
+  location?: EntryLocation | null
 }
 
 export function useUpdateEntry() {
@@ -230,6 +284,7 @@ export function useUpdateEntry() {
       photoPath,
       currentPhotoPath,
       overrides,
+      location,
     }: EntryPatch) => {
       /**
        * The old object is orphaned when either kind of picture takes its place.
@@ -292,6 +347,7 @@ export function useUpdateEntry() {
                     : { override_protein_g: overrides.protein }),
                   ...(overrides.fat === undefined ? {} : { override_fat_g: overrides.fat }),
                 }) as object),
+            ...(location === undefined ? {} : locationColumns(location)),
           })
           .eq('id', id)
           .eq('user_id', userId)

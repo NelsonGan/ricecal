@@ -25,6 +25,7 @@ project works is here.
 - [The social food feed](#the-social-food-feed)
 - [Groups](#groups)
 - [The diary screen](#the-diary-screen)
+- [Meal locations](#meal-locations)
 - [Water](#water)
 - [Home screen widgets](#home-screen-widgets)
 - [Trends](#trends)
@@ -4307,6 +4308,154 @@ having changed its mind about what it is.
 
 ---
 
+## Meal locations
+
+A meal can carry where it was eaten, and the food map shows every tagged meal
+of a week, a month or all time. Modelled on Money2Time's transaction locations
+(its PR #779) and built from the same parts: `expo-location` for the fix and
+the phone's own geocoder, `react-native-maps` for the maps (Apple Maps on iOS,
+Google Maps on Android), `supercluster` for the map's bubbles, and a places
+Worker in front of the Apple Maps Server API.
+
+**Off until the user turns it on**, in Settings › Personalisation › Locations,
+or from a one-time offer. The switches live on the phone (MMKV, keyed by user,
+`src/lib/places/preference.ts`), not in `user_settings`: location permission
+is the phone's, and an account signed into a second phone that was never asked
+must not behave as if it had said yes. Turning Locations on asks for "while
+using the app" access; refused, the card says so with Allow, or Open Settings
+once only the Settings app can change it. Searching works either way.
+
+**Tag new meals automatically** (on by default under Locations) tags a meal
+logged *for today* with where the phone is. A backdated lunch was not eaten
+where the phone is now, so it is never tagged. The tag never holds a meal up:
+
+- `useLogFood` inserts the row, then `tagAfterInsert` writes the place onto it
+  when the fix lands (`.is('latitude', null)`, so a place picked by hand in
+  the meantime is never overwritten).
+- A photographed or described meal starts the fix at the shutter and sends it
+  to `scan-meal` as `location`, waiting at most `LOCATION_WAIT_MS` (3 s) after
+  the upload; `writeEntry` puts it on every entry the photo becomes.
+- One fix and its name serve every meal logged within 90 s
+  (`src/lib/places/currentPlace.ts`), so three drinks in a row ask the GPS
+  once.
+
+The spot is named by the phone's geocoder first (free), then the Worker's
+Apple reverse lookup, then "Pinned location".
+
+**Where it is stored.** Six nullable columns on `food_logs` (`latitude`,
+`longitude`, `location_name`, `location_address`, `location_id` for Apple's
+place id, `location_category` for its PoiCategory), all or none
+(`food_logs_location_complete`), appended to `food_log_details`. Not `place`:
+that name is taken by `item_place`, the kind of stall. A build that predates
+them writes none and reads none.
+
+**Private to the owner.** Nothing that copies an entry to the feed or a group
+reads these columns, and the food map is wrapped in `ReplayMask`. Analytics
+carries no coordinate, name, address or search text.
+
+**On the entry page**, a Where card under the portion shows the place, its
+address and a small still map, and opens the picker. With Locations off it
+shows only on an entry that already has a place. While composing a new entry
+the card shows the automatic tag before Add, so it can be changed or removed.
+
+**The picker is map first.** The map opens on the entry's place, the phone
+(its blue dot), or the last place tagged; the pin is the map's middle, drawn
+over it rather than a marker, so it stays put while the map moves under it.
+The list under the map is the food places around the pin (`/nearby`), nearest
+first, with the last three places tagged as chips; typing searches Apple Maps
+and frames the results. Use this spot saves whatever the pin is on: a listed
+place within 40 m, else the spot itself, named by the geocoders.
+
+**Today** prints the place after the time on a row ("8:15 am · Village
+Park"), and a map button beside the calendar toggle opens the food map while
+Locations is on or once any meal has a place.
+
+**The food map** (`app/food-map.tsx`) has one pin per place wearing its newest
+photographed plate, else its drawing, with a count. Places group by Apple's id,
+else by name at a point rounded to about 11 m. Places that crowd at the current
+zoom merge into a green bubble that zooms in when tapped, or lists its places
+once it cannot split (places at one exact point never split). The panel under
+the map is one line of totals and a row of place cards; a selected place is a
+floating card with its meals, each opening the entry. Periods are Monday to
+Sunday weeks, calendar months and all time, by `log_date`. It reads one query
+(`useLocatedEntries`, the newest 2,000 tagged entries, served by the partial
+index `food_logs_user_located_idx`) and filters it per period.
+
+**The one-time offer**, "Remember where you eat?", follows a meal logged on
+this phone while Locations is off (`recordMealForLocationsOffer`, beside
+`recordMealLogged`). It is stored as answered before it is on screen, so a
+crash never brings it back, and turning Locations on anywhere answers it. It
+never stacks on another sheet: not while a news card has the floor
+(`announcementHasTheFloor`), not while the rating ask is booked or up
+(`ratingPromptBusy`), and only while Today is on top; a turn it cannot take is
+not lost. Turn on Locations closes the sheet, and only once it is gone asks for
+the system permission, which iOS will not present over a modal on its way down.
+
+**Android needs a Google Maps key at build time.** `app.config.ts` reads
+`GOOGLE_MAPS_ANDROID_API_KEY` (the EAS environment for store builds,
+`apps/mobile/.env.local` locally) into the react-native-maps plugin. A build
+without it gets a placeholder and a blank Android map; a production Android
+EAS build refuses to start without it. iOS uses Apple Maps and needs no key.
+
+**Both map modules are required lazily** (`mapsModule()`, `locationModule()`),
+so a dev client built before them keeps running this JavaScript: the map draws
+a note instead and the picker still searches.
+
+### The places Worker
+
+`apps/cloudflare/workers/places`, at `places.ricecal.app`, proxies the Apple
+Maps Server API so Apple's key never ships in the app.
+
+```
+POST /search   { query, latitude?, longitude?, language? }   text search near a point
+POST /reverse  { latitude, longitude, language? }            the place at a point
+POST /nearby   { latitude, longitude, language? }            food places around a point
+```
+
+All three answer `{ places: PlaceResult[] }`.
+
+- **Signed in like the catalogue.** The caller sends the user's Supabase JWT
+  and the Worker verifies it with the catalogue's own `auth.ts` (imported, not
+  copied). Money2Time's Worker signs requests with a key in the app instead,
+  because Money2Time works signed out; every RiceCal user is signed in.
+- **The Apple key stays on the Worker**, which signs its own ES256 token and
+  trades it for a 30-minute access token per isolate. The key is the team's
+  "Money2Time Maps" key: Apple's 25,000 calls a day are per developer team,
+  so the two apps share them.
+- **Answers are cached at the edge for a day**, by the request with its
+  coordinates rounded first: about 1 km for a search, 110 m for nearby, 11 m
+  for a reverse lookup. Apple never sees the exact spot from a search.
+- **Caps**: 200 Apple calls a day per user and 1,000 per address (an account
+  is cheap to make), plus 60 requests a minute per user (`PLACES_RL`). Cache
+  hits count against none of them. Daily counts live in D1
+  (`ricecal-d1-places`, `apps/cloudflare/d1/places/schema.sql`), addresses
+  only as a hash salted with the day, pruned by a daily cron.
+- **Nothing about a search is logged**: no query, no coordinate.
+- Bodies over 4 KB are refused. Without the Apple key every route answers
+  `not_configured` and the app says place search is unavailable; the phone's
+  geocoder still names the current spot.
+- `/nearby` is a search for "food" limited to a box about 1.1 km across, with
+  `includePoiCategories` set to the places people eat or drink at. Apple
+  refuses a request carrying both `searchLocation` and `searchRegion`, so it
+  sends `userLocation` instead.
+
+The app reaches it at `EXPO_PUBLIC_PLACES_URL`, unset meaning production.
+Locally: put the key in `apps/cloudflare/workers/places/.dev.vars`
+(`APPLE_MAPS_PRIVATE_KEY="<the .p8>"`, gitignored), apply the schema with
+`pnpm exec wrangler d1 execute ricecal-d1-places --local --file
+../../d1/places/schema.sql`, run `pnpm exec wrangler dev --var
+SUPABASE_URL:http://127.0.0.1:54421` (the local stack signs ES256 too), and set
+`EXPO_PUBLIC_PLACES_URL=http://127.0.0.1:8787` in `apps/mobile/.env.local`.
+
+**Set up once, by hand, before the first deploy**: the D1 database
+(`wrangler d1 create ricecal-d1-places`, its id into `wrangler.jsonc`), the
+secret (`wrangler secret put APPLE_MAPS_PRIVATE_KEY`), and the `places` DNS
+record (a proxied AAAA to `100::`, like `catalogue`). CI's schema step applies
+every `d1/*/schema.sql` on merge, so a database that does not exist yet fails
+that step for every Worker.
+
+---
+
 ## Water
 
 **Millilitres, not glasses.** `daily_logs.water_ml` and `daily_goals.water_ml`
@@ -7407,7 +7556,8 @@ events, 815 weekly users, 338 installs) ×4.3.
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| **Total** | **~298,500 (30%)** | Room for three times today's audience |
+| Meal locations (`Locations Toggled`, `Meal Location Set`, `Food Map Opened`, `Locations Offer Shown`) | 4,000 | New, so no history: the offer once per account (~1,500), a toggle after it, a map visit or two a week by those who turn Locations on, and hand-picked places. The automatic tag adds no event (`Meal Logged`'s `located`) |
+| **Total** | **~302,500 (30%)** | Room for three times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -7432,10 +7582,10 @@ eligible for delivery; its presence here is not proof of ingestion or billing.
 
 | Surface / operation | Definitions | Destinations / counting rule |
 | --- | --- | --- |
-| Native app custom events | 67 | All 67 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
+| Native app custom events | 71 | All 71 go to PostHog and GA4 in production; no GA4-only app group and no sampling |
 | Website decisions | 6 | Same PostHog project (page views as `$pageview`); five namespaced GA4 events plus manually managed `page_view` in the shared property |
 | Native screen views | 0 | No `$screen` or `screen_view` emitter; Firebase automatic screen reporting is disabled. Session replay shows navigation |
-| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 67 custom app definitions |
+| SDK lifecycle and server subscription events | Separate inventory below | Additional event volume; excluded from the 71 custom app definitions |
 | Profile and super-property updates | State operations | Not app custom events; never add profile lifetime spend to charge events |
 | Per-install engagement events | 2 | `First App Open` once per install and `Daily App Open` once per local day; every other event is repeatable product use |
 
@@ -7459,10 +7609,14 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Signed Out | ricecal_signed_out | none | `src/data/auth.ts`<br>`src/lib/analytics/client.ts` | Explicit sign-out completes; each completion, before resetting analytics identity. |
 | Account Deleted | ricecal_account_deleted | none | `src/data/auth.ts` | Server confirms account deletion; each success, before clearing the PostHog person and signing out. |
 | Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` | Log sheet opens; once per presentation using its actual initial panel (explicit link, remembered choice, then camera) and selected date, not on panel changes. |
-| Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number; with_note?: boolean | `src/data/entries.ts`<br>`src/data/snap.ts` | Local insert succeeds, or camera/describe starts its optimistic row; once per logging action, not per decomposed food component. `with_note` only on camera. |
+| Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number; with_note?: boolean; located?: boolean | `src/data/entries.ts`<br>`src/data/snap.ts` | Local insert succeeds, or camera/describe starts its optimistic row; once per logging action, not per decomposed food component. `with_note` only on camera. `located` only when the meal is tagged with a place or the automatic tag was asked for. |
 | Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` | Camera/describe request reaches a reported outcome; once per attempt, including refusals, empty food, failure and detached requests. |
 | Barcode Scanned | ricecal_barcode_scanned | outcome: 'found' &#124; 'not_found' &#124; 'error' | `app/log/food/[id].tsx` | Barcode lookup settles; once per barcode value on the mounted food route. Reopening the route can count again. |
 | Entry Updated | ricecal_entry_updated | changed: string[] | `src/data/entries.ts` | Entry update succeeds; each successful save, with names of changed fields. |
+| Locations Toggled | ricecal_locations_toggled | enabled: boolean; source: 'settings' &#124; 'offer' | `src/features/places/components/LocationsSettingsCard.tsx`<br>`src/features/places/components/LocationsOffer.tsx` | The Locations switch in Personalisation changes, or the one-time offer's Turn on Locations is tapped; once per change. |
+| Meal Location Set | ricecal_meal_location_set | source: 'current' &#124; 'recent' &#124; 'search' | `app/log/food/[id].tsx` | A place picked by hand in the picker is saved on an entry, or a composed entry carrying one is added; once per save. The automatic tag is Meal Logged's `located`. |
+| Food Map Opened | ricecal_food_map_opened | places: number | `src/features/places/FoodMapScreen.tsx` | The food map's tagged meals arrive; once per visit, with the places in the opening period. |
+| Locations Offer Shown | ricecal_locations_offer_shown | none | `src/features/places/components/LocationsOffer.tsx` | The "Remember where you eat?" sheet is put up; at most once per phone and account. |
 | Entry Deleted | ricecal_entry_deleted | source: string | `src/data/entries.ts` | Entry deletion succeeds; each successful deletion, with the calling source or unknown. |
 | Entry Refined | ricecal_entry_refined | outcome: 'applied' &#124; 'not_applied' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled'; from_chip: boolean; duration_ms: number | `src/data/scan.ts` | Refinement attempt reaches its outcome; each attempt, including refusal/failure and no applied change. |
 | Food Searched | ricecal_food_searched | results: number; query_length: number | `src/features/logging/FoodSearchPanel.tsx` | Catalogue query has a settled results/empty answer for 1,200 ms after the 140 ms input debounce; changed nonempty queries only. History/own-food filtering is excluded. |
@@ -7530,7 +7684,7 @@ that instant.
 
 | Contract | PostHog | GA4 |
 | --- | --- | --- |
-| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 67 mappings are tested for uniqueness |
+| Event name | Exact Title Case name in the app table | `ricecal_` + snake_case, maximum 40 characters; all 71 mappings are tested for uniqueness |
 | Event keys | Typed keys as written | Normalized snake_case, maximum 40 characters; reserved/invalid prefixes handled in `ga4.ts` |
 | String values | Typed payload as supplied | Maximum 100 characters |
 | Booleans | `true` / `false` | Numeric `1` / `0`; website booleans use separate `yes` / `no` mappings |
@@ -7609,6 +7763,7 @@ user text. Extend the source type and these tables together when its domain chan
 | News announcements | `Announcement Shown`, then `CTA Tapped` or `Dismissed`, by `source` | Counted from `onShow`. `launch` is the newest card, once per account unless its seen write fails (then it is shown again on a later launch); `settings` repeats per open. The launch card skips the launch the tour is offered on, and the Pro nudge skips any launch with one due |
 | Groups | Created, joined, invite sent, nudge sent, reaction set, message sent | Each fires after the server accepted the write, except Reaction Set, which fires on the tap. Board views, day swipes and chat reads are not tracked |
 | Auto post switches | `Auto Post Toggled` by `kind` and `enabled` | Only the Edit profile switches. The onboarding default and the announcement's switch-on are writes, not events |
+| Meal locations | `Locations Toggled` by `source`, `Meal Location Set` by `source`, `Food Map Opened`, `Locations Offer Shown` | No coordinate, place name, address or search text is ever sent. The automatic tag is `Meal Logged`'s `located`, which on the camera and describe paths says the scan asked for a place, not that one landed |
 
 ### Product reports and funnel definitions
 
@@ -8119,7 +8274,7 @@ includes the optimistic camera/describe insert; it is not a persisted-meal total
 Investigate a new name, a sharp volume change, unexpected free-text properties,
 missing identity, or purchase events from a second producer.
 
-Automated checks: the inventory test (`inventory.test.ts`) checks all 67 names,
+Automated checks: the inventory test (`inventory.test.ts`) checks all 71 names,
 exact GA4 mappings, typed payloads, source-file existence and a nonempty
 trigger column, and forbids app-side settled revenue fields; `engagement.test.ts`
 covers install detection and the once-a-day claim; `posthog.test.ts` covers the

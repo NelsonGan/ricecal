@@ -14,6 +14,7 @@ import {
   ratingDismissed,
   ratingFeedbackOpened,
   ratingLiked,
+  setRatingSheetOpen,
   subscribeToRatingPrompt,
 } from '@/lib/rating'
 import { Button, Icon, Sheet, useToast } from '@/ui'
@@ -54,6 +55,12 @@ export function RatePromptSheet() {
   // what makes a second request a second sheet rather than a re-render of this
   // one holding the first one's trigger.
   const close = useCallback(() => setRequest(null), [])
+
+  // Told to the prompt module so another one-time sheet waits its turn.
+  useEffect(() => {
+    setRatingSheetOpen(request !== null)
+    return () => setRatingSheetOpen(false)
+  }, [request])
 
   /**
    * CLOSE FIRST, then hand over. The store's own dialog is presented by the OS

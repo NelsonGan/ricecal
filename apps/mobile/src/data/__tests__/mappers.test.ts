@@ -1,4 +1,4 @@
-import { toEntry, toFood, toIcon, toServings } from '@/data/mappers'
+import { locationColumns, toEntry, toFood, toIcon, toServings } from '@/data/mappers'
 import type { FoodDetailsRow, FoodLogRow } from '@/data/types'
 
 /**
@@ -169,5 +169,48 @@ describe('toFood', () => {
       expect(typeof food.servings[0].label).toBe('string')
       expect(food.servings[0].factor).toBe(1)
     }
+  })
+})
+
+describe('where an entry was eaten', () => {
+  it('reads all six columns into a location', () => {
+    const entry = toEntry(
+      logRow({
+        latitude: 3.1377844,
+        longitude: 101.6233956,
+        location_name: 'Village Park Restaurant',
+        location_address: 'Damansara Utama',
+        location_id: 'I1',
+        location_category: 'Restaurant',
+      }),
+    )
+    expect(entry.location).toEqual({
+      latitude: 3.1377844,
+      longitude: 101.6233956,
+      name: 'Village Park Restaurant',
+      address: 'Damansara Utama',
+      placeId: 'I1',
+      category: 'Restaurant',
+    })
+  })
+
+  it('reads a row without them, as every row cached before them is, as no location', () => {
+    expect(toEntry(logRow()).location).toBeUndefined()
+    // Never a point at 0,0 for a half-read row.
+    expect(
+      toEntry(logRow({ latitude: 0, longitude: 0, location_name: null })).location,
+    ).toBeUndefined()
+  })
+
+  it('writes all six columns or clears all six, never part of a location', () => {
+    expect(locationColumns({ latitude: 1, longitude: 2, name: 'Stall' })).toEqual({
+      latitude: 1,
+      longitude: 2,
+      location_name: 'Stall',
+      location_address: null,
+      location_id: null,
+      location_category: null,
+    })
+    expect(Object.values(locationColumns(null)).every((value) => value === null)).toBe(true)
   })
 })

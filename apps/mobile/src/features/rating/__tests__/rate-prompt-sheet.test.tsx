@@ -29,6 +29,7 @@ jest.mock('@/lib/rating', () => ({
   ratingDisliked: (request: unknown) => mockDisliked(request),
   ratingDismissed: (request: unknown) => mockDismissed(request),
   ratingFeedbackOpened: (request: unknown) => mockFeedbackOpened(request),
+  setRatingSheetOpen: () => undefined,
   subscribeToRatingPrompt: (listener: (request: RatingRequest) => void) => {
     publish = listener
     return () => {

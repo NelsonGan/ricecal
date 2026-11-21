@@ -10,6 +10,7 @@ import {
   ensureNotificationPermission,
   scheduleScanNotice,
 } from '@/lib/notifications'
+import { autoTagLocation, autoTagWanted, recordMealForLocationsOffer } from '@/lib/places'
 import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
@@ -19,6 +20,7 @@ import { usePendingSnaps } from './pending-snaps'
 import { uploadMealPhoto } from './photos'
 import { announceRefusal, refusalFrom, ScanLimitError } from './refusals'
 import { useUserId } from './session'
+import type { EntryLocation } from './types'
 
 export type SnapInput = {
   logDate: string
@@ -46,6 +48,24 @@ export type DescribeInput = {
   logDate: string
   /** The meal in the user's own words. */
   text: string
+}
+
+/**
+ * How long a scan waits on the automatic tag once its photo is up (README:
+ * Meal locations). The fix starts at the shutter and the upload gives it a
+ * head start; past this the scan goes untagged rather than waiting on the GPS.
+ */
+const LOCATION_WAIT_MS = 3000
+
+/** The location if it lands in time, else none. Never throws: a meal outranks its address. */
+function settleLocation(
+  location: Promise<EntryLocation | null> | undefined,
+): Promise<EntryLocation | null> {
+  if (!location) return Promise.resolve(null)
+  return Promise.race([
+    location.catch(() => null),
+    new Promise<null>((resolve) => setTimeout(() => resolve(null), LOCATION_WAIT_MS)),
+  ])
 }
 
 /** What the scan-meal edge function answers with. */
@@ -85,6 +105,7 @@ async function scanMeal(input: {
   logDate: string
   barcode?: string
   note?: string
+  location?: EntryLocation | null
 }): Promise<ScanResponse> {
   const { data, error } = await supabase.functions.invoke<ScanResponse>('scan-meal', {
     body: {
@@ -95,6 +116,8 @@ async function scanMeal(input: {
       // Only with a photo: the server ignores it otherwise, and a typed meal
       // already is the words.
       note: input.photoPath && input.note ? input.note : undefined,
+      // An older function ignores it, so the deploy order does not matter here.
+      location: input.location ?? undefined,
     },
   })
   if (error) {
@@ -157,6 +180,8 @@ function useRecogniseMeal() {
       barcode?: string
       note?: string
     }): string => {
+      // Started now, at the shutter, so the upload covers the GPS's wait.
+      const location = autoTagWanted(userId, logDate) ? autoTagLocation(userId, logDate) : undefined
       // Not a database id: this row does not exist yet. Prefixed so nothing
       // mistakes it for one and tries to update it.
       const id = `snap-${Date.now()}-${Math.round(Math.random() * 1e6)}`
@@ -180,6 +205,8 @@ function useRecogniseMeal() {
         // is diary content, and analytics carries none.
         // A device with no camera has no photo, so its note is never sent.
         ...(method === 'camera' ? { with_note: Boolean(note && photoUri) } : {}),
+        // Asked for, not yet known: the fix may still miss the scan's wait.
+        ...(location ? { located: true } : {}),
       })
 
       const completed = (outcome: ScanOutcome, result?: ScanResponse) =>
@@ -233,7 +260,8 @@ function useRecogniseMeal() {
             throw settled(error instanceof Error ? error : new Error('upload failed'))
           }
         }
-        return scanMeal({ photoPath: path, text, logDate, barcode, note })
+        const where = await settleLocation(location)
+        return scanMeal({ photoPath: path, text, logDate, barcode, note, location: where })
       }
 
       work()
@@ -274,6 +302,7 @@ function useRecogniseMeal() {
           // the placeholder row still spinning. A plate with nothing edible in it
           // does not count, for the reason it is not a meal.
           recordMealLogged(userId)
+          recordMealForLocationsOffer(userId)
           pending.remove(id)
           queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })
           // The deferred auto post trigger may have published this scan.

@@ -124,6 +124,39 @@ function withPostHogSymbolUpload(cfg: ExpoConfig): ExpoConfig {
   }
 }
 
+/**
+ * Google Maps draws the maps on Android (react-native-maps; iOS uses Apple
+ * Maps, which needs no key). README: Meal locations. The key is restricted to
+ * the Maps SDK for Android and comes from the environment (the EAS env var for
+ * store builds, `apps/mobile/.env.local` locally), so this public repository
+ * never holds it.
+ *
+ * The Maps SDK crashes on a missing key but only logs an authorization failure
+ * on a wrong one, so a build without it gets a placeholder: a blank Android
+ * map with everything else working. A production Android build refuses to
+ * start without the real one, since a blank map in a store build is a bug
+ * nobody would see until a user did.
+ */
+const MISSING_GOOGLE_MAPS_KEY = 'missing-google-maps-android-key'
+
+function withGoogleMapsKey(cfg: ExpoConfig): ExpoConfig {
+  const apiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY?.trim()
+  if (
+    !apiKey &&
+    process.env.EAS_BUILD_PROFILE === 'production' &&
+    process.env.EAS_BUILD_PLATFORM === 'android'
+  ) {
+    throw new Error('GOOGLE_MAPS_ANDROID_API_KEY is not set for this production Android build.')
+  }
+  return {
+    ...cfg,
+    plugins: [
+      ...(cfg.plugins ?? []),
+      ['react-native-maps', { androidGoogleMapsApiKey: apiKey || MISSING_GOOGLE_MAPS_KEY }],
+    ],
+  }
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => {
   const merged: ExpoConfig = {
     ...baseConfig,
@@ -138,7 +171,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
   }
 
+  const mapped = withGoogleMapsKey(merged)
   if (IS_SIMULATOR_VARIANT)
-    return withPostHogSymbolUpload(withEasExtension(applySimulatorVariant(merged)))
-  return withPostHogSymbolUpload(withEasExtension(merged))
+    return withPostHogSymbolUpload(withEasExtension(applySimulatorVariant(mapped)))
+  return withPostHogSymbolUpload(withEasExtension(mapped))
 }

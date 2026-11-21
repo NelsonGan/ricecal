@@ -59,6 +59,11 @@ export const keys = {
    */
   dayAll: (userId: string) => ['day', userId] as const,
   /**
+   * Every entry this account tagged with a location, newest first: the food
+   * map and the place picker's recent places (README: Meal locations).
+   */
+  located: (userId: string) => ['located', userId] as const,
+  /**
    * One week of dots under the strip on Today: eaten, goal and movement per day.
    */
   dayMarks: (userId: string, from: string, to: string) => ['day-marks', userId, from, to] as const,
@@ -252,6 +257,9 @@ export const keys = {
 export function invalidateEatenTotals(queryClient: QueryClient, userId: string): void {
   queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
   queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
+  // The food map adds up the same calories by place, and any write can move
+  // one onto the map, off it, or to another day.
+  queryClient.invalidateQueries({ queryKey: keys.located(userId) })
   // Food also moves the lists' "logged today" count.
   invalidateGroupBoards(queryClient, userId, { lists: true })
 }
