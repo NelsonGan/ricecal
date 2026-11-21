@@ -59,7 +59,9 @@ const ONE_SPOT_DELTA = 0.02
 /** The idle panel: the period and its totals over one row of place cards. */
 const PANEL_HEIGHT = 220
 
+/** The switch over the map, in its order. */
 const PERIOD_KINDS = ['week', 'month', 'all'] as const
+
 /** The selected place's floating card. */
 const PLACE_CARD_HEIGHT = 228
 const PLACE_CARD_WIDTH = 132
@@ -379,7 +381,8 @@ export function FoodMapScreen() {
             return (
               <Tappable
                 key={kind}
-                onPress={() => setPeriod((now) => ({ ...now, kind }))}
+                // The kind already shown is not a new period: no refit.
+                onPress={() => setPeriod((now) => (now.kind === kind ? now : { ...now, kind }))}
                 accessibilityRole="tab"
                 accessibilityState={{ selected: on }}
                 accessibilityLabel={t(`places:${kind}`)}
