@@ -1675,24 +1675,6 @@ function FoodDetail() {
             <MeasureList choices={measureChoices} />
           </Sheet>
         </Card>
-
-        {/* WHERE, under the portion: what was eaten and how much come first,
-            and where is the footnote to them. See `pickLocation`. */}
-        {showLocation && !awaitingEntry ? (
-          <LocationCard
-            location={shownLocation}
-            resolving={composeTagged && draftLocation === undefined && autoLocation === undefined}
-            onPress={() => setPickingPlace(true)}
-          />
-        ) : null}
-        <PlacePickerSheet
-          visible={pickingPlace}
-          current={shownLocation}
-          locating={locationsOn}
-          onClose={() => setPickingPlace(false)}
-          onSelect={(location, source) => void pickLocation(location, source)}
-          onRemove={() => void pickLocation(null)}
-        />
       </View>
 
       {/* With two panes, the dish and its portion stay under the picture and
@@ -1897,6 +1879,25 @@ function FoodDetail() {
               )}
             </Card>
           ) : null}
+
+          {/* WHERE, last of all, under the ingredients: what was eaten, how
+          much and what it adds up to come first, and where is the footnote to
+          them. See `pickLocation`. */}
+          {showLocation && !awaitingEntry ? (
+            <LocationCard
+              location={shownLocation}
+              resolving={composeTagged && draftLocation === undefined && autoLocation === undefined}
+              onPress={() => setPickingPlace(true)}
+            />
+          ) : null}
+          <PlacePickerSheet
+            visible={pickingPlace}
+            current={shownLocation}
+            locating={locationsOn}
+            onClose={() => setPickingPlace(false)}
+            onSelect={(location, source) => void pickLocation(location, source)}
+            onRemove={() => void pickLocation(null)}
+          />
 
           {/* Correcting a dish by describing it belongs to an entry that already
           exists: "no sambal" is a fix to something logged, and on the way IN the

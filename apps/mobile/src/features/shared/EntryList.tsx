@@ -247,9 +247,6 @@ function EntryRow({
   // import carried. See `portionLabel`. The amount is what was eaten, so half
   // a photographed plate reads as half. One plain serving is left out.
   const portion = portionLabel(eatenQuantity(entry), entry.servingLabel, words)
-  const detail = entry.location
-    ? `${formatTime(entry.loggedAt)} · ${entry.location.name}`
-    : formatTime(entry.loggedAt)
 
   const row = (open?: () => void) => (
     <ItemRow
@@ -261,12 +258,9 @@ function EntryRow({
       // When, and how much. Each answers a question the other does not: the
       // time is where in the day this was, the portion is what the calories
       // are for. One plain serving has no pill, so the ones that do stand out.
-      // The place, when the meal has one, after the time and in the same
-      // line: "8:15 am · Village Park". The name only; the address is on the
-      // entry's own page.
-      detail={detail}
-      // Where somebody eats is their location history: kept out of replays.
-      maskDetail={Boolean(entry.location)}
+      // No place here: the list is the day at a glance, and where a meal was
+      // eaten is on the entry's own page and the food map.
+      detail={formatTime(entry.loggedAt)}
       tags={portion ? [portion] : undefined}
       compact
       onPress={open}
@@ -292,15 +286,6 @@ function EntryRow({
       ]}
       onPress={onPress ? () => onPress(entry) : undefined}
       onOpenChange={onOpenChange}
-      // Built from its children, the swipe row's label would read the masked
-      // place line as "ph-no-capture", so a row with a place names itself.
-      accessibilityLabel={
-        entry.location
-          ? [entry.foodName, `${entry.macros.kcal} ${t('common:unit.kcal')}`, detail, portion]
-              .filter(Boolean)
-              .join(', ')
-          : undefined
-      }
     >
       {row()}
     </SwipeRow>

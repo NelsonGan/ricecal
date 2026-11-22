@@ -4574,12 +4574,12 @@ that name is taken by `item_place`, the kind of stall. A build that predates
 them writes none and reads none.
 
 **Private to the owner.** Nothing that copies an entry to the feed or a group
-reads these columns. The food map, the picker, the entry page's Where card and
-the place on a Today row (`ItemRow`'s `maskDetail`) are wrapped in
-`ReplayMask`. The privacy policy says so. Analytics
+reads these columns. The food map, the picker and the entry page's Where card
+are wrapped in `ReplayMask`. The privacy policy says so. Analytics
 carries no coordinate, name, address or search text.
 
-**On the entry page**, a Where card under the portion shows the place, its
+**On the entry page**, a Where card at the very bottom, under the
+ingredients, shows the place, its
 address and a small still map, and opens the picker. With Locations off it
 shows only on an entry that already has a place. While composing a new entry
 the card shows the automatic tag before Add, so it can be changed or removed.
@@ -4592,9 +4592,9 @@ first, with the last three places tagged as chips; typing searches Apple Maps
 and frames the results. Use this spot saves whatever the pin is on: a listed
 place within 40 m, else the spot itself, named by the geocoders.
 
-**Today** prints the place after the time on a row ("8:15 am · Village
-Park"), and a map button beside the calendar toggle opens the food map while
-Locations is on or once any meal has a place.
+**Today** leaves the place off its rows, which show the time only; a map
+button beside the calendar toggle opens the food map while Locations is on or
+once any meal has a place.
 
 **The food map** (`app/food-map.tsx`) has one pin per place wearing its newest
 photographed plate, else its drawing, with a count. Places group by Apple's id,

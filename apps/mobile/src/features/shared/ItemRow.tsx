@@ -3,7 +3,6 @@ import { ActivityIndicator, View } from 'react-native'
 
 import type { IconRef } from '@/data'
 import { storedImageSource, useMealPhotoUrl } from '@/data'
-import { ReplayMask } from '@/lib/replay-mask'
 import { Badge, cn, Icon, Skeleton, Tappable, Text } from '@/ui'
 import { MealPhoto } from './MealPhoto'
 
@@ -53,11 +52,6 @@ export type ItemRowProps = {
   titleLines?: number
   /** "1 plate", "8:20 am", "Mamak · 1 piece". */
   detail?: string
-  /**
-   * Keeps the detail line out of session replays, for a row whose detail
-   * names where a meal was eaten. The row's spoken label still carries it.
-   */
-  maskDetail?: boolean
   /**
    * Small tinted pills after the detail: on Today, the portion ("½ bowl") and
    * a workout's length. Pills rather than more of the detail line, because
@@ -123,7 +117,6 @@ export function ItemRow({
   title,
   titleLines = 2,
   detail,
-  maskDetail = false,
   tags = [],
   tagTone = 'pandan',
   icon,
@@ -218,21 +211,17 @@ export function ItemRow({
         </Text>
         {valueUnderTitle && !busy ? valueLabel : null}
         {detail && tags.length === 0 ? (
-          <ReplayMask enabled={maskDetail}>
-            <Text variant="meta" numberOfLines={1}>
-              {detail}
-            </Text>
-          </ReplayMask>
+          <Text variant="meta" numberOfLines={1}>
+            {detail}
+          </Text>
         ) : detail || tags.length > 0 ? (
           // Wraps rather than truncating: a pill cut in half says nothing,
           // and at a large text size the second line is the honest cost.
           <View className="flex-row flex-wrap items-center gap-x-1.5 gap-y-1">
             {detail ? (
-              <ReplayMask enabled={maskDetail} style={{ flexShrink: 1 }}>
-                <Text variant="meta" numberOfLines={1} className="shrink">
-                  {detail}
-                </Text>
-              </ReplayMask>
+              <Text variant="meta" numberOfLines={1} className="shrink">
+                {detail}
+              </Text>
             ) : null}
             {tags.map((tag) => (
               <Badge key={tag} tone={tagTone} size="sm" className="px-2 py-0.5">
