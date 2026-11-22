@@ -6564,7 +6564,10 @@ The live workout, the outbox and the workout preferences all sit on
 key is written again, which is what lets a memoised card see that nothing
 changed: parsing the stored string on every read gave React a new tree each
 time. Every write goes through it, so a cached key is never read back from
-MMKV, which React asks for several times a render.
+MMKV, which React asks for several times a render. On a full disk MMKV throws
+from `set`; the store keeps the value in that cache for the run instead, because
+its callers include timers and a save's `onSuccess`, where a throw is a crash or
+a failed save. It is lost only if the app is killed before space frees up.
 
 ### Saving, and the charts
 
