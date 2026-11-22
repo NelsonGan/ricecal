@@ -10,8 +10,8 @@
 //   YouTube     yes      yes    by link        oEmbed and the watch page
 //   X           yes      yes    yes            X's own embed endpoint
 //   Facebook    yes      yes    yes            the page, as a browser asks
-//   Instagram   yes      yes    no             link-preview meta tags
-//   Threads     yes      yes    no             link-preview meta tags
+//   Instagram   yes      yes    no             link-preview meta tags, /media
+//   Threads     yes      card   no             link-preview meta tags
 //   Rednote     rarely   rarely no             blocked for servers outside China
 //
 // Most Instagram and Threads posts keep the recipe out of the caption ("link
@@ -30,6 +30,13 @@ export type FetchedPost = PostText & {
   /** The link, with the handle filled in when the page said it. */
   link: VideoLink
   coverUrl: string | null
+  /** Where to look when `coverUrl` does not answer with a picture. */
+  coverFallbackUrl?: string | null
+  /**
+   * The cover is a rendering of the post rather than a frame of the video:
+   * fine for the model to read, wrong as the recipe's photograph.
+   */
+  coverIsCard?: boolean
   /** A file the function can download, or for YouTube the watch link. */
   videoUrl: string | null
   /** Headers the video URL only answers with (TikTok signs it to the page's cookies). */
@@ -250,7 +257,22 @@ async function readPreview(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
   post.caption = caption
   post.title =
     tags['og:title']?.replace(/\s+on (?:Instagram|Threads)(?::[\s\S]*)?$/, '').trim() || null
-  post.coverUrl = httpsOrNull(tags['og:image'])
+  if (link.platform === 'instagram') {
+    // The preview's picture is 640 px on its long side (a reel's is 361 wide)
+    // and, for a reel, has a play button burned into its pixels, which the
+    // recipe page then showed enlarged over the dish. This address redirects
+    // to the same frame at 640 wide with no button. The preview's own URL is
+    // signed, so it cannot be edited into this one.
+    post.coverUrl = `https://www.instagram.com/p/${link.id}/media/?size=l`
+    post.coverFallbackUrl = httpsOrNull(tags['og:image'])
+  } else {
+    post.coverUrl = httpsOrNull(tags['og:image'])
+    // Threads answers a link preview with a picture of the whole post (its
+    // text, its logo, and the video or photos small inside it), for a photo
+    // post as much as a video. Worth showing the model; not a photograph of
+    // the dish.
+    post.coverIsCard = true
+  }
   post.videoUrl = httpsOrNull(tags['og:video'] ?? tags['og:video:secure_url'])
   return post
 }
@@ -453,7 +475,21 @@ async function readYouTube(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
     }
   }
   if (!post.title && !post.caption) return null
-  post.coverUrl ??= `https://i.ytimg.com/vi/${link.id}/hqdefault.jpg`
+  // oEmbed's picture is `hqdefault`, 480 by 360: for a Short, a sliver of the
+  // vertical video between blurred bars. The watch page names YouTube's own
+  // choice instead, `maxresdefault` for an HD video and a portrait frame for a
+  // Short; the portrait one it names is 405 wide, and `oardefault` is the same
+  // frame at 720.
+  const ogImage = watch ? httpsOrNull(metaTags(watch.text)['og:image']) : null
+  const hq = `https://i.ytimg.com/vi/${link.id}/hqdefault.jpg`
+  const fallback = post.coverUrl ?? hq
+  if (ogImage && /^https:\/\/i\d*\.ytimg\.com\/vi(?:_webp)?\/[^/]+\/oar/.test(ogImage)) {
+    post.coverUrl = `https://i.ytimg.com/vi/${link.id}/oardefault.jpg`
+    post.coverFallbackUrl = ogImage
+  } else {
+    post.coverUrl = ogImage ?? fallback
+    post.coverFallbackUrl = ogImage && ogImage !== fallback ? fallback : null
+  }
   // The video model fetches YouTube itself, by the watch link.
   post.videoUrl = link.canonicalUrl
   return post
@@ -824,9 +860,10 @@ export async function fetchMedia(
   typePrefix: 'image/' | 'video/',
   headers: Record<string, string> = { 'user-agent': BROWSER_UA },
   fetcher: Fetcher = fetch,
+  timeoutMs: number = MEDIA_TIMEOUT_MS,
 ): Promise<{ bytes: Uint8Array; type: string } | null> {
   try {
-    const res = await fetcher(url, { headers, signal: AbortSignal.timeout(MEDIA_TIMEOUT_MS) })
+    const res = await fetcher(url, { headers, signal: AbortSignal.timeout(timeoutMs) })
     const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
     const length = Number(res.headers.get('content-length') ?? 0)
     if (!res.ok || !type.startsWith(typePrefix) || length > maxBytes) {

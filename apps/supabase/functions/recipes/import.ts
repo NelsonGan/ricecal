@@ -63,6 +63,8 @@ const IMPORT_COLUMNS = 'id, status, reason, photo_key, platform, author_handle, 
 
 /** A cover is a picture for a card; past this it is not a cover. */
 const MAX_COVER_BYTES = 5 * 1024 * 1024
+/** How long a cover's first address gets when it has a second. */
+const FIRST_COVER_MS = 6_000
 
 type ImportContext = {
   db: SupabaseClient
@@ -149,10 +151,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
 
     // The video for the video model, the cover for the caption route and for
     // the card. Fetched together: neither waits on the other.
-    const [video, cover] = await Promise.all([
-      videoFor(fetched),
-      fetched.coverUrl ? fetchMedia(fetched.coverUrl, MAX_COVER_BYTES, 'image/') : null,
-    ])
+    const [video, cover] = await Promise.all([videoFor(fetched), fetchCover(fetched)])
     if (video === 'too_long') return tooLong()
     const coverMedia: PostMedia = cover
       ? { kind: 'image', base64: photoBase64(cover.bytes), type: cover.type }
@@ -188,7 +187,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
 
     const id = crypto.randomUUID()
     let photoKey: string | null = null
-    if (result.recipe.isRecipe && cover && r2Configured()) {
+    if (result.recipe.isRecipe && cover && !fetched.coverIsCard && r2Configured()) {
       try {
         photoKey = `imports/${id}.jpg`
         await writeObject(photoKey, cover.bytes, cover.type)
@@ -347,6 +346,28 @@ async function allowance(db: SupabaseClient, userId: string): Promise<Allowance 
   return data ?? null
 }
 
+/**
+ * The post's cover, from its second address when the first gives no picture.
+ * The first is given less time when there is a second, so a stalled address
+ * costs the import a few seconds rather than its whole cover budget twice.
+ */
+async function fetchCover(post: FetchedPost) {
+  if (post.coverUrl) {
+    const first = await fetchMedia(
+      post.coverUrl,
+      MAX_COVER_BYTES,
+      'image/',
+      undefined,
+      undefined,
+      post.coverFallbackUrl ? FIRST_COVER_MS : undefined,
+    )
+    if (first) return first
+  }
+  return post.coverFallbackUrl
+    ? await fetchMedia(post.coverFallbackUrl, MAX_COVER_BYTES, 'image/')
+    : null
+}
+
 /** The post, or the mock's stand-in for one. */
 async function readPost(
   link: VideoLink,
@@ -362,6 +383,8 @@ async function readPost(
       transcript: mockPost.transcript ?? null,
       linkedRecipe: mockPost.linkedRecipe ?? null,
       coverUrl: mockPost.coverUrl ?? null,
+      coverFallbackUrl: mockPost.coverFallbackUrl ?? null,
+      coverIsCard: mockPost.coverIsCard ?? false,
       videoUrl: mockPost.videoUrl ?? null,
       durationSeconds: mockPost.durationSeconds ?? null,
     }
