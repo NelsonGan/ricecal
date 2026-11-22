@@ -143,4 +143,15 @@ it('keeps the ticks from the recipe page when the recipe was opened from a share
   await renderScreen()
   await user.press(screen.getByText('Blend the paste.'))
   expect(screen.getByRole('checkbox', { name: /Chicken thigh/ })).toBeChecked()
+
+  // And finishing clears them under the same key, so the page starts clean.
+  await user.press(screen.getByText('Next step'))
+  await user.press(screen.getByText('Done'))
+  const after: { ticks: ReadonlySet<string> | null } = { ticks: null }
+  function ReadRecipePage() {
+    after.ticks = useTickedIngredients(rowId)[0]
+    return null
+  }
+  await render(<ReadRecipePage />)
+  expect(after.ticks?.size).toBe(0)
 })
