@@ -1833,6 +1833,7 @@ export const ms = {
       publicTitle: 'Jadikan ia awam',
       publicBody: 'Ia menyertai tab komuniti untuk sesiapa sahaja mencari dan menyimpannya.',
       publishFailed: 'Tidak dapat menukarnya. Cuba lagi.',
+      published: 'Resipi anda sudah masuk komuniti',
     },
 
     cook: {
@@ -1847,14 +1848,6 @@ export const ms = {
       finishedTitle: 'Selamat menjamu selera',
       finishedBody: 'Tambah satu hidangan ke hari anda?',
       finishedSkip: 'Bukan sekarang',
-    },
-
-    review: {
-      checking: 'Menyemak resipi anda…',
-      approved: 'Resipi anda sudah masuk komuniti',
-      rejected: 'Tidak diterbitkan: {{reason}}',
-      rejectedPlain: 'Kami tidak dapat menerbitkan yang ini.',
-      pending: 'Kami masih melihat yang ini. Ia akan muncul selepas ia lulus.',
     },
   },
 

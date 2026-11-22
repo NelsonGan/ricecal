@@ -650,7 +650,7 @@ copy.
   qualified. Without it a caller can shadow a table we reference.
 - **Grants are the outer gate.** Where a client must never write, there is no
   grant at all, not merely no policy, so a policy added later by mistake cannot
-  become an entitlement or a self-approving review.
+  become an entitlement or a way round a report.
 - **Every function the app calls revokes `public, anon` and grants who may
   call it**, invoker or definer. Postgres gives PUBLIC EXECUTE on any new
   function and a later `grant` does not take it away. Helpers that a column
@@ -3025,9 +3025,8 @@ changing, so saving the link leaves the star alone and the other way round, and
 favourite writes run one at a time (`scope` on `useFavouriteRecipe`) so two
 quick taps land in order.
 
-None of this is in the review-reset trigger: tags and minutes carry no free
-text, and the link is never shown to anyone else (the reviewer never reads it,
-and a link on a community card would be an advert). Copies (`save_recipe_copy`,
+Tags and minutes carry no free text, and the link is never shown to anyone
+else (a link on a community card would be an advert). Copies (`save_recipe_copy`,
 `save_shared_recipe_copy`) carry the times and tags and no `recipe_private` row.
 `tests/44_recipe_manager.test.sql` covers the grants, the checks, the owner-only
 link and star through the table, the view and a shared link, and the copy.
@@ -3056,63 +3055,45 @@ old short, name-bearing values once: those links used the wrong domain and had
 no working read path, so preserving them would keep a weak credential without
 preserving any working behaviour.
 
-### The publishing gate
+### Publishing a recipe
 
-Making a recipe public is two writes, and they are deliberately not one.
+Making a recipe public is one call, and it lists the recipe at once.
 
 ```
-set_recipe_public(id, true)          flips is_public, parks review_status at pending
-functions/recipes {action:review}    the model reads it, writes approved/rejected
+set_recipe_public(id, true)          flips is_public and writes review_status = approved
 ```
 
-`is_public` and `review_status` are **not** in the client's column grant. With a
-table-wide update grant the same client that asks to publish could approve
-itself, and the review would be a formality the app performs on itself.
-`set_recipe_public` can only ever move a row to `pending`; only `service_role`
-approves one.
+There used to be a model review between the two (`functions/recipes
+{action: 'review'}` asked Haiku "is this a recipe, and is it fit to read", and
+an edit to a published recipe sent it back to `pending` for another reading).
+It was removed in November 2026: nothing reads a recipe before the community
+sees it, and an edit leaves a published recipe listed. Reports and blocks
+(below) are what stands between a cook and the shelf now.
 
-**An edit sends a published recipe back**, and without that the gate is
-decoration: publish something bland, collect an approval, then rewrite the name
-and the steps into an advert, or replace the approved photograph. A trigger
-resets `review_status` when the name, the steps, the servings, the photograph or
-the ingredient list change on a public recipe. In the database, because a rule
-the client is trusted to follow is a rule an attacker declines to. Private
-recipes are left alone: there is nothing to re-review about something nobody
-else can see.
+`is_public` and `review_status` are still **not** in the client's column grant,
+and the community tab still reads `approved` only. The reason has changed: three
+reports park a recipe at `pending` (and private), and a client that could write
+`review_status` could undo that. `set_recipe_public` is owner-checked.
 
-**Everything fails shut.** The community tab reads `approved` only, so a review
-that errors, times out or was never deployed leaves the recipe public, pending
-and invisible, and the client says "we are still looking at this one" rather than
-claiming either verdict. There is no branch in `functions/recipes` that approves
-a recipe because something went wrong.
+**Released apps still ask for the review.** 1.x calls `{action: 'review'}`
+after publishing and after saving an edit to a public recipe, and shows
+"Your recipe is in the community" for `ok: true` and "still looking at it" for
+`ok: false`. The action stays and only reports what the row holds: `approved`
+answers `ok: true`, anything else `ok: false, status: 'pending'`. No model is
+called. Remove it only once no app in the stores calls it.
 
-**The reviewer asks one question and it is "is this a recipe".** Two grounds
-follow: the text is not a recipe at all (placeholder text, a note to nobody,
-things that are not food), or it is not fit to read (vulgarity, hate, spam, an
-advert, a link). A moderator with a wider brief starts rejecting food it finds
-unhealthy, and the app has a calorie budget for that.
-
-Accuracy is explicitly none of its business, and that is a correction rather than
-an omission. There used to be a second ground about nutrition being credible, and
-it read as an invitation to audit: a model handed a licence to check arithmetic
-finds something wrong with almost every real pot, and ordinary home cooking was
-rejected often enough that publishing felt broken. The author could do nothing
-with it either, because the figures are the cascade's and not theirs. So the
-reviewer is not shown a single calorie figure, and is told outright that the
-numbers are the app's work.
-
-The review has a ceiling of its own, and it is not the user's. Reading a recipe
-somebody asked to publish is the app's own moderation, so spending their daily
-scans on it would be the app billing them for its own check.
-`claim_recipe_review` is ten an hour, per account, atomic, with no client write
-grant. Refused, the recipe stays `pending`.
+`review_note` and the `rejected` value stay for the same reason. Nothing writes
+either any more; the migration that removed the review unpublished the public
+recipes the old reviewer had rejected, so publishing one again lists it.
 
 ### Reporting a recipe, and blocking its cook
 
 App Review guideline 1.2 asks four things of an app whose users read each other's
-writing, and the community shelf is exactly that. Three of them the publishing
-gate above already covered: a filter before anything is posted, the ability to
-take something down, and published contact. The two halves a READER controls are
+writing, and the community shelf is exactly that: a filter before anything is
+posted, the ability to take something down, published contact, and the two
+halves a READER controls. The filter was the model review, removed in November
+2026 (see [Publishing a recipe](#publishing-a-recipe)), so a recipe is listed
+unread; App Review may ask about it. The two reader halves are
 `schemas/24_moderation.sql`.
 
 - **Report** writes a `recipe_reports` row, one per person per recipe, and the
@@ -3133,10 +3114,10 @@ policy that defers to this one all go through it.
 **Three separate people take a recipe off the shelf for everybody.** One would
 make the report button a weapon; ten would leave something genuinely offensive up
 until ten people had seen it, and the guideline asks for a timely response rather
-than a popular one. `report_threshold()` is the number, and the trigger parks the
-row at `pending` rather than `rejected`: both are invisible, and only one of them
-is a claim, so re-running the review is all it takes to put back a recipe three
-people were wrong about.
+than a popular one. `report_threshold()` is the number, and the trigger
+unpublishes the row and parks it at `pending` rather than `rejected`, which was
+the old reviewer's word. With no review, its owner can publish it again, and it
+is listed again for everybody but the three who reported it.
 
 **Neither table is readable by anyone but the person who wrote the row, and the
 author is never told.** A report is an accusation and a block is a judgement
@@ -3250,7 +3231,7 @@ datacenter may be refused where this was not, so watch `unreadable` in
 | platform | caption | video | how |
 |---|---|---|---|
 | TikTok | yes | yes, and the spoken transcript | the page's rehydration JSON, asked for twice when the first page comes back without the post (it now and then does, and is fine the second time); the file is signed to that page's cookies, and the smallest H.264 copy that fits is taken (`smallestTikTokVideo`), since a two-minute reel's best copy is over the 18 MB the model is sent |
-| YouTube | yes | by link | oEmbed and the watch page, which also gives the length; the video model fetches YouTube itself |
+| YouTube | yes | no | oEmbed and the watch page, which also gives the length; the video is not watched (Gemini, the only model that fetched YouTube, is not used) |
 | X | yes | yes | X's own embed endpoint (`cdn.syndication.twimg.com`) |
 | Facebook | yes | yes | the page as a browser asks for it |
 | Instagram, Threads | yes | no | link-preview meta tags (`facebookexternalhit`); Instagram's cover from `/p/<code>/media/?size=l` |
@@ -3271,27 +3252,33 @@ Short's own ceiling) is refused with `too_long` and nothing is cached, because
 a video model's bill grows with every second it watches. TikTok, X and YouTube
 say the length on the page, so a long one is refused before anything is
 downloaded; a downloaded file is checked again by its own MP4 header
-(`mp4Seconds`), the one length Facebook and Instagram give away. A YouTube
-video whose page did not say its length is not watched at all: the model
-fetches the link itself, and nothing would cap what it watched.
+(`mp4Seconds`), the one length Facebook and Instagram give away. YouTube is
+not watched at all (see below), but the ceiling holds there too: the import is
+for short-form cooking.
 
 **The models, and which one depends on what could be fetched.** Most recipe
 reels say their amounts out loud or put them on screen, so where the video can
 be had a video model watches it with its sound. Claude does not take video or
 audio, so these routes are billed to OpenRouter credits. A downloaded file goes
-to `meta/muse-ember`, then `xiaomi/mimo-v2.6-flash` if Muse fails; a YouTube
-link to `google/gemini-3.8-flash`, the only one of the three that fetches
-YouTube itself. Measured on seven real posts with their caption and transcript
-taken away, so only watching and listening could answer: Muse named 95% of the
-creators' key ingredients in 9 s for about $0.002 a video, Gemini 87% for
-$0.010, MiMo 62% (it hears the speech, then writes a generic recipe) in up to
-34 s. Each model is a secret (`OPENROUTER_VIDEO_MODEL`,
-`OPENROUTER_VIDEO_FALLBACK_MODEL`, `OPENROUTER_VIDEO_LINK_MODEL`), and `off`
-takes one out without a deploy. All three get `reasoning: { effort: 'low' }`
-(Gemini refuses `{ enabled: false }` with a 400) and a 12,000 token ceiling.
-Muse gets 30 s, which it never came near, so a stall still leaves MiMo its turn.
-Gemini, alone on its route, is asked once more for an answer that will not
-parse. Any other failure falls back to the ordinary Haiku-then-Qwen chain with
+to `meta/muse-ember`, then `xiaomi/mimo-v2.6-flash` if Muse fails. Measured on
+seven real posts with their caption and transcript taken away, so only watching
+and listening could answer: Muse named 95% of the creators' key ingredients in
+9 s for about $0.002 a video, MiMo 62% (it hears the speech, then writes a
+generic recipe) in up to 34 s. Each model is a secret (`OPENROUTER_VIDEO_MODEL`,
+`OPENROUTER_VIDEO_FALLBACK_MODEL`), and `off` takes one out without a deploy.
+Both get `reasoning: { effort: 'low' }` and a 12,000 token ceiling. Muse gets
+30 s, which it never came near, so a stall still leaves MiMo its turn. A model
+alone on the route (the other set to `off`) is asked once more for an answer
+that will not parse.
+
+**Gemini is never used.** `google/gemini-3.8-flash` watched YouTube links (it
+was the only model that fetches YouTube itself, 87% for $0.010 a video) until
+November 2026; it was removed, and no secret brings it back
+(`OPENROUTER_VIDEO_LINK_MODEL` is not read). A YouTube video is not watched at
+all now: it gets the caption route, from its title, description and cover, and
+a "not a recipe" from that is cached like any other verdict.
+
+Any other failure falls back to the ordinary Haiku-then-Qwen chain with
 the caption, the transcript, the linked recipe and the cover image. Both answer one
 prompt (`import-video-recipe`, hosted in PostHog like the rest), which reuses
 the describe path's `RECIPE_SHAPE` and `RECIPE_STEPS` and adds four things: is
@@ -3301,9 +3288,8 @@ names and steps are written in English because one cached draft serves every
 reader, and the caption is fenced as data, because it is a stranger's text and
 the answer is shown to everybody who imports the video.
 
-**One video, one community card.** The first importer's recipe is published,
-pending the same review a hand-written recipe gets (it runs in the import, so
-nobody presses Publish). Everybody after gets a private recipe of their own,
+**One video, one community card.** The first importer's recipe is published
+and listed at once, as a hand-written one is. Everybody after gets a private recipe of their own,
 pointing at it through `source_recipe_id` and counted as one save of it, so a
 viral reel is one card on the shelf rather than one per person who liked it. If
 the first importer unpublishes or deletes theirs, the next import takes its
@@ -3366,12 +3352,9 @@ caption route its 70 s worst case. And the action is wrapped in `respondWithin`
 answer ready in five seconds is sent as it is, and a slower one becomes a 200
 JSON stream that writes a space every eight seconds and then the answer
 (leading whitespace is valid JSON). The late answer keeps its `code` in the
-body, which is what the app reads. The publish review of a new community recipe
-runs after the response (`EdgeRuntime.waitUntil`), outside the reviewer's
-hourly ceiling, since the import allowance already bounds it and a refusal
-would strand the card at pending. A rejected community recipe hands the card
-on, like an unpublished one: a rejection judges what its owner made of it, not
-the video.
+body, which is what the app reads. An unpublished community recipe hands the
+card on, and so does one the old reviewer rejected: that judged what its owner
+made of it, not the video.
 
 **The screen** starts the import as soon as it opens, since both ways in were
 the user saying "import this", and shows the link with three stages on a timer
@@ -7900,7 +7883,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Weight Logged | ricecal_weight_logged | none | `src/data/weight.ts` | Manual weight-log write succeeds; each success, without its value. Health-imported readings are excluded. |
 | Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` | Recipe save succeeds; each new/edit save, with ingredient/serving counts only. |
 | Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` | Photo/text drafting reaches its outcome; each attempt, including refusals, empty and failure. It does not prove a recipe was saved. |
-| Recipe Published | ricecal_recipe_published | outcome: 'approved' &#124; 'rejected' &#124; 'pending' | `src/data/recipes.ts` | A public save or publish operation returns moderation status; each result. Unpublishing emits nothing. |
+| Recipe Published | ricecal_recipe_published | outcome: 'approved' &#124; 'rejected' &#124; 'pending' | `src/data/recipes.ts` | Turning a recipe public; once per publish, with the status `set_recipe_public` returns, which is always `approved` since the publish review was removed. `rejected` and `pending`, and an event on saving an edit to a public recipe, come only from older builds. Unpublishing emits nothing. |
 | Recipe Imported | ricecal_recipe_imported | platform: string; outcome: ImportOutcome | `src/data/recipes.ts` | An import of a cooking video answers; each attempt, once, including refusals and failures. `imported` and `existing` mean a recipe is on the user's shelf (written by the server); the link itself is never sent. |
 | Recipe Copied | ricecal_recipe_copied | none | `src/data/recipes.ts` | Copying a community recipe succeeds; each successful copy. |
 | Recipe Reported | ricecal_recipe_reported | reason: ReportReason | `src/data/moderation.ts` | Moderation report write succeeds; each successful report, with its controlled reason only. |
@@ -8346,7 +8329,7 @@ scan's vision call, catalogue pick and nutrition estimate read as one trace.
 
 | Property | Value |
 | --- | --- |
-| `$ai_span_name` | What the call is for: `analyse_photo`, `describe_meal`, `pick_candidate`, `estimate_nutrition`, `interpret_instruction`, `read_recipe_photo`, `describe_recipe`, `review_recipe`, `suggest_meals`, `moderate_submission` |
+| `$ai_span_name` | What the call is for: `analyse_photo`, `describe_meal`, `pick_candidate`, `estimate_nutrition`, `interpret_instruction`, `read_recipe_photo`, `describe_recipe`, `suggest_meals`, `moderate_submission`, `import_video_recipe`. `review_recipe` appears only in events from before November 2026, when the recipe publish review was removed |
 | `$ai_model`, `$ai_provider`, `$ai_base_url` | The OpenRouter model the request named: `anthropic/claude-haiku-5.5` (`OPENROUTER_BYOK_MODEL`) or the Qwen fallback (`OPENROUTER_MODEL`), `openrouter` |
 | `$ai_input_tokens`, `$ai_output_tokens`, `$ai_cache_read_input_tokens`, `$ai_cache_creation_input_tokens` | From OpenRouter's `usage`: the cache pair is the system prompt read from or written to Anthropic's prompt cache (`prompt_tokens_details.cached_tokens` / `cache_write_tokens`) |
 | `$ai_total_cost_usd`, `$ai_cost_passthrough` | What the call cost us, not re-priced: OpenRouter's charge (`usage.cost`), plus, when our own key paid, what Anthropic bills directly (`usage.cost_details.upstream_inference_cost`), since under BYOK `cost` is only OpenRouter's fee |
@@ -8384,7 +8367,6 @@ without a deploy.
 | `interpret-instruction` | `interpret_instruction` | `INTERPRET_INSTRUCTION_PROMPT`, `_shared/llm.ts` |
 | `read-recipe-photo` | `read_recipe_photo` | `READ_RECIPE_PROMPT`, `_shared/recipe.ts` |
 | `describe-recipe` | `describe_recipe` | `DESCRIBE_RECIPE_PROMPT`, `_shared/recipe.ts` |
-| `review-recipe` | `review_recipe` | `REVIEW_RECIPE_PROMPT`, `_shared/recipe.ts` |
 | `suggest-meals` | `suggest_meals` | `SUGGEST_MEAL_PROMPT`, `_shared/suggest.ts` |
 | `moderate-submission` | `moderate_submission` | `REVIEW_PROMPT`, `social/review.ts` |
 | `import-video-recipe` | `import_video_recipe` | `IMPORT_VIDEO_RECIPE_PROMPT`, `_shared/video-recipe.ts` |
@@ -10521,10 +10503,10 @@ Guideline 1.2, and the community shelf is the only such surface here. Both are
 RLS rather than a query filter, so nothing that reads `recipes` has to remember
 them. See [Reporting a recipe](#reporting-a-recipe-and-blocking-its-cook).
 
-**A recipe reaches the community only when a reviewer says so.** `is_public` and
-`review_status` are outside the client's column grant, and the community query
-requires `approved`. Every failure in the review leaves the row `pending`, which
-is invisible.
+**Only `set_recipe_public` lists a recipe.** `is_public` and `review_status`
+are outside the client's column grant, and the community query requires
+`approved`. There is no review any more, but three reports park a recipe at
+`pending`, and a client that could write the column could put it back.
 
 **Adjust the amount, never the macros**, when a row is the right dish at the
 wrong size.

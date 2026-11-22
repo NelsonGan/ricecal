@@ -1800,6 +1800,7 @@ export const ko = {
       publicTitle: '공개로 만들기',
       publicBody: '커뮤니티 탭에 올라가 누구나 찾아 저장할 수 있게 됩니다.',
       publishFailed: '그건 바꾸지 못했습니다. 다시 시도하세요.',
+      published: '레시피가 커뮤니티에 올라갔습니다',
     },
 
     cook: {
@@ -1814,14 +1815,6 @@ export const ko = {
       finishedTitle: '맛있게 드세요',
       finishedBody: '1인분을 오늘에 추가할까요?',
       finishedSkip: '나중에',
-    },
-
-    review: {
-      checking: '레시피를 확인하는 중…',
-      approved: '레시피가 커뮤니티에 올라갔습니다',
-      rejected: '게시되지 않음: {{reason}}',
-      rejectedPlain: '이건 게시하지 못했습니다.',
-      pending: '아직 확인 중입니다. 통과하면 보입니다.',
     },
   },
 

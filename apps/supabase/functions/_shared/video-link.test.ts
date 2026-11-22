@@ -21,7 +21,7 @@ import {
   transcriptFromVtt,
   unwrapPreviewCaption,
 } from './video-post.ts'
-import { cachedDraft, importVideoRecipe, postUserMessage } from './video-recipe.ts'
+import { cachedDraft, importVideoRecipe, postUserMessage, videoRoutes } from './video-recipe.ts'
 
 const eq = (got: unknown, want: unknown, what: string) => {
   if (got !== want) throw new Error(`${what}: expected ${want}, got ${got}`)
@@ -617,18 +617,14 @@ Deno.test('a video file goes to Muse Ember, then MiMo, then the caption', async 
   eq(neither.analysedFrom, 'caption', 'the caption answers')
 })
 
-Deno.test('a YouTube link goes to Gemini, asked again only for an answer that would not parse', async () => {
-  const link = { kind: 'video' as const, url: 'https://www.youtube.com/watch?v=3s9njjK_SdY' }
-  const again = await watchWith(link, (m, nth) =>
-    m.startsWith('google/') && nth === 1 ? garbled() : laksa(),
+Deno.test('no route asks Gemini, whatever the old link secret says', () => {
+  const models = videoRoutes().map((r) => r.model)
+  eq(models.join(), 'meta/muse-ember,xiaomi/mimo-v2.6-flash', 'Muse, then MiMo')
+  eq(
+    models.some((m) => m.includes('gemini')),
+    false,
+    'Gemini is never a video model',
   )
-  eq(again.asked.join(), 'google/gemini-3.8-flash,google/gemini-3.8-flash', 'twice')
-  eq(again.analysedFrom, 'video', 'the second answer is used')
-
-  const down = await watchWith(link, (m) => (m.startsWith('google/') ? refused() : laksa()))
-  eq(down.asked[0], 'google/gemini-3.8-flash', 'Gemini first')
-  eq(down.asked.filter((m) => m.startsWith('google/')).length, 1, 'an error is not asked again')
-  eq(down.analysedFrom, 'caption', 'the caption answers')
 })
 
 Deno.test('X and YouTube pages say how long their video runs', async () => {

@@ -266,16 +266,13 @@ grant execute on function public.get_shared_recipe_ingredients to authenticated,
 -- Asking for a recipe to be published, and taking it back.
 --
 -- A function rather than an update, because `is_public` and `review_status` are
--- not in the client's column grant. What this can do is put a recipe in front of
--- a reviewer; what it cannot do at all is approve one. Every publish starts at
--- `pending`, including the second publish of a recipe that was approved and then
--- edited, which is the case that makes the reset matter: an approved recipe
--- rewritten into something else would otherwise stay approved on the strength of
--- a review of the old text.
+-- not in the client's column grant: this checks the owner. Publishing lists the
+-- recipe at once (`approved`); there is no review in between any more. Released
+-- apps still call `functions/recipes {action: 'review'}` afterwards, which now
+-- only reports the state this wrote.
 --
--- Unpublishing leaves the verdict where it was. It is a fact about the text, and
--- re-publishing unchanged text does not need a second opinion, but it gets one
--- anyway, because the app cannot tell "unchanged" from "changed back".
+-- Unpublishing leaves `review_status` where it was. Republishing a recipe that
+-- three reports took down lists it again, as any publish does.
 -- ---------------------------------------------------------------------------
 create or replace function public.set_recipe_public(
   p_recipe_id uuid,
@@ -298,7 +295,7 @@ begin
 
   if p_public then
     update public.recipes
-    set is_public = true, review_status = 'pending', review_note = null
+    set is_public = true, review_status = 'approved', review_note = null
     where id = p_recipe_id
     returning review_status into v_status;
   else
@@ -313,9 +310,8 @@ end;
 $$;
 
 comment on function public.set_recipe_public is
-  'Ask for a recipe to be listed in the community tab, or take it back. Always '
-  'leaves the review at `pending`: approval is the review function''s to give, '
-  'never the client''s. Owner-checked.';
+  'List a recipe in the community tab, or take it back. Publishing writes '
+  '`approved` at once; there is no review. Owner-checked.';
 
 revoke execute on function public.set_recipe_public from public, anon;
 grant execute on function public.set_recipe_public to authenticated, service_role;

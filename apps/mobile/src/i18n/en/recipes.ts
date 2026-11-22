@@ -356,6 +356,7 @@ export const recipes = {
     publicTitle: 'Make it public',
     publicBody: 'It joins the community tab for anyone to find and save.',
     publishFailed: 'Could not change that. Try again.',
+    published: 'Your recipe is in the community',
   },
 
   /**
@@ -375,17 +376,5 @@ export const recipes = {
     finishedTitle: 'Enjoy your meal',
     finishedBody: 'Add a serving to your day?',
     finishedSkip: 'Not now',
-  },
-
-  /**
-   * What the review said. Three outcomes and they are deliberately distinct:
-   * `pending` is not a soft rejection, it is nobody having read it yet.
-   */
-  review: {
-    checking: 'Checking your recipe…',
-    approved: 'Your recipe is in the community',
-    rejected: 'Not published: {{reason}}',
-    rejectedPlain: 'We could not publish this one.',
-    pending: 'We are still looking at this one. It will show up once it passes.',
   },
 } as const

@@ -87,12 +87,11 @@ select throws_ok(
   'a source link with whitespace in it is refused'
 );
 
--- Starred again, so the reader's checks below prove it is hidden. Then publish
--- and approve as the reviewer would, so the reader can see the recipe.
+-- Starred again, so the reader's checks below prove it is hidden. Then
+-- published, which lists it at once, so the reader can see the recipe.
 update public.recipe_private set is_favourite = true where recipe_id = :'recipe_id';
 select public.set_recipe_public(:'recipe_id'::uuid, true);
 reset role;
-update public.recipes set review_status = 'approved' where id = :'recipe_id';
 
 
 -- ANYBODY ELSE ---------------------------------------------------------------

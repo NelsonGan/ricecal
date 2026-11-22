@@ -152,8 +152,8 @@ select is(
 
 reset role;
 
--- Public but not yet reviewed. This is the assertion the whole moderation gate
--- rests on: asking to publish is not publishing.
+-- Public but parked at `pending`, which is where three reports leave a recipe.
+-- The shelf reads `approved` only, so it is not shown.
 update public.recipes set is_public = true, review_status = 'pending'
 where id = :'recipe_id';
 
@@ -164,12 +164,12 @@ set local role authenticated;
 select is(
   (select count(*)::integer from public.recipes where name = 'fixture-pot-a'),
   0,
-  'a recipe awaiting review is not in the community yet'
+  'a public recipe parked at pending is not in the community'
 );
 
--- The other half of that gate: a client that simply approved itself would make
--- the review a formality the app performs on itself. `review_status` is not in
--- the column grant, so this is a privilege error rather than a policy one.
+-- A client that could approve itself could undo the report threshold.
+-- `review_status` is not in the column grant, so this is a privilege error
+-- rather than a policy one.
 select throws_ok(
   $q$update public.recipes set review_status = 'approved'$q$,
   '42501',
@@ -177,11 +177,9 @@ select throws_ok(
   'and no client can approve one itself'
 );
 
--- The SAME gate on the way IN. A table-wide insert grant let a client create
--- the row already approved and public, skipping the reviewer entirely — the
--- before-insert trigger does not touch these columns. `review_status` and
--- `is_public` are out of the INSERT grant too, so naming either is a privilege
--- error before RLS is even consulted.
+-- The same on the way IN: publishing goes through `set_recipe_public`, which
+-- checks the owner. `review_status` and `is_public` are out of the INSERT grant
+-- too, so naming either is a privilege error before RLS is even consulted.
 select throws_ok(
   $q$insert into public.recipes (owner_id, name, servings, review_status)
      values ((select auth.uid()), 'fixture-insert-approved', 1, 'approved')$q$,
@@ -219,8 +217,8 @@ select is(
   'with its ingredients, because visibility follows the recipe'
 );
 
--- THE GATE'S SECOND HALF. Publishing bland text and then rewriting it is the
--- way round a reviewer that only ever reads a recipe once.
+-- No reviewer reads a recipe any more, so an edit to a published one leaves it
+-- listed. The trigger that sent it back to `pending` is gone.
 reset role;
 
 select set_config('request.jwt.claims',
@@ -231,8 +229,8 @@ reset role;
 
 select is(
   (select review_status::text from public.recipes where id = :'recipe_id'),
-  'pending',
-  'editing a published recipe sends it back to the reviewer'
+  'approved',
+  'editing a published recipe leaves it listed'
 );
 
 select is(
@@ -241,36 +239,26 @@ select is(
   'and leaves it public, so the author does not have to ask twice'
 );
 
--- A photograph is reviewed material too. Now that community photographs are
--- readable, replacing one under an old approval would be the same bypass as
--- rewriting the steps.
-update public.recipes set review_status = 'approved' where id = :'recipe_id';
 update public.recipes
 set photo_path = 'meals/33333333-3333-3333-3333-333333333333/replacement.jpg'
 where id = :'recipe_id';
 
 select is(
   (select review_status::text from public.recipes where id = :'recipe_id'),
-  'pending',
+  'approved',
   'and so does replacing its photograph'
 );
-
--- The nutrition is reviewable too — "calories that do not follow from the
--- ingredients" is one of the two grounds — so swapping the list has to count.
-update public.recipes set review_status = 'approved' where id = :'recipe_id';
 
 update public.recipe_ingredients set amount = 5000
 where recipe_id = :'recipe_id' and name = 'Beef shin';
 
 select is(
   (select review_status::text from public.recipes where id = :'recipe_id'),
-  'pending',
+  'approved',
   'and so does rewriting what is in it'
 );
 
--- A private recipe has nothing to re-review: nobody but its author can see it,
--- and marking it pending would let an edit stand in for a reading on the next
--- publish.
+-- A private recipe's state is left alone by an edit too.
 select id as private_id from public.recipes where name = 'fixture-kitchen-a' \gset
 
 -- Approved FIRST, so the assertion has something to preserve: `pending` is the
