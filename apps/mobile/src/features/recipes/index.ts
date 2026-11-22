@@ -51,6 +51,16 @@ export {
 } from './RecipeIngredientEditor'
 export { RecipeNutrition, RecipeStats } from './RecipeStats'
 export { RecipeSteps, splitSteps } from './RecipeSteps'
+export {
+  type CookingStep,
+  cookingSteps,
+  localiseIngredients,
+  localiseRecipe,
+  type RecipeLanguage,
+  shownRecipe,
+  translationFor,
+  useRecipeLanguage,
+} from './recipeLanguage'
 export { ShareSheet, type ShareSheetProps } from './ShareSheet'
 export { StepsField, type StepsFieldProps } from './StepsField'
 export { recipeLink } from './share'

@@ -1765,6 +1765,7 @@ export const ja = {
       perServing: '1 人前',
       tabIngredients: '材料',
       tabMethod: '作り方',
+      language: 'レシピの言語',
       cookingFor: '何人分作る',
       tick: '{{name}} にチェック',
       source: '出典',

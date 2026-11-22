@@ -8,6 +8,7 @@ import { useThemeColors } from '@/theme/useTheme'
 import { Icon, IconButton, Skeleton, Tappable, Text } from '@/ui'
 import { totalMinutes } from './cooking'
 import { PlatformLogo } from './PlatformLogo'
+import { useRecipeLanguage } from './recipeLanguage'
 import { useDurationText } from './useDurationText'
 
 export type RecipeCardProps = {
@@ -30,6 +31,10 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
   const { t } = useTranslation(['recipes', 'common'])
   const duration = useDurationText()
   const colors = useThemeColors()
+  // The name in the reader's language when the recipe has been translated
+  // into it, as the recipe page shows it.
+  const language = useRecipeLanguage(recipe)
+  const name = (!language.english && language.translation?.name) || recipe.name
   const { data: photoUrl, isLoading: resolvingPhoto } = useMealPhotoUrl(recipe.photoPath)
   const photo = storedImageSource(recipe.photoPath, photoUrl)
   const calories = recipe.perServing.kcal.toLocaleString()
@@ -57,7 +62,7 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={[
-          recipe.name,
+          name,
           recipe.isFavourite ? t('recipes:card.favourite') : null,
           recipe.videoCredit ? t(`recipes:platform.${recipe.videoCredit.platform}`) : null,
           priced ? `${calories} ${unit}` : null,
@@ -108,7 +113,7 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
           {/* The name leaves the plus its room; the time line under it runs
               the card's whole width, so "1 h 30 min · 12 servings" fits. */}
           <Text variant="label" numberOfLines={2} className={logs ? 'pr-[34px]' : undefined}>
-            {recipe.name}
+            {name}
           </Text>
           <Text variant="caption" numberOfLines={1} className={logs ? 'pr-[34px]' : undefined}>
             {meta}
@@ -126,7 +131,7 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
             variant="primary"
             size="xxs"
             hitSlop={8}
-            accessibilityLabel={t('recipes:card.log', { name: recipe.name })}
+            accessibilityLabel={t('recipes:card.log', { name: name })}
             onPress={onLog}
           >
             <Icon set="ui" name="plus" size={14} tintColor={colors.onPandan} />

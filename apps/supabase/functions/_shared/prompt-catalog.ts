@@ -15,6 +15,7 @@ import {
 } from './llm.ts'
 import type { PromptName } from './prompts.ts'
 import { DESCRIBE_RECIPE_PROMPT, READ_RECIPE_PROMPT } from './recipe.ts'
+import { TRANSLATE_RECIPE_PROMPT } from './recipe-translation.ts'
 import { SUGGEST_MEAL_PROMPT } from './suggest.ts'
 import { IMPORT_VIDEO_RECIPE_PROMPT } from './video-recipe.ts'
 
@@ -30,4 +31,5 @@ export const BUNDLED_PROMPTS: Record<PromptName, string> = {
   'suggest-meals': SUGGEST_MEAL_PROMPT,
   'moderate-submission': REVIEW_PROMPT,
   'import-video-recipe': IMPORT_VIDEO_RECIPE_PROMPT,
+  'translate-recipe': TRANSLATE_RECIPE_PROMPT,
 }

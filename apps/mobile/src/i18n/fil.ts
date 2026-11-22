@@ -1794,6 +1794,7 @@ export const fil = {
       perServing: 'kada serving',
       tabIngredients: 'Mga sangkap',
       tabMethod: 'Paraan',
+      language: 'Wika ng recipe',
       cookingFor: 'Lulutuin para sa',
       tick: 'Lagyan ng tsek ang {{name}}',
       source: 'Pinagmulan',

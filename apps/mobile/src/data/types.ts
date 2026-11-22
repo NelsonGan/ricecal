@@ -1,3 +1,4 @@
+import type { Language } from '@/i18n/languages'
 import type { Database, Enums, Tables } from '@/lib/database.types'
 import type { MeasureUnit } from '@/lib/measures'
 import type { IconProps } from '@/ui'
@@ -336,6 +337,23 @@ export type Recipe = {
    * wrote it out of the platform's answer, so unlike `sourceUrl` it is public.
    */
   videoCredit?: VideoCredit
+  /**
+   * An imported recipe in other app languages, keyed by language code. The
+   * fields above are always the English, which every reader falls back on.
+   * See `recipes.translations` and `features/recipes/recipeLanguage.ts`.
+   */
+  translations?: Partial<Record<Language, RecipeTranslation>>
+}
+
+/**
+ * An imported recipe's words in one other language. Any part can be missing:
+ * a name or a method the owner rewrote since drops its translation.
+ */
+export type RecipeTranslation = {
+  name?: string
+  steps?: string
+  /** Each translated ingredient name, keyed by the English name it translates. */
+  ingredients?: Record<string, string>
 }
 
 /** The platforms a recipe can be imported from. `recipes.import_platform` checks the same set. */

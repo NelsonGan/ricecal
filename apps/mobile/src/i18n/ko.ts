@@ -1759,6 +1759,7 @@ export const ko = {
       perServing: '1인분당',
       tabIngredients: '재료',
       tabMethod: '조리법',
+      language: '레시피 언어',
       cookingFor: '몇 인분 만들기',
       tick: '{{name}} 체크',
       source: '출처',

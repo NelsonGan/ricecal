@@ -10,7 +10,9 @@ import {
   useRecentFoods,
   useRecipes,
 } from '@/data'
+import { shownRecipe } from '@/features/recipes/recipeLanguage'
 import { ItemRow, ROW_TILE } from '@/features/shared'
+import { currentLanguage } from '@/i18n'
 import { track } from '@/lib/analytics'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
@@ -457,7 +459,10 @@ function OwnFoodList({
 }) {
   const { t } = useTranslation(['logging', 'recipes', 'common'])
   const colors = useThemeColors()
-  const { data: recipes = [], isPending, isPaused, isError } = useRecipes('mine', query)
+  const { data: stored = [], isPending, isPaused, isError } = useRecipes('mine', query)
+  // Each under the name its card on the Recipes tab shows, which for an
+  // imported recipe may be a translation, and logged under that name too.
+  const recipes = stored.map((recipe) => shownRecipe(recipe, currentLanguage()))
 
   const searched = query.trim().length > 0
 

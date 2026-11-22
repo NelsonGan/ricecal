@@ -1753,6 +1753,7 @@ export const bn = {
       perServing: 'প্রতি পরিবেশন',
       tabIngredients: 'উপকরণ',
       tabMethod: 'প্রণালী',
+      language: 'রেসিপির ভাষা',
       cookingFor: 'কতজনের জন্য',
       tick: '{{name}} টিক দিন',
       source: 'উৎস',

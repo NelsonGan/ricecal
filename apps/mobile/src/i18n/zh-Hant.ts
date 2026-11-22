@@ -1756,6 +1756,7 @@ export const zhHant = {
       perServing: '每份',
       tabIngredients: '食材',
       tabMethod: '做法',
+      language: '食譜語言',
       cookingFor: '幾人份',
       tick: '勾掉{{name}}',
       source: '來源',

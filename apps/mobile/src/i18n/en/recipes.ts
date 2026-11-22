@@ -296,6 +296,8 @@ export const recipes = {
     perServing: 'per serving',
     tabIngredients: 'Ingredients',
     tabMethod: 'Method',
+    /** Read before the switch between a recipe's translation and its English. */
+    language: 'Recipe language',
     /** The scaler over the ingredient list. Changes the amounts, not the log. */
     cookingFor: 'Cooking for',
     /** An ingredient row read out, ticked or not. */

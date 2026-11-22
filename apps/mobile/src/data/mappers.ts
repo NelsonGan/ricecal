@@ -1,3 +1,4 @@
+import { isLanguage } from '@/i18n/languages'
 import { isMeasureUnit, MEASURES, type MeasureUnit } from '@/lib/measures'
 import type {
   Entry,
@@ -10,6 +11,7 @@ import type {
   RecipeIngredient,
   RecipeIngredientRow,
   RecipeRow,
+  RecipeTranslation,
   RecipeUnit,
   Serving,
   VideoCredit,
@@ -171,7 +173,33 @@ export function toRecipe(row: RecipeRow): Recipe {
     sourceUrl: row.source_url ?? undefined,
     isFavourite: row.is_favourite ?? false,
     videoCredit: toVideoCredit(row.import_platform, row.import_author, row.import_url),
+    translations: toRecipeTranslations(row.translations),
   }
+}
+
+/**
+ * The translations an app language can use. A language this build does not
+ * have, and any field that is not text, are dropped rather than drawn.
+ */
+export function toRecipeTranslations(value: unknown): Recipe['translations'] {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined
+  const out: NonNullable<Recipe['translations']> = {}
+  for (const [language, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (language === 'en' || !isLanguage(language) || !raw || typeof raw !== 'object') continue
+    const o = raw as Record<string, unknown>
+    const translation: RecipeTranslation = {}
+    if (typeof o.name === 'string' && o.name.trim()) translation.name = o.name
+    if (typeof o.steps === 'string' && o.steps.trim()) translation.steps = o.steps
+    if (o.ingredients && typeof o.ingredients === 'object' && !Array.isArray(o.ingredients)) {
+      const names = Object.entries(o.ingredients as Record<string, unknown>).filter(
+        (entry): entry is [string, string] =>
+          typeof entry[1] === 'string' && entry[1].trim() !== '',
+      )
+      if (names.length > 0) translation.ingredients = Object.fromEntries(names)
+    }
+    if (Object.keys(translation).length > 0) out[language] = translation
+  }
+  return Object.keys(out).length > 0 ? out : undefined
 }
 
 const VIDEO_PLATFORMS = new Set<VideoPlatform>([

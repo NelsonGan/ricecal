@@ -42,6 +42,14 @@ create table public.recipe_imports (
   -- `toIngredientRow`), plus the recipe's own fields. Null for `not_recipe`.
   draft         jsonb,
   constraint recipe_imports_draft_present check ((status = 'recipe') = (draft is not null)),
+  -- The draft in other languages, as `recipes.translations` holds it, made the
+  -- first time somebody imports the video with their app in that language.
+  -- The draft itself stays English: it is what every other language falls
+  -- back on.
+  translations  jsonb not null default '{}'::jsonb check (
+    pg_catalog.jsonb_typeof(translations) = 'object'
+    and pg_catalog.octet_length(translations::text) <= 200000
+  ),
   -- Why it is not a recipe, in the model's words, for the logs.
   reason        text check (char_length(reason) <= 500),
 
@@ -425,7 +433,7 @@ begin
   insert into public.recipes (
     owner_id, name, servings, steps, icon_set, icon_name, photo_path,
     prep_minutes, cook_minutes, tags, source_recipe_id,
-    import_id, import_platform, import_author, import_url
+    import_id, import_platform, import_author, import_url, translations
   )
   values (
     p_user,
@@ -445,7 +453,8 @@ begin
     imp.id,
     imp.platform,
     imp.author_handle,
-    imp.canonical_url
+    imp.canonical_url,
+    imp.translations
   )
   returning id into v_new;
 
@@ -502,3 +511,78 @@ comment on function public.import_recipe_for is
 
 revoke execute on function public.import_recipe_for from public, anon, authenticated;
 grant execute on function public.import_recipe_for to service_role;
+
+
+-- ---------------------------------------------------------------------------
+-- Keep a translation of an import's draft, and hand it to the recipes that
+-- should have it.
+--
+-- The cache keeps the first translation into each language, as it keeps the
+-- first draft: two people importing in Thai at once get one Thai recipe. The
+-- one that stands is then copied onto the video's community recipe, so a
+-- reader in that language sees it there too, and onto the caller's own recipe
+-- from this video when they already had one. A half the recipe's owner has
+-- since rewritten (its name or its method) is left out for that recipe, since
+-- it translates words that are no longer there.
+--
+-- Server only: the translation is a model's answer the function shaped.
+-- ---------------------------------------------------------------------------
+create or replace function public.store_recipe_import_translation(
+  p_import      uuid,
+  p_language    text,
+  p_translation jsonb,
+  p_user        uuid
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  imp public.recipe_imports;
+begin
+  if p_language is null or p_language = 'en'
+     or p_language !~ '^[a-z]{2,3}(-[A-Z][a-z]{3})?$' then
+    raise exception 'unsupported language';
+  end if;
+  if p_translation is null or pg_catalog.jsonb_typeof(p_translation) <> 'object' then
+    raise exception 'translation is not an object';
+  end if;
+
+  update public.recipe_imports i
+     set translations = i.translations || pg_catalog.jsonb_build_object(p_language, p_translation)
+   where i.id = p_import
+     and i.status = 'recipe'
+     and not (i.translations ? p_language)
+  returning * into imp;
+
+  -- Somebody else's translation into this language got there first: theirs is
+  -- the one handed on.
+  if imp.id is null then
+    select * into imp from public.recipe_imports i where i.id = p_import;
+  end if;
+  if imp.id is null or imp.draft is null or not (imp.translations ? p_language) then
+    return;
+  end if;
+
+  update public.recipes r
+     set translations = r.translations || pg_catalog.jsonb_build_object(
+       p_language,
+       (imp.translations -> p_language) - pg_catalog.array_remove(array[
+         case when r.name is distinct from imp.draft ->> 'name' then 'name' end,
+         case when r.steps is distinct from nullif(imp.draft ->> 'steps', '') then 'steps' end
+       ], null)
+     )
+   where r.import_id = p_import
+     and (r.id = imp.community_recipe_id or r.owner_id = p_user)
+     and not (r.translations ? p_language);
+end;
+$$;
+
+comment on function public.store_recipe_import_translation is
+  'Keep the first translation of a cached video import into one language, and '
+  'copy the one that stands onto the video''s community recipe and the caller''s '
+  'own recipe from it. Server only.';
+
+revoke execute on function public.store_recipe_import_translation from public, anon, authenticated;
+grant execute on function public.store_recipe_import_translation to service_role;

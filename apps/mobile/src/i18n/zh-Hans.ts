@@ -1756,6 +1756,7 @@ export const zhHans = {
       perServing: '每份',
       tabIngredients: '食材',
       tabMethod: '做法',
+      language: '食谱语言',
       cookingFor: '做几份',
       tick: '勾选{{name}}',
       source: '来源',

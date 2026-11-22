@@ -83,6 +83,21 @@ create table public.recipes (
     char_length(import_url) <= 500 and import_url ~* '^https://[^[:space:]]+$'
   ),
 
+  -- An imported recipe in the readers' own languages. The recipe's own columns
+  -- stay in English, because a community card is read in every language and
+  -- English is the one everybody can fall back on; this holds the same text
+  -- for the languages people imported it in, keyed by app language code:
+  -- `{"zh-Hans": {"name": …, "steps": …, "ingredients": {"<English name>": …}}}`.
+  -- Ingredients are keyed by their English name rather than their position,
+  -- so a renamed, added or reordered ingredient shows its own English name
+  -- rather than somebody else's translation. A changed name or method drops
+  -- that half (`recipes_drop_stale_translations`). Server written, in neither
+  -- client grant, and copied with the recipe.
+  translations    jsonb not null default '{}'::jsonb check (
+    pg_catalog.jsonb_typeof(translations) = 'object'
+    and pg_catalog.octet_length(translations::text) <= 200000
+  ),
+
   -- Publishing.
   --
   -- Two columns rather than one. There used to be a model review between asking
@@ -397,6 +412,43 @@ create trigger recipes_enforce_free_limit
 create trigger recipes_set_updated_at
   before update on public.recipes
   for each row execute function public.set_updated_at();
+
+-- A translation is of the text it was made from. When the owner rewrites the
+-- name or the method, that half of every translation is dropped, so the reader
+-- sees the owner's new words in English rather than a translation of the old
+-- ones. Ingredient names need nothing here: they are keyed by the English name.
+-- An update that writes the translations itself is left alone.
+create or replace function public.recipes_drop_stale_translations()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_stale text[] := '{}';
+begin
+  if new.translations is distinct from old.translations or new.translations = '{}'::jsonb then
+    return new;
+  end if;
+  if new.name is distinct from old.name then
+    v_stale := v_stale || 'name'::text;
+  end if;
+  if new.steps is distinct from old.steps then
+    v_stale := v_stale || 'steps'::text;
+  end if;
+  select coalesce(pg_catalog.jsonb_object_agg(t.key, t.value - v_stale), '{}'::jsonb)
+    into new.translations
+    from pg_catalog.jsonb_each(new.translations) as t;
+  return new;
+end;
+$$;
+
+revoke execute on function public.recipes_drop_stale_translations from public, anon, authenticated;
+
+create trigger recipes_drop_stale_translations
+  before update of name, steps on public.recipes
+  for each row
+  when (old.name is distinct from new.name or old.steps is distinct from new.steps)
+  execute function public.recipes_drop_stale_translations();
 
 -- Three triggers stood here — two rebuilding the mirror on insert and on the
 -- columns it was built from, one deleting it with the recipe unless somebody

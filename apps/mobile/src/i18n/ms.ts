@@ -1791,6 +1791,7 @@ export const ms = {
       perServing: 'setiap hidangan',
       tabIngredients: 'Bahan',
       tabMethod: 'Cara',
+      language: 'Bahasa resipi',
       cookingFor: 'Masak untuk',
       tick: 'Tandakan {{name}}',
       source: 'Sumber',

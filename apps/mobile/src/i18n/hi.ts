@@ -1757,6 +1757,7 @@ export const hi = {
       perServing: 'प्रति हिस्सा',
       tabIngredients: 'सामग्री',
       tabMethod: 'विधि',
+      language: 'रेसिपी की भाषा',
       cookingFor: 'कितनों के लिए',
       tick: '{{name}} पर निशान लगाएं',
       source: 'स्रोत',

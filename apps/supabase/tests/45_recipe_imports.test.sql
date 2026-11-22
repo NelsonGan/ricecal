@@ -14,7 +14,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(26);
+select plan(35);
 
 \set first  'd1d1d1d1-0000-4000-8000-000000000001'
 \set second 'd1d1d1d1-0000-4000-8000-000000000002'
@@ -77,6 +77,12 @@ select throws_ok(
   format($$select * from public.import_recipe_for(%L, %L)$$, :'first', :'video'),
   '42501', null,
   'a client cannot make an imported recipe itself'
+);
+
+select throws_ok(
+  format($$select public.store_recipe_import_translation(%L, 'zh-Hans', '{}'::jsonb, %L)$$, :'video', :'first'),
+  '42501', null,
+  'a client cannot write a translation'
 );
 
 select results_eq(
@@ -156,6 +162,67 @@ select is(
   'and counts as one save of it'
 );
 
+
+-- TRANSLATIONS -----------------------------------------------------------------
+
+select throws_ok(
+  format($$select public.store_recipe_import_translation(%L, 'en', '{}'::jsonb, %L)$$, :'video', :'second'),
+  'P0001', 'unsupported language',
+  'English is the recipe itself, never a translation'
+);
+
+select public.store_recipe_import_translation(
+  :'video', 'zh-Hans',
+  jsonb_build_object('name', '意面', 'steps', '煮。\n吃。',
+                     'ingredients', jsonb_build_object('Rigatoni', '水管面', 'Egg', '鸡蛋')),
+  :'second'
+);
+
+select is(
+  (select translations -> 'zh-Hans' ->> 'name' from public.recipe_imports where id = :'video'),
+  '意面',
+  'a translation is kept in the cache'
+);
+
+select results_eq(
+  format($$select owner_id, translations -> 'zh-Hans' -> 'ingredients' ->> 'Egg'
+             from public.recipes where import_id = %L order by owner_id$$, :'video'),
+  format($$values (%L::uuid, '鸡蛋'::text), (%L::uuid, '鸡蛋'::text)$$, :'first', :'second'),
+  'and handed to the community recipe and the caller''s own'
+);
+
+select public.store_recipe_import_translation(
+  :'video', 'zh-Hans', jsonb_build_object('name', '另一个'), :'second'
+);
+
+select is(
+  (select translations -> 'zh-Hans' ->> 'name' from public.recipe_imports where id = :'video'),
+  '意面',
+  'the first translation into a language stands'
+);
+
+reset role;
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'first', 'role', 'authenticated')::text, true);
+set local role authenticated;
+
+update public.recipes set steps = 'Boil it for ten minutes.' where id = :'first_recipe';
+
+select results_eq(
+  format($$select translations -> 'zh-Hans' ? 'steps', translations -> 'zh-Hans' ->> 'name',
+                  translations -> 'zh-Hans' -> 'ingredients' ->> 'Rigatoni'
+             from public.recipes where id = %L$$, :'first_recipe'),
+  $$values (false, '意面'::text, '水管面'::text)$$,
+  'rewriting the method drops its translation and keeps the rest'
+);
+
+select throws_ok(
+  format($$update public.recipes set translations = '{}'::jsonb where id = %L$$, :'first_recipe'),
+  '42501', null,
+  'an owner cannot write translations'
+);
+
 reset role;
 
 
@@ -181,6 +248,13 @@ select results_eq(
              where owner_id = %L and source_recipe_id = %L$$, :'third', :'first_recipe'),
   $$values ('@cook'::text, null::uuid)$$,
   'the copy keeps the credit but is a recipe kept, not a video imported'
+);
+
+select is(
+  (select translations -> 'zh-Hans' ->> 'name' from public.recipes
+    where owner_id = :'third' and source_recipe_id = :'first_recipe'),
+  '意面',
+  'and its translations'
 );
 
 reset role;
@@ -244,6 +318,13 @@ select results_eq(
   format($$select is_community from public.import_recipe_for(%L, %L)$$, :'third', :'video'),
   $$values (true)$$,
   'once the community recipe is unpublished, the next importer''s takes its place'
+);
+
+select is(
+  (select translations -> 'zh-Hans' ->> 'steps' from public.recipes
+    where owner_id = :'third' and import_id = :'video'),
+  '煮。\n吃。',
+  'a later importer gets every translation the cache holds'
 );
 
 select is(
