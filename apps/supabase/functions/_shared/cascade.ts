@@ -1446,9 +1446,12 @@ export async function writeEntry(
  * because one refused weight fails the whole insert and loses every part.
  */
 const storableGrams = (grams: number | null): number | null => {
-  if (grams === null || !Number.isFinite(grams)) return null
+  if (grams === null) return null
   const stored = Math.round(grams * 10) / 10
-  return stored > 0 && stored <= 20000 ? stored : null
+  if (Number.isFinite(stored) && stored > 0 && stored <= 20000) return stored
+  // A weight, not meal content: so the next one can be traced to its source.
+  console.warn(`[cascade] part weight ${grams} g is out of range, stored as not weighed`)
+  return null
 }
 
 /** The breakdown rows for an entry. Exported for scan-refine's re-resolve. */

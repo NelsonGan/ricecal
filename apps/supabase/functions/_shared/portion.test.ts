@@ -168,6 +168,10 @@ Deno.test('boundGramsToServing caps a weight the catalogue calls a helping', () 
   eq(boundGramsToServing(220, 120), 180, 'capped at 1.5 servings')
   eq(boundGramsToServing(150, 120), 150, 'inside the cap, left alone')
   eq(boundGramsToServing(180, 120), 180, 'exactly at the cap')
+  // A helping stated under a gram is a data error, not a helping: capping at it
+  // rounded a 25 g part to 0 g, which priced it at the row's whole serving and
+  // was refused by food_log_ingredients_grams_check.
+  eq(boundGramsToServing(25, 0.2), 25, 'a serving under a gram does not cap')
 
   // Downwards only, like everything else a weight is allowed to do here.
   eq(boundGramsToServing(60, 120), 60, 'a small helping is not raised')
