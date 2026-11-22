@@ -21,6 +21,7 @@ import {
   resolveItem,
   type SearchRow,
   unitQuantity,
+  writeIngredients,
 } from './cascade.ts'
 import type { Meter } from './entitlement.ts'
 import type { NutritionLabel, VisionItem } from './llm.ts'
@@ -688,4 +689,68 @@ Deno.test('isMeasuredServing reads the app ids and the bare unit labels', () => 
   eq(isMeasuredServing('food:pb', '2 tbsp (32 g)'), false, 'a portion that is measured')
   eq(isMeasuredServing('food:plate', '1 plate'), false, 'a plate')
   eq(isMeasuredServing(null, '250 ml'), false, 'a 250 ml glass is a portion')
+})
+
+// Production, 22 Nov: scan-meal's parts insert was refused by
+// `food_log_ingredients_grams_check` (grams > 0 and <= 20000, numeric(7,1)),
+// and the whole breakdown was deleted, leaving a two-part plate as one row.
+Deno.test('writeIngredients keeps the breakdown when one weight is out of range', async () => {
+  const inserted: Record<string, unknown>[][] = []
+  let deleted = false
+  const db = {
+    from: () => ({
+      insert: (rows: Record<string, unknown>[]) => {
+        // What Postgres does: numeric(7,1) rounds, then the check runs.
+        const refused = rows.some((r) => {
+          if (r.grams === null || r.grams === undefined) return false
+          const stored = Math.round(Number(r.grams) * 10) / 10
+          return !(stored > 0 && stored <= 20000)
+        })
+        if (!refused) inserted.push(rows)
+        return Promise.resolve({
+          error: refused
+            ? { message: 'violates check constraint "food_log_ingredients_grams_check"' }
+            : null,
+        })
+      },
+      delete: () => ({
+        eq: () => {
+          deleted = true
+          return Promise.resolve({ error: null })
+        },
+      }),
+    }),
+  } as unknown as Parameters<typeof writeIngredients>[0]
+  const part = (name: string, grams: number | null) => ({
+    food: {
+      id: null,
+      name,
+      brand: null,
+      kcal: 100,
+      carbs: 10,
+      protein: 5,
+      fat: 4,
+      fibre: null,
+      sugar: null,
+      sodium: null,
+      place: null,
+      servingLabel: '1 serving',
+      servingGrams: null,
+      serving_id: null,
+      icon: null,
+    },
+    quantity: 1,
+    displayLabel: null,
+    grams,
+  })
+  const written = await writeIngredients(db, 'entry', [
+    part('rice', 150),
+    part('sambal', 0),
+    part('egg', 0.04),
+    part('anchovies', 25000),
+    part('cucumber', 12.34),
+  ])
+  eq(deleted, false, 'breakdown deleted')
+  eq(written.length, 5, 'parts written')
+  eq(inserted[0]?.map((r) => r.grams).join(','), '150,,,,12.3', 'stored weights')
 })

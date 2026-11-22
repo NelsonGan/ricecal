@@ -174,7 +174,9 @@ export function boundGramsToServing(
   /** What one serving of the row weighs, when it names a helping and states one. */
   servingGrams: number | null,
 ): number | null {
-  if (!grams || !servingGrams || servingGrams <= 0) return grams
+  // Under a gram is a catalogue data error rather than a helping, and capping
+  // at it rounded a real part down to 0 g.
+  if (!grams || !servingGrams || servingGrams < 1) return grams
   const ceiling = servingGrams * PORTION_OVER_SERVING
   return grams > ceiling ? Math.round(ceiling) : grams
 }
