@@ -95,7 +95,7 @@ set local role service_role;
 select results_eq(
   format($$select existing, allowed, used, monthly_limit, is_community, community_review::text
              from public.import_recipe_for(%L, %L)$$, :'first', :'video'),
-  $$values (false, true, 1, 5, true, 'pending')$$,
+  $$values (false, true, 1, 5, true, 'approved')$$,
   'the first import makes a recipe, takes one import and becomes the community recipe'
 );
 
@@ -106,9 +106,9 @@ select results_eq(
   format($$select is_public, review_status::text, import_platform, import_author, import_url,
                   servings::int, prep_minutes::int, tags, ingredient_count, total_kcal
              from public.recipe_details where id = %L$$, :'first_recipe'),
-  $$values (true, 'pending', 'tiktok', '@cook', 'https://www.tiktok.com/@cook/video/9000000000000000001',
+  $$values (true, 'approved', 'tiktok', '@cook', 'https://www.tiktok.com/@cook/video/9000000000000000001',
             4, 10, '{dinner}'::text[], 2, 1544)$$,
-  'it is written from the cached draft, credited, and pending review'
+  'it is written from the cached draft, credited, and listed at once'
 );
 
 select results_eq(
@@ -134,9 +134,6 @@ select throws_ok(
   'P0001', 'photo is not this user''s',
   'a cover under somebody else''s prefix is refused'
 );
-
-update public.recipes set review_status = 'approved' where id = :'first_recipe';
-
 
 -- THE SECOND IMPORTER SAVES IT -----------------------------------------------
 
@@ -258,14 +255,14 @@ select is(
 
 -- A REJECTED ONE DOES TOO ----------------------------------------------------
 
--- Its owner turned it into something the reviewer refused. The video is still
--- a recipe, so the next importer's goes up for review in its place.
+-- A row the old reviewer refused before the review was removed. The video is
+-- still a recipe, so the next importer's is listed in its place.
 update public.recipes set review_status = 'rejected'
  where owner_id = :'third' and import_id = :'video';
 
 select results_eq(
   format($$select is_community, community_review::text from public.import_recipe_for(%L, %L)$$, :'fourth', :'video'),
-  $$values (true, 'pending')$$,
+  $$values (true, 'approved')$$,
   'once the community recipe is rejected, the next importer''s takes its place'
 );
 

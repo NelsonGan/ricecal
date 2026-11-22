@@ -2,12 +2,11 @@
 -- Reporting a recipe, and blocking the cook who wrote it.
 --
 -- App Review guideline 1.2 asks four things of an app whose users can see each
--- other's writing, and the community shelf is exactly that. Three of them
--- already existed:
+-- other's writing, and the community shelf is exactly that. A filter before
+-- anything is posted used to be a model review in `functions/recipes`; it was
+-- removed in November 2026, and publishing now lists a recipe at once. Two of
+-- the others already existed:
 --
---   * a filter before anything is posted — `functions/recipes {action:review}`
---     reads a recipe and only `service_role` can approve one, so nothing
---     reaches the shelf unread;
 --   * published contact — the help row and `support@ricecal.app`;
 --   * and the ability to take a recipe down, which `service_role` has always
 --     had.
@@ -122,8 +121,8 @@ create policy "recipe_reports: report as self"
 -- guideline 1.2 asks for a TIMELY response rather than a popular one.
 --
 -- What it costs is a false positive: three people can be wrong together, and
--- the recipe goes back to `pending` rather than to `rejected` so that the
--- review can put it back. What it buys is that the promise the app makes when
+-- the recipe goes back to `pending` rather than to `rejected`, so its owner can
+-- put it back by publishing it again. What it buys is that the promise the app makes when
 -- somebody taps Report is kept by the database rather than by a person reading
 -- a queue.
 -- ---------------------------------------------------------------------------
@@ -151,10 +150,8 @@ grant execute on function public.report_threshold to authenticated, service_role
 -- rights could not either.
 --
 -- It parks the row at `pending` rather than `rejected`. Both are invisible on
--- the shelf, and only one of them is a claim: `pending` is where the ordinary
--- publish flow starts, so re-running the review is all it takes to put an
--- unfairly reported recipe back. `rejected` is the reviewer's word and this
--- function is not the reviewer.
+-- the shelf, and only one of them is a claim: `rejected` was the old
+-- reviewer's word, and this function is not a reviewer.
 -- ---------------------------------------------------------------------------
 create or replace function public.recipe_reports_after_insert()
 returns trigger

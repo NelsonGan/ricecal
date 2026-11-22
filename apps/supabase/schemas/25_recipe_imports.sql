@@ -246,8 +246,8 @@ grant execute on function public.recipe_import_usage_this_month to authenticated
 --
 -- The monthly meter only counts recipes that arrive, so on its own it would let
 -- somebody paste a thousand dance clips at our model bill: each is "not a
--- recipe" and takes nothing. This is the ceiling on that, shaped exactly like
--- `recipe_review_usage`: per account, per hour, atomic, no client write grant.
+-- recipe" and takes nothing. This is the ceiling on that: per account, per
+-- hour, atomic, no client write grant.
 -- Twenty is far above anybody importing their week's cooking, and a cached
 -- video asks nobody, so it does not count.
 -- ---------------------------------------------------------------------------
@@ -285,8 +285,8 @@ $$;
 revoke execute on function public.recipe_import_hourly_runs from public, anon, authenticated;
 grant execute on function public.recipe_import_hourly_runs to service_role;
 
--- The same guarded upsert as `claim_recipe_review`: the check and the increment
--- are one statement under one row lock.
+-- A guarded upsert, as `claim_scan` is: the check and the increment are one
+-- statement under one row lock.
 create or replace function public.claim_recipe_import_run(p_user uuid)
 returns boolean
 language plpgsql
@@ -331,7 +331,7 @@ grant execute on function public.claim_recipe_import_run to service_role;
 -- object.
 --
 -- Returns the new recipe, whether it is the community one, and the community
--- recipe's id and review state so the caller can run a review nobody ran.
+-- recipe's id and review state.
 -- ---------------------------------------------------------------------------
 create or replace function public.import_recipe_for(
   p_user       uuid,
@@ -477,15 +477,14 @@ begin
       update public.recipes set saved_count = saved_count + 1 where id = v_community;
     end if;
   else
-    -- The first recipe from this video goes to the community, pending like
-    -- every publish: the caller runs the review, and until it approves, the
-    -- shelf does not show it.
+    -- The first recipe from this video goes to the community, listed at once
+    -- like every publish.
     update public.recipes
-       set is_public = true, review_status = 'pending', review_note = null
+       set is_public = true, review_status = 'approved', review_note = null
      where id = v_new;
     update public.recipe_imports set community_recipe_id = v_new where id = imp.id;
     v_community := v_new;
-    v_review := 'pending';
+    v_review := 'approved';
   end if;
 
   update public.recipe_imports set imports = imports + 1 where id = imp.id;
@@ -498,7 +497,7 @@ $$;
 comment on function public.import_recipe_for is
   'Make a recipe for p_user out of a cached video import, claiming one of the '
   'month''s imports in the same transaction. The first importer''s recipe is '
-  'published (pending review); later importers get a private recipe counted as '
+  'published; later importers get a private recipe counted as '
   'a save of it. Server only.';
 
 revoke execute on function public.import_recipe_for from public, anon, authenticated;

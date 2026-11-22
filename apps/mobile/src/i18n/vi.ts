@@ -1811,6 +1811,7 @@ export const vi = {
       publicTitle: 'Đặt công khai',
       publicBody: 'Nó vào tab cộng đồng để bất kỳ ai cũng tìm và lưu được.',
       publishFailed: 'Không đổi được. Thử lại.',
+      published: 'Công thức của bạn đã vào cộng đồng',
     },
 
     cook: {
@@ -1825,14 +1826,6 @@ export const vi = {
       finishedTitle: 'Chúc ngon miệng',
       finishedBody: 'Thêm một khẩu phần vào ngày của bạn?',
       finishedSkip: 'Để sau',
-    },
-
-    review: {
-      checking: 'Đang kiểm tra công thức của bạn…',
-      approved: 'Công thức của bạn đã vào cộng đồng',
-      rejected: 'Không được đăng: {{reason}}',
-      rejectedPlain: 'Chúng tôi không đăng được cái này.',
-      pending: 'Chúng tôi vẫn đang xem cái này. Nó sẽ hiện ra khi được duyệt.',
     },
   },
 

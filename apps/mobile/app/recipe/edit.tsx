@@ -410,21 +410,7 @@ export default function RecipeFormScreen() {
       return
     }
 
-    // A published recipe that was edited went back through the reviewer. Say
-    // which way it went, because the recipe is out of the community tab until
-    // it passes and nothing else on screen would show that.
-    if (result.review?.status === 'rejected') {
-      toast.show({
-        title: result.review.reason
-          ? t('recipes:review.rejected', { reason: result.review.reason })
-          : t('recipes:review.rejectedPlain'),
-        tone: 'warning',
-      })
-    } else if (result.review?.status === 'pending') {
-      toast.show({ title: t('recipes:review.pending'), tone: 'neutral' })
-    } else {
-      toast.show({ title: t('recipes:edit.saved'), tone: 'success' })
-    }
+    toast.show({ title: t('recipes:edit.saved'), tone: 'success' })
 
     // An edit goes back to the recipe page that opened it, which the save has
     // already refreshed. That page holds the log sheet's day, and a fresh one

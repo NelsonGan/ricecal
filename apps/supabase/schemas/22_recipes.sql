@@ -85,14 +85,14 @@ create table public.recipes (
 
   -- Publishing.
   --
-  -- Two columns rather than one, because they are two different facts: the owner
-  -- asked for this to be public, and a reviewer decided whether it may be. The
-  -- community tab requires both, so a recipe whose review never ran is invisible
-  -- rather than published, which is the failure direction that matters.
+  -- Two columns rather than one. There used to be a model review between asking
+  -- to publish and being listed; there is none now, and `set_recipe_public`
+  -- writes `approved` itself. The column stays because released apps read it,
+  -- and because three reports still park a recipe at `pending`, off the shelf.
   is_public     boolean not null default false,
   review_status public.recipe_review not null default 'pending',
-  -- Why it was turned down, in the reviewer's words, shown to the owner. Null
-  -- when nothing has been decided or when it passed.
+  -- Why the old reviewer turned it down. Nothing writes it any more; kept for
+  -- the released apps that read it.
   review_note   text check (char_length(review_note) <= 500),
 
   -- Who to credit on a community row.
@@ -353,64 +353,6 @@ $$;
 -- carry grants, so a revoke that only lives in a schema file never happens.
 revoke execute on function public.recipes_enforce_free_limit from public, anon, authenticated;
 
--- ---------------------------------------------------------------------------
--- An edit sends a published recipe back to the reviewer.
---
--- The gate's second half, and without it the first half is decoration. Publish
--- something bland, collect an `approved`, then rewrite the name or steps into
--- an advert, or replace the photograph: the row is still `is_public and
--- review_status = 'approved'`, so the new material is live in the community tab
--- and no reviewer has seen it.
--- `set_recipe_public` only runs when the toggle is flipped, so it cannot catch
--- this.
---
--- Here rather than in the client for the usual reason: `review_status` is not in
--- anybody's column grant, so a client cannot reset it, and a rule the client is
--- trusted to follow is a rule an attacker declines to. The recipe stays public
--- and goes back to `pending`, which is invisible.
---
--- Private recipes are left alone. There is nothing to re-review about a recipe
--- nobody but its author can see, and marking one `pending` would mean the next
--- publish inherited a verdict from an edit rather than from a reading.
--- ---------------------------------------------------------------------------
-create or replace function public.recipes_reset_review()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  if new.is_public then
-    new.review_status := 'pending';
-    new.review_note := null;
-  end if;
-  return new;
-end;
-$$;
-
-revoke execute on function public.recipes_reset_review from public, anon, authenticated;
-grant execute on function public.recipes_reset_review to service_role;
-
--- The same, reached from the ingredient triggers, where the change is a row in
--- another table. The nutrition IS reviewable — "calories that do not follow
--- from the ingredients" is one of the two grounds — so swapping the ingredient
--- list under an approved recipe has to send it back too.
-create or replace function public.recipe_mark_for_review(p_recipe_id uuid)
-returns void
-language plpgsql
-security definer
-set search_path = ''
-as $$
-begin
-  update public.recipes
-  set review_status = 'pending', review_note = null
-  where id = p_recipe_id and is_public and review_status <> 'pending';
-end;
-$$;
-
-revoke execute on function public.recipe_mark_for_review(uuid) from public, anon, authenticated;
-grant execute on function public.recipe_mark_for_review to service_role;
-
 -- Who to credit, refreshed.
 --
 -- The credit is copied onto the recipe rather than joined at read time, because
@@ -441,27 +383,6 @@ create trigger profiles_sync_recipe_author
   after update of display_name on public.profiles
   for each row execute function public.profiles_sync_recipe_author();
 
-create or replace function public.recipe_ingredients_after_write()
-returns trigger
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_recipe_id uuid := coalesce(new.recipe_id, old.recipe_id);
-begin
-  -- This used to rebuild the mirror as well. What is left is the half that
-  -- matters: changing what went into a published pot sends it back to the
-  -- reviewer, because the ingredient list is part of what was approved.
-  perform public.recipe_mark_for_review(v_recipe_id);
-  return null;
-end;
-$$;
-
--- Stated here and applied by a hand-written migration: `db diff` does not
--- carry grants, so a revoke that only lives in a schema file never happens.
-revoke execute on function public.recipe_ingredients_after_write from public, anon, authenticated;
-
 create trigger recipes_before_insert
   before insert on public.recipes
   for each row execute function public.recipes_before_insert();
@@ -481,20 +402,6 @@ create trigger recipes_set_updated_at
 -- columns it was built from, one deleting it with the recipe unless somebody
 -- had eaten it. Nothing to rebuild and nothing to delete.
 
--- Ordered before `recipes_set_updated_at` and after nothing: Postgres runs
--- before-row triggers in name order, and neither of these reads the other's
--- columns.
-create trigger recipes_reset_review
-  before update of name, steps, servings, photo_path on public.recipes
-  for each row execute function public.recipes_reset_review();
-
--- Renamed from `recipe_ingredients_sync_food`, which is what it did until the
--- mirror went. A trigger whose name says it syncs a catalogue row is a trap for
--- whoever next goes looking for where that happens.
-create trigger recipe_ingredients_after_write
-  after insert or update or delete on public.recipe_ingredients
-  for each row execute function public.recipe_ingredients_after_write();
-
 create trigger recipe_ingredients_set_updated_at
   before update on public.recipe_ingredients
   for each row execute function public.set_updated_at();
@@ -505,8 +412,8 @@ create trigger recipe_ingredients_set_updated_at
 --
 -- Read is the interesting one, and it is three cases in one policy: mine, the
 -- kitchen's, and anybody's that is both public and approved. `review_status`
--- being in the predicate is what makes moderation real rather than advisory, so a
--- client that ignored the flag would still not be shown the row.
+-- is in the predicate so a recipe three people reported (parked at `pending`)
+-- is not shown to a client that ignored the flag.
 --
 -- Write is own-only. There is no policy under which a client can create an
 -- official recipe or edit somebody else's, and `owner_id` is checked on the way
@@ -519,14 +426,9 @@ grant select, delete on public.recipes to authenticated;
 -- Insert and update are column level, and that is the moderation gate.
 --
 -- `is_public` and `review_status` are deliberately absent from both grants.
--- Absent from UPDATE, a client that asks to publish could otherwise write
--- `review_status = 'approved'` itself and the review would be a formality the app
--- performs on itself. Absent from INSERT for the same reason: a table-wide insert
--- grant let a client create the row already public and approved, landing it in
--- the community tab having never been reviewed, since the before-insert trigger
--- mints the slug and the author but does not touch these. Publishing goes through
--- `set_recipe_public`, which can only ever move the row to `pending`; only
--- `service_role` can approve one.
+-- Publishing goes through `set_recipe_public`, which checks the owner. A client
+-- that could write `review_status` could also undo the report threshold
+-- (`24_moderation.sql`), which parks a reported recipe at `pending`.
 --
 -- `author_name`, `share_slug`, `food_id`, `saved_count` and `source_recipe_id`
 -- are absent for a quieter reason: they are derived, and a client that could
@@ -633,8 +535,8 @@ create policy "recipe_ingredients: delete own recipe"
 -- fail on. Here the read policy is owner-only, so `recipe_details`' join comes
 -- back empty for anybody else and the API has nothing to give them.
 --
--- The link stays private for a second reason: the reviewer never reads it, and
--- a link on a community card is an advert waiting to happen. A saved copy has
+-- The link stays private for a second reason: a link on a community card is an
+-- advert waiting to happen. A saved copy has
 -- no row here, so it carries neither the link nor the star.
 -- ---------------------------------------------------------------------------
 create table public.recipe_private (

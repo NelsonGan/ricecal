@@ -183,7 +183,7 @@ select is(
    from pg_catalog.pg_proc p
    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
-     and p.proname in ('handle_new_user', 'profiles_sync_recipe_author', 'recipes_reset_review')
+     and p.proname in ('handle_new_user', 'profiles_sync_recipe_author')
      and (pg_catalog.has_function_privilege('anon', p.oid, 'EXECUTE')
        or pg_catalog.has_function_privilege('authenticated', p.oid, 'EXECUTE'))),
   0,
@@ -195,10 +195,10 @@ select is(
    from pg_catalog.pg_proc p
    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
    where n.nspname = 'public'
-     and p.proname in ('handle_new_user', 'profiles_sync_recipe_author', 'recipes_reset_review')
+     and p.proname in ('handle_new_user', 'profiles_sync_recipe_author')
      and pg_catalog.has_function_privilege('service_role', p.oid, 'EXECUTE')),
-  3,
-  'the service role retains execution rights for the three trigger functions'
+  2,
+  'the service role retains execution rights for the two trigger functions'
 );
 
 select is(

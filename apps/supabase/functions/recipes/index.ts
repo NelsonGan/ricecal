@@ -1,27 +1,25 @@
-// The recipe endpoint: fill a form in from a photo, review one for the
-// community, and import one from a cooking video (`import.ts`).
+// The recipe endpoint: fill a form in from a photo, and import one from a
+// cooking video (`import.ts`).
 //
 // Actions rather than functions, for the reason `photos` gives: each
 // function costs a config block, an import map and a restart of the local stack,
 // and these two share their auth, body handling and error shape.
 //
-// The two halves fail in opposite directions, which is the whole design.
+// `read` is a convenience. It fills a form the user is about to check, so a
+// failure answers 200 with `ok: false` and the form opens empty.
 //
-//   `read`   is a convenience. It fills a form the user is about to check, so a
-//            failure answers 200 with `ok: false` and the form opens empty.
-//
-//   `review` is a gate. The recipe is already `is_public` and `pending`, and the
-//            community tab reads `approved` only, so every failure path leaves
-//            it invisible. No branch here approves a recipe by accident.
+// `review` used to be a model reading a recipe before the community saw it.
+// Publishing lists a recipe at once now (`set_recipe_public`), but released
+// apps still call `review` after publishing and after editing a public recipe,
+// so it stays and reports the state the database already holds.
 //
 // The model never sees a credential and the client never sees the model.
 // OPENROUTER_API_KEY unset means mock, so a local stack runs with no
 // configuration and production can never mock silently.
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 import { signedIn } from '../_shared/auth.ts'
 import {
-  claimRecipeReview,
   claimScan,
   createMeter,
   NotEntitled,
@@ -35,9 +33,7 @@ import { ownsKey, readObject } from '../_shared/r2.ts'
 import {
   describeRecipe,
   type RecipeMockSteer,
-  type ReviewInput,
   readRecipePhoto,
-  reviewRecipe,
   toIngredientRow,
 } from '../_shared/recipe.ts'
 import { handleImport, type ImportRequest } from './import.ts'
@@ -54,40 +50,12 @@ type ReadRequest = {
   text?: string
   mock?: RecipeMockSteer
 }
-type ReviewRequest = { action: 'review'; recipe_id?: string; mock?: RecipeMockSteer }
+type ReviewRequest = { action: 'review'; recipe_id?: string }
 type RecipeRequest = ReadRequest | ReviewRequest | ImportRequest
 
 /** The photo, base64'd for the vision call. Same shape as scan-meal's. */
 async function fetchPhoto(path: string): Promise<string> {
   return photoBase64(await readObject(path))
-}
-
-/**
- * Everything the reviewer is shown, read as `service_role`.
- *
- * Ownership is checked by the caller before this runs — service_role is above
- * every policy there is, so a recipe id arriving from the client has to be
- * proven to be the caller's HERE or not at all.
- */
-async function loadForReview(db: SupabaseClient, recipeId: string) {
-  const { data: recipe } = await db
-    .from('recipe_details')
-    .select('name, owner_id, servings, steps, is_public')
-    .eq('id', recipeId)
-    .maybeSingle()
-
-  if (!recipe) return null
-
-  // No calorie columns. The reviewer decides whether this is a recipe and
-  // whether it is fit to read; the figures are the app's own arithmetic and
-  // showing them only invites a verdict on them. See `ReviewInput`.
-  const { data: ingredients } = await db
-    .from('recipe_ingredient_details')
-    .select('name, amount, unit')
-    .eq('recipe_id', recipeId)
-    .order('position')
-
-  return { recipe, ingredients: ingredients ?? [] }
 }
 
 Deno.serve(async (req: Request) => {
@@ -110,9 +78,6 @@ Deno.serve(async (req: Request) => {
     return json({ ok: false, error: 'body is not JSON' }, 400)
   }
 
-  // Steering is a test affordance; outside mock mode it is ignored entirely.
-  const mock = mockActive() ? body.mock : undefined
-
   const db = createClient(
     Deno.env.get('SUPABASE_URL') ?? '',
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -121,12 +86,7 @@ Deno.serve(async (req: Request) => {
   // Counts what this invocation spends at OpenRouter, for the logs. The QUOTA
   // is claimed inside `read` alone, one unit for the whole action, and so is
   // the entitlement check: filling a form in from a photograph is the same kind
-  // of AI convenience a described meal is, and Pro for the same reason. The
-  // publish review is a gate the app runs on its own behalf — it must go on
-  // running for anybody who can reach the publish button, and charging a user's
-  // daily allowance for a check they did not ask for would be the app billing
-  // them for its own moderation. It has a ceiling of its own instead; see the
-  // claim in that branch.
+  // of AI convenience a described meal is, and Pro for the same reason.
   const meter = createMeter({
     distinctId: userId,
     feature: 'recipes',
@@ -140,6 +100,8 @@ Deno.serve(async (req: Request) => {
   // model. The same split `scan-meal` makes between a photographed meal and a
   // typed one.
   if (body.action === 'read') {
+    // Steering is a test affordance; outside mock mode it is ignored entirely.
+    const mock = mockActive() ? body.mock : undefined
     const photoPath = typeof body.photo_path === 'string' ? body.photo_path : null
     // Capped like a refine instruction and a described meal. A recipe takes a
     // few sentences; past this is prose, and the model charges by the token.
@@ -233,78 +195,31 @@ Deno.serve(async (req: Request) => {
   // -- IMPORT: a cooking video becomes a recipe. Metered by its own monthly
   // allowance rather than by scans; see `import.ts`.
   if (body.action === 'import') {
-    return respondWithin(handleImport(body, { db, userId, meter, loadForReview }))
+    return respondWithin(handleImport(body, { db, userId, meter }))
   }
 
-  // -- REVIEW: the gate in front of the community tab.
+  // -- REVIEW: what a released app asks after publishing or editing a public
+  // recipe. No model reads anything; the answer is the state
+  // `set_recipe_public` wrote. A 1.x app shows "published" for `ok: true` and
+  // "still looking at it" for `ok: false`, which is what a recipe parked by
+  // reports, or one the old reviewer rejected, should say.
   if (body.action === 'review') {
     const recipeId = typeof body.recipe_id === 'string' ? body.recipe_id : null
     if (!recipeId) return json({ ok: false, error: 'recipe_id is required' }, 400)
 
-    const loaded = await loadForReview(db, recipeId)
-    if (!loaded) return json({ ok: false, error: 'recipe not found' }, 404)
-
-    // Owner-checked against the service-role read above. Official recipes have
-    // no owner and so match nobody, which is right: the kitchen's own recipes
-    // do not go through this.
-    if (loaded.recipe.owner_id !== userId) {
-      return json({ ok: false, error: 'not your recipe' }, 403)
-    }
-    // Reviewing a recipe nobody asked to publish would write a verdict onto a
-    // private row, and the next publish would inherit it without being read.
-    if (!loaded.recipe.is_public) {
-      return json({ ok: false, error: 'recipe is not public' }, 400)
-    }
-
-    // The one model call in the app that no user quota stands in front of, and
-    // the one nobody asked for: it is our moderation, running because somebody
-    // pressed Publish. So it is bounded by a rate limit rather than by their
-    // scan allowance — ten an hour, which no real use comes near and which
-    // stops `{action: 'review'}` from being a loop somebody can put our
-    // OpenRouter bill through. Refused, the recipe stays `pending` and stays
-    // out of the community tab, which is the same fail-shut answer every other
-    // failure in this branch gives.
-    if (!(await claimRecipeReview(db, userId))) {
-      return json({ ok: false, status: 'pending', error: 'too many reviews, try again later' }, 429)
-    }
-
-    const input: ReviewInput = {
-      name: loaded.recipe.name ?? '',
-      servings: loaded.recipe.servings ?? 1,
-      steps: loaded.recipe.steps ?? '',
-      ingredients: loaded.ingredients.map((i) => ({
-        name: i.name ?? '',
-        amount: Number(i.amount ?? 0),
-        unit: i.unit ?? 'g',
-      })),
-    }
-
-    let verdict: { approved: boolean; reason: string }
-    try {
-      verdict = await reviewRecipe(input, mock, meter)
-    } catch (error) {
-      // The gate failed shut. The recipe stays `pending` and so stays out of
-      // the community tab; the client is told to try again rather than told it
-      // was rejected, because nobody read it.
-      console.error('[recipes/review]', error)
-      return json({ ok: false, status: 'pending', error: 'the review could not run' })
-    }
-
-    const status = verdict.approved ? 'approved' : 'rejected'
-    const { error: writeError } = await db
+    const { data: recipe } = await db
       .from('recipes')
-      .update({
-        review_status: status,
-        review_note: verdict.approved ? null : verdict.reason || null,
-      })
+      .select('owner_id, is_public, review_status')
       .eq('id', recipeId)
-
-    if (writeError) {
-      console.error('[recipes/review] write failed:', writeError)
-      return json({ ok: false, status: 'pending', error: 'the verdict could not be saved' })
+      .maybeSingle()
+    // Owner-checked against the service-role read, so this cannot tell a
+    // caller anything about somebody else's recipe.
+    if (!recipe || recipe.owner_id !== userId) {
+      return json({ ok: false, error: 'recipe not found' }, 404)
     }
-
-    return json({ ok: true, status, reason: verdict.reason })
+    if (!recipe.is_public) return json({ ok: false, error: 'recipe is not public' }, 400)
+    if (recipe.review_status !== 'approved') return json({ ok: false, status: 'pending' })
+    return json({ ok: true, status: 'approved' })
   }
 
   return json({ ok: false, error: 'unknown action' }, 400)
