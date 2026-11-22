@@ -88,6 +88,7 @@ async function post(
   if (signal?.aborted) controller.abort()
 
   let response: Response
+  let payload: { places?: unknown; error?: string } = {}
   try {
     response = await fetch(`${baseUrl()}${path}`, {
       method: 'POST',
@@ -95,18 +96,20 @@ async function post(
       body: JSON.stringify(body),
       signal: controller.signal,
     })
+    try {
+      payload = (await response.json()) as typeof payload
+    } catch {
+      if (controller.signal.aborted) {
+        throw new PlaceSearchError('network', 'aborted')
+      }
+      // Fall through to the status.
+    }
   } catch (error) {
+    if (error instanceof PlaceSearchError) throw error
     throw new PlaceSearchError('network', error instanceof Error ? error.message : 'network')
   } finally {
     clearTimeout(timer)
     signal?.removeEventListener('abort', forwardAbort)
-  }
-
-  let payload: { places?: unknown; error?: string } = {}
-  try {
-    payload = (await response.json()) as typeof payload
-  } catch {
-    // Fall through to the status.
   }
   if (!response.ok) {
     if (payload.error === 'limit_reached') throw new PlaceSearchError('limit_reached', 'limit')

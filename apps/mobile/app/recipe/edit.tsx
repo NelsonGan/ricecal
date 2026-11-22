@@ -153,6 +153,7 @@ export default function RecipeFormScreen() {
   const [leaving, setLeaving] = useState(false)
   const mounted = useRef(true)
   const savedRef = useRef(false)
+  const savingRef = useRef(false)
   const photoPathRef = useRef<string | null>(null)
   photoPathRef.current = photoPath
   const existingPhotoRef = useRef<string | null | undefined>(undefined)
@@ -161,9 +162,16 @@ export default function RecipeFormScreen() {
     mounted.current = true
     return () => {
       mounted.current = false
-      // Sweep a newly uploaded session photo if the user leaves without saving.
+      // Sweep a newly uploaded session photo if the user leaves without saving
+      // (skip while a save is still in flight so we never delete a photo the
+      // recipe row is about to reference).
       const staged = photoPathRef.current
-      if (!savedRef.current && staged && staged !== existingPhotoRef.current) {
+      if (
+        !savedRef.current &&
+        !savingRef.current &&
+        staged &&
+        staged !== existingPhotoRef.current
+      ) {
         removeMealPhoto(staged).catch(() => {})
       }
     }
@@ -388,6 +396,7 @@ export default function RecipeFormScreen() {
     }
 
     let result: Awaited<ReturnType<typeof save.mutateAsync>>
+    savingRef.current = true
     try {
       result = await save.mutateAsync({
         id: recipeId,
@@ -404,6 +413,7 @@ export default function RecipeFormScreen() {
         sourceUrl,
       })
     } catch (error) {
+      savingRef.current = false
       // The free tier's ceiling, met at the write rather than the button. The
       // plus button checks the count first, so what is left is a third recipe
       // saved on another phone, or a form opened before a subscription lapsed.
@@ -426,6 +436,7 @@ export default function RecipeFormScreen() {
       return
     }
 
+    savingRef.current = false
     savedRef.current = true
     toast.show({ title: t('recipes:edit.saved'), tone: 'success' })
 

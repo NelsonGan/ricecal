@@ -820,13 +820,16 @@ export function useGroupChatLive(groupId: string): boolean {
           return input?.action === action && 'groupId' in input && input.groupId === groupId
         })
     const sending = () => pendingOf('message')
-    // A vote names no group: its line may land in any chat.
+    // A vote names no group: its line may land in any chat. Ignore offline
+    // paused mutations so queued votes do not suppress catch-ups indefinitely.
     const voting = () =>
       client
         .getMutationCache()
         .findAll({ status: 'pending' })
         .some(
-          (mutation) => (mutation.state.variables as GroupAction | undefined)?.action === 'react',
+          (mutation) =>
+            !mutation.state.isPaused &&
+            (mutation.state.variables as GroupAction | undefined)?.action === 'react',
         )
     openChats.add(catchUp)
     const stop = listen(chatTopic(groupId), {
@@ -1698,6 +1701,7 @@ export function useGroupAction() {
               .findAll({ status: 'pending' })
               .filter(
                 (mutation) =>
+                  !mutation.state.isPaused &&
                   (mutation.state.variables as GroupAction | undefined)?.action === 'react',
               ).length <= 1
           ) {

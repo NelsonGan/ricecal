@@ -488,8 +488,12 @@ export function useDeleteRecipe() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
-      queryClient.invalidateQueries({ queryKey: RECIPE_PREFIX })
-      queryClient.invalidateQueries({ queryKey: RECIPE_INGREDIENTS_PREFIX })
+      // Mark detail caches stale without refetching active queries: the detail
+      // screen that just deleted this row waits for its ConfirmSheet to dismiss
+      // before navigating away, and an immediate refetch would flip it to the
+      // "not found" branch and unmount the sheet before `onDismiss` fires.
+      queryClient.invalidateQueries({ queryKey: RECIPE_PREFIX, refetchType: 'none' })
+      queryClient.invalidateQueries({ queryKey: RECIPE_INGREDIENTS_PREFIX, refetchType: 'none' })
     },
   })
 }

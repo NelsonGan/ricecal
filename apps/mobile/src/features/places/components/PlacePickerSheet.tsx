@@ -136,11 +136,21 @@ export function PlacePickerSheet({
   const trimmed = query.trim()
   const searching = trimmed.length >= MIN_QUERY
   const typed = useDebouncedValue(trimmed, SEARCH_DEBOUNCE_MS)
-  // Read when a search fires, rounded to 2 decimals to match the Worker's
-  // SEARCH_COORD_DECIMALS so moving to another neighbourhood gets fresh bias.
-  const searchNear = center ?? myCoordinate
-  const nearRef = useRef<Coordinate | null>(null)
-  nearRef.current = searchNear
+  // Snapshot the search bias once per debounced query so framing search results
+  // or panning the map during a search never refires Apple search, while typing
+  // a new search after moving to another area gets a fresh key and bias.
+  const biasQuery = visible && searching && typed.length >= MIN_QUERY ? typed : null
+  const biasRef = useRef<{ query: string | null; near: Coordinate | null }>({
+    query: null,
+    near: null,
+  })
+  if (biasQuery !== biasRef.current.query) {
+    biasRef.current = {
+      query: biasQuery,
+      near: biasQuery ? (centerRef.current ?? myCoordinate) : null,
+    }
+  }
+  const searchNear = biasRef.current.near
   const nearKey = searchNear
     ? `${searchNear.latitude.toFixed(2)},${searchNear.longitude.toFixed(2)}`
     : 'none'
@@ -220,8 +230,7 @@ export function PlacePickerSheet({
   // typing it again spends nothing, while dropping out of memory after 5 min.
   const search = useQuery({
     queryKey: keys.placeSearch(typed, language, nearKey),
-    queryFn: ({ signal }) =>
-      searchPlaces({ query: typed, near: nearRef.current, language, signal }),
+    queryFn: ({ signal }) => searchPlaces({ query: typed, near: searchNear, language, signal }),
     enabled: visible && searching && typed.length >= MIN_QUERY,
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 5 * 60_000,

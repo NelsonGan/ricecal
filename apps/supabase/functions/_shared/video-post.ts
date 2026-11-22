@@ -1051,19 +1051,12 @@ function httpsOrNull(value: unknown): string | null {
   }
 }
 
-const SAFE_IMAGE_TYPES = new Set([
-  'image/jpeg',
-  'image/jpg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-])
-
 /**
  * A cover or a video, bounded, and only of the kind asked for: a platform that
  * answers an image URL with an HTML error page or SVG must not have that sent
- * to a model or stored as a cover. Redirect hops are validated manually so a
- * CDN redirect cannot reach an internal host.
+ * to a model or stored as a cover. Redirect hops are validated manually (both
+ * URL syntax and DNS resolution) within one shared timeout budget so a CDN
+ * redirect cannot reach an internal host or multiply the timeout.
  */
 export async function fetchMedia(
   url: string,
@@ -1072,15 +1065,22 @@ export async function fetchMedia(
   headers: Record<string, string> = { 'user-agent': BROWSER_UA },
   fetcher: Fetcher = fetch,
   timeoutMs: number = MEDIA_TIMEOUT_MS,
+  resolves: (host: string) => Promise<boolean> = fetcher === fetch
+    ? resolvesPublicly
+    : () => Promise.resolve(true),
 ): Promise<{ bytes: Uint8Array; type: string } | null> {
   try {
     let current = httpsOrNull(url)
     if (!current) return null
+    const deadline = Date.now() + timeoutMs
     for (let hop = 0; hop < 4; hop++) {
+      if (!(await resolves(new URL(current).hostname))) return null
+      const remaining = deadline - Date.now()
+      if (remaining <= 0) return null
       const res = await fetcher(current, {
         headers,
         redirect: 'manual',
-        signal: AbortSignal.timeout(timeoutMs),
+        signal: AbortSignal.timeout(remaining),
       })
       const location = res.headers.get('location')
       if (res.status >= 300 && res.status < 400 && location) {
@@ -1098,7 +1098,9 @@ export async function fetchMedia(
       const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
       const length = Number(res.headers.get('content-length') ?? 0)
       const typeAllowed =
-        typePrefix === 'image/' ? SAFE_IMAGE_TYPES.has(type) : type.startsWith('video/')
+        typePrefix === 'image/'
+          ? type.startsWith('image/') && !type.includes('svg')
+          : type.startsWith('video/')
       if (!res.ok || !typeAllowed || length > maxBytes) {
         await res.body?.cancel()
         return null

@@ -15,7 +15,13 @@
 // it can be retried; a verdict is, so a dance clip costs one look.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { type Meter, reconcileEntitlement } from '../_shared/entitlement.ts'
+import {
+  entitledBy,
+  type Meter,
+  reconcileEntitlement,
+  ROW as SUBSCRIPTION_ROW,
+  type SubscriptionRow,
+} from '../_shared/entitlement.ts'
 import { json } from '../_shared/http.ts'
 import { mockActive, photoBase64 } from '../_shared/llm.ts'
 import { copyObject, deleteObject, newKey, r2Configured, writeObject } from '../_shared/r2.ts'
@@ -80,8 +86,19 @@ const IMPORT_BUDGET_MS = 135_000
 /** The most a share link may take to follow, across all its hops. */
 const SHORT_LINK_MS = 15_000
 
-/** Mirrors `free_monthly_imports()` in Postgres so we can tell a free refusal from Pro. */
-const FREE_MONTHLY_IMPORTS = 5
+/** Whether the mirror currently shows an active subscription for this account. */
+async function hasActiveEntitlement(db: SupabaseClient, userId: string): Promise<boolean> {
+  const { data, error } = await db
+    .from('subscriptions')
+    .select(SUBSCRIPTION_ROW)
+    .eq('user_id', userId)
+    .maybeSingle<SubscriptionRow>()
+  if (error) {
+    console.error('[recipes/import] subscription read failed:', error.message)
+    return false
+  }
+  return entitledBy(data)
+}
 
 export async function handleImport(body: ImportRequest, ctx: ImportContext): Promise<Response> {
   const deadline = Date.now() + IMPORT_BUDGET_MS
@@ -113,26 +130,25 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     // thinks this is a free account at its ceiling, reconcile with RevenueCat
     // once in case a purchase webhook never landed (matching `claimScan`).
     let left = await allowance(db, userId)
-    if (
-      left &&
-      left.remaining <= 0 &&
-      left.monthly_limit <= FREE_MONTHLY_IMPORTS &&
-      (await reconcileEntitlement(db, userId))
-    ) {
-      left = await allowance(db, userId)
-    }
     if (left && left.remaining <= 0) {
-      return json(
-        {
-          ok: false,
-          code: 'import_limit',
-          platform: link.platform,
-          used: left.used,
-          limit: left.monthly_limit,
-          entitled: left.monthly_limit > FREE_MONTHLY_IMPORTS,
-        },
-        429,
-      )
+      let entitled = await hasActiveEntitlement(db, userId)
+      if (!entitled && (await reconcileEntitlement(db, userId))) {
+        entitled = true
+        left = await allowance(db, userId)
+      }
+      if (left && left.remaining <= 0) {
+        return json(
+          {
+            ok: false,
+            code: 'import_limit',
+            platform: link.platform,
+            used: left.used,
+            limit: left.monthly_limit,
+            entitled,
+          },
+          429,
+        )
+      }
     }
 
     // A ceiling on model runs that do not end in a recipe: see
@@ -281,14 +297,13 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
       }>()
 
   let { data: made, error: makeError } = await runMake()
-  if (
-    !makeError &&
-    made &&
-    !made.allowed &&
-    made.monthly_limit <= FREE_MONTHLY_IMPORTS &&
-    (await reconcileEntitlement(db, userId))
-  ) {
-    ;({ data: made, error: makeError } = await runMake())
+  let entitledOnLimit: boolean | null = null
+  if (!makeError && made && !made.allowed) {
+    entitledOnLimit = await hasActiveEntitlement(db, userId)
+    if (!entitledOnLimit && (await reconcileEntitlement(db, userId))) {
+      entitledOnLimit = true
+      ;({ data: made, error: makeError } = await runMake())
+    }
   }
 
   if (makeError || !made) {
@@ -305,7 +320,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
         platform: row.platform,
         used: made.used,
         limit: made.monthly_limit,
-        entitled: made.monthly_limit > FREE_MONTHLY_IMPORTS,
+        entitled: entitledOnLimit ?? (await hasActiveEntitlement(db, userId)),
       },
       429,
     )

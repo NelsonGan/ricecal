@@ -55,7 +55,6 @@ export function useReportRecipe() {
       track('Recipe Reported', { reason })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
       queryClient.invalidateQueries({ queryKey: ['recipe'] })
-      queryClient.invalidateQueries({ queryKey: ['recipe'] })
     },
   })
 }

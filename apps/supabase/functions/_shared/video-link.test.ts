@@ -939,3 +939,55 @@ Deno.test('respondWithin handles client stream cancel without throwing or leakin
   finish(Response.json({ ok: true }))
   await new Promise((r) => setTimeout(r, 40))
 })
+
+Deno.test('fetchMedia validates DNS on redirect hops and rejects SVG while allowing AVIF', async () => {
+  const { fetchMedia } = await import('./video-post.ts')
+  const redirectsToPrivateDns = await fetchMedia(
+    'https://public.example.com/start.jpg',
+    1024,
+    'image/',
+    undefined,
+    async (url) => {
+      if (String(url).includes('start.jpg')) {
+        return new Response(null, {
+          status: 302,
+          headers: { location: 'https://rebind.example.com/secret.jpg' },
+        })
+      }
+      return new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+        headers: { 'content-type': 'image/jpeg' },
+      })
+    },
+    5000,
+    async (host) => host === 'public.example.com',
+  )
+  eq(redirectsToPrivateDns, null, 'blocks redirect to host failing DNS check')
+
+  const svg = await fetchMedia(
+    'https://cdn.example.com/cover.svg',
+    1024,
+    'image/',
+    undefined,
+    async () =>
+      new Response('<svg/>', { status: 200, headers: { 'content-type': 'image/svg+xml' } }),
+    5000,
+    async () => true,
+  )
+  eq(svg, null, 'rejects image/svg+xml')
+
+  const avif = await fetchMedia(
+    'https://cdn.example.com/cover.avif',
+    1024,
+    'image/',
+    undefined,
+    async () =>
+      new Response(new Uint8Array([1, 2, 3]), {
+        status: 200,
+        headers: { 'content-type': 'image/avif' },
+      }),
+    5000,
+    async () => true,
+  )
+  eq(avif?.type, 'image/avif', 'allows image/avif raster covers')
+})

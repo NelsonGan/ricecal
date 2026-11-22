@@ -709,7 +709,7 @@ export default function RecipeDetailScreen() {
           try {
             await remove.mutateAsync({ id: recipe.id, photoPath: recipe.photoPath })
           } catch {
-            toast.show({ title: t('recipes:edit.saveFailed'), tone: 'error' })
+            toast.show({ title: t('recipes:report.failed'), tone: 'error' })
             throw new Error('delete failed')
           }
           deletedRef.current = true
