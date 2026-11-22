@@ -271,6 +271,28 @@ it('chains plus sheet into Photo over the tab, stays on the tab on close, and ha
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/recipe/edit', params: { read: '1' } })
 })
 
+it('marks a recipe imported from a video with its platform, and only that one', async () => {
+  mockUseRecipes.mockReturnValue({
+    data: [
+      {
+        ...RECIPE,
+        videoCredit: {
+          platform: 'tiktok',
+          author: '@cook',
+          url: 'https://www.tiktok.com/@cook/video/1',
+        },
+      },
+      QUICK,
+    ],
+    isPending: false,
+  })
+  await render(<RecipesTab />)
+
+  expect(await screen.findByTestId('platform-logo-tiktok')).toBeTruthy()
+  expect(screen.getAllByTestId(/^platform-logo-/)).toHaveLength(1)
+  expect(screen.getByRole('button', { name: new RegExp(`^${RECIPE.name}, .*TikTok`) })).toBeTruthy()
+})
+
 it('shows no price and no quick log on a recipe with nothing in it yet', async () => {
   mockUseRecipes.mockReturnValue({
     data: [{ ...QUICK, ingredientCount: 0, perServing: { kcal: 0, carbs: 0, protein: 0, fat: 0 } }],
@@ -300,7 +322,30 @@ it('opens the video sheet from the plus, not gated as Pro, and hands a pasted li
   await fireEvent.changeText(field, 'nasi lemak')
   expect(screen.getByText('That is not a link to a post we can read.')).toBeTruthy()
 
+  // Every platform it reads, each as its logo and its name.
+  for (const platform of [
+    'instagram',
+    'tiktok',
+    'youtube',
+    'x',
+    'threads',
+    'facebook',
+    'rednote',
+  ]) {
+    expect(screen.getByTestId(`platform-logo-${platform}`)).toBeTruthy()
+  }
+  expect(
+    screen.getByLabelText('Works with: Instagram, TikTok, YouTube, X, Threads, Facebook, Rednote'),
+  ).toBeTruthy()
+
   await fireEvent.changeText(field, 'Look! https://www.instagram.com/reel/CnkNjXVsAJv/?igsh=x')
+  // The pasted link's platform is the one picked out.
+  expect(screen.getByTestId('works-with-instagram').props.accessibilityState).toMatchObject({
+    selected: true,
+  })
+  expect(screen.getByTestId('works-with-tiktok').props.accessibilityState).toMatchObject({
+    selected: false,
+  })
   await user.press(screen.getByRole('button', { name: 'Import recipe' }))
   expect(mockPush).not.toHaveBeenCalled()
 

@@ -3215,7 +3215,8 @@ fallback when the caption says "link in bio" is the dish written out as it is
 normally cooked.
 
 ```
-app/recipe/import.tsx       the screen: three timed stages, then the recipe
+app/recipe/import.tsx       the screen: a turning ring, three timed stages, then the recipe
+features/recipes/PlatformLogo.tsx  each platform's logo, one tile shape
 functions/recipes/import.ts {action: 'import'}: cache, fetch, model, write
 _shared/video-link.ts       which video a link names (pure, tested)
 _shared/video-post.ts       what each platform says about a post, signed out
@@ -3307,6 +3308,16 @@ the first importer unpublishes or deletes theirs, the next import takes its
 place. `import_recipe_for` does the claim, the recipe, its ingredients and the
 community choice in one transaction, with the cache row locked, so two people
 importing one video at once cannot both become its card.
+
+**Each platform shows as its logo.** `assets/brands/video/` holds the seven
+platforms' own App Store icons, cut to one rounded-square tile at 144 px, so
+they read as one set (the logos in `assets/brands/social/` are a circle, a play
+button and squares of four sizes). `PlatformLogo` draws one at any size with a
+hairline edge, since YouTube's tile is white on a white card and TikTok's, X's
+and Threads' are black in dark mode. A logo marks each imported recipe's card,
+the creator pill under its title, the Watch row and the import screens; it only
+ever says where a video came from. The import screen's ring turns rather than
+fills, because nothing reports how far along the server is.
 
 **The credit is public and the server writes it.** `recipes.import_platform`,
 `import_author` and `import_url` say whose video it was ("From @wokwithmei", and

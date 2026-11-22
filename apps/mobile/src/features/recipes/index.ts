@@ -35,6 +35,7 @@ export {
   type IngredientSheetProps,
 } from './IngredientSheet'
 export { LogRecipeSheet, type LogRecipeSheetProps } from './LogRecipeSheet'
+export { PlatformLogo, type PlatformLogoProps } from './PlatformLogo'
 export {
   clearRecipeRead,
   type PendingRecipeRead,

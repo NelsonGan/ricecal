@@ -1592,7 +1592,6 @@ export const id = {
       left_other: 'Sisa {{count}} bulan ini',
       placeholder: 'Tempel tautan video masak',
       paste: 'Tempel',
-      hint: 'Atau bagikan video ke RiceCal dari aplikasi tempat video itu berada.',
       unsupported: 'Itu bukan tautan ke postingan yang bisa kami baca.',
       worksWith: 'Bisa dari',
       action: 'Impor resep',

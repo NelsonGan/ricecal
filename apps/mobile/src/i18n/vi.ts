@@ -1585,7 +1585,6 @@ export const vi = {
       left_other: 'Còn {{count}} lượt trong tháng này',
       placeholder: 'Dán liên kết video nấu ăn',
       paste: 'Dán',
-      hint: 'Hoặc chia sẻ video tới RiceCal từ ứng dụng chứa nó.',
       unsupported: 'Đây không phải liên kết tới bài đăng chúng tôi đọc được.',
       worksWith: 'Dùng được với',
       action: 'Nhập công thức',

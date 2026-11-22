@@ -1573,7 +1573,6 @@ export const zhHans = {
       left_other: '本月还剩 {{count}} 次',
       placeholder: '粘贴一个做菜视频的链接',
       paste: '粘贴',
-      hint: '也可以在视频所在的 App 里分享到 RiceCal。',
       unsupported: '这不是我们能读取的帖子链接。',
       worksWith: '支持',
       action: '导入食谱',

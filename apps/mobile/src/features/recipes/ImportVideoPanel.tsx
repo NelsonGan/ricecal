@@ -3,7 +3,8 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { Badge, Button, Text, TextField } from '@/ui'
+import { Button, TextField } from '@/ui'
+import { PlatformLogo } from './PlatformLogo'
 import { findVideoLink, VIDEO_PLATFORMS } from './videoLink'
 
 export type ImportVideoPanelProps = {
@@ -21,10 +22,11 @@ export type ImportVideoPanelProps = {
  * the sheet opens: iOS asks permission for every read the user did not start,
  * and a sheet that opens with a system alert over it reads as the app snooping.
  *
- * The platforms are written out under the field because "a video" alone does
- * not say which apps' links work, and a link from one that does not is the
- * likeliest way this goes wrong. Names rather than logos: they are other
- * companies' marks, and a word is all this needs.
+ * The platforms are shown under the field because "a video" alone does not say
+ * which apps' links work, and a link from one that does not is the likeliest
+ * way this goes wrong. Logos, because a logo is what somebody looks for, and
+ * the same tile marks the recipe once it is made. Once a link is pasted, its
+ * platform stays lit and the rest step back.
  */
 export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPanelProps) {
   const { t } = useTranslation(['recipes', 'common'])
@@ -47,7 +49,6 @@ export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPan
         placeholder={t('recipes:import.placeholder')}
         accessibilityLabel={t('recipes:import.placeholder')}
         error={wrong ? t('recipes:import.unsupported') : undefined}
-        hint={t('recipes:import.hint')}
         autoFocus={autoFocus}
         autoCapitalize="none"
         autoCorrect={false}
@@ -62,19 +63,26 @@ export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPan
         }
       />
 
-      <View className="gap-2">
-        <Text variant="caption">{t('recipes:import.worksWith')}</Text>
-        <View className="flex-row flex-wrap gap-1.5">
-          {VIDEO_PLATFORMS.map((platform) => (
-            <Badge
-              key={platform}
-              tone={found?.platform === platform ? 'pandan' : 'neutral'}
-              size="sm"
-            >
-              {t(`recipes:platform.${platform}`)}
-            </Badge>
-          ))}
-        </View>
+      {/* The apps whose links work, as their logos alone: a row of seven names
+          under them was the busiest thing in the sheet, and each logo says its
+          name better than the word does. */}
+      <View
+        className="flex-row justify-between px-1"
+        accessible
+        accessibilityLabel={`${t('recipes:import.worksWith')}: ${VIDEO_PLATFORMS.map((p) =>
+          t(`recipes:platform.${p}`),
+        ).join(', ')}`}
+      >
+        {VIDEO_PLATFORMS.map((platform) => (
+          <View
+            key={platform}
+            testID={`works-with-${platform}`}
+            accessibilityState={{ selected: found?.platform === platform }}
+            style={{ opacity: !found || found.platform === platform ? 1 : 0.3 }}
+          >
+            <PlatformLogo platform={platform} size={30} />
+          </View>
+        ))}
       </View>
 
       <Button fullWidth disabled={!found} onPress={() => found && onSubmit(found.url)}>

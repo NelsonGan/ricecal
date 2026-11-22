@@ -1581,7 +1581,6 @@ export const ja = {
       left_other: '今月あと {{count}} 本',
       placeholder: '料理動画のリンクを貼り付け',
       paste: '貼り付け',
-      hint: 'または、動画のあるアプリから RiceCal にシェアしてください。',
       unsupported: '読み取れる投稿のリンクではありません。',
       worksWith: '対応',
       action: 'レシピを読み込む',

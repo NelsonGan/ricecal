@@ -3,6 +3,7 @@ import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import Animated, { FadeIn } from 'react-native-reanimated'
 
 import {
   useImportRecipe,
@@ -12,19 +13,19 @@ import {
   VideoImportLimitError,
 } from '@/data'
 import { openPaywall, proFeatureTitle } from '@/data/refusals'
+import { ImportRing } from '@/features/recipes/ImportRing'
+import { PlatformLogo } from '@/features/recipes/PlatformLogo'
 import { findVideoLink } from '@/features/recipes/videoLink'
 import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
-  Badge,
   Button,
   Card,
   EmptyState,
   Icon,
   type IconProps,
   Screen,
-  Spinner,
   Text,
   useToast,
 } from '@/ui'
@@ -196,34 +197,40 @@ function Working({
 }) {
   const { t } = useTranslation('recipes')
   const stages = [t('import.step.watch'), t('import.step.write'), t('import.step.count')]
+  const current = Math.min(stage, stages.length - 1)
 
+  // One moving thing: the ring. The heading names the step it is on, and the
+  // list under it is the map of all three, so the rows carry no spinner of
+  // their own.
   return (
-    <View className="gap-5">
-      <Card>
-        <View className="flex-row items-center gap-4">
-          <Icon set="system" name="video" size={64} />
-          <View className="min-w-0 flex-1 gap-1.5">
-            <Badge tone="pandan" size="sm" className="self-start">
-              {t(`platform.${platform}`)}
-            </Badge>
-            <Text variant="body" numberOfLines={2} className="text-muted">
-              {url.replace(/^https?:\/\/(www\.)?/, '')}
-            </Text>
-          </View>
-        </View>
-      </Card>
+    <View className="items-center gap-5 pt-4">
+      <ImportRing size={152}>
+        <PlatformLogo platform={platform} size={76} />
+      </ImportRing>
+
+      <View className="items-center gap-1 self-stretch">
+        <Animated.View key={current} entering={FadeIn.duration(200)}>
+          <Text variant="screenTitle" className="text-center" accessibilityLiveRegion="polite">
+            {stages[current]}
+          </Text>
+        </Animated.View>
+        <Text variant="meta" numberOfLines={2} className="text-center">
+          {url.replace(/^https?:\/\/(www\.)?/, '')}
+        </Text>
+      </View>
 
       <Card
         accessibilityRole="progressbar"
-        accessibilityLabel={stages[Math.min(stage, stages.length - 1)]}
+        accessibilityLabel={stages[current]}
         accessibilityState={{ busy: true }}
+        className="self-stretch"
         contentClassName="gap-1 p-2"
       >
         {stages.map((label, index) => (
           <StageRow
             key={label}
             label={label}
-            state={index < stage ? 'done' : index === stage ? 'active' : 'waiting'}
+            state={index < stage ? 'done' : index === current ? 'active' : 'waiting'}
           />
         ))}
       </Card>
@@ -239,19 +246,19 @@ function StageRow({ label, state }: { label: string; state: 'done' | 'active' | 
   const colors = useThemeColors()
   return (
     <View
-      className={`flex-row items-center gap-3 rounded-tile px-3 py-3 ${
+      className={`flex-row items-center gap-3 rounded-tile px-3 py-2.5 ${
         state === 'active' ? 'bg-pandan-soft' : ''
       }`}
     >
-      <View className="h-7 w-7 items-center justify-center">
+      <View className="h-6 w-6 items-center justify-center">
         {state === 'done' ? (
-          <View className="h-7 w-7 items-center justify-center rounded-full bg-pandan">
-            <Icon set="ui" name="check" size={16} tintColor={colors.onPandan} />
+          <View className="h-6 w-6 items-center justify-center rounded-full bg-pandan">
+            <Icon set="ui" name="check" size={14} tintColor={colors.onPandan} />
           </View>
         ) : state === 'active' ? (
-          <Spinner />
+          <View className="h-3.5 w-3.5 rounded-full bg-pandan" />
         ) : (
-          <View className="h-6 w-6 rounded-full border-[3px] border-line" />
+          <View className="h-5 w-5 rounded-full border-[2.5px] border-line" />
         )}
       </View>
       <Text variant="bodyStrong" className={state === 'waiting' ? 'text-muted' : undefined}>

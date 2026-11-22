@@ -17,6 +17,18 @@ const mockQuotaState: { current: { isPending: boolean; fetchStatus: string } } =
 }
 const mockFocused = { current: true }
 
+// The progress ring draws with Skia, whose Jest setup falls back to a web build
+// that never loads CanvasKit, so a path throws on render. Nothing here is about
+// the drawing: the canvas is stubbed down to what the ring touches.
+jest.mock('@shopify/react-native-skia', () => {
+  const builder = { addArc: () => builder, detach: () => ({}) }
+  return {
+    Canvas: ({ children }: { children?: unknown }) => children ?? null,
+    Path: () => null,
+    Skia: { PathBuilder: { Make: () => builder }, XYWHRect: () => ({}) },
+  }
+})
+
 jest.mock('expo-router', () => ({
   useIsFocused: () => mockFocused.current,
   useLocalSearchParams: () => mockParams.current,
@@ -80,7 +92,9 @@ it('imports the link once and opens the recipe it made', async () => {
   await renderScreen()
 
   expect(screen.getByText('Making your recipe')).toBeTruthy()
-  expect(screen.getByText('Watching the video')).toBeTruthy()
+  // The step it is on, as the heading and as the first of the three in the list.
+  expect(screen.getAllByText('Watching the video')).toHaveLength(2)
+  expect(screen.getByText('Working out the calories')).toBeTruthy()
   await waitFor(() =>
     expect(mockReplace).toHaveBeenCalledWith({ pathname: '/recipe/[id]', params: { id: 'r1' } }),
   )

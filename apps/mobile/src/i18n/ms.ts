@@ -1607,7 +1607,6 @@ export const ms = {
       left_other: 'Tinggal {{count}} bulan ini',
       placeholder: 'Tampal pautan video masakan',
       paste: 'Tampal',
-      hint: 'Atau kongsi video ke RiceCal daripada apl yang memaparkannya.',
       unsupported: 'Itu bukan pautan ke siaran yang boleh kami baca.',
       worksWith: 'Berfungsi dengan',
       action: 'Import resipi',

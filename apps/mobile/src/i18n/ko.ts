@@ -1576,7 +1576,6 @@ export const ko = {
       left_other: '이번 달 {{count}}개 남음',
       placeholder: '요리 영상 링크를 붙여 넣으세요',
       paste: '붙여넣기',
-      hint: '또는 영상이 있는 앱에서 RiceCal로 공유하세요.',
       unsupported: '읽을 수 있는 게시물 링크가 아닙니다.',
       worksWith: '지원',
       action: '레시피 가져오기',

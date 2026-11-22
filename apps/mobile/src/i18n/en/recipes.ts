@@ -66,7 +66,6 @@ export const recipes = {
     left_other: '{{count}} left this month',
     placeholder: 'Paste a video link',
     paste: 'Paste',
-    hint: 'Or share a video to RiceCal from the app it is in.',
     unsupported: 'That is not a link to a post we can read.',
     worksWith: 'Works with',
     action: 'Import recipe',

@@ -1573,7 +1573,6 @@ export const zhHant = {
       left_other: '本月還剩 {{count}} 次',
       placeholder: '貼上料理影片的連結',
       paste: '貼上',
-      hint: '也可以在影片所在的 App 裡分享到 RiceCal。',
       unsupported: '這不是我們能讀取的貼文連結。',
       worksWith: '支援',
       action: '匯入食譜',

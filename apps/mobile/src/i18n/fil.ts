@@ -1608,7 +1608,6 @@ export const fil = {
       left_other: '{{count}} na lang ngayong buwan',
       placeholder: 'I-paste ang link ng video ng pagluluto',
       paste: 'I-paste',
-      hint: 'O ibahagi ang video sa RiceCal mula sa app na pinanggalingan nito.',
       unsupported: 'Hindi iyan link ng post na mababasa namin.',
       worksWith: 'Gumagana sa',
       action: 'I-import ang recipe',
