@@ -1949,6 +1949,31 @@ export const vi = {
     done: 'Đã hiểu',
     next: 'Tiếp',
     pageOf: 'Trang {{page}} / {{count}}',
+    update130: {
+      title: 'Công thức từ video, một thẻ Cộng đồng và hơn thế',
+    },
+    recipeImport: {
+      title: 'Biến video nấu ăn thành công thức',
+      body: 'Dán liên kết từ TikTok, Instagram, Rednote và nhiều nơi khác, chúng tôi sẽ viết công thức.',
+      exampleName: 'Laksa cà ri',
+      previewLabel: 'Một video nấu ăn được biến thành công thức',
+    },
+    socialTab: {
+      title: 'Bạn bè và nhóm trong một thẻ',
+      body: 'Ngày của nhóm giờ nằm trên bảng tin trong Cộng đồng.',
+      exampleGroup: 'Hội ăn trưa',
+      previewLabel: 'Ví dụ về thẻ Cộng đồng',
+    },
+    mealPlaces: {
+      title: 'Nhớ nơi bạn đã ăn',
+      body: 'Gắn nơi bạn đã ăn cho bữa ăn, và xem tất cả trên bản đồ ẩm thực.',
+      previewLabel: 'Ví dụ về bữa ăn được gắn địa điểm',
+    },
+    kitchenUnits: {
+      title: 'Cốc, thìa và hơn thế',
+      body: 'Ghi món ăn bằng thìa cà phê, thìa canh và cốc, không chỉ gam và phần.',
+      previewLabel: 'Ví dụ về món ăn đo bằng cốc',
+    },
     groupsNews: {
       title: 'Nhóm: ăn cùng bạn bè',
     },

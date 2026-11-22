@@ -1933,6 +1933,31 @@ export const zhHant = {
     done: '知道了',
     next: '下一步',
     pageOf: '第 {{page}} 頁，共 {{count}} 頁',
+    update130: {
+      title: '影片食譜、社交分頁等更新',
+    },
+    recipeImport: {
+      title: '把烹飪影片變成食譜',
+      body: '貼上 TikTok、Instagram、小紅書等平台的連結，我們幫你寫好食譜。',
+      exampleName: '咖哩叻沙',
+      previewLabel: '烹飪影片變成食譜的範例',
+    },
+    socialTab: {
+      title: '好友和小組合併為一個分頁',
+      body: '小組的今日動態現在顯示在「社交」的動態上方。',
+      exampleGroup: '午餐飯友',
+      previewLabel: '「社交」分頁範例',
+    },
+    mealPlaces: {
+      title: '記住在哪裡吃的',
+      body: '為餐點標記用餐地點，並在美食地圖上一覽無遺。',
+      previewLabel: '標記了地點的餐點範例',
+    },
+    kitchenUnits: {
+      title: '杯、匙等單位',
+      body: '可以用茶匙、湯匙和杯記錄食物，不只是克和份。',
+      previewLabel: '以杯計量的食物範例',
+    },
     groupsNews: {
       title: '小組：和朋友一起吃',
     },

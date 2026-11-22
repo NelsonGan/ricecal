@@ -24,7 +24,7 @@ import { createJsonStore } from '@/lib/jsonStore'
 type OfferState = 'due' | 'answered' | null
 
 type Preference = {
-  /** Off until the user turns it on, in Settings or from the offer. */
+  /** Off until the user turns it on, in Settings, from the offer or from the 1.3.0 news card. */
   enabled: boolean
   /** On by default once Locations is: tagging is what turning it on is for. */
   autoTag: boolean

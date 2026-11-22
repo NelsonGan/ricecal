@@ -1975,6 +1975,31 @@ export const fil = {
     done: 'Sige',
     next: 'Susunod',
     pageOf: 'Pahina {{page}} ng {{count}}',
+    update130: {
+      title: 'Recipe mula sa video, iisang Social tab at iba pa',
+    },
+    recipeImport: {
+      title: 'Gawing recipe ang cooking video',
+      body: 'Mag-paste ng link mula sa TikTok, Instagram, Rednote at iba pa, at isusulat namin ang recipe.',
+      exampleName: 'Curry laksa',
+      previewLabel: 'Isang cooking video na ginawang recipe',
+    },
+    socialTab: {
+      title: 'Mga kaibigan at grupo sa iisang tab',
+      body: 'Nasa itaas na ng feed sa Social ang araw ng grupo mo.',
+      exampleGroup: 'Lunch barkada',
+      previewLabel: 'Halimbawa ng Social tab',
+    },
+    mealPlaces: {
+      title: 'Tandaan kung saan ka kumain',
+      body: 'Lagyan ng lugar kung saan ka kumain ang mga pagkain, at tingnan lahat sa mapa ng pagkain.',
+      previewLabel: 'Halimbawa ng pagkaing may lugar',
+    },
+    kitchenUnits: {
+      title: 'Tasa, kutsara at iba pa',
+      body: 'Mag-log ng pagkain sa kutsarita, kutsara at tasa, hindi lang gramo at serving.',
+      previewLabel: 'Halimbawa ng pagkaing sinukat sa tasa',
+    },
     groupsNews: {
       title: 'Mga grupo: kumain kasama ang mga kaibigan',
     },

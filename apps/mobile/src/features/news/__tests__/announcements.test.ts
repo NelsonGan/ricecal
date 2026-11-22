@@ -59,10 +59,9 @@ it('switches auto post on with the 1.1.0 announcement, whose feed page links to 
   ])
 })
 
-it('makes the Groups card the newest, and folds the 1.1.0 card into it only for an account that missed it', () => {
+it('folds the 1.1.0 card into the Groups card only for an account that missed it', () => {
   const groups = ANNOUNCEMENTS.find((a) => a.id === 'groups_2026_10')
   if (!groups) throw new Error('groups')
-  expect(announcementDue(onboarded([]))?.id).toBe('groups_2026_10')
   const missed = withMissed(groups, [])
   expect(missed.pages.map((page) => page.key)).toEqual([
     'groupsBoard',
@@ -80,4 +79,42 @@ it('makes the Groups card the newest, and folds the 1.1.0 card into it only for 
   expect(seen.claims).toEqual([{ id: 'groups_2026_10', enables: undefined }])
   // Unknown profile: nothing folded, nothing switched.
   expect(withMissed(groups, undefined).claims).toHaveLength(1)
+})
+
+it('makes the 1.3.0 card the newest, with its four pages and their buttons', () => {
+  expect(announcementDue(onboarded(['groups_2026_10', 'feed_auto_share_2026_10']))?.id).toBe(
+    'update_1_3_0_2026_11',
+  )
+  const update = ANNOUNCEMENTS.find((a) => a.id === 'update_1_3_0_2026_11')
+  expect(update?.enables).toBeUndefined()
+  expect(update?.pages.map((page) => [page.key, page.cta])).toEqual([
+    ['recipeImport', 'recipes'],
+    ['socialTab', 'social'],
+    ['mealPlaces', 'locations'],
+    ['kitchenUnits', undefined],
+  ])
+})
+
+it('carries the 1.1.0 switch to an account that missed it, and not the Groups pages', () => {
+  const update = ANNOUNCEMENTS.find((a) => a.id === 'update_1_3_0_2026_11')
+  if (!update) throw new Error('update')
+  // Never saw either older card: the 1.1.0 pages follow, and its switch with them.
+  const missed = withMissed(update, [])
+  expect(missed.pages.map((page) => page.key)).toEqual([
+    'recipeImport',
+    'socialTab',
+    'mealPlaces',
+    'kitchenUnits',
+    'workouts',
+    'feedAutoShare',
+    'photoNote',
+  ])
+  expect(missed.claims).toEqual([
+    { id: 'update_1_3_0_2026_11', enables: undefined },
+    { id: 'feed_auto_share_2026_10', enables: { autoPostFoods: true } },
+  ])
+  // Saw 1.1.0 but not Groups: only its own pages, and nothing switched.
+  const seen = withMissed(update, ['feed_auto_share_2026_10'])
+  expect(seen.pages).toHaveLength(4)
+  expect(seen.claims).toEqual([{ id: 'update_1_3_0_2026_11', enables: undefined }])
 })

@@ -9,12 +9,21 @@ import { ANNOUNCEMENTS } from '../announcements'
 const mockPush = jest.fn()
 const mockSee = jest.fn()
 const mockProfile: { seen_announcements: string[] } = { seen_announcements: [] }
+const mockLocations = { enabled: false }
+const mockSetLocations = jest.fn()
+const mockAskLocation = jest.fn()
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
 jest.mock('@/lib/analytics', () => ({ track: jest.fn() }))
 jest.mock('@/lib/errors', () => ({ reportError: jest.fn() }))
 jest.mock('@/data', () => ({
   useProfile: () => ({ data: mockProfile }),
   useSeeAnnouncement: () => ({ mutate: mockSee }),
+  useSession: () => ({ userId: 'me' }),
+}))
+jest.mock('@/lib/places', () => ({
+  useLocationsPreference: () => mockLocations,
+  setLocationsEnabled: (...args: unknown[]) => mockSetLocations(...args),
+  requestLocationPermission: () => mockAskLocation(),
 }))
 jest.mock('../FeedAutoSharePreview', () => ({ FeedAutoSharePreview: () => null }))
 jest.mock('../WorkoutsPreview', () => ({ WorkoutsPreview: () => null }))
@@ -22,6 +31,12 @@ jest.mock('../PhotoNotePreview', () => ({ PhotoNotePreview: () => null }))
 jest.mock('../GroupsPreview', () => ({
   GroupsBoardPreview: () => null,
   GroupsChatPreview: () => null,
+}))
+jest.mock('../Update130Preview', () => ({
+  RecipeImportPreview: () => null,
+  SocialTabPreview: () => null,
+  MealPlacesPreview: () => null,
+  KitchenUnitsPreview: () => null,
 }))
 
 const METRICS = {
@@ -35,6 +50,7 @@ const byId = (id: string) => {
 }
 const feed = byId('feed_auto_share_2026_10')
 const groups = byId('groups_2026_10')
+const update = byId('update_1_3_0_2026_11')
 
 function AnnouncementCard(props: ComponentProps<typeof Card>) {
   return (
@@ -68,6 +84,7 @@ beforeEach(() => {
   jest.restoreAllMocks()
   jest.clearAllMocks()
   mockProfile.seen_announcements = []
+  mockLocations.enabled = false
 })
 
 it('counts and marks nothing until the card is actually on screen', async () => {
@@ -257,4 +274,55 @@ it('opens the Groups tab from the board page', async () => {
     page: 1,
   })
   expect(onClose).toHaveBeenCalled()
+})
+
+it('turns Locations on from the places page, and asks for location once the card has gone', async () => {
+  mockProfile.seen_announcements = [feed.id, groups.id]
+  const onClose = jest.fn()
+  const view = await render(
+    <AnnouncementCard announcement={update} source="launch" onClose={onClose} />,
+  )
+  await presented()
+  await toPage(3)
+  await fireEvent.press(screen.getByText('places:offerAccept'))
+  expect(mockSetLocations).toHaveBeenCalledWith('me', true)
+  expect(track).toHaveBeenCalledWith('Locations Toggled', { enabled: true, source: 'announcement' })
+  expect(track).toHaveBeenCalledWith('Announcement CTA Tapped', {
+    announcement: update.id,
+    source: 'launch',
+    cta: 'locations',
+    page: 3,
+  })
+  expect(onClose).toHaveBeenCalled()
+  // The system prompt waits for the modal to go, as a pushed screen does.
+  expect(mockAskLocation).not.toHaveBeenCalled()
+  await withPlatform('android', async () => {
+    await view.rerender(<AnnouncementCard announcement={null} source="launch" onClose={onClose} />)
+  })
+  expect(mockAskLocation).toHaveBeenCalledTimes(1)
+  expect(mockPush).not.toHaveBeenCalled()
+})
+
+it('offers no Locations button to somebody who already has Locations on', async () => {
+  mockProfile.seen_announcements = [feed.id, groups.id]
+  mockLocations.enabled = true
+  await render(<AnnouncementCard announcement={update} source="settings" onClose={jest.fn()} />)
+  await presented()
+  await toPage(3)
+  expect(screen.getByText('news:mealPlaces.title')).toBeTruthy()
+  expect(screen.queryByText('places:offerAccept')).toBeNull()
+})
+
+it('opens Recipes from the video page', async () => {
+  mockProfile.seen_announcements = [feed.id, groups.id]
+  const onClose = jest.fn()
+  const view = await render(
+    <AnnouncementCard announcement={update} source="launch" onClose={onClose} />,
+  )
+  await presented()
+  await fireEvent.press(screen.getByText('recipes:title'))
+  await withPlatform('android', async () => {
+    await view.rerender(<AnnouncementCard announcement={null} source="launch" onClose={onClose} />)
+  })
+  expect(mockPush).toHaveBeenCalledWith('/recipes')
 })

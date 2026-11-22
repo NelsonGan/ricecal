@@ -1943,6 +1943,31 @@ export const ja = {
     done: 'OK',
     next: '次へ',
     pageOf: '{{count}}ページ中{{page}}ページ目',
+    update130: {
+      title: '動画からレシピ、ソーシャルタブなど',
+    },
+    recipeImport: {
+      title: '料理動画をレシピに',
+      body: 'TikTok、Instagram、Rednote などのリンクを貼るだけで、レシピを書き起こします。',
+      exampleName: 'カレーラクサ',
+      previewLabel: '料理動画がレシピになる例',
+    },
+    socialTab: {
+      title: '友だちとグループをひとつのタブに',
+      body: 'グループの今日の様子が、ソーシャルのフィードの上に表示されます。',
+      exampleGroup: 'ランチ仲間',
+      previewLabel: 'ソーシャルタブの例',
+    },
+    mealPlaces: {
+      title: 'どこで食べたかを記録',
+      body: '食事に食べた場所を記録して、フードマップでまとめて見られます。',
+      previewLabel: '場所を記録した食事の例',
+    },
+    kitchenUnits: {
+      title: 'カップ、スプーンなど',
+      body: 'グラムや人前だけでなく、小さじ・大さじ・カップでも記録できます。',
+      previewLabel: 'カップで量った食べ物の例',
+    },
     groupsNews: {
       title: 'グループ：友だちと一緒に食べよう',
     },

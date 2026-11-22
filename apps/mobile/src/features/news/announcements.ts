@@ -12,12 +12,27 @@
 export type AnnouncementSource = 'launch' | 'settings'
 
 /** Where a page's button leads, named for analytics. */
-export type AnnouncementCta = 'edit_profile' | 'personalisation' | 'groups'
+export type AnnouncementCta =
+  | 'edit_profile'
+  | 'personalisation'
+  | 'groups'
+  | 'recipes'
+  | 'social'
+  | 'locations'
 
 /** One page of an announcement, swiped through in order. */
 export type AnnouncementPage = {
   /** `news:<key>` holds its title and body, and names its picture. */
-  key: 'workouts' | 'feedAutoShare' | 'photoNote' | 'groupsBoard' | 'groupsChat'
+  key:
+    | 'workouts'
+    | 'feedAutoShare'
+    | 'photoNote'
+    | 'groupsBoard'
+    | 'groupsChat'
+    | 'recipeImport'
+    | 'socialTab'
+    | 'mealPlaces'
+    | 'kitchenUnits'
   /** Only where there is a switch or a screen worth going to; most pages need none. */
   cta?: AnnouncementCta
 }
@@ -30,7 +45,7 @@ export type Announcement = {
    */
   id: string
   /** `news:<key>.title` names it in the list under Me. */
-  key: 'update110' | 'groupsNews'
+  key: 'update110' | 'groupsNews' | 'update130'
   /** YYYY-MM-DD, for the list and for ordering. */
   releaseDate: string
   /** At least one. A release with several changes is one card of pages, not several cards. */
@@ -60,6 +75,24 @@ export type ShownAnnouncement = Announcement & {
 }
 
 export const ANNOUNCEMENTS: readonly Announcement[] = [
+  {
+    id: 'update_1_3_0_2026_11',
+    key: 'update130',
+    releaseDate: '2026-11-22',
+    pages: [
+      { key: 'recipeImport', cta: 'recipes' },
+      { key: 'socialTab', cta: 'social' },
+      // Locations are off until turned on, so the button turns them on.
+      { key: 'mealPlaces', cta: 'locations' },
+      { key: 'kitchenUnits' },
+    ],
+    // Nearly half of onboarded accounts on the hosted project had still never
+    // been shown 1.1.0 when this shipped (1,939 of 4,112 on 2026-11-22), and
+    // only the newest card is put up: they get its pages, and its switch, here.
+    // Not the Groups card, which switches nothing and whose news the Social
+    // page now carries; it stays in the list under Me.
+    folds: 'feed_auto_share_2026_10',
+  },
   {
     id: 'groups_2026_10',
     key: 'groupsNews',

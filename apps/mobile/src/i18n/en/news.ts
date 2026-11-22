@@ -16,6 +16,37 @@ export const news = {
   next: 'Next',
   /** The dots under a card's pages, read by VoiceOver and TalkBack. */
   pageOf: 'Page {{page}} of {{count}}',
+  update130: {
+    /** Its row in the News list. Each page has its own title. */
+    title: 'Video recipes, one Social tab and more',
+  },
+  recipeImport: {
+    title: 'Turn a cooking video into a recipe',
+    /** Names three of the seven platforms, the three the picture shows. */
+    body: 'Paste a link from TikTok, Instagram, Rednote and more, and we write the recipe.',
+    /** The recipe in the picture. A dish, in the name it goes by here. */
+    exampleName: 'Curry laksa',
+    previewLabel: 'A cooking video becoming a recipe',
+  },
+  socialTab: {
+    /** Social is the tab, named as the tab bar names it. */
+    title: 'Friends and groups in one tab',
+    body: "Your group's day now sits above the feed in Social.",
+    /** A group in the picture, named as a group of friends would name it. */
+    exampleGroup: 'Lunch crew',
+    previewLabel: 'An example of the Social tab',
+  },
+  mealPlaces: {
+    title: 'Remember where you ate',
+    /** The button under it turns Locations on (`places:offerAccept`), so the body need not say how. */
+    body: 'Tag meals with where you ate them, and see them all on a food map.',
+    previewLabel: 'An example of a meal tagged with its place',
+  },
+  kitchenUnits: {
+    title: 'Cups, spoons and more',
+    body: 'Log food in teaspoons, tablespoons and cups, not only grams and portions.',
+    previewLabel: 'An example of food measured in cups',
+  },
   groupsNews: {
     /** Its row in the News list. */
     title: 'Groups: eat with friends',

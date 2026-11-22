@@ -14,9 +14,14 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { useProfile, useSeeAnnouncement } from '@/data'
+import { useProfile, useSeeAnnouncement, useSession } from '@/data'
 import { track } from '@/lib/analytics'
 import { reportError } from '@/lib/errors'
+import {
+  requestLocationPermission,
+  setLocationsEnabled,
+  useLocationsPreference,
+} from '@/lib/places'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, cn, Icon, IconButton, Text, useHeld, useOverlayInsets } from '@/ui'
 import type {
@@ -30,17 +35,30 @@ import { withMissed } from './announcements'
 import { FeedAutoSharePreview } from './FeedAutoSharePreview'
 import { GroupsBoardPreview, GroupsChatPreview } from './GroupsPreview'
 import { PhotoNotePreview } from './PhotoNotePreview'
+import {
+  KitchenUnitsPreview,
+  MealPlacesPreview,
+  RecipeImportPreview,
+  SocialTabPreview,
+} from './Update130Preview'
 import { WorkoutsPreview } from './WorkoutsPreview'
 
 /**
  * Where each button goes and what it says. A route rather than a callback, so
  * the list and the launch card agree; the label is the destination's own name.
+ *
+ * `locations` is the one button that changes something rather than going
+ * somewhere: Locations is new and off until turned on, so the page about it
+ * turns it on, as the one-time offer's button does (README: Meal locations).
  */
 const CTAS = {
   edit_profile: { route: '/settings/account', label: 'social:editProfile' },
   personalisation: { route: '/settings/personalisation', label: 'profile:personalisation.title' },
   groups: { route: '/social', label: 'groups:title' },
-} as const satisfies Record<AnnouncementCta, { route: Href; label: string }>
+  recipes: { route: '/recipes', label: 'recipes:title' },
+  social: { route: '/social', label: 'social:title' },
+  locations: { route: null, label: 'places:offerAccept' },
+} as const satisfies Record<AnnouncementCta, { route: Href | null; label: string }>
 
 /** Each page's picture, drawn from the app's own components. */
 const PICTURES = {
@@ -49,6 +67,10 @@ const PICTURES = {
   photoNote: PhotoNotePreview,
   groupsBoard: GroupsBoardPreview,
   groupsChat: GroupsChatPreview,
+  recipeImport: RecipeImportPreview,
+  socialTab: SocialTabPreview,
+  mealPlaces: MealPlacesPreview,
+  kitchenUnits: KitchenUnitsPreview,
 } as const satisfies Record<AnnouncementPage['key'], ComponentType>
 
 /**
@@ -101,7 +123,15 @@ export function AnnouncementCard({
   source: AnnouncementSource
   onClose: () => void
 }) {
-  const { t } = useTranslation(['news', 'common', 'social', 'profile', 'groups'])
+  const { t } = useTranslation([
+    'news',
+    'common',
+    'social',
+    'profile',
+    'groups',
+    'recipes',
+    'places',
+  ])
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const overlay = useOverlayInsets()
@@ -116,7 +146,11 @@ export function AnnouncementCard({
   const visible = announcement !== null
   // Kept while it fades, so the copy does not blank mid-animation.
   const shown = useHeld(announcement, visible)
-  const queued = useRef<Href | null>(null)
+  // What runs once the modal has gone: a screen to push, or the system's
+  // location prompt, neither of which iOS presents over a modal on its way down.
+  const queued = useRef<(() => void) | null>(null)
+  const { userId } = useSession()
+  const locations = useLocationsPreference(userId ?? '')
   // One answer per showing. A double tap, or the scrim tapped after the
   // button, lands before the parent has hidden the card and would count twice.
   const answered = useRef(false)
@@ -139,9 +173,14 @@ export function AnnouncementCard({
   const [card, setCard] = useState<ShownAnnouncement | null>(() =>
     announcement ? withMissed(announcement, profile?.seen_announcements) : null,
   )
+  // Whether Locations was on as this showing began, fixed for it like `card`:
+  // the places page's own button turns it on, and a live read would pull that
+  // button out of the card while it fades.
+  const [locationsOn, setLocationsOn] = useState(locations.enabled)
   if (showing.visible !== visible) {
     setShowing({ visible, count: showing.count + (visible ? 1 : 0) })
     if (visible) setPage(0)
+    if (visible) setLocationsOn(locations.enabled)
     if (visible && announcement) setCard(withMissed(announcement, profile?.seen_announcements))
   }
 
@@ -162,9 +201,9 @@ export function AnnouncementCard({
   }
 
   const runQueued = () => {
-    const route = queued.current
+    const run = queued.current
     queued.current = null
-    if (route) router.push(route)
+    run?.()
   }
 
   // Android has no `onDismiss`; its modal is gone once `visible` is false.
@@ -177,6 +216,8 @@ export function AnnouncementCard({
   const pages = card.pages
   const current = pages[Math.min(page, pages.length - 1)]
   const last = page >= pages.length - 1
+  // Nothing to turn on once Locations is on, or with nobody signed in to turn it on for.
+  const cta = current.cta === 'locations' && (locationsOn || !userId) ? undefined : current.cta
 
   const close = (via: 'done' | 'close') => {
     if (!announcement || answered.current) return
@@ -186,11 +227,17 @@ export function AnnouncementCard({
   }
 
   const takeCta = () => {
-    const cta = current.cta
     if (!announcement || !cta || answered.current) return
     answered.current = true
     track('Announcement CTA Tapped', { announcement: announcement.id, source, cta, page: page + 1 })
-    queued.current = CTAS[cta].route
+    const route = CTAS[cta].route
+    if (route) {
+      queued.current = () => router.push(route)
+    } else if (userId) {
+      setLocationsEnabled(userId, true)
+      track('Locations Toggled', { enabled: true, source: 'announcement' })
+      queued.current = () => void requestLocationPermission()
+    }
     onClose()
   }
 
@@ -335,16 +382,17 @@ export function AnnouncementCard({
                 the photo note puts Skip beside Log: the way on is the big
                 one, and the detour is there without a second row. */}
             <View className="flex-row items-center gap-3 px-5 pb-5 pt-5">
-              {current.cta ? (
-                // At most half the row: some languages name these screens at
-                // length, and Next keeps its width however long the name is.
+              {cta ? (
+                // At most a little over half the row: some languages name these
+                // screens at length, and Next keeps its width however long the
+                // name is. Not exactly half, which wrapped "Turn on Locations".
                 <Button
                   variant="ghost"
                   onPress={takeCta}
-                  className="max-w-[50%] shrink"
+                  className="max-w-[58%] shrink"
                   contentClassName="px-4"
                 >
-                  {t(CTAS[current.cta].label)}
+                  {t(CTAS[cta].label)}
                 </Button>
               ) : null}
               <Button className="flex-1" onPress={last ? done : next}>

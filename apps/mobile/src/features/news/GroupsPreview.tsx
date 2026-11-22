@@ -11,7 +11,7 @@ type AvatarTone = NonNullable<AvatarProps['tone']>
 type Dish = Extract<IconRef, { set: 'dishes' }>['name']
 
 /** A day on the board: a dish, nothing yet, or a missed meal waiting for a nudge. */
-type Slot = Dish | 'empty' | 'nudge'
+export type Slot = Dish | 'empty' | 'nudge'
 
 /**
  * Two friends and the reader, breakfast to dinner. Names only feed the
@@ -24,7 +24,7 @@ const FRIENDS: { name: string; tone: AvatarTone; slots: [Slot, Slot, Slot] }[] =
 const YOURS: [Slot, Slot, Slot] = ['nasi-lemak', 'chicken-rice', 'empty']
 
 /** The reader's own face, as the feed page draws it. */
-function You() {
+export function You() {
   const { data: profile } = useProfile()
   const { data: avatarUri } = useAvatarUrl(profile?.avatar_path ?? undefined)
   const avatar = storedImageSource(profile?.avatar_path ?? undefined, avatarUri)
@@ -39,7 +39,7 @@ function You() {
   )
 }
 
-function Tile({ slot }: { slot: Slot }) {
+export function Tile({ slot }: { slot: Slot }) {
   return (
     <View
       className={cn(

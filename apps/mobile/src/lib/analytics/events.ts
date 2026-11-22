@@ -280,8 +280,8 @@ export type Events = {
 
   // Meal locations (README: Meal locations). No coordinate, place name or
   // search text is ever sent: together they say where somebody eats.
-  /** The Locations switch, from Settings or the one-time offer. */
-  'Locations Toggled': { enabled: boolean; source: 'settings' | 'offer' }
+  /** The Locations switch, from Settings, the one-time offer or the 1.3.0 news card. */
+  'Locations Toggled': { enabled: boolean; source: 'settings' | 'offer' | 'announcement' }
   /**
    * A place picked by hand in the picker, once the entry saved it. The
    * automatic tag is `Meal Logged`'s `located` instead.

@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import { Button, TextField } from '@/ui'
+import { Button, Tappable, Text, TextField } from '@/ui'
 import { PlatformLogo } from './PlatformLogo'
 import { findVideoLink, VIDEO_PLATFORMS } from './videoLink'
 
@@ -56,10 +56,24 @@ export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPan
         returnKeyType="go"
         textContentType="URL"
         onSubmitEditing={() => found && onSubmit(found.url)}
+        // The pill sits as far from the field's right edge as from its top and
+        // bottom, so it reads as part of the field.
+        className="pr-2.5"
         rightSlot={
-          <Button size="sm" variant="secondary" onPress={paste}>
-            {t('recipes:import.paste')}
-          </Button>
+          // A flat pill rather than a raised `Button`: a button's slab hangs
+          // below its face, so inside the field the face sat visibly above the
+          // middle, crowding the border.
+          <Tappable
+            onPress={paste}
+            accessibilityRole="button"
+            // Never leftwards, over the text: a tap at the end of a link moves the cursor.
+            hitSlop={{ top: 8, bottom: 8, right: 8, left: 0 }}
+            className="h-10 items-center justify-center rounded-full bg-pandan-soft px-4 active:opacity-70"
+          >
+            <Text className="font-body-black text-[15px] leading-[20px] text-pandan-ink">
+              {t('recipes:import.paste')}
+            </Text>
+          </Tappable>
         }
       />
 
@@ -80,7 +94,7 @@ export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPan
             accessibilityState={{ selected: found?.platform === platform }}
             style={{ opacity: !found || found.platform === platform ? 1 : 0.3 }}
           >
-            <PlatformLogo platform={platform} size={30} />
+            <PlatformLogo platform={platform} size={34} />
           </View>
         ))}
       </View>
