@@ -15,13 +15,22 @@ export const NOTICE_DAYS = 6
 const storage = createMMKV({ id: 'ricecal-photo-removals' })
 const key = (userId: string) => `noticed:${userId}`
 
+/** Notices shown this run that a full disk would not let us write down. */
+const unsaved = new Map<string, number>()
+
 export function markNoticed(userId: string, now: number = Date.now()): void {
-  storage.set(key(userId), now)
+  try {
+    storage.set(key(userId), now)
+  } catch {
+    // MMKV throws from `set` when the phone has no room left, and this runs in
+    // the notice's timer, where a throw crashes the app. Held for this run.
+    unsaved.set(userId, now)
+  }
 }
 
 /** Whether this account has gone a whole window since its last notice. */
 export function noticeDue(userId: string, now: number = Date.now()): boolean {
-  const seen = storage.getNumber(key(userId))
+  const seen = unsaved.get(userId) ?? storage.getNumber(key(userId))
   if (seen === undefined || seen > now) return true
   return now - seen >= NOTICE_DAYS * 24 * 60 * 60 * 1000
 }
