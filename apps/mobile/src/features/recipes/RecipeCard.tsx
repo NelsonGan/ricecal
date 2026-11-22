@@ -7,6 +7,7 @@ import { MealPhoto } from '@/features/shared'
 import { useThemeColors } from '@/theme/useTheme'
 import { Icon, IconButton, Skeleton, Tappable, Text } from '@/ui'
 import { totalMinutes } from './cooking'
+import { PlatformLogo } from './PlatformLogo'
 import { useDurationText } from './useDurationText'
 
 export type RecipeCardProps = {
@@ -58,6 +59,7 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
         accessibilityLabel={[
           recipe.name,
           recipe.isFavourite ? t('recipes:card.favourite') : null,
+          recipe.videoCredit ? t(`recipes:platform.${recipe.videoCredit.platform}`) : null,
           priced ? `${calories} ${unit}` : null,
           meta,
         ]
@@ -81,6 +83,15 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
           {recipe.isFavourite ? (
             <View className="absolute left-1.5 top-1.5 h-[28px] w-[28px] items-center justify-center rounded-full bg-surface">
               <Icon set="system" name="heart-filled" size={18} />
+            </View>
+          ) : null}
+
+          {/* Where the video it came from was posted. Top right, because the
+              favourite's heart holds the top left and the calories the
+              bottom right. */}
+          {recipe.videoCredit ? (
+            <View className="absolute right-1.5 top-1.5">
+              <PlatformLogo platform={recipe.videoCredit.platform} size={22} ring />
             </View>
           ) : null}
 

@@ -51,6 +51,12 @@ jest.mock('@/data', () => ({
   useRecipes: (shelf: string, query: string) => mockUseRecipes(shelf, query),
   useRemoveEntry: () => ({ mutate: mockRemoveEntry }),
   useSelectedDate: () => ({ selectedDate: '2026-11-20', todayKey: '2026-11-21' }),
+  useVideoImportQuota: () => ({ data: { used: 0, limit: 5, remaining: 5, entitled: false } }),
+}))
+
+jest.mock('@/data/refusals', () => ({
+  openPaywall: jest.fn(),
+  proFeatureTitle: () => '',
 }))
 
 jest.mock('@/features/paywall', () => ({
@@ -265,6 +271,28 @@ it('chains plus sheet into Photo over the tab, stays on the tab on close, and ha
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/recipe/edit', params: { read: '1' } })
 })
 
+it('marks a recipe imported from a video with its platform, and only that one', async () => {
+  mockUseRecipes.mockReturnValue({
+    data: [
+      {
+        ...RECIPE,
+        videoCredit: {
+          platform: 'tiktok',
+          author: '@cook',
+          url: 'https://www.tiktok.com/@cook/video/1',
+        },
+      },
+      QUICK,
+    ],
+    isPending: false,
+  })
+  await render(<RecipesTab />)
+
+  expect(await screen.findByTestId('platform-logo-tiktok')).toBeTruthy()
+  expect(screen.getAllByTestId(/^platform-logo-/)).toHaveLength(1)
+  expect(screen.getByRole('button', { name: new RegExp(`^${RECIPE.name}, .*TikTok`) })).toBeTruthy()
+})
+
 it('shows no price and no quick log on a recipe with nothing in it yet', async () => {
   mockUseRecipes.mockReturnValue({
     data: [{ ...QUICK, ingredientCount: 0, perServing: { kcal: 0, carbs: 0, protein: 0, fat: 0 } }],
@@ -274,4 +302,56 @@ it('shows no price and no quick log on a recipe with nothing in it yet', async (
 
   expect(screen.queryByText('0 kcal')).toBeNull()
   expect(screen.queryByRole('button', { name: 'Add Telur dadar to today' })).toBeNull()
+})
+
+it('opens the video sheet from the plus, not gated as Pro, and hands a pasted link to the import screen', async () => {
+  await render(<RecipesTab />)
+
+  const add = await openAddSheet()
+  await user.press(within(add).getByRole('button', { name: 'Video' }))
+  await waitFor(() => expect(screen.queryByText('Add a recipe')).toBeNull())
+  await finishDismissing(add)
+
+  // A free account imports five a month, so this tile is not a Pro gate.
+  expect(mockRequirePro).not.toHaveBeenCalled()
+  const sheet = await finishShowing('Import from a video')
+  expect(screen.getByText('5 left this month')).toBeTruthy()
+
+  // Not a link we read: the button stays off and the field says why.
+  const field = screen.getByPlaceholderText('Paste a video link')
+  await fireEvent.changeText(field, 'nasi lemak')
+  expect(screen.getByText('That is not a link to a post we can read.')).toBeTruthy()
+
+  // Every platform it reads, each as its logo and its name.
+  for (const platform of [
+    'instagram',
+    'tiktok',
+    'youtube',
+    'x',
+    'threads',
+    'facebook',
+    'rednote',
+  ]) {
+    expect(screen.getByTestId(`platform-logo-${platform}`)).toBeTruthy()
+  }
+  expect(
+    screen.getByLabelText('Works with: Instagram, TikTok, YouTube, X, Threads, Facebook, Rednote'),
+  ).toBeTruthy()
+
+  await fireEvent.changeText(field, 'Look! https://www.instagram.com/reel/CnkNjXVsAJv/?igsh=x')
+  // The pasted link's platform is the one picked out.
+  expect(screen.getByTestId('works-with-instagram').props.accessibilityState).toMatchObject({
+    selected: true,
+  })
+  expect(screen.getByTestId('works-with-tiktok').props.accessibilityState).toMatchObject({
+    selected: false,
+  })
+  await user.press(screen.getByRole('button', { name: 'Import recipe' }))
+  expect(mockPush).not.toHaveBeenCalled()
+
+  await finishDismissing(sheet)
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/recipe/import',
+    params: { url: 'https://www.instagram.com/reel/CnkNjXVsAJv/?igsh=x' },
+  })
 })

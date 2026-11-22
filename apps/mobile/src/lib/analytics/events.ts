@@ -74,6 +74,8 @@ export type ProFeature =
   | 'new_recipe'
   /** A range on Trends that a free account cannot see: 30 days, or a year. */
   | 'trend_range'
+  /** A sixth recipe imported from a video this month, on a free account. */
+  | 'video_import'
   /** A fourth workout routine on a free account. */
   | 'new_routine'
   /** A third group started on a free account. Joining one is never refused. */
@@ -93,6 +95,23 @@ export type ProFeature =
    */
   | 'nudge_streak'
   | 'nudge_goal'
+
+/**
+ * How an import of a cooking video ended, as `Recipe Imported` reports it.
+ * `imported` and `existing` put a recipe on the shelf; the rest are the
+ * server's refusal codes, plus `offline` for a request that never arrived.
+ */
+export type ImportOutcome =
+  | 'imported'
+  | 'existing'
+  | 'limit_reached'
+  | 'unsupported_link'
+  | 'unreadable'
+  | 'not_recipe'
+  | 'too_long'
+  | 'failed'
+  | 'busy'
+  | 'offline'
 
 /** Which of the two paywalls. `hard` is `/paywall`, reached from a refusal. */
 export type PaywallScreen = 'hard' | 'intro'
@@ -372,6 +391,14 @@ export type Events = {
     source: 'photo' | 'text'
     outcome: 'drafted' | 'empty' | 'failed' | 'limit_reached' | 'not_entitled'
   }
+  /**
+   * A link to a cooking video, sent to be made into a recipe. `platform` is the
+   * one the server read it as (`unknown` when it never answered); `existing` is
+   * a video this account had already imported. The failures are the server's
+   * codes, so this says which platforms refuse us and how often a video is not
+   * a recipe at all.
+   */
+  'Recipe Imported': { platform: string; outcome: ImportOutcome }
   /**
    * `pending` is not a third verdict, it is the review having failed to run,
    * which leaves the recipe public and invisible.

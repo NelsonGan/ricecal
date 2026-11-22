@@ -1,7 +1,8 @@
-import { Redirect, Stack } from 'expo-router'
+import { Redirect, Stack, useGlobalSearchParams, usePathname } from 'expo-router'
 import { View } from 'react-native'
 
 import { useSession } from '@/data'
+import { holdPendingImport } from '@/features/recipes/pendingImport'
 import { Spinner } from '@/ui'
 
 /**
@@ -22,6 +23,8 @@ import { Spinner } from '@/ui'
  */
 export default function RecipeLayout() {
   const { session, loading } = useSession()
+  const pathname = usePathname()
+  const { url } = useGlobalSearchParams<{ url?: string }>()
 
   if (loading) {
     return (
@@ -33,7 +36,12 @@ export default function RecipeLayout() {
 
   // A link opened by somebody with no account at all. The welcome screen is
   // where they belong; the recipe is behind it.
-  if (!session) return <Redirect href="/welcome" />
+  if (!session) {
+    // A video shared to the app before signing in is imported once the user
+    // is, rather than lost at the welcome screen. See `pendingImport`.
+    if (pathname === '/recipe/import' && typeof url === 'string') holdPendingImport(url)
+    return <Redirect href="/welcome" />
+  }
 
   return <Stack screenOptions={{ headerShown: false }} />
 }

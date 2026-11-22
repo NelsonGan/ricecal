@@ -1394,6 +1394,11 @@ export const bn = {
           free: '',
           pro: '',
         },
+        videoImport: {
+          label: 'ভিডিও থেকে রেসিপি ইমপোর্ট',
+          free: 'মাসে {{imports}}',
+          pro: 'সীমাহীন',
+        },
         budget: {
           label: 'আপনার মাপের ক্যালরি হিসাব',
           free: '',
@@ -1446,6 +1451,7 @@ export const bn = {
         refine: 'বর্ণনা করে খাবার ঠিক করতে RiceCal Pro লাগবে।',
         read_recipe: 'ছবি থেকে রেসিপি ভরতে RiceCal Pro লাগবে।',
         new_recipe: 'নিজের {{recipes}}টির বেশি রেসিপি রাখতে RiceCal Pro লাগবে।',
+        video_import: 'মাসে {{imports}}টির বেশি ভিডিও ইমপোর্ট করতে RiceCal Pro লাগবে।',
         trend_range: 'এক সপ্তাহের বেশি পিছনে দেখতে RiceCal Pro লাগবে।',
         new_routine: '{{routines}}টির বেশি ওয়ার্কআউট রুটিন রাখতে RiceCal Pro লাগবে।',
         new_group: '{{groups}}টির বেশি গ্রুপ বানাতে RiceCal Pro লাগবে।',
@@ -1546,7 +1552,82 @@ export const bn = {
       write: 'লিখুন',
       photo: 'ছবি',
       describe: 'বর্ণনা',
+      video: 'ভিডিও',
       quota: '{{count}}টির মধ্যে {{used}}টি ফ্রি',
+    },
+    platform: {
+      instagram: 'Instagram',
+      tiktok: 'TikTok',
+      youtube: 'YouTube',
+      x: 'X',
+      threads: 'Threads',
+      facebook: 'Facebook',
+      rednote: 'Rednote',
+    },
+    import: {
+      title: 'ভিডিও থেকে ইমপোর্ট',
+      left_one: 'এই মাসে আর {{count}}টি বাকি',
+      left_other: 'এই মাসে আর {{count}}টি বাকি',
+      placeholder: 'রান্নার ভিডিওর লিঙ্ক পেস্ট করুন',
+      paste: 'পেস্ট করুন',
+      unsupported: 'এটি এমন কোনো পোস্টের লিঙ্ক নয় যা আমরা পড়তে পারি।',
+      worksWith: 'যেগুলোতে কাজ করে',
+      action: 'রেসিপি ইমপোর্ট করুন',
+      screenTitle: 'আপনার রেসিপি তৈরি হচ্ছে',
+      step: {
+        watch: 'ভিডিও দেখা হচ্ছে',
+        write: 'রেসিপি লেখা হচ্ছে',
+        count: 'ক্যালরি হিসাব করা হচ্ছে',
+      },
+      leave: 'আপনি এই পর্দা ছেড়ে যেতে পারেন। রেসিপিটি “আমার” এ থাকবে।',
+      done: 'আপনার রেসিপিতে সংরক্ষিত হয়েছে',
+      doneCommunity: 'সংরক্ষিত হয়েছে, আর কমিউনিটিতে শেয়ার হয়েছে',
+      doneExisting: 'এটি আপনার কাছে আগেই আছে',
+      readyAway: 'ভিডিও থেকে আপনার রেসিপি তৈরি',
+      open: 'খুলুন',
+      tryAgain: 'আবার চেষ্টা করুন',
+      otherLink: 'অন্য লিঙ্ক দিন',
+      seePro: 'Pro দেখুন',
+      watch: '{{platform}} এ দেখুন',
+      failure: {
+        not_recipe: {
+          title: 'এটি রেসিপি নয়',
+          body: 'এই ভিডিওতে কোনো পদ রান্না হতে দেখা যায় না। যেখানে দেখা যায় এমন একটি চেষ্টা করুন।',
+        },
+        unreadable: {
+          title: 'পোস্টটি খোলা গেল না',
+          body: 'এটি হয়তো ব্যক্তিগত বা মুছে ফেলা হয়েছে। লিঙ্কটি আবার কপি করে চেষ্টা করুন।',
+        },
+        unsupported_link: {
+          title: 'এটি ভিডিওর লিঙ্ক নয়',
+          body: 'Instagram, TikTok, YouTube, X, Threads, Facebook বা Rednote এর কোনো পোস্টের লিঙ্ক পেস্ট করুন।',
+        },
+        failed: {
+          title: 'কিছু একটা গোলমাল হয়েছে',
+          body: 'এবার রেসিপিটি তৈরি করা গেল না।',
+        },
+        busy: {
+          title: 'একসাথে অনেক বেশি ভিডিও',
+          body: 'এক ঘণ্টা পরে এটি আবার চেষ্টা করুন।',
+        },
+        offline: {
+          title: 'আপনি অফলাইনে আছেন',
+          body: 'ইন্টারনেটে যুক্ত হয়ে আবার চেষ্টা করুন।',
+        },
+        proLimit: {
+          title: 'অনেক রেসিপি হয়ে গেল',
+          body: 'এই মাসে একটি অ্যাকাউন্ট যত ভিডিও ইমপোর্ট করতে পারে, তত করেছেন। পরের মাসে আবার পারবেন।',
+        },
+        too_long: {
+          title: 'ভিডিওটি অনেক লম্বা',
+          body: 'শুধু 3 মিনিট পর্যন্ত ভিডিও ইমপোর্ট করা যায়।',
+        },
+        limit: {
+          title: 'এই মাসের ইমপোর্ট শেষ',
+          body_one: 'বিনামূল্যের অ্যাকাউন্টে মাসে {{count}}টি ভিডিও ইমপোর্ট করা যায়। Pro তে কোনো সীমা নেই।',
+          body_other: 'বিনামূল্যের অ্যাকাউন্টে মাসে {{count}}টি ভিডিও ইমপোর্ট করা যায়। Pro তে কোনো সীমা নেই।',
+        },
+      },
     },
 
     card: {

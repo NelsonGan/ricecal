@@ -153,6 +153,7 @@
           "isAndroidForegroundServiceEnabled": false
         }
       ],
+      "./plugins/withShareExtension",
       "./plugins/withWidgets",
       "./plugins/withWatch"
     ],

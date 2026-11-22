@@ -1429,6 +1429,11 @@ export const ms = {
           free: '',
           pro: '',
         },
+        videoImport: {
+          label: 'Import resipi daripada video',
+          free: '{{imports}}/bulan',
+          pro: 'Tanpa had',
+        },
         budget: {
           label: 'Bajet kalori yang sesuai untuk anda',
           free: '',
@@ -1482,6 +1487,7 @@ export const ms = {
         refine: 'Membetulkan hidangan dengan menerangkannya memerlukan RiceCal Pro.',
         read_recipe: 'Mengisi resipi daripada gambar memerlukan RiceCal Pro.',
         new_recipe: 'Menyimpan lebih daripada {{recipes}} resipi sendiri memerlukan RiceCal Pro.',
+        video_import: 'Mengimport lebih daripada {{imports}} video sebulan memerlukan RiceCal Pro.',
         trend_range: 'Melihat lebih jauh daripada seminggu memerlukan RiceCal Pro.',
         new_routine: 'Menyimpan lebih daripada {{routines}} rutin senaman memerlukan RiceCal Pro.',
         new_group: 'Memulakan lebih daripada {{groups}} kumpulan memerlukan RiceCal Pro.',
@@ -1583,7 +1589,82 @@ export const ms = {
       write: 'Tulis',
       photo: 'Gambar',
       describe: 'Terangkan',
+      video: 'Video',
       quota: '{{used}} daripada {{count}} percuma',
+    },
+    platform: {
+      instagram: 'Instagram',
+      tiktok: 'TikTok',
+      youtube: 'YouTube',
+      x: 'X',
+      threads: 'Threads',
+      facebook: 'Facebook',
+      rednote: 'Rednote',
+    },
+    import: {
+      title: 'Import daripada video',
+      left_one: 'Tinggal {{count}} bulan ini',
+      left_other: 'Tinggal {{count}} bulan ini',
+      placeholder: 'Tampal pautan video masakan',
+      paste: 'Tampal',
+      unsupported: 'Itu bukan pautan ke siaran yang boleh kami baca.',
+      worksWith: 'Berfungsi dengan',
+      action: 'Import resipi',
+      screenTitle: 'Menyediakan resipi anda',
+      step: {
+        watch: 'Menonton video',
+        write: 'Menulis resipi',
+        count: 'Mengira kalori',
+      },
+      leave: 'Anda boleh tinggalkan skrin ini. Resipi akan ada dalam “Saya”.',
+      done: 'Disimpan ke resipi anda',
+      doneCommunity: 'Disimpan, dan dikongsi ke Komuniti',
+      doneExisting: 'Anda sudah ada resipi ini',
+      readyAway: 'Resipi daripada video anda sudah siap',
+      open: 'Buka',
+      tryAgain: 'Cuba lagi',
+      otherLink: 'Guna pautan lain',
+      seePro: 'Lihat Pro',
+      watch: 'Tonton di {{platform}}',
+      failure: {
+        not_recipe: {
+          title: 'Bukan resipi',
+          body: 'Video ini tidak menunjukkan masakan sedang dibuat. Cuba video yang menunjukkannya.',
+        },
+        unreadable: {
+          title: 'Tidak dapat membuka siaran itu',
+          body: 'Mungkin ia peribadi atau sudah dipadam. Salin pautan sekali lagi dan cuba semula.',
+        },
+        unsupported_link: {
+          title: 'Bukan pautan video',
+          body: 'Tampal pautan ke siaran di Instagram, TikTok, YouTube, X, Threads, Facebook atau Rednote.',
+        },
+        failed: {
+          title: 'Ada yang tidak kena',
+          body: 'Resipi tidak dapat disediakan kali ini.',
+        },
+        busy: {
+          title: 'Terlalu banyak video serentak',
+          body: 'Tunggu sejam, kemudian cuba video ini lagi.',
+        },
+        offline: {
+          title: 'Anda di luar talian',
+          body: 'Sambung ke internet dan cuba lagi.',
+        },
+        proLimit: {
+          title: 'Banyaknya resipi',
+          body: 'Anda sudah mengimport video sebanyak yang boleh bagi satu akaun bulan ini. Boleh lagi bulan depan.',
+        },
+        too_long: {
+          title: 'Video terlalu panjang',
+          body: 'Hanya video sehingga 3 minit boleh diimport.',
+        },
+        limit: {
+          title: 'Tiada import lagi bulan ini',
+          body_one: 'Akaun percuma mengimport {{count}} video sebulan. Pro tiada had.',
+          body_other: 'Akaun percuma mengimport {{count}} video sebulan. Pro tiada had.',
+        },
+      },
     },
 
     card: {

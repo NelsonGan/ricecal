@@ -331,6 +331,29 @@ export type Recipe = {
   sourceUrl?: string
   /** The owner's own star. Always false on somebody else's. */
   isFavourite: boolean
+  /**
+   * Who made the video it was imported from, shown to everybody. The server
+   * wrote it out of the platform's answer, so unlike `sourceUrl` it is public.
+   */
+  videoCredit?: VideoCredit
+}
+
+/** The platforms a recipe can be imported from. `recipes.import_platform` checks the same set. */
+export type VideoPlatform =
+  | 'instagram'
+  | 'tiktok'
+  | 'youtube'
+  | 'x'
+  | 'threads'
+  | 'facebook'
+  | 'rednote'
+
+export type VideoCredit = {
+  platform: VideoPlatform
+  /** `@handle`, or a channel or page name. Absent when the platform did not say. */
+  author?: string
+  /** The post, rebuilt by the server from the platform and its id. */
+  url: string
 }
 
 /**

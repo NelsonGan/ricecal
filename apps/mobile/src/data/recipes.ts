@@ -1,4 +1,4 @@
-import { FREE_RECIPES } from '@ricecal/shared'
+import { FREE_RECIPES, FREE_VIDEO_IMPORTS } from '@ricecal/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { track } from '@/lib/analytics'
@@ -109,6 +109,9 @@ export function useRecipeQuota(): RecipeQuota {
         .from('recipes')
         .select('id', { count: 'exact', head: true })
         .eq('owner_id', userId)
+        // A recipe imported from a video has its own allowance and does not
+        // count here, as `recipes_enforce_free_limit` does not count it.
+        .is('import_id', null)
       if (error) throw error
       return rows ?? 0
     },
@@ -731,4 +734,179 @@ export function useReadRecipe() {
       }
     },
   })
+}
+
+/**
+ * This month's video imports, against the allowance: five on a free account,
+ * and an unprinted ceiling on Pro, which the sheet does not show. The server's
+ * own count, so a reinstall or a second phone cannot reset it.
+ */
+export type VideoImportQuota = {
+  used: number
+  limit: number
+  remaining: number
+  entitled: boolean
+}
+
+export function useVideoImportQuota() {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: keys.videoImports(userId),
+    queryFn: async (): Promise<VideoImportQuota | null> => {
+      const { data, error } = await supabase.rpc('recipe_import_usage_this_month').maybeSingle()
+      if (error) throw error
+      if (!data) return null
+      return {
+        used: data.used ?? 0,
+        limit: data.monthly_limit ?? FREE_VIDEO_IMPORTS,
+        remaining: data.remaining ?? 0,
+        entitled: data.entitled ?? false,
+      }
+    },
+    enabled: Boolean(userId),
+  })
+}
+
+/**
+ * Why an import came back without a recipe, as the server said it. Each has
+ * its own sentence on the import screen and most have their own way forward:
+ *
+ *   unsupported_link   not a post on a platform this reads
+ *   unreadable         the platform would not show the post to us
+ *   not_recipe         the video is not a recipe (cached, so asking again is free)
+ *   too_long           past the three minutes a short-form video runs
+ *   failed             the model or the database fell over; try again
+ *   busy               the hourly ceiling on uncached videos
+ *   offline            the request never arrived
+ */
+export type VideoImportFailure =
+  | 'unsupported_link'
+  | 'unreadable'
+  | 'not_recipe'
+  | 'too_long'
+  | 'failed'
+  | 'busy'
+  | 'offline'
+
+export class VideoImportError extends Error {
+  readonly code: VideoImportFailure
+  constructor(code: VideoImportFailure) {
+    super(`Video import failed: ${code}`)
+    this.name = 'VideoImportError'
+    this.code = code
+  }
+}
+
+/** The month's imports are spent. Carries the numbers the refusal sent. */
+export class VideoImportLimitError extends Error {
+  readonly used: number
+  readonly limit: number
+  constructor(used: number, limit: number) {
+    super('Monthly video import limit reached')
+    this.name = 'VideoImportLimitError'
+    this.used = used
+    this.limit = limit
+  }
+}
+
+export type ImportedRecipe = {
+  recipeId: string
+  /** This account had already imported the video, and got that recipe back. */
+  existing: boolean
+  /** This import is the one on the community shelf for the video. */
+  community: boolean
+}
+
+const IMPORT_FAILURES = new Set<VideoImportFailure>([
+  'unsupported_link',
+  'unreadable',
+  'not_recipe',
+  'too_long',
+  'failed',
+  'busy',
+])
+
+/**
+ * A link to a cooking video, made into a recipe on the server and written to
+ * this account's shelf there. Nothing is drafted on the phone: the recipe is
+ * cached for everybody who imports the same video, so it is the server's to
+ * write, and the app opens it once it exists.
+ *
+ * A mutation, because it spends one of the month's imports. Every failure is
+ * thrown with its code; the screen chooses the words.
+ */
+export function useImportRecipe() {
+  const queryClient = useQueryClient()
+  const userId = useUserId()
+
+  return useMutation({
+    // Sent even offline, rather than paused until the network returns: the
+    // user is looking at a screen waiting for this, and "you are offline" is
+    // the answer it needs, not a spinner that outlasts their patience.
+    networkMode: 'always',
+    // A shelf, the count and the allowance all move on a success, and the
+    // allowance is worth re-reading after a refusal too.
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: keys.videoImports(userId) })
+      queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
+    },
+    mutationFn: async (url: string): Promise<ImportedRecipe> => {
+      const { data, error } = await supabase.functions.invoke('recipes', {
+        body: { action: 'import', url },
+      })
+      const body = (error ? await errorBody(error) : data) as {
+        ok?: boolean
+        code?: string
+        used?: number
+        limit?: number
+        recipe_id?: string
+        existing?: boolean
+        community?: boolean
+        platform?: string
+      } | null
+
+      if (body?.ok && body.recipe_id) {
+        track('Recipe Imported', {
+          platform: body.platform ?? 'unknown',
+          outcome: body.existing ? 'existing' : 'imported',
+        })
+        return {
+          recipeId: body.recipe_id,
+          existing: body.existing === true,
+          community: body.community === true,
+        }
+      }
+
+      if (body?.code === 'import_limit') {
+        track('Recipe Imported', { platform: body.platform ?? 'unknown', outcome: 'limit_reached' })
+        throw new VideoImportLimitError(
+          body.used ?? FREE_VIDEO_IMPORTS,
+          body.limit ?? FREE_VIDEO_IMPORTS,
+        )
+      }
+      const code: VideoImportFailure =
+        body?.code && IMPORT_FAILURES.has(body.code as VideoImportFailure)
+          ? (body.code as VideoImportFailure)
+          : body
+            ? 'failed'
+            : 'offline'
+      track('Recipe Imported', { platform: body?.platform ?? 'unknown', outcome: code })
+      throw new VideoImportError(code)
+    },
+  })
+}
+
+/**
+ * The JSON a refused or failed invoke carried, or null when there was no
+ * answer at all. supabase-js turns a non-2xx into an error with the response
+ * hanging off it; see `asResponse` in `refusals.ts` for why it is duck-typed.
+ */
+async function errorBody(error: unknown): Promise<unknown> {
+  const context = (error as { context?: { json?: () => Promise<unknown> } })?.context
+  if (!context || typeof context.json !== 'function') return null
+  try {
+    return await context.json()
+  } catch {
+    return null
+  }
 }

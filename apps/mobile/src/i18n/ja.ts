@@ -1405,6 +1405,11 @@ export const ja = {
           free: '',
           pro: '',
         },
+        videoImport: {
+          label: '動画からレシピを読み込む',
+          free: '1 か月 {{imports}} 本',
+          pro: '無制限',
+        },
         budget: {
           label: '自分に合ったカロリーの枠',
           free: '',
@@ -1457,6 +1462,7 @@ export const ja = {
         refine: '言葉で書いて食事を修正するには RiceCal Pro が必要です。',
         read_recipe: '写真からレシピを埋めるには RiceCal Pro が必要です。',
         new_recipe: '自分のレシピを {{recipes}} 件より多く持つには RiceCal Pro が必要です。',
+        video_import: '動画を月 {{imports}} 本より多く読み込むには RiceCal Pro が必要です。',
         trend_range: '1 週間より前を見るには RiceCal Pro が必要です。',
         new_routine: 'ルーティンを {{routines}} 件より多く持つには RiceCal Pro が必要です。',
         new_group: 'グループを {{groups}} 個より多く作るには RiceCal Pro が必要です。',
@@ -1557,7 +1563,82 @@ export const ja = {
       write: '書く',
       photo: '写真',
       describe: '説明',
+      video: '動画',
       quota: '無料 {{used}}/{{count}}',
+    },
+    platform: {
+      instagram: 'Instagram',
+      tiktok: 'TikTok',
+      youtube: 'YouTube',
+      x: 'X',
+      threads: 'Threads',
+      facebook: 'Facebook',
+      rednote: 'Rednote',
+    },
+    import: {
+      title: '動画から読み込む',
+      left_one: '今月あと {{count}} 本',
+      left_other: '今月あと {{count}} 本',
+      placeholder: '料理動画のリンクを貼り付け',
+      paste: '貼り付け',
+      unsupported: '読み取れる投稿のリンクではありません。',
+      worksWith: '対応',
+      action: 'レシピを読み込む',
+      screenTitle: 'レシピを作っています',
+      step: {
+        watch: '動画を見ています',
+        write: 'レシピを書いています',
+        count: 'カロリーを計算しています',
+      },
+      leave: 'この画面を離れても大丈夫です。レシピは「自分の」に入ります。',
+      done: '自分のレシピに保存しました',
+      doneCommunity: '保存して「みんなの」にシェアしました',
+      doneExisting: 'このレシピはすでにあります',
+      readyAway: '動画のレシピができました',
+      open: '開く',
+      tryAgain: 'もう一度試す',
+      otherLink: '別のリンクを使う',
+      seePro: 'Pro を見る',
+      watch: '{{platform}} で見る',
+      failure: {
+        not_recipe: {
+          title: 'レシピではありません',
+          body: 'この動画には料理を作る様子がありません。作っている動画でお試しください。',
+        },
+        unreadable: {
+          title: 'その投稿を開けませんでした',
+          body: '非公開か削除された可能性があります。リンクをもう一度コピーしてお試しください。',
+        },
+        unsupported_link: {
+          title: '動画のリンクではありません',
+          body: 'Instagram、TikTok、YouTube、X、Threads、Facebook、Rednote の投稿へのリンクを貼り付けてください。',
+        },
+        failed: {
+          title: '問題が発生しました',
+          body: '今回はレシピを作れませんでした。',
+        },
+        busy: {
+          title: '動画が混み合っています',
+          body: '1 時間ほどおいて、この動画をもう一度お試しください。',
+        },
+        offline: {
+          title: 'オフラインです',
+          body: 'インターネットに接続して、もう一度お試しください。',
+        },
+        proLimit: {
+          title: 'たくさん読み込みました',
+          body: '今月、1 つのアカウントで読み込める動画の上限に達しました。来月またご利用ください。',
+        },
+        too_long: {
+          title: '動画が長すぎます',
+          body: '読み込めるのは 3 分以内の動画だけです。',
+        },
+        limit: {
+          title: '今月の読み込みを使い切りました',
+          body_one: '無料アカウントで読み込める動画は月 {{count}} 本です。Pro なら上限なしです。',
+          body_other: '無料アカウントで読み込める動画は月 {{count}} 本です。Pro なら上限なしです。',
+        },
+      },
     },
 
     card: {

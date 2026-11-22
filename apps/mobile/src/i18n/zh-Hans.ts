@@ -1397,6 +1397,11 @@ export const zhHans = {
           free: '',
           pro: '',
         },
+        videoImport: {
+          label: '从视频导入食谱',
+          free: '每月 {{imports}} 次',
+          pro: '无限',
+        },
         budget: {
           label: '为你算的热量额度',
           free: '',
@@ -1449,6 +1454,7 @@ export const zhHans = {
         refine: '用描述修正一餐需要 RiceCal Pro。',
         read_recipe: '用照片填好一个食谱需要 RiceCal Pro。',
         new_recipe: '保存超过 {{recipes}} 个自己的食谱需要 RiceCal Pro。',
+        video_import: '每月导入超过 {{imports}} 个视频需要 RiceCal Pro。',
         trend_range: '往前看超过一周需要 RiceCal Pro。',
         new_routine: '保存超过 {{routines}} 个训练计划需要 RiceCal Pro。',
         new_group: '创建超过 {{groups}} 个小组需要 RiceCal Pro。',
@@ -1549,7 +1555,82 @@ export const zhHans = {
       write: '手写',
       photo: '照片',
       describe: '描述',
+      video: '视频',
       quota: '免费 {{used}}/{{count}}',
+    },
+    platform: {
+      instagram: 'Instagram',
+      tiktok: 'TikTok',
+      youtube: 'YouTube',
+      x: 'X',
+      threads: 'Threads',
+      facebook: 'Facebook',
+      rednote: '小红书',
+    },
+    import: {
+      title: '从视频导入',
+      left_one: '本月还剩 {{count}} 次',
+      left_other: '本月还剩 {{count}} 次',
+      placeholder: '粘贴一个做菜视频的链接',
+      paste: '粘贴',
+      unsupported: '这不是我们能读取的帖子链接。',
+      worksWith: '支持',
+      action: '导入食谱',
+      screenTitle: '正在生成你的食谱',
+      step: {
+        watch: '正在看视频',
+        write: '正在写食谱',
+        count: '正在算热量',
+      },
+      leave: '你可以离开这个页面。食谱会出现在“我的”食谱里。',
+      done: '已保存到你的食谱',
+      doneCommunity: '已保存，并分享到社区',
+      doneExisting: '这个你已经有了',
+      readyAway: '视频里的食谱做好了',
+      open: '打开',
+      tryAgain: '再试一次',
+      otherLink: '换个链接',
+      seePro: '看看 Pro',
+      watch: '在 {{platform}} 上观看',
+      failure: {
+        not_recipe: {
+          title: '不是食谱',
+          body: '这个视频里没有做菜的过程。换一个有的试试。',
+        },
+        unreadable: {
+          title: '打不开这个帖子',
+          body: '它可能是私密的或已删除。重新复制链接再试。',
+        },
+        unsupported_link: {
+          title: '不是视频链接',
+          body: '请粘贴 Instagram、TikTok、YouTube、X、Threads、Facebook 或小红书上的帖子链接。',
+        },
+        failed: {
+          title: '出了点问题',
+          body: '这次没能生成食谱。',
+        },
+        busy: {
+          title: '同时处理的视频太多',
+          body: '等一小时后再试这一个。',
+        },
+        offline: {
+          title: '你目前离线',
+          body: '联网后再试一次。',
+        },
+        proLimit: {
+          title: '食谱已经很多了',
+          body: '本月你已导入一个账户可导入的最多视频。下个月可以继续导入。',
+        },
+        too_long: {
+          title: '视频太长了',
+          body: '只能导入 3 分钟以内的视频。',
+        },
+        limit: {
+          title: '本月的导入次数用完了',
+          body_one: '免费账号每月可导入 {{count}} 个视频。Pro 没有上限。',
+          body_other: '免费账号每月可导入 {{count}} 个视频。Pro 没有上限。',
+        },
+      },
     },
 
     card: {

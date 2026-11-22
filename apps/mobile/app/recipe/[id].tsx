@@ -19,6 +19,7 @@ import {
 import {
   IngredientChecklist,
   LogRecipeSheet,
+  PlatformLogo,
   RecipeNutrition,
   RecipeStats,
   RecipeSteps,
@@ -30,6 +31,7 @@ import {
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
 import { useBack, useCloseStack } from '@/lib/navigation'
+import { radius, slab } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -44,6 +46,7 @@ import {
   SegmentedControl,
   Sheet,
   Skeleton,
+  Squish,
   Tappable,
   Text,
   useToast,
@@ -195,14 +198,21 @@ export default function RecipeDetailScreen() {
 
   const cooking = cookingFor ?? recipe.servings
   const priced = recipe.ingredientCount > 0
-  const metaLine = [
-    recipe.isMine
-      ? null
-      : t('recipes:fromAuthor', { name: recipe.authorName || t('recipes:someCook') }),
-    ...recipe.tags.map((tag) => t(`recipes:tag.${tag}`)),
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  // A recipe from a video is the video's creator's, whoever imported it, so
+  // they are the one credited, on your own copy too.
+  const credit = recipe.videoCredit
+  const creditPlatform = credit ? t(`recipes:platform.${credit.platform}`) : ''
+  // A video's recipe says so with its creator pill instead (below the title).
+  const metaLine = credit
+    ? ''
+    : [
+        recipe.isMine
+          ? null
+          : t('recipes:fromAuthor', { name: recipe.authorName || t('recipes:someCook') }),
+        ...recipe.tags.map((tag) => t(`recipes:tag.${tag}`)),
+      ]
+        .filter(Boolean)
+        .join(' · ')
   // Logging is NOT GATED, and on somebody else's recipe either. Logging a pot
   // writes an entry from figures somebody typed, reaches no model and costs
   // nothing, so it is free for the same reason searching the catalogue is. What
@@ -357,7 +367,44 @@ export default function RecipeDetailScreen() {
           <Text variant="title" accessibilityRole="header">
             {recipe.name}
           </Text>
-          {metaLine ? <Text variant="meta">{metaLine}</Text> : null}
+          {credit ? (
+            // The creator as a pill with their platform's logo, the meals
+            // beside it as quiet tags: "From @creator · Lunch · Dinner" as one
+            // grey sentence read as small print. The pill opens the video.
+            <View className="flex-row flex-wrap items-center gap-1.5 pt-1.5">
+              <Squish
+                depth={slab.sm}
+                radius={radius.full}
+                slabClassName="bg-line"
+                className="flex-row items-center gap-2 border-[2px] border-line bg-surface py-1 pl-1 pr-3.5"
+                accessibilityRole="link"
+                accessibilityLabel={`${t('recipes:import.watch', { platform: creditPlatform })}, ${
+                  credit.author || creditPlatform
+                }`}
+                onPress={() => {
+                  Linking.openURL(credit.url).catch(() => {})
+                }}
+              >
+                <PlatformLogo platform={credit.platform} size={24} />
+                <Text variant="label" numberOfLines={1} className="flex-shrink">
+                  {credit.author || creditPlatform}
+                </Text>
+              </Squish>
+              {/* As tall as the pill's face, and lifted off the slab it sits
+                  on, so the row reads as one line of pills. */}
+              {recipe.tags.map((tag) => (
+                <View
+                  key={tag}
+                  className="rounded-full bg-track px-3.5 py-1.5"
+                  style={{ marginBottom: slab.sm }}
+                >
+                  <Text variant="caption">{t(`recipes:tag.${tag}`)}</Text>
+                </View>
+              ))}
+            </View>
+          ) : metaLine ? (
+            <Text variant="meta">{metaLine}</Text>
+          ) : null}
         </View>
       </View>
 
@@ -447,6 +494,33 @@ export default function RecipeDetailScreen() {
             )}
           </Card>
         )}
+
+        {/* The video it was imported from, for everybody: the server rebuilt
+            the link from the platform and the post id, so unlike the owner's
+            own bookmark below it cannot point anywhere else. */}
+        {credit ? (
+          <Tappable
+            className="flex-row items-center gap-3 rounded-tile border-[3px] border-line bg-surface px-4 py-3"
+            accessibilityRole="link"
+            accessibilityLabel={t('recipes:import.watch', {
+              platform: t(`recipes:platform.${credit.platform}`),
+            })}
+            onPress={() => {
+              Linking.openURL(credit.url).catch(() => {})
+            }}
+          >
+            <PlatformLogo platform={credit.platform} size={36} />
+            <View className="min-w-0 flex-1">
+              <Text variant="caption">
+                {t('recipes:import.watch', { platform: t(`recipes:platform.${credit.platform}`) })}
+              </Text>
+              <Text variant="label" numberOfLines={1}>
+                {credit.author || t(`recipes:platform.${credit.platform}`)}
+              </Text>
+            </View>
+            <Icon set="ui" name="chevron-right" size={18} />
+          </Tappable>
+        ) : null}
 
         {/* The owner's bookmark to where it came from. Nobody else is sent it;
             see `recipes.source_url`. */}

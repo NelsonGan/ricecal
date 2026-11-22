@@ -1621,6 +1621,129 @@ export type Database = {
           },
         ]
       }
+      recipe_import_runs: {
+        Row: {
+          created_at: string
+          runs: number
+          updated_at: string
+          user_id: string
+          window_start: string
+        }
+        Insert: {
+          created_at?: string
+          runs?: number
+          updated_at?: string
+          user_id: string
+          window_start: string
+        }
+        Update: {
+          created_at?: string
+          runs?: number
+          updated_at?: string
+          user_id?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
+      recipe_import_usage: {
+        Row: {
+          created_at: string
+          imports: number
+          month: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          imports?: number
+          month: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          imports?: number
+          month?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recipe_imports: {
+        Row: {
+          analysed_from: string
+          author_handle: string | null
+          canonical_url: string
+          caption: string | null
+          community_recipe_id: string | null
+          created_at: string
+          created_by: string | null
+          draft: Json | null
+          id: string
+          imports: number
+          photo_key: string | null
+          platform: string
+          reason: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          video_id: string
+        }
+        Insert: {
+          analysed_from: string
+          author_handle?: string | null
+          canonical_url: string
+          caption?: string | null
+          community_recipe_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft?: Json | null
+          id?: string
+          imports?: number
+          photo_key?: string | null
+          platform: string
+          reason?: string | null
+          status: string
+          title?: string | null
+          updated_at?: string
+          video_id: string
+        }
+        Update: {
+          analysed_from?: string
+          author_handle?: string | null
+          canonical_url?: string
+          caption?: string | null
+          community_recipe_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          draft?: Json | null
+          id?: string
+          imports?: number
+          photo_key?: string | null
+          platform?: string
+          reason?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'recipe_imports_community_recipe_id_fkey'
+            columns: ['community_recipe_id']
+            isOneToOne: false
+            referencedRelation: 'recipe_details'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'recipe_imports_community_recipe_id_fkey'
+            columns: ['community_recipe_id']
+            isOneToOne: false
+            referencedRelation: 'recipes'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       recipe_ingredients: {
         Row: {
           amount: number
@@ -1830,6 +1953,10 @@ export type Database = {
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string
+          import_author: string | null
+          import_id: string | null
+          import_platform: string | null
+          import_url: string | null
           is_public: boolean
           name: string
           owner_id: string | null
@@ -1852,6 +1979,10 @@ export type Database = {
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
+          import_author?: string | null
+          import_id?: string | null
+          import_platform?: string | null
+          import_url?: string | null
           is_public?: boolean
           name: string
           owner_id?: string | null
@@ -1874,6 +2005,10 @@ export type Database = {
           icon_name?: string | null
           icon_set?: Database['public']['Enums']['icon_set'] | null
           id?: string
+          import_author?: string | null
+          import_id?: string | null
+          import_platform?: string | null
+          import_url?: string | null
           is_public?: boolean
           name?: string
           owner_id?: string | null
@@ -1890,6 +2025,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'recipes_import_id_fkey'
+            columns: ['import_id']
+            isOneToOne: false
+            referencedRelation: 'recipe_imports'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'recipes_source_recipe_id_fkey'
             columns: ['source_recipe_id']
@@ -2983,6 +3125,9 @@ export type Database = {
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
+          import_author: string | null
+          import_platform: string | null
+          import_url: string | null
           ingredient_count: number | null
           is_favourite: boolean | null
           is_mine: boolean | null
@@ -3607,6 +3752,7 @@ export type Database = {
         Args: { p_job: string; p_lease_seconds?: number }
         Returns: number
       }
+      claim_recipe_import_run: { Args: { p_user: string }; Returns: boolean }
       claim_recipe_review: {
         Args: { p_user: string }
         Returns: {
@@ -3771,6 +3917,7 @@ export type Database = {
       free_daily_scans: { Args: never; Returns: number }
       free_group_icons: { Args: never; Returns: string[] }
       free_group_limit: { Args: never; Returns: number }
+      free_monthly_imports: { Args: never; Returns: number }
       free_photo_retention_days: { Args: never; Returns: number }
       free_recipe_limit: { Args: never; Returns: number }
       free_routine_limit: { Args: never; Returns: number }
@@ -3783,6 +3930,9 @@ export type Database = {
           icon_name: string | null
           icon_set: Database['public']['Enums']['icon_set'] | null
           id: string | null
+          import_author: string | null
+          import_platform: string | null
+          import_url: string | null
           ingredient_count: number | null
           is_favourite: boolean | null
           is_mine: boolean | null
@@ -3931,6 +4081,19 @@ export type Database = {
       }
       gtin14: { Args: { code: string }; Returns: string }
       has_account_password: { Args: never; Returns: boolean }
+      import_recipe_for: {
+        Args: { p_import: string; p_photo_path?: string; p_user: string }
+        Returns: {
+          allowed: boolean
+          community_recipe_id: string
+          community_review: Database['public']['Enums']['recipe_review']
+          existing: boolean
+          is_community: boolean
+          monthly_limit: number
+          recipe_id: string
+          used: number
+        }[]
+      }
       invite_to_group: {
         Args: { p_group_id: string; p_target: string }
         Returns: string
@@ -3992,6 +4155,7 @@ export type Database = {
         }[]
       }
       pro_daily_scans: { Args: never; Returns: number }
+      pro_monthly_imports: { Args: never; Returns: number }
       prune_activity_hours: {
         Args: { p_asof?: string; p_limit?: number }
         Returns: Json
@@ -3999,6 +4163,25 @@ export type Database = {
       public_groups: {
         Args: { p_limit?: number; p_query?: string }
         Returns: Json
+      }
+      recipe_import_allowance: {
+        Args: { p_user: string }
+        Returns: {
+          monthly_limit: number
+          remaining: number
+          used: number
+        }[]
+      }
+      recipe_import_hourly_runs: { Args: never; Returns: number }
+      recipe_import_monthly_limit: { Args: { p_user: string }; Returns: number }
+      recipe_import_usage_this_month: {
+        Args: never
+        Returns: {
+          entitled: boolean
+          monthly_limit: number
+          remaining: number
+          used: number
+        }[]
       }
       recipe_mark_for_review: {
         Args: { p_recipe_id: string }

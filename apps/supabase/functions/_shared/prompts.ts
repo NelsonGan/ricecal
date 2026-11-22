@@ -28,6 +28,7 @@ export const PROMPT_NAMES = [
   'review-recipe',
   'suggest-meals',
   'moderate-submission',
+  'import-video-recipe',
 ] as const
 
 export type PromptName = (typeof PROMPT_NAMES)[number]

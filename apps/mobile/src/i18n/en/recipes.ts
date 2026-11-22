@@ -29,13 +29,104 @@ export const recipes = {
     drink: 'Drink',
   },
 
-  /** The three ways in, in the sheet behind the tab's plus. One word each. */
+  /** The four ways in, in the sheet behind the tab's plus. One word each. */
   add: {
     title: 'Add a recipe',
     write: 'Write it',
     photo: 'Photo',
     describe: 'Describe',
+    video: 'Video',
     quota: '{{used}} of {{count}} free',
+  },
+
+  /**
+   * The apps a recipe can be imported from. Their own names, which only change
+   * where the app is known by another one (小红书 in Chinese).
+   */
+  platform: {
+    instagram: 'Instagram',
+    tiktok: 'TikTok',
+    youtube: 'YouTube',
+    x: 'X',
+    threads: 'Threads',
+    facebook: 'Facebook',
+    rednote: 'Rednote',
+  },
+
+  /**
+   * Importing a recipe from a cooking video: the paste sheet, the screen that
+   * waits for it, and the ways it fails. The waiting screen is up to forty
+   * seconds, so its line says the user may leave; every failure says what to
+   * do next in one sentence.
+   */
+  import: {
+    title: 'Import from a video',
+    /** Free accounts only, in the sheet's title row. */
+    left_one: '{{count}} left this month',
+    left_other: '{{count}} left this month',
+    placeholder: 'Paste a video link',
+    paste: 'Paste',
+    unsupported: 'That is not a link to a post we can read.',
+    worksWith: 'Works with',
+    action: 'Import recipe',
+    screenTitle: 'Making your recipe',
+    step: {
+      watch: 'Watching the video',
+      write: 'Writing the recipe',
+      count: 'Working out the calories',
+    },
+    leave: 'You can leave this screen. The recipe will be in Mine.',
+    done: 'Saved to your recipes',
+    doneCommunity: 'Saved, and shared to Community',
+    doneExisting: 'You already have this one',
+    readyAway: 'Your recipe from the video is ready',
+    /** The toast's action when the recipe arrives after the user left. */
+    open: 'Open',
+    tryAgain: 'Try again',
+    otherLink: 'Use another link',
+    seePro: 'See Pro',
+    /** The row on a recipe that came from a video. */
+    watch: 'Watch on {{platform}}',
+    failure: {
+      not_recipe: {
+        title: 'Not a recipe',
+        body: 'This video does not show a dish being made. Try one that does.',
+      },
+      unreadable: {
+        title: 'Could not open that post',
+        body: 'It may be private or deleted. Copy the link again and retry.',
+      },
+      unsupported_link: {
+        title: 'Not a video link',
+        body: 'Paste a link to a post on Instagram, TikTok, YouTube, X, Threads, Facebook or Rednote.',
+      },
+      failed: {
+        title: 'Something went wrong',
+        body: 'The recipe could not be made this time.',
+      },
+      busy: {
+        title: 'Too many videos at once',
+        body: 'Give it an hour, then try this one again.',
+      },
+      offline: {
+        title: 'You are offline',
+        body: 'Connect to the internet and try again.',
+      },
+      /** Pro's ceiling, which is never printed elsewhere: no paywall, nothing to buy. */
+      proLimit: {
+        title: 'That is a lot of recipes',
+        body: 'You have imported the most videos one account can this month. More next month.',
+      },
+      too_long: {
+        title: 'Video too long',
+        body: 'Only videos up to 3 minutes can be imported.',
+      },
+      limit: {
+        title: 'No imports left this month',
+        body_one: 'A free account imports {{count}} video a month. Pro has no limit.',
+        body_other: 'A free account imports {{count}} videos a month. Pro has no limit.',
+      },
+    },
   },
 
   card: {

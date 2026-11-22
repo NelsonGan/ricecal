@@ -13,6 +13,7 @@ import {
 } from '@/data'
 import { useGroupInviteCount } from '@/data/groups'
 import { useAnalyticsIdentity } from '@/features/analytics'
+import { usePendingImport } from '@/features/recipes/pendingImport'
 import { useReminderSync, useReportLinks } from '@/features/settings'
 import {
   ActiveWorkoutBar,
@@ -100,6 +101,9 @@ function SignedInTabs() {
   // step with the profile, which matters most on a handset that never ran
   // onboarding — a reinstall, or signing in on a second phone.
   useAnalyticsIdentity()
+  // A video shared to the app while signed out, imported now that there is
+  // somebody to import it for.
+  usePendingImport()
   // And the health sync. It used to run on the Activity tab; here it also
   // covers a launch that lands on another tab, such as a report notification.
   const health = useHealthConnection()

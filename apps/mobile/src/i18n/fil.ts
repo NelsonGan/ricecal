@@ -1427,6 +1427,11 @@ export const fil = {
           free: '',
           pro: '',
         },
+        videoImport: {
+          label: 'Mag-import ng recipe mula sa video',
+          free: '{{imports}}/buwan',
+          pro: 'Walang limitasyon',
+        },
         budget: {
           label: 'Badyet ng calorie na bagay sa iyo',
           free: '',
@@ -1481,6 +1486,8 @@ export const fil = {
         read_recipe: 'Kailangan ng RiceCal Pro para punan ang recipe mula sa litrato.',
         new_recipe:
           'Kailangan ng RiceCal Pro para magtago ng higit sa {{recipes}} sariling recipe.',
+        video_import:
+          'Kailangan ng RiceCal Pro para mag-import ng higit sa {{imports}} video kada buwan.',
         trend_range: 'Kailangan ng RiceCal Pro para tumingin nang lampas sa isang linggo.',
         new_routine:
           'Kailangan ng RiceCal Pro para magtabi ng higit sa {{routines}} workout routine.',
@@ -1583,7 +1590,84 @@ export const fil = {
       write: 'Isulat',
       photo: 'Litrato',
       describe: 'Ilarawan',
+      video: 'Video',
       quota: '{{used}} sa {{count}} libre',
+    },
+    platform: {
+      instagram: 'Instagram',
+      tiktok: 'TikTok',
+      youtube: 'YouTube',
+      x: 'X',
+      threads: 'Threads',
+      facebook: 'Facebook',
+      rednote: 'Rednote',
+    },
+    import: {
+      title: 'Mag-import mula sa video',
+      left_one: '{{count}} na lang ngayong buwan',
+      left_other: '{{count}} na lang ngayong buwan',
+      placeholder: 'I-paste ang link ng video ng pagluluto',
+      paste: 'I-paste',
+      unsupported: 'Hindi iyan link ng post na mababasa namin.',
+      worksWith: 'Gumagana sa',
+      action: 'I-import ang recipe',
+      screenTitle: 'Ginagawa ang recipe mo',
+      step: {
+        watch: 'Pinapanood ang video',
+        write: 'Isinusulat ang recipe',
+        count: 'Kinukuwenta ang calories',
+      },
+      leave: 'Puwede mong iwan ang screen na ito. Mapupunta ang recipe sa “Akin”.',
+      done: 'Na-save sa mga recipe mo',
+      doneCommunity: 'Na-save, at ibinahagi sa Komunidad',
+      doneExisting: 'Mayroon ka na nito',
+      readyAway: 'Handa na ang recipe mo mula sa video',
+      open: 'Buksan',
+      tryAgain: 'Subukan ulit',
+      otherLink: 'Gumamit ng ibang link',
+      seePro: 'Tingnan ang Pro',
+      watch: 'Panoorin sa {{platform}}',
+      failure: {
+        not_recipe: {
+          title: 'Hindi ito recipe',
+          body: 'Walang ipinapakitang pagluluto sa video na ito. Subukan ang isang mayroon.',
+        },
+        unreadable: {
+          title: 'Hindi mabuksan ang post na iyon',
+          body: 'Baka private ito o binura na. Kopyahin ulit ang link at subukan muli.',
+        },
+        unsupported_link: {
+          title: 'Hindi ito link ng video',
+          body: 'Mag-paste ng link ng post sa Instagram, TikTok, YouTube, X, Threads, Facebook o Rednote.',
+        },
+        failed: {
+          title: 'May nangyaring mali',
+          body: 'Hindi nagawa ang recipe sa pagkakataong ito.',
+        },
+        busy: {
+          title: 'Sobrang daming video nang sabay',
+          body: 'Maghintay ng isang oras, saka subukan ulit ito.',
+        },
+        offline: {
+          title: 'Offline ka',
+          body: 'Kumonekta sa internet at subukan ulit.',
+        },
+        proLimit: {
+          title: 'Ang dami nang recipe',
+          body: 'Naabot mo na ang pinakamaraming video na ma-i-import ng isang account ngayong buwan. Puwede ulit sa susunod na buwan.',
+        },
+        too_long: {
+          title: 'Masyadong mahaba ang video',
+          body: 'Mga video na hanggang 3 minuto lang ang ma-i-import.',
+        },
+        limit: {
+          title: 'Ubos na ang import mo ngayong buwan',
+          body_one:
+            'Nakaka-import ang libreng account ng {{count}} video kada buwan. Walang limitasyon ang Pro.',
+          body_other:
+            'Nakaka-import ang libreng account ng {{count}} video kada buwan. Walang limitasyon ang Pro.',
+        },
+      },
     },
 
     card: {

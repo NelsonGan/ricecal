@@ -1400,6 +1400,11 @@ export const ko = {
           free: '',
           pro: '',
         },
+        videoImport: {
+          label: '영상에서 레시피 가져오기',
+          free: '한 달 {{imports}}개',
+          pro: '무제한',
+        },
         budget: {
           label: '나에게 맞는 칼로리 예산',
           free: '',
@@ -1452,6 +1457,7 @@ export const ko = {
         refine: '설명으로 식사를 고치려면 RiceCal Pro가 필요합니다.',
         read_recipe: '사진으로 레시피를 채우려면 RiceCal Pro가 필요합니다.',
         new_recipe: '내 레시피를 {{recipes}}개 넘게 두려면 RiceCal Pro가 필요합니다.',
+        video_import: '한 달에 영상을 {{imports}}개 넘게 가져오려면 RiceCal Pro가 필요합니다.',
         trend_range: '한 주보다 더 거슬러 보려면 RiceCal Pro가 필요합니다.',
         new_routine: '운동 루틴을 {{routines}}개 넘게 두려면 RiceCal Pro가 필요합니다.',
         new_group: '그룹을 {{groups}}개 넘게 만들려면 RiceCal Pro가 필요합니다.',
@@ -1552,7 +1558,82 @@ export const ko = {
       write: '직접 쓰기',
       photo: '사진',
       describe: '설명',
+      video: '영상',
       quota: '무료 {{used}}/{{count}}',
+    },
+    platform: {
+      instagram: 'Instagram',
+      tiktok: 'TikTok',
+      youtube: 'YouTube',
+      x: 'X',
+      threads: 'Threads',
+      facebook: 'Facebook',
+      rednote: 'Rednote',
+    },
+    import: {
+      title: '영상에서 가져오기',
+      left_one: '이번 달 {{count}}개 남음',
+      left_other: '이번 달 {{count}}개 남음',
+      placeholder: '요리 영상 링크를 붙여 넣으세요',
+      paste: '붙여넣기',
+      unsupported: '읽을 수 있는 게시물 링크가 아닙니다.',
+      worksWith: '지원',
+      action: '레시피 가져오기',
+      screenTitle: '레시피를 만드는 중',
+      step: {
+        watch: '영상을 보는 중',
+        write: '레시피를 적는 중',
+        count: '칼로리를 계산하는 중',
+      },
+      leave: '이 화면을 나가도 됩니다. 레시피는 “내 것”에 저장됩니다.',
+      done: '내 레시피에 저장했습니다',
+      doneCommunity: '저장하고 커뮤니티에 공유했습니다',
+      doneExisting: '이미 있는 레시피입니다',
+      readyAway: '영상 레시피가 준비됐습니다',
+      open: '열기',
+      tryAgain: '다시 시도',
+      otherLink: '다른 링크 사용',
+      seePro: 'Pro 보기',
+      watch: '{{platform}}에서 보기',
+      failure: {
+        not_recipe: {
+          title: '레시피가 아닙니다',
+          body: '요리하는 과정이 나오지 않는 영상입니다. 요리하는 영상으로 시도해 보세요.',
+        },
+        unreadable: {
+          title: '게시물을 열 수 없습니다',
+          body: '비공개이거나 삭제됐을 수 있습니다. 링크를 다시 복사해 시도하세요.',
+        },
+        unsupported_link: {
+          title: '영상 링크가 아닙니다',
+          body: 'Instagram, TikTok, YouTube, X, Threads, Facebook, Rednote 게시물 링크를 붙여 넣으세요.',
+        },
+        failed: {
+          title: '문제가 생겼습니다',
+          body: '이번에는 레시피를 만들지 못했습니다.',
+        },
+        busy: {
+          title: '영상이 너무 많이 몰렸습니다',
+          body: '한 시간 뒤에 이 영상을 다시 시도하세요.',
+        },
+        offline: {
+          title: '오프라인 상태입니다',
+          body: '인터넷에 연결한 뒤 다시 시도하세요.',
+        },
+        proLimit: {
+          title: '레시피를 정말 많이 모았어요',
+          body: '이번 달 한 계정이 가져올 수 있는 영상 수를 모두 채웠어요. 다음 달에 다시 가져올 수 있어요.',
+        },
+        too_long: {
+          title: '영상이 너무 길어요',
+          body: '3분 이하의 영상만 가져올 수 있어요.',
+        },
+        limit: {
+          title: '이번 달 가져오기를 모두 썼습니다',
+          body_one: '무료 계정은 한 달에 영상 {{count}}개를 가져옵니다. Pro는 제한이 없습니다.',
+          body_other: '무료 계정은 한 달에 영상 {{count}}개를 가져옵니다. Pro는 제한이 없습니다.',
+        },
+      },
     },
 
     card: {

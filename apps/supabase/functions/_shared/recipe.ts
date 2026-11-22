@@ -64,12 +64,12 @@ export type RecipeMockSteer = {
 
 const UNITS: RecipeUnit[] = ['g', 'ml', 'piece']
 
-const clamp = (value: unknown, lo: number, hi: number, fallback: number): number => {
+export const clamp = (value: unknown, lo: number, hi: number, fallback: number): number => {
   const n = Number(value)
   return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : fallback
 }
 
-const text = (value: unknown, max: number): string =>
+export const text = (value: unknown, max: number): string =>
   typeof value === 'string' ? value.trim().slice(0, max) : ''
 
 /**
@@ -169,7 +169,7 @@ function foldToLimit(lines: string[]): string[] {
   return out
 }
 
-function shapeDraft(raw: unknown): RecipeDraft {
+export function shapeDraft(raw: unknown): RecipeDraft {
   const o = (raw ?? {}) as Record<string, unknown>
   // Capped at twenty. A pot with more parts than that is a model listing
   // seasonings it cannot weigh, and every row past the twentieth is one more
@@ -231,7 +231,7 @@ const recipeSchema = (withIcon: boolean): string =>
   '{"name": string, "amount": number, "unit": "g"|"ml"|"piece", "kcal": number, ' +
   '"carbs_g": number, "protein_g": number, "fat_g": number}]} '
 
-const RECIPE_SHAPE =
+export const RECIPE_SHAPE =
   // The name is the dish: "A pot of curry on a stove" is a caption, "Kari ayam"
   // is what somebody would look for in their own recipes.
   //
@@ -315,7 +315,7 @@ const RECIPE_SHAPE =
  *
  * No long dashes, because the house rule reaches anything a user reads.
  */
-const RECIPE_STEPS =
+export const RECIPE_STEPS =
   '"steps" is how the dish is cooked, written straightforwardly: short plain ' +
   'sentences, one action each, in the order they happen, starting with a verb ' +
   '("Fry the rempah until it darkens."). ' +

@@ -12,6 +12,11 @@ const { WATCH_TARGET, watchBundleId } = require('./plugins/withWatch') as {
   watchBundleId: (bundleId: string) => string
 }
 
+const { SHARE_TARGET, shareBundleId } = require('./plugins/withShareExtension') as {
+  SHARE_TARGET: string
+  shareBundleId: (bundleId: string) => string
+}
+
 const appJson = require('./app.json') as { expo: ExpoConfig }
 const baseConfig = appJson.expo
 
@@ -52,7 +57,7 @@ function applySimulatorVariant(cfg: ExpoConfig): ExpoConfig {
 }
 
 /**
- * Tells EAS that the widget extension and the watch app exist. EAS resolves credentials from the
+ * Tells EAS that the widget and share extensions and the watch app exist. EAS resolves credentials from the
  * app config before it builds anything, and the Xcode project does not exist yet
  * under Continuous Native Generation, so without this block the server prebuilds
  * a second target it has no profile for and signing fails.
@@ -94,6 +99,12 @@ function withEasExtension(cfg: ExpoConfig): ExpoConfig {
                     'com.apple.developer.healthkit': true,
                     'com.apple.developer.healthkit.access': [],
                   },
+                },
+                // "Share to RiceCal", which opens the app on a shared post's
+                // link. No entitlements: it hands the link over by URL.
+                {
+                  targetName: SHARE_TARGET,
+                  bundleIdentifier: shareBundleId(bundleId),
                 },
               ],
             },

@@ -102,7 +102,12 @@ select
   -- is owner-only: for anybody else the join finds nothing, so a reader of a
   -- community recipe never sees its cook's link or heart.
   p.source_url,
-  coalesce(p.is_favourite, false) as is_favourite
+  coalesce(p.is_favourite, false) as is_favourite,
+  -- Who made the video it was imported from. Public, unlike `source_url`: the
+  -- server wrote all three out of the platform's own answer. See `recipes`.
+  r.import_platform,
+  r.import_author,
+  r.import_url
   -- `food_id` and `default_serving_id` were here, so a screen could log a pot
   -- through the catalogue without a second round trip for two ids it used once.
   -- There is no mirror to name and no portion row to point at: a pot is logged
@@ -175,7 +180,10 @@ as $$
     -- rule is restated here: a link's holder gets neither the cook's source
     -- nor their star.
     case when d.is_mine then d.source_url end as source_url,
-    d.is_mine and d.is_favourite as is_favourite
+    d.is_mine and d.is_favourite as is_favourite,
+    d.import_platform,
+    d.import_author,
+    d.import_url
   from public.recipe_details d
   where (select auth.uid()) is not null
     and d.share_slug = p_share_slug
@@ -362,14 +370,18 @@ begin
   -- tile would be permanently blank. Worse, it would ALIAS: the original author
   -- deleting their recipe deletes that object, and every copy of it goes dark.
   -- The illustration copies, because a drawing belongs to nobody. So do the
-  -- times and meal tags; the source link and the star stay with their owner.
+  -- times and meal tags, and the video credit, which belongs to the dish; the
+  -- source link and the star stay with their owner. `import_id` does not: a
+  -- saved copy is a recipe kept, not a video imported, and counts as one.
   insert into public.recipes (
     owner_id, name, icon_set, icon_name, servings, steps, source_recipe_id,
-    prep_minutes, cook_minutes, tags
+    prep_minutes, cook_minutes, tags,
+    import_platform, import_author, import_url
   )
   values (
     v_user, src.name, src.icon_set, src.icon_name, src.servings, src.steps, src.id,
-    src.prep_minutes, src.cook_minutes, src.tags
+    src.prep_minutes, src.cook_minutes, src.tags,
+    src.import_platform, src.import_author, src.import_url
   )
   returning id into v_new;
 
@@ -468,11 +480,13 @@ begin
   -- can copy and an R2 object key cannot.
   insert into public.recipes (
     owner_id, name, icon_set, icon_name, servings, steps, source_recipe_id,
-    prep_minutes, cook_minutes, tags
+    prep_minutes, cook_minutes, tags,
+    import_platform, import_author, import_url
   )
   values (
     v_user, src.name, src.icon_set, src.icon_name, src.servings, src.steps, src.id,
-    src.prep_minutes, src.cook_minutes, src.tags
+    src.prep_minutes, src.cook_minutes, src.tags,
+    src.import_platform, src.import_author, src.import_url
   )
   returning id into v_new;
 
