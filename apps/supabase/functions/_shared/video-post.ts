@@ -250,9 +250,36 @@ async function readPreview(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
   post.caption = caption
   post.title =
     tags['og:title']?.replace(/\s+on (?:Instagram|Threads)(?::[\s\S]*)?$/, '').trim() || null
-  post.coverUrl = httpsOrNull(tags['og:image'])
+  post.coverUrl =
+    (link.platform === 'instagram' ? await instagramCover(link.id, fetcher) : null) ??
+    httpsOrNull(tags['og:image'])
   post.videoUrl = httpsOrNull(tags['og:video'] ?? tags['og:video:secure_url'])
   return post
+}
+
+/**
+ * Instagram's own picture of a post, clean and at the size it keeps. The
+ * preview's `og:image` is 640 px on its long side (a reel's is 361 wide) and,
+ * for a reel, has a play button burned into its pixels, which the recipe page
+ * then showed enlarged in the middle of the dish. `/p/<code>/media/?size=l`
+ * redirects to the same frame at 640 wide with no button. Only the redirect is
+ * read here; `fetchMedia` downloads the picture once, from where it points.
+ * The preview's URL is signed, so it cannot be edited into this one.
+ */
+async function instagramCover(code: string, fetcher: Fetcher): Promise<string | null> {
+  try {
+    const res = await fetcher(`https://www.instagram.com/p/${code}/media/?size=l`, {
+      headers: { 'user-agent': BROWSER_UA },
+      redirect: 'manual',
+      signal: AbortSignal.timeout(PAGE_TIMEOUT_MS),
+    })
+    await res.body?.cancel()
+    if (res.status < 300 || res.status >= 400) return null
+    const to = httpsOrNull(res.headers.get('location'))
+    return to && /(?:^|\.)(?:cdninstagram\.com|fbcdn\.net)$/.test(new URL(to).hostname) ? to : null
+  } catch {
+    return null
+  }
 }
 
 // -- TikTok -------------------------------------------------------------------

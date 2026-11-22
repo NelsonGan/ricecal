@@ -716,3 +716,52 @@ Deno.test('a TikTok page that comes back without its post is asked for once more
   eq(await fetchPost(link, gone.fetcher), null, 'a post that is not there is still not there')
   eq(gone.count(), 2, 'after one more look, not more')
 })
+
+Deno.test("an Instagram cover is the post's clean frame, and the preview's when that is refused", async () => {
+  const { fetchPost } = await import('./video-post.ts')
+  const preview =
+    '<meta property="og:description" content="12 likes - cook on May 1, 2026: &quot;Tomato pasta&quot;." />' +
+    '<meta property="og:image" content="https://scontent.cdninstagram.com/v/preview.jpg?stp=s640x640_tt6" />'
+  const reel = video('https://www.instagram.com/reel/DRf3Hv_jJmS/')
+  const instagram = (media: Response) => {
+    const asked: string[] = []
+    const fetcher = (async (input: string | URL | Request, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input)
+      asked.push(`${url} ${init?.redirect ?? 'follow'}`)
+      if (url.startsWith('https://www.instagram.com/p/DRf3Hv_jJmS/media/')) return media
+      if (url.startsWith('https://www.instagram.com/reel/')) return new Response(preview)
+      return new Response('', { status: 404 })
+    }) as typeof fetch
+    return { fetcher, asked }
+  }
+  const moved = (location: string) => new Response(null, { status: 302, headers: { location } })
+
+  const clean = instagram(moved('https://instagram.fkul15-1.fna.fbcdn.net/v/frame.jpg?stp=dst-jpg'))
+  const post = await fetchPost(reel, clean.fetcher)
+  eq(
+    post?.coverUrl,
+    'https://instagram.fkul15-1.fna.fbcdn.net/v/frame.jpg?stp=dst-jpg',
+    'the frame',
+  )
+  eq(
+    clean.asked.some((a) => a.endsWith('/media/?size=l manual')),
+    true,
+    'the redirect is read, not followed',
+  )
+
+  const refused = await fetchPost(reel, instagram(new Response('', { status: 404 })).fetcher)
+  eq(
+    refused?.coverUrl,
+    'https://scontent.cdninstagram.com/v/preview.jpg?stp=s640x640_tt6',
+    'preview',
+  )
+
+  const elsewhere = await fetchPost(reel, instagram(moved('https://example.com/a.jpg')).fetcher)
+  eq(elsewhere?.coverUrl?.includes('preview.jpg'), true, 'a redirect off Instagram is not followed')
+
+  const login = await fetchPost(
+    reel,
+    instagram(moved('https://www.instagram.com/accounts/login/')).fetcher,
+  )
+  eq(login?.coverUrl?.includes('preview.jpg'), true, 'nor one to the login page')
+})
