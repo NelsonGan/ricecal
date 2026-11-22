@@ -7,6 +7,7 @@ import { UnitGroups } from '@/features/recipes/UnitGroups'
 import { useMeasureText } from '@/features/shared/useMeasureText'
 import { useThemeColors } from '@/theme/useTheme'
 import { Avatar, Icon, Text } from '@/ui'
+import { examplePlace } from './examplePlace'
 import { Tile, You } from './GroupsPreview'
 
 /**
@@ -155,6 +156,7 @@ export function SocialTabPreview() {
  */
 export function MealPlacesPreview() {
   const { t } = useTranslation(['news', 'places'])
+  const place = examplePlace()
   return (
     <View
       className="items-center"
@@ -172,7 +174,7 @@ export function MealPlacesPreview() {
           {/* The food map's pin: the plate eaten there, with how many meals. */}
           <View className="absolute left-[84px] top-3 items-center" style={{ paddingRight: 6 }}>
             <View className="h-[52px] w-[52px] items-center justify-center overflow-hidden rounded-full border-[3px] border-surface bg-surface">
-              <Icon set="dishes" name="chicken-rice" size={40} />
+              <Icon set="dishes" name={place.dish} size={40} />
             </View>
             <View
               style={{
@@ -198,12 +200,11 @@ export function MealPlacesPreview() {
           <Icon {...placeCategoryIcon('FoodMarket')} size={30} />
           <View className="min-w-0 flex-1">
             <Text variant="caption">{t('places:where')}</Text>
-            {/* A place's name is data, never translated, as Apple Maps gives it. */}
             <Text variant="label" numberOfLines={1}>
-              Maxwell Food Centre
+              {place.name}
             </Text>
             <Text variant="meta" numberOfLines={1}>
-              1 Kadayanallur St
+              {place.address}
             </Text>
           </View>
         </View>

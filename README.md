@@ -7454,7 +7454,8 @@ Social tab in miniature, group pills over the group's day over the feed
 (button: Social); a meal's place on a drawn map, wearing the food map's pin
 (button: Turn on Locations); and the food page's unit picker with cups chosen
 (no button). The map is drawn rather than a real `AppMap`, so a card swiped past
-loads no tiles.
+loads no tiles. The place on it follows the phone's region (`examplePlace.ts`):
+Jalan Alor in Malaysia, Maxwell Food Centre in Singapore and everywhere else.
 
 **The places page turns Locations on.** Locations is new and off until turned
 on (see "Meal locations"), so its button does what the one-time offer's does:
@@ -8028,7 +8029,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Rating skip `reason` / `RatingSkipReason` | `too_soon_after_install`, `too_soon_after_update`, `too_few_meals`, `too_few_active_days`, `asked_recently`, `asked_on_this_version` | `lib/rating/state.ts`; first failing gate at a checkpoint |
 | Counts and durations | `results`, `position`, `ingredients`, `servings`, `components`, `count`, `days`, `duration_ms`, `tier` | Shape/operation diagnostics. Search result counts/positions describe the answer or selected result, not diary nutrition |
 | Widget water `preset` | Home-screen action preset volume | Widget action choice; no daily water total or diary history |
-| `announcement` | An id from `features/news/announcements.ts`, lowercase letters, digits and underscores (checked by `see_announcements`); currently `feed_auto_share_2026_10` | Never free text; a renamed id is a new announcement |
+| `announcement` | An id from `features/news/announcements.ts`, lowercase letters, digits and underscores (checked by `see_announcements`); currently `update_1_3_0_2026_11`, `groups_2026_10` and `feed_auto_share_2026_10` | Never free text; a renamed id is a new announcement |
 | `source` / `AnnouncementSource` | `launch`, `settings` | `launch` is the card the app puts over Today; `settings` is one opened from the News list under Me |
 | `cta` / `AnnouncementCta` | `edit_profile`, `personalisation`, `groups`, `recipes`, `social`, `locations` | Where a page's button leads, named for analytics; a tap, not a changed setting |
 | Announcement `via` | `done` ("Got it" on the last page), `close` (cross, scrim or back gesture) | Closing without a page's button |

@@ -173,9 +173,14 @@ export function AnnouncementCard({
   const [card, setCard] = useState<ShownAnnouncement | null>(() =>
     announcement ? withMissed(announcement, profile?.seen_announcements) : null,
   )
+  // Whether Locations was on as this showing began, fixed for it like `card`:
+  // the places page's own button turns it on, and a live read would pull that
+  // button out of the card while it fades.
+  const [locationsOn, setLocationsOn] = useState(locations.enabled)
   if (showing.visible !== visible) {
     setShowing({ visible, count: showing.count + (visible ? 1 : 0) })
     if (visible) setPage(0)
+    if (visible) setLocationsOn(locations.enabled)
     if (visible && announcement) setCard(withMissed(announcement, profile?.seen_announcements))
   }
 
@@ -212,8 +217,7 @@ export function AnnouncementCard({
   const current = pages[Math.min(page, pages.length - 1)]
   const last = page >= pages.length - 1
   // Nothing to turn on once Locations is on, or with nobody signed in to turn it on for.
-  const cta =
-    current.cta === 'locations' && (locations.enabled || !userId) ? undefined : current.cta
+  const cta = current.cta === 'locations' && (locationsOn || !userId) ? undefined : current.cta
 
   const close = (via: 'done' | 'close') => {
     if (!announcement || answered.current) return

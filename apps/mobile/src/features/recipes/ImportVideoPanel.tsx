@@ -66,7 +66,8 @@ export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPan
           <Tappable
             onPress={paste}
             accessibilityRole="button"
-            hitSlop={8}
+            // Never leftwards, over the text: a tap at the end of a link moves the cursor.
+            hitSlop={{ top: 8, bottom: 8, right: 8, left: 0 }}
             className="h-10 items-center justify-center rounded-full bg-pandan-soft px-4 active:opacity-70"
           >
             <Text className="font-body-black text-[15px] leading-[20px] text-pandan-ink">
