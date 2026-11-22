@@ -3209,7 +3209,9 @@ so does the system share sheet: share the post to RiceCal from Instagram,
 TikTok, YouTube, X, Threads, Facebook or Rednote and the app opens
 `ricecal:///recipe/import?url=…`. The server reads the post, decides whether it
 is a recipe at all, writes the recipe onto the user's shelf and the app opens
-it. ReciMe, Flavorish, Honeydew and Pestle were the reference points: all of
+it. Sharing the same post again while the import screen still shows a failure
+starts it again: the router keeps a screen it is already on, so the screen
+listens for the link itself (`Linking` in `recipe/import.tsx`). ReciMe, Flavorish, Honeydew and Pestle were the reference points: all of
 them read the caption first, the better ones the video's speech, and the
 fallback when the caption says "link in bio" is the dish written out as it is
 normally cooked.
@@ -3247,7 +3249,7 @@ datacenter may be refused where this was not, so watch `unreadable` in
 
 | platform | caption | video | how |
 |---|---|---|---|
-| TikTok | yes | yes, and the spoken transcript | the page's rehydration JSON; the file is signed to that page's cookies, and the smallest H.264 copy that fits is taken (`smallestTikTokVideo`), since a two-minute reel's best copy is over the 18 MB the model is sent |
+| TikTok | yes | yes, and the spoken transcript | the page's rehydration JSON, asked for twice when the first page comes back without the post (it now and then does, and is fine the second time); the file is signed to that page's cookies, and the smallest H.264 copy that fits is taken (`smallestTikTokVideo`), since a two-minute reel's best copy is over the 18 MB the model is sent |
 | YouTube | yes | by link | oEmbed and the watch page, which also gives the length; the video model fetches YouTube itself |
 | X | yes | yes | X's own embed endpoint (`cdn.syndication.twimg.com`) |
 | Facebook | yes | yes | the page as a browser asks for it |

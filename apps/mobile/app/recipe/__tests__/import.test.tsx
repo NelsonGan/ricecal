@@ -2,7 +2,7 @@ import '@/i18n'
 
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-import { render, screen, waitFor } from '@/test-utils'
+import { act, fireEvent, render, screen, waitFor } from '@/test-utils'
 import { ToastProvider } from '@/ui'
 import ImportRecipeScreen from '../import'
 
@@ -28,6 +28,25 @@ jest.mock('@shopify/react-native-skia', () => {
     Skia: { PathBuilder: { Make: () => builder }, XYWHRect: () => ({}) },
   }
 })
+
+// The share sheet's way back in. Captured, so a test can hand the screen a link
+// the way iOS and Android do while it is open.
+const mockLinkListeners: Array<(event: { url: string }) => void> = []
+jest.mock('expo-linking', () => ({
+  addEventListener: (_: string, listener: (event: { url: string }) => void) => {
+    mockLinkListeners.push(listener)
+    return {
+      remove: () => mockLinkListeners.splice(mockLinkListeners.indexOf(listener), 1),
+    }
+  },
+  parse: (url: string) => {
+    const parsed = new URL(url.replace(/^ricecal:\/\/\//, 'https://app.test/'))
+    return {
+      path: parsed.pathname.replace(/^\//, ''),
+      queryParams: Object.fromEntries(parsed.searchParams),
+    }
+  },
+}))
 
 jest.mock('expo-router', () => ({
   useIsFocused: () => mockFocused.current,
@@ -205,4 +224,51 @@ it('reads a link pasted without its scheme', async () => {
   await waitFor(() =>
     expect(mockImport).toHaveBeenCalledWith('https://instagram.com/reel/CnkNjXVsAJv/'),
   )
+})
+
+it('offers to try again when the post could not be opened, and tries again', async () => {
+  const { VideoImportError } = jest.requireMock('@/data') as {
+    VideoImportError: new (code: string) => Error
+  }
+  mockImport.mockRejectedValueOnce(new VideoImportError('unreadable'))
+  mockImport.mockResolvedValueOnce({ recipeId: 'r1', existing: false, community: false })
+  await renderScreen()
+
+  expect(await screen.findByText('Could not open that post')).toBeTruthy()
+  await fireEvent.press(screen.getByRole('button', { name: 'Try again' }))
+  await waitFor(() =>
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/recipe/[id]', params: { id: 'r1' } }),
+  )
+  expect(mockImport).toHaveBeenCalledTimes(2)
+})
+
+it('starts again when the same video is shared while the screen shows a failure', async () => {
+  const { VideoImportError } = jest.requireMock('@/data') as {
+    VideoImportError: new (code: string) => Error
+  }
+  mockImport.mockRejectedValueOnce(new VideoImportError('unreadable'))
+  mockImport.mockResolvedValueOnce({ recipeId: 'r2', existing: false, community: false })
+  await renderScreen()
+  expect(await screen.findByText('Could not open that post')).toBeTruthy()
+
+  // The router keeps this screen for the same route; the link still arrives.
+  const shared = `ricecal:///recipe/import?url=${encodeURIComponent(LINK)}`
+  await act(async () => {
+    for (const listener of [...mockLinkListeners]) listener({ url: shared })
+  })
+  await waitFor(() =>
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/recipe/[id]', params: { id: 'r2' } }),
+  )
+  expect(mockImport).toHaveBeenCalledTimes(2)
+})
+
+it('does not start a second import when the video is shared again mid-import', async () => {
+  mockImport.mockReturnValue(new Promise(() => {}))
+  await renderScreen()
+  await act(async () => {
+    for (const listener of [...mockLinkListeners]) {
+      listener({ url: `ricecal:///recipe/import?url=${encodeURIComponent(LINK)}` })
+    }
+  })
+  expect(mockImport).toHaveBeenCalledTimes(1)
 })

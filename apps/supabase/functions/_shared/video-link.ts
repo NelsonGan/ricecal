@@ -59,7 +59,7 @@ const URL_IN_TEXT = /https?:\/\/[^\s<>"'`]+/i
  * reel! https://…" as often as a bare link, and a link pasted from a message
  * has trailing punctuation.
  */
-export function firstUrl(text: string): URL | null {
+function firstUrl(text: string): URL | null {
   const trimmed = text.trim()
   const match = trimmed.match(URL_IN_TEXT)
   // A bare host with no scheme ("instagram.com/reel/X") is how a link reads

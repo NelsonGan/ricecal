@@ -1,4 +1,5 @@
 import { FREE_VIDEO_IMPORTS } from '@ricecal/shared'
+import * as Linking from 'expo-linking'
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -151,6 +152,24 @@ export default function ImportRecipeScreen() {
     start()
   }, [link?.url, waiting, spent])
 
+  // The same video shared again while this screen still shows a failure: the
+  // router sees the route it is already on and changes nothing, so without
+  // this the old failure stays up and nothing is retried. That is exactly the
+  // person who went back to the app and shared it once more. A share that
+  // lands while an import is running is the same import, and is left alone.
+  const failed = useRef(false)
+  failed.current = failure !== null && failure !== 'limit' && failure !== 'proLimit'
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `start` reads the current link
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      const { path, queryParams } = Linking.parse(url)
+      const shared = typeof queryParams?.url === 'string' ? findVideoLink(queryParams.url) : null
+      if (path?.replace(/^\/+/, '') !== 'recipe/import' || !link || !failed.current) return
+      if (shared?.url === link.url) start()
+    })
+    return () => subscription.remove()
+  }, [link?.url])
+
   useEffect(() => {
     if (failure || !importRecipe.isPending) return
     const timers = STAGE_MS.map((ms, index) => setTimeout(() => setStage(index + 1), ms))
@@ -294,10 +313,11 @@ function FailureState({
   onPro: () => void
 }) {
   const { t } = useTranslation('recipes')
-  // One way forward each: try again where trying again can work, the paywall
-  // where the month is spent, and another link where this one never will.
+  // One way forward each: try again where trying again can work (a platform
+  // that would not show a post often does when asked again), the paywall where
+  // the month is spent, and another link where this one never will.
   const action =
-    failure === 'failed' || failure === 'offline' ? (
+    failure === 'failed' || failure === 'offline' || failure === 'unreadable' ? (
       <Button onPress={onRetry}>{t('import.tryAgain')}</Button>
     ) : failure === 'limit' ? (
       <Button onPress={onPro}>{t('import.seePro')}</Button>

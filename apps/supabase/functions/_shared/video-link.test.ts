@@ -678,3 +678,41 @@ Deno.test('X and YouTube pages say how long their video runs', async () => {
   )
   eq(quiet?.durationSeconds, null, 'no watch page, no length')
 })
+
+Deno.test('a TikTok page that comes back without its post is asked for once more', async () => {
+  const { fetchPost } = await import('./video-post.ts')
+  const item = {
+    __DEFAULT_SCOPE__: {
+      'webapp.video-detail': {
+        itemInfo: {
+          itemStruct: {
+            desc: 'Laksa at home',
+            author: { uniqueId: 'cook' },
+            video: { duration: 30 },
+          },
+        },
+      },
+    },
+  }
+  const full = `<script id="__UNIVERSAL_DATA_FOR_REHYDRATION__" type="application/json">${JSON.stringify(item)}</script>`
+  const reads = (pages: string[]) => {
+    let n = 0
+    const fetcher = (async (input: string | URL | Request) => {
+      const url = String(input instanceof Request ? input.url : input)
+      if (!url.startsWith('https://www.tiktok.com/')) return new Response('', { status: 404 })
+      return new Response(pages[Math.min(n++, pages.length - 1)])
+    }) as typeof fetch
+    return { fetcher, count: () => n }
+  }
+  const link = video('https://www.tiktok.com/@cook/video/7700688103778077983')
+
+  const flaky = reads(['<html>no post here</html>', full])
+  const post = await fetchPost(link, flaky.fetcher)
+  eq(post?.caption, 'Laksa at home', 'read on the second look')
+  eq(post?.durationSeconds, 30, 'with its length')
+  eq(flaky.count(), 2, 'two page reads')
+
+  const gone = reads(['<html>no post here</html>'])
+  eq(await fetchPost(link, gone.fetcher), null, 'a post that is not there is still not there')
+  eq(gone.count(), 2, 'after one more look, not more')
+})

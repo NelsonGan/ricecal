@@ -291,10 +291,24 @@ export function tiktokItem(html: string): TikTokItem | null {
 }
 
 async function readTikTok(link: VideoLink, fetcher: Fetcher): Promise<FetchedPost | null> {
-  const got = await page(link.fetchUrl, { 'user-agent': BROWSER_UA }, fetcher)
-  if (!got) return null
-  const item = tiktokItem(got.text)
-  if (!item) return null
+  // Twice at most. Now and then TikTok answers the same link with a page that
+  // has no post in it (twice in about twenty reads on 2026-11-22, each time
+  // fine when asked again), and without a second look that is "could not open
+  // that post" for a video that is right there.
+  let got: Awaited<ReturnType<typeof page>> = null
+  let item: TikTokItem | null = null
+  for (let attempt = 0; attempt < 2 && !item; attempt++) {
+    got = await page(link.fetchUrl, { 'user-agent': BROWSER_UA }, fetcher).catch(() => null)
+    item = got ? tiktokItem(got.text) : null
+    if (!item) {
+      console.warn(
+        `[video-post] TikTok page ${got ? `without its post (${got.text.length} bytes)` : 'not read'}${
+          attempt === 0 ? ', asking again' : ''
+        }`,
+      )
+    }
+  }
+  if (!got || !item) return null
 
   const post = base(link)
   const handle = item.author?.uniqueId
@@ -451,7 +465,7 @@ async function readYouTube(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
  * The token X's embed endpoint asks for, which its own embed script works out
  * from the post id. Any value is accepted today; this is the one it sends.
  */
-export function syndicationToken(id: string): string {
+function syndicationToken(id: string): string {
   return ((Number(id) / 1e15) * Math.PI).toString(36).replace(/(0+|\.)/g, '')
 }
 
@@ -502,8 +516,8 @@ async function readX(link: VideoLink, fetcher: Fetcher): Promise<FetchedPost | n
 
 // -- Facebook -----------------------------------------------------------------
 
-/** A JSON string value out of a page, decoded. Exported for its test. */
-export function jsonString(html: string, pattern: RegExp): string | null {
+/** A JSON string value out of a page, decoded. */
+function jsonString(html: string, pattern: RegExp): string | null {
   const raw = html.match(pattern)?.[1]
   if (!raw) return null
   try {
@@ -776,7 +790,7 @@ export function isPrivateAddress(address: string): boolean {
  * at all it answers yes, since the name itself has already passed
  * `isFetchableHost`; the edge runtime has one.
  */
-export async function resolvesPublicly(host: string): Promise<boolean> {
+async function resolvesPublicly(host: string): Promise<boolean> {
   const resolve = (Deno as unknown as { resolveDns?: typeof Deno.resolveDns }).resolveDns
   if (typeof resolve !== 'function') return true
   const answers = await Promise.all([
