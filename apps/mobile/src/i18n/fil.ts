@@ -1836,6 +1836,7 @@ export const fil = {
       publicTitle: 'Gawin itong pampubliko',
       publicBody: 'Sasali ito sa community tab para mahanap at ma-save ninuman.',
       publishFailed: 'Hindi mapalitan iyon. Subukan ulit.',
+      published: 'Nasa komunidad na ang recipe mo',
     },
 
     cook: {
@@ -1850,14 +1851,6 @@ export const fil = {
       finishedTitle: 'Kain na!',
       finishedBody: 'Magdagdag ng isang serving sa araw mo?',
       finishedSkip: 'Hindi muna',
-    },
-
-    review: {
-      checking: 'Sinusuri ang recipe mo…',
-      approved: 'Nasa komunidad na ang recipe mo',
-      rejected: 'Hindi na-publish: {{reason}}',
-      rejectedPlain: 'Hindi namin ma-publish ito.',
-      pending: 'Tinitingnan pa namin ito. Lilitaw ito kapag pumasa na.',
     },
   },
 

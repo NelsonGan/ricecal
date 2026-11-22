@@ -1807,6 +1807,7 @@ export const ja = {
       publicTitle: '公開する',
       publicBody: 'コミュニティのタブに並び、誰でも見つけて保存できます。',
       publishFailed: 'それは変更できませんでした。もう一度お試しください。',
+      published: 'レシピがコミュニティに公開されました',
     },
 
     cook: {
@@ -1821,14 +1822,6 @@ export const ja = {
       finishedTitle: 'めしあがれ',
       finishedBody: '1 人前を今日に追加しますか',
       finishedSkip: 'あとで',
-    },
-
-    review: {
-      checking: 'レシピを確認しています…',
-      approved: 'レシピがコミュニティに公開されました',
-      rejected: '未公開：{{reason}}',
-      rejectedPlain: 'これは公開できませんでした。',
-      pending: 'まだ確認中です。通れば表示されます。',
     },
   },
 

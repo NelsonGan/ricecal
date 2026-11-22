@@ -14,7 +14,7 @@ import {
   PICK_CANDIDATE_PROMPT,
 } from './llm.ts'
 import type { PromptName } from './prompts.ts'
-import { DESCRIBE_RECIPE_PROMPT, READ_RECIPE_PROMPT, REVIEW_RECIPE_PROMPT } from './recipe.ts'
+import { DESCRIBE_RECIPE_PROMPT, READ_RECIPE_PROMPT } from './recipe.ts'
 import { SUGGEST_MEAL_PROMPT } from './suggest.ts'
 import { IMPORT_VIDEO_RECIPE_PROMPT } from './video-recipe.ts'
 
@@ -27,7 +27,6 @@ export const BUNDLED_PROMPTS: Record<PromptName, string> = {
   'interpret-instruction': INTERPRET_INSTRUCTION_PROMPT,
   'read-recipe-photo': READ_RECIPE_PROMPT,
   'describe-recipe': DESCRIBE_RECIPE_PROMPT,
-  'review-recipe': REVIEW_RECIPE_PROMPT,
   'suggest-meals': SUGGEST_MEAL_PROMPT,
   'moderate-submission': REVIEW_PROMPT,
   'import-video-recipe': IMPORT_VIDEO_RECIPE_PROMPT,

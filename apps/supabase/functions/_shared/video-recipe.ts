@@ -166,20 +166,19 @@ export function postUserMessage(post: PostText, media: PostMedia['kind']): strin
 }
 
 /**
- * The models that watch, none of them Anthropic's (Claude does not take video
- * or audio), so all are billed to OpenRouter credits. Each is a secret, because
- * OpenRouter slugs move, and each can be set to `off` without a deploy.
+ * The models that watch, neither of them Anthropic's (Claude does not take
+ * video or audio), so both are billed to OpenRouter credits. Each is a secret,
+ * because OpenRouter slugs move, and each can be set to `off` without a deploy.
  *
  * A downloaded file goes to Muse Ember, then MiMo if Muse fails. Measured on
  * seven real posts with their text taken away, so that only watching and
  * listening could answer: Muse named 95% of each creator's key ingredients in
- * 9 s for about $0.002 a video, Gemini 3.8 Flash 87% for $0.010, MiMo 62%
- * (it hears the speech, then writes a generic recipe) and took up to 34 s.
- * Neither of the two takes a YouTube link, which only Gemini fetches itself,
- * so a Short is still Gemini's.
+ * 9 s for about $0.002 a video, MiMo 62% (it hears the speech, then writes a
+ * generic recipe) and took up to 34 s. Neither takes a YouTube link, so a Short
+ * is read from its caption. Gemini, the one model that fetched YouTube itself,
+ * is not used, and no secret brings it back.
  *
- * Reasoning low on all three: Gemini will not run with it off, answering the
- * default `{ enabled: false }` with a 400, and the others were measured so.
+ * Reasoning low on both, as they were measured.
  */
 function videoRoute(secret: string, fallback: string): ModelRoute | null {
   const model = (Deno.env.get(secret) ?? fallback).trim()
@@ -191,16 +190,13 @@ const FILE_ROUTES = [
   videoRoute('OPENROUTER_VIDEO_MODEL', 'meta/muse-ember'),
   videoRoute('OPENROUTER_VIDEO_FALLBACK_MODEL', 'xiaomi/mimo-v2.6-flash'),
 ].filter((r): r is ModelRoute => r !== null)
-const LINK_ROUTES = [videoRoute('OPENROUTER_VIDEO_LINK_MODEL', 'google/gemini-3.8-flash')].filter(
-  (r): r is ModelRoute => r !== null,
-)
 
 /**
- * The models that can watch a video given as a file (`data:`) or as a YouTube
- * link, in the order they are asked. Empty when every one is off.
+ * The models that can watch a downloaded video (`data:`), in the order they
+ * are asked. Empty when both are off.
  */
-export function videoRoutes(kind: 'file' | 'link'): readonly ModelRoute[] {
-  return kind === 'file' ? FILE_ROUTES : LINK_ROUTES
+export function videoRoutes(): readonly ModelRoute[] {
+  return FILE_ROUTES
 }
 
 /**
@@ -365,11 +361,11 @@ export async function importVideoRecipe(
   const system = hostedSystem({ name: 'import-video-recipe', bundled: IMPORT_VIDEO_RECIPE_PROMPT })
 
   if (media.kind === 'video') {
-    // Each model once, in order. A model alone in its list (Gemini, for a
-    // YouTube link) is asked twice for an answer that would not parse: a video
+    // Each model once, in order. A model alone in its list (the other one set
+    // to `off`) is asked twice for an answer that would not parse: a video
     // model writes a long answer and now and then a key with its quote wrong,
     // and the caption route that would answer instead cannot see the video.
-    const chain = [...videoRoutes(media.url.startsWith('data:') ? 'file' : 'link')]
+    const chain = [...videoRoutes()]
     if (chain.length === 1) chain.push(chain[0])
     for (let i = 0; i < chain.length; i++) {
       const route = chain[i]

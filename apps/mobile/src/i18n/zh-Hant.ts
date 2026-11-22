@@ -1797,6 +1797,7 @@ export const zhHant = {
       publicTitle: '設為公開',
       publicBody: '它會進到社群頁，誰都能找到並儲存。',
       publishFailed: '這個沒能改。再試一次。',
+      published: '你的食譜已經進到社群',
     },
 
     cook: {
@@ -1811,14 +1812,6 @@ export const zhHant = {
       finishedTitle: '慢慢享用',
       finishedBody: '把一份加到你這一天？',
       finishedSkip: '先不要',
-    },
-
-    review: {
-      checking: '正在審核你的食譜…',
-      approved: '你的食譜已經進到社群',
-      rejected: '未發布：{{reason}}',
-      rejectedPlain: '這一個我們沒能發布。',
-      pending: '我們還在看這一個。通過之後就會出現。',
     },
   },
 

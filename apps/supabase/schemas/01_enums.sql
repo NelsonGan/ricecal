@@ -60,10 +60,10 @@ create type public.recipe_unit as enum ('g', 'ml', 'piece');
 
 -- Where a recipe someone asked to publish has got to.
 --
--- `pending` is the state a recipe enters the moment it is made public and the
--- state it stays in if the review never runs, which is deliberate: the
--- community tab reads `approved` only, so a moderation pass that fails, times
--- out or is never deployed leaves the recipe invisible rather than published.
+-- Publishing writes `approved` at once; the model review that once stood
+-- between `pending` and a verdict is gone. `pending` is now where three reports
+-- park a recipe, off the shelf, and `rejected` is only on rows the old reviewer
+-- turned down. All three stay, because released apps read them.
 create type public.recipe_review as enum ('pending', 'approved', 'rejected');
 
 create type public.unit_system as enum ('metric', 'imperial');

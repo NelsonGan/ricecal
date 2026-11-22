@@ -519,36 +519,6 @@ function inBackground(work: Promise<unknown>): void {
 }
 
 /**
- * Take one recipe review's worth of budget, or refuse.
- *
- * Not the user's scan quota, which is why this is a second claim: the review is
- * the app's own moderation, so spending their allowance on it would be billing
- * them for a check performed on its own behalf. What it needs is a ceiling no
- * real use comes near and a loop cannot walk through.
- *
- * Returns a boolean rather than throwing: the one caller answers this refusal the
- * way it answers every other failure in that branch.
- *
- * A failed claim lets it through, like the scan meter: a database blip must not
- * become a recipe nobody can publish.
- */
-export async function claimRecipeReview(db: SupabaseClient, userId: string): Promise<boolean> {
-  const { data, error } = await db
-    .rpc('claim_recipe_review', { p_user: userId })
-    .maybeSingle<{ allowed: boolean; used: number; hourly_limit: number }>()
-
-  if (error) {
-    console.error('[review quota] claim failed, allowing uncounted:', error.message)
-    return true
-  }
-  if (data && !data.allowed) {
-    console.warn(`[review quota] refused: ${data.used}/${data.hourly_limit} this hour`)
-    return false
-  }
-  return true
-}
-
-/**
  * How many requests to OpenRouter one invocation made. Counts, and no longer
  * refuses: it used to be the quota itself, which made the ceiling unspeakable,
  * since a limit in units of "requests" cannot be printed on a paywall. The

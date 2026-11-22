@@ -25,7 +25,6 @@ export const PROMPT_NAMES = [
   'interpret-instruction',
   'read-recipe-photo',
   'describe-recipe',
-  'review-recipe',
   'suggest-meals',
   'moderate-submission',
   'import-video-recipe',

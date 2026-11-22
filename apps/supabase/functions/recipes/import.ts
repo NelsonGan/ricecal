@@ -7,8 +7,8 @@
 //   model     is it a recipe, and if so the recipe (`video-recipe.ts`)
 //   store     the verdict cached for everybody, the cover kept once in R2
 //   make      `import_recipe_for` claims the month's allowance and writes the
-//             recipe in one transaction; the first importer's goes to the
-//             community, pending its review, which runs here
+//             recipe in one transaction; the first importer's is published to
+//             the community
 //
 // Every refusal answers with a `code`, so the app can say what happened in the
 // user's language. A failure to read the post or the video is not cached, so
@@ -19,7 +19,6 @@ import type { Meter } from '../_shared/entitlement.ts'
 import { json } from '../_shared/http.ts'
 import { mockActive, photoBase64 } from '../_shared/llm.ts'
 import { copyObject, deleteObject, newKey, r2Configured, writeObject } from '../_shared/r2.ts'
-import { type RecipeMockSteer, reviewRecipe } from '../_shared/recipe.ts'
 import {
   isShortLink,
   parseVideoLink,
@@ -46,7 +45,7 @@ export type ImportRequest = {
   action: 'import'
   url?: string
   /** Mock mode only: a post to use instead of fetching one, and the model's answer. */
-  mock?: VideoMockSteer & RecipeMockSteer & { post?: Partial<FetchedPost> }
+  mock?: VideoMockSteer & { post?: Partial<FetchedPost> }
 }
 
 type ImportRow = {
@@ -70,20 +69,11 @@ type ImportContext = {
   db: SupabaseClient
   userId: string
   meter: Meter
-  /** Whether a review may run, for loading the recipe it reviews. */
-  loadForReview: (
-    db: SupabaseClient,
-    recipeId: string,
-  ) => Promise<{
-    recipe: { name: string | null; servings: number | null; steps: string | null }
-    ingredients: Array<{ name: string | null; amount: number | null; unit: string | null }>
-  } | null>
 }
 
 /**
  * When an import started must be finished by. The function's wall clock is
- * 150 s; this leaves room for the writes after the model and the review that
- * runs once the answer is sent.
+ * 150 s; this leaves room for the writes after the model.
  */
 const IMPORT_BUDGET_MS = 135_000
 /** The most a share link may take to follow, across all its hops. */
@@ -172,10 +162,10 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     // "There to watch" is the post having a video at all, not the download
     // working: a TikTok file that answered 403 is exactly the case where the
     // caption alone (hashtags, the recipe spoken aloud) would wrongly turn the
-    // video away for everybody.
+    // video away for everybody. A YouTube video is never watched (see
+    // `videoFor`), so its caption's verdict is the only one there will be.
     const watchable =
-      Boolean(fetched.videoUrl) &&
-      videoRoutes(fetched.link.platform === 'youtube' ? 'link' : 'file').length > 0
+      Boolean(fetched.videoUrl) && fetched.link.platform !== 'youtube' && videoRoutes().length > 0
     if (!result.recipe.isRecipe && watchable && result.analysedFrom !== 'video') {
       return json({
         ok: false,
@@ -297,14 +287,6 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
   }
   if (made.existing && photoPath) await deleteObject(photoPath).catch(() => {})
 
-  // The community recipe has not been read yet: this import made it, or the
-  // review that should have run when somebody else's did never finished. In
-  // the background where the runtime allows it: the user is waiting for their
-  // own recipe, which the verdict does not change.
-  if (made.community_recipe_id && made.community_review === 'pending') {
-    afterResponse(review(ctx, made.community_recipe_id, mock))
-  }
-
   return done({
     recipeId: made.recipe_id,
     existing: made.existing,
@@ -398,68 +380,22 @@ async function readPost(
 }
 
 /**
- * The video as the video model takes it: YouTube by its link, which the model
- * fetches itself, and anything else downloaded and inlined, since a platform's
- * own video URL is signed for whoever asked for it and nobody else can open it.
- * `too_long` for a file whose own header says it runs past the ceiling, the
- * one length a page that says nothing (Facebook, Instagram) still gives away.
+ * The video as the video model takes it: downloaded and inlined, since a
+ * platform's own video URL is signed for whoever asked for it and nobody else
+ * can open it. `too_long` for a file whose own header says it runs past the
+ * ceiling, the one length a page that says nothing (Facebook, Instagram) still
+ * gives away.
+ *
+ * YouTube is not watched at all. Its file cannot be downloaded signed out, and
+ * the only model that fetched a YouTube link itself was Gemini, which is not
+ * used. A Short gets the caption route: its title, description and cover.
  */
 async function videoFor(post: FetchedPost): Promise<PostMedia | 'too_long'> {
-  if (!post.videoUrl) return { kind: 'none' }
-  if (post.link.platform === 'youtube') {
-    // The model fetches the link itself and nothing caps what it watches, so
-    // a video of unknown length gets the caption route rather than a blank
-    // cheque. The watch page that gives the description gives the length.
-    return post.durationSeconds === null
-      ? { kind: 'none' }
-      : { kind: 'video', url: post.link.canonicalUrl }
-  }
+  if (!post.videoUrl || post.link.platform === 'youtube') return { kind: 'none' }
   const file = await fetchMedia(post.videoUrl, MAX_VIDEO_BYTES, 'video/', post.videoHeaders)
   if (!file) return { kind: 'none' }
   if ((mp4Seconds(file.bytes) ?? 0) > MAX_VIDEO_SECONDS) return 'too_long'
   return { kind: 'video', url: `data:${file.type};base64,${photoBase64(file.bytes)}` }
-}
-
-/**
- * The publishing review, for a recipe this import put on the community shelf.
- * The same gate a hand-written recipe goes through, and it fails the same way:
- * anything but a clear verdict leaves the recipe pending, and invisible.
- */
-async function review(ctx: ImportContext, recipeId: string, mock: RecipeMockSteer | undefined) {
-  const { db, meter } = ctx
-  // Not behind `claim_recipe_review`'s hourly ceiling. That ceiling stops a
-  // loop of `{action: 'review'}` calls; this review runs at most once per video
-  // that becomes a community recipe, which the import allowance and the hourly
-  // run ceiling already bound, and refusing it would strand the card pending.
-  try {
-    const loaded = await ctx.loadForReview(db, recipeId)
-    if (!loaded) return
-    const verdict = await reviewRecipe(
-      {
-        name: loaded.recipe.name ?? '',
-        servings: loaded.recipe.servings ?? 1,
-        steps: loaded.recipe.steps ?? '',
-        ingredients: loaded.ingredients.map((i) => ({
-          name: i.name ?? '',
-          amount: Number(i.amount ?? 0),
-          unit: i.unit ?? 'g',
-        })),
-      },
-      mock,
-      meter,
-    )
-    const { error } = await db
-      .from('recipes')
-      .update({
-        review_status: verdict.approved ? 'approved' : 'rejected',
-        review_note: verdict.approved ? null : verdict.reason || null,
-      })
-      .eq('id', recipeId)
-      .eq('review_status', 'pending')
-    if (error) console.error('[recipes/import] verdict not saved:', error.message)
-  } catch (error) {
-    console.error('[recipes/import] review failed, left pending:', errorText(error))
-  }
 }
 
 /**
@@ -472,18 +408,6 @@ export function clip(value: string | null | undefined, max: number): string | nu
   if (!value) return null
   const points = Array.from(value)
   return points.length <= max ? value : points.slice(0, max).join('')
-}
-
-/**
- * Work the response does not wait for. The edge runtime keeps the isolate alive
- * for a promise handed to `EdgeRuntime.waitUntil`; anywhere else (a test, a
- * plain Deno) it simply runs, unawaited, and logs its own failures.
- */
-function afterResponse(work: Promise<unknown>) {
-  const runtime = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } })
-    .EdgeRuntime
-  if (runtime?.waitUntil) runtime.waitUntil(work)
-  else work.catch(() => {})
 }
 
 /** `promise`, or `fallback` once `ms` have passed without it. */

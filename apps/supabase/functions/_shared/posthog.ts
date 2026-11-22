@@ -37,7 +37,6 @@ export type AiSpan =
   | 'interpret_instruction'
   | 'read_recipe_photo'
   | 'describe_recipe'
-  | 'review_recipe'
   | 'suggest_meals'
   | 'moderate_submission'
   | 'import_video_recipe'

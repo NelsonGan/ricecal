@@ -1818,6 +1818,7 @@ export const id = {
       publicTitle: 'Jadikan publik',
       publicBody: 'Ia masuk ke tab komunitas untuk ditemukan dan disimpan siapa saja.',
       publishFailed: 'Tidak bisa mengubahnya. Coba lagi.',
+      published: 'Resepmu sudah masuk komunitas',
     },
 
     cook: {
@@ -1832,14 +1833,6 @@ export const id = {
       finishedTitle: 'Selamat makan',
       finishedBody: 'Tambahkan satu porsi ke harimu?',
       finishedSkip: 'Nanti saja',
-    },
-
-    review: {
-      checking: 'Memeriksa resepmu…',
-      approved: 'Resepmu sudah masuk komunitas',
-      rejected: 'Tidak diterbitkan: {{reason}}',
-      rejectedPlain: 'Kami tidak bisa menerbitkan yang ini.',
-      pending: 'Kami masih melihatnya. Ia akan muncul setelah lolos.',
     },
   },
 

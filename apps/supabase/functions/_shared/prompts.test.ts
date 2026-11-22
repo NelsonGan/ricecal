@@ -120,7 +120,7 @@ Deno.test(
       clearPromptCache()
       fakePostHog(answer)
       const { text, prompts } = await resolveSystem(
-        hostedSystem({ name: 'review-recipe', bundled: 'the code copy' }),
+        hostedSystem({ name: 'describe-recipe', bundled: 'the code copy' }),
       )
       assertEquals(text, 'the code copy')
       assertEquals(prompts[0].source, 'bundled')
@@ -208,7 +208,7 @@ Deno.test(
   withKey(async () => {
     fakePostHog(() => new Response(JSON.stringify({ prompt: 'no version' }), { status: 200 }))
     const { text, prompts } = await resolveSystem(
-      hostedSystem({ name: 'review-recipe', bundled: 'code' }),
+      hostedSystem({ name: 'describe-recipe', bundled: 'code' }),
     )
     assertEquals(text, 'code')
     assertEquals(prompts[0].source, 'bundled')

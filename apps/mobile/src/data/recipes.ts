@@ -276,12 +276,8 @@ export type RecipeInput = {
   sourceUrl?: string | null
 }
 
-/**
- * What a save did, beyond writing. `review` is present only when the recipe was
- * public, since editing one sends it back through the reviewer. Absent means
- * there was nothing to review rather than that a review passed.
- */
-export type SaveResult = { id: string; review?: PublishResult }
+/** What a save did, beyond writing. */
+export type SaveResult = { id: string }
 
 const toIngredientRow = (recipeId: string, input: RecipeIngredientInput, position: number) => ({
   recipe_id: recipeId,
@@ -331,7 +327,7 @@ export function useSaveRecipe() {
               .update(fields)
               .eq('id', input.id)
               .eq('owner_id', userId)
-              .select('id, is_public')
+              .select('id')
               .single(),
           )
         : unwrapOne(
@@ -343,7 +339,7 @@ export function useSaveRecipe() {
               // Postgres can keep and a column type cannot express. This is the
               // narrowest seam that says so.
               .insert({ ...fields, owner_id: userId } as never)
-              .select('id, is_public')
+              .select('id')
               .single(),
           )
       const recipeId = saved.id
@@ -401,26 +397,14 @@ export function useSaveRecipe() {
         await removeMealPhoto(input.previousPhotoPath).catch(() => {})
       }
 
-      // A published recipe that has just been rewritten is back at `pending` —
-      // the trigger put it there — so it needs reading again before it is
-      // listed. See `runReview`: this never throws, and a review that could not
-      // run leaves the recipe unlisted rather than unread and live.
-      const review = saved.is_public ? await runReview(recipeId) : undefined
-
-      return { id: recipeId, review }
+      return { id: recipeId }
     },
-    onSuccess: ({ id: recipeId, review }, input) => {
+    onSuccess: ({ id: recipeId }, input) => {
       track('Recipe Saved', {
         is_new: !input.id,
         ingredients: input.ingredients.length,
         servings: input.servings,
       })
-      // An edit to a PUBLISHED recipe sends it back through the reviewer, so
-      // this path produces a verdict too — and it is the same verdict, from the
-      // same call, as the one publishing produces. Reporting it here as well is
-      // what makes the rejection rate a number about the reviewer rather than a
-      // number about which button was pressed.
-      if (review) track('Recipe Published', { outcome: review.status })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.recipe(recipeId) })
       queryClient.invalidateQueries({ queryKey: keys.recipeIngredients(recipeId) })
@@ -512,41 +496,15 @@ export function useDeleteRecipe() {
 }
 
 /**
- * What happened when a recipe was sent for review. `pending` is the absence of a
- * verdict rather than a third one: the review could not run, so the recipe is
- * public and invisible and the screen says "we are still looking at it".
+ * Where a recipe stands after asking to publish it. Publishing lists it at
+ * once, so this is `approved`; the type keeps the other two because the
+ * column does (`pending` is a recipe three reports took down).
  */
-export type PublishResult = { status: 'approved' | 'rejected' | 'pending'; reason?: string }
+export type PublishResult = { status: 'approved' | 'rejected' | 'pending' }
 
 /**
- * Send a recipe through the reviewer and report what it said. Shared by
- * publishing and saving, because an edit to a published recipe needs a second
- * reading. The database has already put the row back to `pending`, so a review
- * that never happens leaves it public and unlisted rather than live and unread.
- *
- * Never throws: every failure resolves to `pending`, which is the honest answer.
- */
-async function runReview(recipeId: string): Promise<PublishResult> {
-  const { data, error } = await supabase.functions.invoke('recipes', {
-    body: { action: 'review', recipe_id: recipeId },
-  })
-  if (error) return { status: 'pending' }
-
-  const result = data as { ok?: boolean; status?: string; reason?: string }
-  if (!result?.ok) return { status: 'pending' }
-  return {
-    status: result.status === 'approved' ? 'approved' : 'rejected',
-    reason: result.reason,
-  }
-}
-
-/**
- * Ask for a recipe to be listed in the community, or take it back.
- *
- * Two steps rather than one. `set_recipe_public` flips the flag and parks the
- * recipe at `pending`, which cannot fail halfway; only then does the review run,
- * and one that never finishes leaves a recipe public, pending and unlisted. The
- * opposite order would have to hold an approval on a client.
+ * List a recipe in the community, or take it back. One call: there is no
+ * review between asking and being listed.
  */
 export function usePublishRecipe() {
   const userId = useUserId()
@@ -560,21 +518,16 @@ export function usePublishRecipe() {
       id: string
       isPublic: boolean
     }): Promise<PublishResult> => {
-      unwrapMaybe(await supabase.rpc('set_recipe_public', { p_recipe_id: id, p_public: isPublic }))
-
-      if (!isPublic) return { status: 'pending' }
-      return runReview(id)
+      const status = unwrapMaybe(
+        await supabase.rpc('set_recipe_public', { p_recipe_id: id, p_public: isPublic }),
+      )
+      return { status: status ?? 'pending' }
     },
     onSuccess: (result, { id, isPublic }) => {
-      // Only the publishing direction. Taking a recipe back runs no reviewer
-      // and has no verdict — `pending` there is the absence of a question, not
-      // an answer, and counting it would put every unpublish in the column that
-      // means "the review failed to run".
+      // Only the publishing direction; unpublishing is not counted.
       if (isPublic) track('Recipe Published', { outcome: result.status })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
       queryClient.invalidateQueries({ queryKey: keys.recipe(id) })
-      // Publishing runs the reviewer, which is a model call. Unpublishing does
-      // not, but it is one wasted invalidation against a figure that is only
     },
   })
 }

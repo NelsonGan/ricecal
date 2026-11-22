@@ -1797,6 +1797,7 @@ export const zhHans = {
       publicTitle: '设为公开',
       publicBody: '它会进入社区页，谁都能找到并保存。',
       publishFailed: '这个没能改。再试一次。',
+      published: '你的食谱已经进入社区',
     },
 
     cook: {
@@ -1811,14 +1812,6 @@ export const zhHans = {
       finishedTitle: '请慢用',
       finishedBody: '把一份加到今天？',
       finishedSkip: '先不用',
-    },
-
-    review: {
-      checking: '正在审核你的食谱…',
-      approved: '你的食谱已经进入社区',
-      rejected: '未发布：{{reason}}',
-      rejectedPlain: '这一个我们没能发布。',
-      pending: '我们还在看这一个。通过之后就会出现。',
     },
   },
 

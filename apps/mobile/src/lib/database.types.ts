@@ -1888,30 +1888,6 @@ export type Database = {
           },
         ]
       }
-      recipe_review_usage: {
-        Row: {
-          created_at: string
-          reviews: number
-          updated_at: string
-          user_id: string
-          window_start: string
-        }
-        Insert: {
-          created_at?: string
-          reviews?: number
-          updated_at?: string
-          user_id: string
-          window_start: string
-        }
-        Update: {
-          created_at?: string
-          reviews?: number
-          updated_at?: string
-          user_id?: string
-          window_start?: string
-        }
-        Relationships: []
-      }
       recipe_saves: {
         Row: {
           recipe_id: string
@@ -3753,14 +3729,6 @@ export type Database = {
         Returns: number
       }
       claim_recipe_import_run: { Args: { p_user: string }; Returns: boolean }
-      claim_recipe_review: {
-        Args: { p_user: string }
-        Returns: {
-          allowed: boolean
-          hourly_limit: number
-          used: number
-        }[]
-      }
       claim_scan: {
         Args: { p_user: string }
         Returns: {
@@ -4187,7 +4155,6 @@ export type Database = {
         Args: { p_recipe_id: string }
         Returns: undefined
       }
-      recipe_review_hourly_limit: { Args: never; Returns: number }
       reconcile_activity_sessions: {
         Args: {
           p_from: string
