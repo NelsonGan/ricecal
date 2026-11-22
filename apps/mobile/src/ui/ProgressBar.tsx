@@ -86,6 +86,12 @@ export type MacroBarProps = {
    * taller than the ring beside it.
    */
   inline?: boolean
+  /**
+   * The stacked row drawn tighter: less air between the label and its bar, and
+   * a thinner bar. For Today, where the bars sit under the ring in a half-width
+   * column and every point of their height pushes the meal list down.
+   */
+  compact?: boolean
   className?: string
 }
 
@@ -115,6 +121,7 @@ export function MacroBar({
   value,
   tone = 'kaya',
   inline = false,
+  compact = false,
   className,
 }: MacroBarProps) {
   const fontScale = useFontScale()
@@ -142,7 +149,7 @@ export function MacroBar({
   }
 
   return (
-    <View className={cn('gap-2', className)}>
+    <View className={cn(compact ? 'gap-1' : 'gap-2', className)}>
       <View
         className={wideText ? 'gap-1' : 'flex-row flex-wrap items-center justify-between gap-1'}
       >
@@ -154,7 +161,7 @@ export function MacroBar({
       <ProgressBar
         value={value}
         tone={tone}
-        height={12}
+        height={compact ? 9 : 12}
         accessibilityLabel={`${label} ${amount}`}
       />
     </View>

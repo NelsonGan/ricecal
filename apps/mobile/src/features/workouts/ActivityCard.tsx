@@ -37,7 +37,7 @@ export function ActivityCard({ steps, loading = false, className }: ActivityCard
     // above it takes whatever height is left. A `flex-1` surface has a basis of
     // nothing, so in a column whose height is still being settled it measured
     // as empty and the water card grew over it.
-    <Card className={className} contentClassName="gap-2.5 px-4 pt-3.5 pb-4">
+    <Card className={className} contentClassName="gap-2 px-3.5 pt-3 pb-3.5">
       <View className="gap-0.5">
         <View className="flex-row items-center gap-1.5">
           <Icon set="scenes" name="sneakers" size={20} />
@@ -46,7 +46,7 @@ export function ActivityCard({ steps, loading = false, className }: ActivityCard
           </Text>
         </View>
         {loading ? (
-          <Skeleton height={32} className="w-3/4" />
+          <Skeleton height={28} className="w-3/4" />
         ) : typeof steps === 'number' ? (
           // Kept out of replays: a step count is Apple Health or Health Connect
           // data.

@@ -4456,9 +4456,12 @@ client-owned state) and everything below follows it: the ring, the water, the
 entry list, and anything logged while it is selected.
 
 **The day at a glance is two columns.** On the left, one card: the ring over
-the three macros, each a label and "eaten/goal g" over its bar. The ring takes
-the column's width (104 to 160pt). On the right, water over activity, the two
-stretching to the ring card's height. The water card is the tank, edge to edge,
+the three macros, each a label and "eaten/goal g" over a thin bar. The ring
+takes the column's width up to 120pt: a larger one only made the summary taller
+and pushed the meal list off the first screen. The ring card is sized by what
+it holds (`grow`, never `flex-1`, on its surface, or a shorter right column
+clips the ring). On the right, water over activity, the two stretching to the
+ring card's height. The water card is the tank, edge to edge,
 with its heading and Add button across the top and the amount large at its foot
 over "/2,000 ml", all drawn on the water; the tank's height is measured, the
 room the row leaves it. Activity is the day's steps,

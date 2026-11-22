@@ -7,18 +7,15 @@ export type SplitFigureProps = {
   text: string
   /** The formatted number inside it, which is drawn large. */
   figure: string
-  /**
-   * `lg` for a figure with the tile to itself; `md` for one inside the water
-   * tank, which has to stay under the surface on a day well past half full.
-   */
-  size?: 'md' | 'lg'
   /** Colour for both halves, for a figure drawn over water. */
   className?: string
 }
 
 /**
  * A phrase with its number drawn large and its words small, the way Today's
- * tiles read "8,426 steps".
+ * tiles read "8,426 steps". Smaller than `displayMd`'s own size: in the water
+ * tank the figure has to stay under the surface on a day well past half full,
+ * and the activity card matches it.
  *
  * Split by finding the number in the translated string rather than by a second
  * key for the unit, so the word order stays the translator's: a language that
@@ -29,7 +26,7 @@ export type SplitFigureProps = {
  * sets a line height, and a nested span with its own line height pushes the
  * line taller than the big figure on iOS.
  */
-export function SplitFigure({ text, figure, size = 'lg', className }: SplitFigureProps) {
+export function SplitFigure({ text, figure, className }: SplitFigureProps) {
   const at = text.indexOf(figure)
   const before = at < 0 ? '' : text.slice(0, at)
   const after = at < 0 ? '' : text.slice(at + figure.length)
@@ -38,7 +35,7 @@ export function SplitFigure({ text, figure, size = 'lg', className }: SplitFigur
   return (
     <Text
       variant="displayMd"
-      className={cn(size === 'md' && 'text-[26px]', className)}
+      className={cn('text-[26px]', className)}
       numberOfLines={1}
       adjustsFontSizeToFit
       minimumFontScale={0.6}

@@ -173,12 +173,14 @@ function TodayContent() {
   // about 330pt (an Android phone at its largest display size), where the
   // card would otherwise clip the ring.
   const half = (width - 2 * spacing.gutter - 12) / 2
-  const columns = fontScale <= 1.3 && half - 28 - 8 >= 104
+  const columns = fontScale <= 1.3 && half - 24 - 8 >= 104
   // The ring takes the left column's width less the card's padding and a
   // little air, so it is as large as the column allows on every phone and
-  // never wider than it was designed at on a tablet.
+  // never wider than it was designed at on a tablet. Capped at 120 rather than
+  // the column's width on a big phone: a larger ring only made the summary
+  // taller and pushed the meal list off the first screen.
   const column = columns ? half : width - 2 * spacing.gutter
-  const ringSize = Math.round(Math.min(160, Math.max(104, column - 28 - 8)))
+  const ringSize = Math.round(Math.min(120, Math.max(104, column - 24 - 8)))
 
   /**
    * The tour, offered once and never again.
@@ -689,13 +691,16 @@ function TodayContent() {
           {loading || targets ? (
             <View className={columns ? 'flex-row items-stretch gap-3' : 'gap-3'}>
               {/* Less padding than a standard card, so the ring can take the
-                  column's width. */}
+                  column's width. `grow`, not `flex-1`: the surface's basis has
+                  to be what it holds, or the row sizes this card from the
+                  water and activity column and clips the ring and the fat bar
+                  whenever that column is the shorter one. */}
               <Card
                 className={columns ? 'flex-1' : undefined}
-                contentClassName="flex-1 justify-center px-3.5 py-4"
+                contentClassName="grow justify-center px-3 py-3.5"
               >
                 {loading || !targets ? (
-                  <Skeleton className="w-full" height={ringSize + 156} />
+                  <Skeleton className="w-full" height={ringSize + 132} />
                 ) : (
                   /* Tapping the summary swaps the ring from "what is left" to
                      "what of the allowance is used". Both readings answer a real
@@ -703,7 +708,7 @@ function TodayContent() {
                      the space. The macros carry both halves already, so they
                      do not change. */
                   <Tappable
-                    className="items-center gap-4"
+                    className="items-center gap-3"
                     onPress={() => setShowGoals((open) => !open)}
                     accessibilityRole="button"
                     accessibilityLabel={
@@ -720,7 +725,7 @@ function TodayContent() {
                           goal: Math.round(proteinGoal),
                         })}
                         size={ringSize}
-                        thickness={12}
+                        thickness={11}
                         centerLabel={t('logging:today.grams', {
                           value: Math.round(
                             showGoals ? eaten.protein : Math.abs(proteinLeft),
@@ -741,7 +746,7 @@ function TodayContent() {
                         value={eaten.kcal}
                         goal={budget}
                         size={ringSize}
-                        thickness={12}
+                        thickness={11}
                         centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
                         centerCaption={
                           showGoals
@@ -754,7 +759,13 @@ function TodayContent() {
                     )}
                     {/* Stacked under the ring: label and figure on one line, the
                         bar under them, so each bar has the column's full width. */}
-                    <MacroBars className="w-full" eaten={eaten} targets={targets} showGoal />
+                    <MacroBars
+                      className="w-full"
+                      eaten={eaten}
+                      targets={targets}
+                      showGoal
+                      compact
+                    />
                   </Tappable>
                 )}
               </Card>

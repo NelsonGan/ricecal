@@ -28,7 +28,7 @@ import {
  * default text size. It grows with the text, or with large text the figure runs
  * into the heading.
  */
-const MIN_CARD_HEIGHT = 124
+const MIN_CARD_HEIGHT = 112
 
 export type WaterCardProps = {
   /** The day the strip has selected. Drinks are recorded against it, not against now. */
@@ -145,8 +145,8 @@ export function WaterCard({
               })}
             >
               {(onWater) => (
-                <View className="flex-1 justify-between pb-3">
-                  <View className="flex-row items-center gap-1.5 pt-1.5 pr-1.5 pl-4">
+                <View className="flex-1 justify-between pb-2.5">
+                  <View className="flex-row items-center gap-1.5 pt-1 pr-1 pl-3.5">
                     <Icon set="body" name="water-drop" size={18} />
                     <Text
                       variant="label"
@@ -217,14 +217,13 @@ function TankAmount({ ml, goalMl, onWater }: { ml: number; goalMl: number; onWat
   // Hidden from a screen reader: the tank announces the same pair as a sentence.
   return (
     <View
-      className="px-4"
+      className="px-3.5"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
       <SplitFigure
         text={t('common:volume.ml', { value: figure })}
         figure={figure}
-        size="md"
         className={ink}
       />
       <Text variant="caption" className={ink} numberOfLines={1}>
