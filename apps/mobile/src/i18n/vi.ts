@@ -967,7 +967,6 @@ export const vi = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} ml',
       ofGoal: '/{{goal}} ml',
       addTitle: 'Thêm nước',
       left: 'còn {{amount}} ml',

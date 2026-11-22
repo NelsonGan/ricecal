@@ -168,13 +168,16 @@ function TodayContent() {
   const width = usePaneWidth()
   const { split } = useWindowLayout()
   // Two columns under the week strip, ring on the left and water over activity
-  // on the right. With very large text the figures do not fit a half-width
-  // column, so the cards stack.
-  const columns = fontScale <= 1.3
+  // on the right. The cards stack when a half-width column cannot hold the
+  // ring at its least size: with very large text, or on a pane narrower than
+  // about 330pt (an Android phone at its largest display size), where the
+  // card would otherwise clip the ring.
+  const half = (width - 2 * spacing.gutter - 12) / 2
+  const columns = fontScale <= 1.3 && half - 28 - 8 >= 104
   // The ring takes the left column's width less the card's padding and a
   // little air, so it is as large as the column allows on every phone and
   // never wider than it was designed at on a tablet.
-  const column = columns ? (width - 2 * spacing.gutter - 12) / 2 : width - 2 * spacing.gutter
+  const column = columns ? half : width - 2 * spacing.gutter
   const ringSize = Math.round(Math.min(160, Math.max(104, column - 28 - 8)))
 
   /**

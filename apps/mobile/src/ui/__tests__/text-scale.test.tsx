@@ -41,7 +41,9 @@ it('reaches the design system’s Text, whatever the caller asks', async () => {
 
 it('reaches every TextInput', () => {
   const missing = files.flatMap(({ file, text }) =>
-    [...text.matchAll(/<TextInput\b([\s\S]*?)\/?>/g)]
+    // The element's props up to its closing `>`, stepping over the `=>` of an
+    // arrow-function prop, and only a JSX element: `useRef<TextInput>` is a type.
+    [...text.matchAll(/<TextInput\s((?:=>|[^>])*?)\/?>/g)]
       .filter((match) => !match[1]?.includes('allowFontScaling={TEXT_SCALES}'))
       .map(() => file),
   )

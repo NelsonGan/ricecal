@@ -967,7 +967,6 @@ export const ja = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} ml',
       ofGoal: '/{{goal}} ml',
       addTitle: '水分を追加',
       left: '残り {{amount}} ml',

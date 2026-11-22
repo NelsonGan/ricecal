@@ -961,7 +961,6 @@ export const zhHans = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} 毫升',
       ofGoal: '/{{goal}} 毫升',
       addTitle: '加水',
       left: '还差 {{amount}} 毫升',

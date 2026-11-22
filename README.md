@@ -4468,7 +4468,9 @@ over" both made the card taller to repeat what the ring and the list below
 already say. Movement still extends the budget exactly as before.
 
 Text does not follow the phone's text size (see *The design system*), so the
-two columns hold at every setting. A figure and its unit are one translated
+two columns hold at every text setting. They stack only on a pane under about
+330pt (an Android phone at its largest display size), where a half-width card
+cannot hold the 104pt ring. A figure and its unit are one translated
 string drawn with the number large (`SplitFigure`), so the word order stays the
 translator's.
 
@@ -4747,22 +4749,24 @@ card produced "0 ml / 2 L", a fraction whose two halves are in different units.
 **The card is the tank.** `ui/WaterTank.tsx` fills the whole rectangle, carries
 two waves at different speeds so it reads as liquid rather than as a moving
 graph, and tips its surface left and right when the card first appears and on
-every drink. Everything else is drawn on it, in the top-right corner: the figure,
-small, and an Add button beside it. On Today it is 60pt tall, enough for that
-readout and a band of water. A short bar inside
-the card with the button beside it was tried and reverted: the tank as the card
-is the design.
+every drink. Everything else is drawn on it: the heading and an Add button
+across the top, and the day's amount large at the foot over "/2,000 ml". On
+Today its height is measured, the room the activity card under it leaves in the
+column beside the ring. A short bar inside the card with the button beside it
+was tried and reverted, and so was a heading over a tank inset in the card: the
+tank as the card is the design.
 
 **A full tank is still.** Once the goal is met it is drawn solid, with no waves,
 no slosh and no brim. A surface still moving at the top read as a day not yet
 done, and it was a frame of work every 16 ms for a picture with nothing left to
 say.
 
-There is no heading. The word "Water" over a tank of water is a label the picture
-already carries, and the drop beside the figure is what identifies it on a day
-the tank is empty. It went through two shapes to get here: a tall glass beside a
-column of quick-add buttons, which took a third of the screen, and then a band
-with the figure above it, which was three boxes saying one thing. The choosing
+It has a heading, "Water" with a drop, because beside the ring it is a tile
+among tiles and each tile in that column says what it is in the same place. As
+a full-width band it had none. It went through two shapes before that: a tall
+glass beside a column of quick-add buttons, which took a third of the screen,
+and then a band with the figure above it, which was three boxes saying one
+thing. The choosing
 happens in a sheet, and the undo is a toast, because a button that appears after
 every drink is a control that exists to be ignored.
 

@@ -957,7 +957,6 @@ export const bn = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} ml',
       ofGoal: '/{{goal}} ml',
       addTitle: 'পানি যোগ করুন',
       left: '{{amount}} ml বাকি',

@@ -960,7 +960,6 @@ export const th = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} มล.',
       ofGoal: '/{{goal}} มล.',
       addTitle: 'เพิ่มน้ำ',
       left: 'เหลืออีก {{amount}} มล.',

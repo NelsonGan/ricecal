@@ -959,7 +959,6 @@ export const hi = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} ml',
       ofGoal: '/{{goal}} ml',
       addTitle: 'पानी जोड़ें',
       left: '{{amount}} ml बचा',

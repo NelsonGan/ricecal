@@ -976,7 +976,6 @@ export const id = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} ml',
       ofGoal: '/{{goal}} ml',
       addTitle: 'Tambah air',
       left: 'sisa {{amount}} ml',
