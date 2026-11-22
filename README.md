@@ -4457,9 +4457,10 @@ entry list, and anything logged while it is selected.
 **The day at a glance is two columns.** On the left, one card: the ring over
 the three macros, each a label and "eaten/goal g" over its bar. The ring takes
 the column's width (104 to 160pt). On the right, water over activity, the two
-stretching to the ring card's height. Water is a heading with its Add button
-and a tank under it, the amount large at its foot over "/2,000 ml"; the tank's
-height is measured, the room the row leaves it. Activity is the day's steps,
+stretching to the ring card's height. The water card is the tank, edge to edge,
+with its heading and Add button across the top and the amount large at its foot
+over "/2,000 ml", all drawn on the water; the tank's height is measured, the
+room the row leaves it. Activity is the day's steps,
 when a health store reported them, and a Workouts button, which is the way into
 Workouts from Today. Nothing sits under the ring: "+360 from moving" and "A bit
 over" both made the card taller to repeat what the ring and the list below

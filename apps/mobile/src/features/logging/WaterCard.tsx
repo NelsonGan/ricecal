@@ -9,6 +9,7 @@ import { radius, slab } from '@/theme/tokens'
 import { useTheme, useThemeColors } from '@/theme/useTheme'
 import {
   Card,
+  cn,
   Icon,
   IconButton,
   Sheet,
@@ -20,15 +21,12 @@ import {
 } from '@/ui'
 
 /**
- * The least the tank is drawn at, before the card has been measured and on a
- * row that gives it no more. Room for the two lines of its figure at the
- * default text size; it grows with the text, or with large text the figure
- * stands out above the tank.
+ * The least the card is drawn at, before it has been measured and on a row that
+ * gives it no more: room for the heading and the two lines of the figure at the
+ * default text size. It grows with the text, or with large text the figure runs
+ * into the heading.
  */
-const MIN_TANK_HEIGHT = 84
-
-/** The tank sits this far in from the card's sides and foot. */
-const TANK_INSET = 8
+const MIN_CARD_HEIGHT = 124
 
 export type WaterCardProps = {
   /** The day the strip has selected. Drinks are recorded against it, not against now. */
@@ -46,13 +44,15 @@ export type WaterCardProps = {
 }
 
 /**
- * Water on Today: a tile in the column beside the ring, a heading with its Add
- * button and a tank under it with the day's amount written at its foot.
+ * Water on Today: the card is the tank. It fills edge to edge, with the heading
+ * and its Add button across the top and the day's amount at the foot, both
+ * drawn on the water rather than in a box above it.
  *
  * It was a wide band across the screen with the figure and the button in its
  * corner and no heading. Beside the ring it is a tile among tiles, and the
  * heading is what makes it one: each tile in that column says what it is in
- * the same place.
+ * the same place. For a round it was a heading over a tank inset in the card,
+ * which read as a chart in a box rather than a card filling up.
  *
  * The figure is drawn twice, on the dry ground and in the water: in the dark
  * palette the water and the water ink are the same value, so one copy would
@@ -73,13 +73,14 @@ export function WaterCard({
   className,
 }: WaterCardProps) {
   const { t } = useTranslation(['logging', 'common', 'progress'])
+  const { isDark } = useTheme()
   const toast = useToast()
   const addWater = useAddWater(date)
 
   const [sheetOpen, setSheetOpen] = useState(false)
   const { fontScale } = useWindowDimensions()
-  const minTank = Math.round(MIN_TANK_HEIGHT * Math.min(1.6, Math.max(1, fontScale)))
-  const [tankHeight, setTankHeight] = useState(minTank - TANK_INSET)
+  const minCard = Math.round(MIN_CARD_HEIGHT * Math.min(1.6, Math.max(1, fontScale)))
+  const [tankHeight, setTankHeight] = useState(minCard)
 
   /**
    * One path for both directions, because the server has one: a removal is an
@@ -109,37 +110,17 @@ export function WaterCard({
 
   return (
     <>
-      {/* A heading row on the card, then the tank inset under it and filling
-          whatever height the row gives the card. Today pairs this with the
-          activity card in the column beside the ring, and the two together
-          stand as tall as the ring card, so the tank's height is measured
-          rather than fixed: it is the room left once the heading is drawn. */}
+      {/* `flush`, and the tank carries the card's own corner radius: the two
+          silhouettes coincide, so what the user sees is one object filling up.
+          Today pairs this with the activity card in the column beside the
+          ring, and the two together stand as tall as the ring card, so the
+          tank's height is measured rather than fixed. */}
       <Card flush className={className} contentClassName="flex-1 gap-0">
-        <View className="flex-row items-center gap-1.5 pt-1.5 pr-1.5 pl-4">
-          <Icon set="body" name="water-drop" size={18} />
-          <Text variant="label" className="shrink" numberOfLines={1}>
-            {t('progress:metric.water')}
-          </Text>
-          {/* GHOST, the design system's quietest icon control: no slab and no
-              fill. A filled disc on a card whose content is itself a picture
-              read as a sticker, the loudest thing on a screen whose loudest
-              thing should be the food. The 44pt box is still there to hit. */}
-          <IconButton
-            variant="ghost"
-            size="sm"
-            className="ml-auto"
-            onPress={() => setSheetOpen(true)}
-            accessibilityLabel={t('logging:water.addTitle')}
-          >
-            <Icon set="ui" name="plus" size={20} />
-          </IconButton>
-        </View>
-
         <View
           className="flex-1"
-          style={{ minHeight: minTank }}
+          style={{ minHeight: minCard }}
           onLayout={(event) => {
-            const next = Math.round(event.nativeEvent.layout.height) - TANK_INSET
+            const next = Math.round(event.nativeEvent.layout.height)
             if (next > 0 && next !== tankHeight) setTankHeight(next)
           }}
         >
@@ -148,27 +129,49 @@ export function WaterCard({
               least as tall, so it could only ever grow: switching to a day
               with a taller ring card left the tank at the taller size, and the
               activity card under it was squeezed to nothing. */}
-          <View className="absolute inset-x-2 top-0 bottom-2">
+          <View className="absolute inset-0">
             <WaterTank
               value={ml}
               goal={goalMl}
               loading={loading}
               paused={paused}
               height={tankHeight}
-              // The card's corner less the inset, so the tank's curve runs
-              // parallel to the card's rather than sitting in it as a second
-              // shape with its own idea of round.
-              radius={radius.card - TANK_INSET}
+              radius={radius.card}
               accessibilityLabel={t('logging:water.level', {
                 filled: millilitres(ml),
                 goal: millilitres(goalMl),
               })}
             >
               {(onWater) => (
-                /* The figure at the FOOT of the tank, where the water is on any
-                 day somebody has drunk anything, so it reads as the level's own
-                 number. `TankAmount` explains the two inks. */
-                <View className="flex-1 justify-end px-3 pb-1.5">
+                <View className="flex-1 justify-between pb-3">
+                  <View className="flex-row items-center gap-1.5 pt-1.5 pr-1.5 pl-4">
+                    <Icon set="body" name="water-drop" size={18} />
+                    <Text
+                      variant="label"
+                      className={cn('shrink', inkOf(onWater, isDark, 'text-ink'))}
+                      numberOfLines={1}
+                    >
+                      {t('progress:metric.water')}
+                    </Text>
+                    {/* GHOST, the design system's quietest icon control: no
+                        slab and no fill, just the glyph over the water. A
+                        filled disc on a surface that is itself the content read
+                        as a sticker stuck on the card. The 44pt box is still
+                        there to hit. Only the dry copy can be pressed; the wet
+                        one is a picture of it. */}
+                    <IconButton
+                      variant="ghost"
+                      size="sm"
+                      className="ml-auto"
+                      onPress={() => setSheetOpen(true)}
+                      accessibilityLabel={t('logging:water.addTitle')}
+                    >
+                      <Icon set="ui" name="plus" size={20} />
+                    </IconButton>
+                  </View>
+                  {/* The figure at the FOOT of the tank, where the water is on
+                      any day somebody has drunk anything, so it reads as the
+                      level's own number. */}
                   <TankAmount ml={ml} goalMl={goalMl} onWater={onWater} />
                 </View>
               )}
@@ -188,10 +191,9 @@ export function WaterCard({
 }
 
 /**
- * The day's water on Today's tank: the amount large, the goal small under it.
- *
- * Drawn twice by `WaterTank`, once on the dry ground and once in the water, and
- * told which. In the water the light palette wants `ink`, not `on-water`:
+ * The colour of anything written on the tank. `WaterTank` draws its overlay
+ * twice, once on the dry ground and once in the water, and says which. In the
+ * water the light palette wants `ink`, not `on-water`:
  * `on-water` is white, the design system's pairing for a label on a water
  * chip, and a figure in white on `#4CC9F0` is about 1.9:1, washing out on
  * exactly the days somebody most wants to read it. Dark ink on that blue is
@@ -199,15 +201,24 @@ export function WaterCard({
  * near-black there, against a brighter water, and `ink` is the near-white that
  * fails.
  */
+function inkOf(onWater: boolean, isDark: boolean, dry: string) {
+  return onWater ? (isDark ? 'text-on-water' : 'text-ink') : dry
+}
+
+/** The day's water on Today's tank: the amount large, the goal small under it. */
 function TankAmount({ ml, goalMl, onWater }: { ml: number; goalMl: number; onWater: boolean }) {
   const { t } = useTranslation(['logging', 'common'])
   const { isDark } = useTheme()
-  const ink = onWater ? (isDark ? 'text-on-water' : 'text-ink') : 'text-water-ink'
+  const ink = inkOf(onWater, isDark, 'text-water-ink')
   const figure = millilitres(ml)
 
   // Hidden from a screen reader: the tank announces the same pair as a sentence.
   return (
-    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <View
+      className="px-4"
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
       <SplitFigure
         text={t('common:volume.ml', { value: figure })}
         figure={figure}
