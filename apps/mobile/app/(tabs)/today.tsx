@@ -30,7 +30,7 @@ import {
   type WorkoutSummary,
 } from '@/data'
 import { socialEntryPost } from '@/data/social'
-import { count, SessionItem, useSessionLabel } from '@/features/activity'
+import { SessionItem, useSessionLabel } from '@/features/activity'
 import {
   createDeleteGate,
   MonthCalendar,
@@ -45,19 +45,19 @@ import { LocationsOffer } from '@/features/places'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
 import { useTutorialOffer } from '@/features/tutorial'
 import {
+  ActivityCard,
   openLogger,
   removeWorkoutFromHealth,
   useAskedDelete,
   useHasActiveWorkout,
   WorkoutItem,
-  WorkoutsTile,
 } from '@/features/workouts'
 import { datePattern } from '@/lib/dates'
 import { sumMacros } from '@/lib/nutrition'
 import { useOnline } from '@/lib/online'
 import { useLocationsPreference } from '@/lib/places'
-import { ReplayMask } from '@/lib/replay-mask'
 import { DEFAULT_WATER_ML } from '@/lib/water'
+import { spacing } from '@/theme/tokens'
 import {
   Aside,
   Badge,
@@ -166,10 +166,15 @@ function TodayContent() {
   // The pane's width, which is the window's on every iPhone but iPhone Duo.
   const width = usePaneWidth()
   const { split } = useWindowLayout()
-  // Stacked on a narrow phone for room, and in iPhone Duo's two panes for the
-  // opposite reason: the summary has a pane's full height there, and the
-  // larger ring over its macros fills it rather than leaving half of it empty.
-  const stackedSummary = width < 380 || fontScale > 1.3 || split
+  // Two columns under the week strip, ring on the left and water over activity
+  // on the right. With very large text the figures do not fit a half-width
+  // column, so the cards stack.
+  const columns = fontScale <= 1.3
+  // The ring takes the left column's width less the card's padding and a
+  // little air, so it is as large as the column allows on every phone and
+  // never wider than it was designed at on a tablet.
+  const column = columns ? (width - 2 * spacing.gutter - 12) / 2 : width - 2 * spacing.gutter
+  const ringSize = Math.round(Math.min(160, Math.max(104, column - 32 - 8)))
 
   /**
    * The tour, offered once and never again.
@@ -663,126 +668,134 @@ function TodayContent() {
           anything logged while it is selected. */}
           <WeekPicker />
 
-          {/* Less padding than a standard card. The ring and its three macro
-              lines are one compact reading, and the card's own 28 points around
-              them made it the tallest thing on the screen. */}
-          <Card contentClassName="px-4 py-4">
-            {loading ? (
-              <Skeleton className="h-[112px] w-full" />
-            ) : targets ? (
-              <>
-                {/* Tapping the summary swaps the ring from "what is left" to
-                "what of the allowance is used". Both readings answer a real
-                question and neither fits beside the other at this size, so they
-                share the space rather than the card growing a second row. The
-                macros carry both halves already, so they do not change. */}
-                <Tappable
-                  className={stackedSummary ? 'items-center gap-5' : 'flex-row items-center gap-4'}
-                  onPress={() => setShowGoals((open) => !open)}
-                  accessibilityRole="button"
-                  accessibilityLabel={
-                    showGoals ? t('logging:today.showLeft') : t('logging:today.showGoals')
+          {/* The day at a glance, in two columns. The ring and its macros are
+              one tall card on the left; water and activity stack on the right
+              and stretch to its height. It was three full-width bands, the
+              ring with its bars beside it, a water band and a small Workouts
+              square, and the steps sat over the meal list as a caption.
+
+              Water is up here rather than at the foot of the screen because it
+              is logged all day, a drink at a time, and it is the one thing here
+              somebody reaches for without having eaten anything. Workouts left
+              the tab bar for Groups and comes back as the activity card's
+              button, on the screen opened every day.
+
+              With very large text the columns are too narrow for their
+              figures, so they stack instead. */}
+          {loading || targets ? (
+            <View className={columns ? 'flex-row items-stretch gap-3' : 'gap-3'}>
+              {/* Less padding than a standard card, so the ring can take the
+                  column's width. */}
+              <Card
+                className={columns ? 'flex-1' : undefined}
+                contentClassName="flex-1 justify-center p-4"
+              >
+                {loading || !targets ? (
+                  <Skeleton className="w-full" height={ringSize + 156} />
+                ) : (
+                  /* Tapping the summary swaps the ring from "what is left" to
+                     "what of the allowance is used". Both readings answer a real
+                     question and neither fits beside the other, so they share
+                     the space. The macros carry both halves already, so they
+                     do not change. */
+                  <Tappable
+                    className="items-center gap-4"
+                    onPress={() => setShowGoals((open) => !open)}
+                    accessibilityRole="button"
+                    accessibilityLabel={
+                      showGoals ? t('logging:today.showLeft') : t('logging:today.showGoals')
+                    }
+                  >
+                    {protein ? (
+                      <CalorieRing
+                        value={eaten.protein}
+                        goal={proteinGoal}
+                        tone="hibiscus"
+                        accessibilityLabel={t('logging:today.proteinA11y', {
+                          value: Math.round(eaten.protein),
+                          goal: Math.round(proteinGoal),
+                        })}
+                        size={ringSize}
+                        thickness={12}
+                        centerLabel={t('logging:today.grams', {
+                          value: Math.round(
+                            showGoals ? eaten.protein : Math.abs(proteinLeft),
+                          ).toLocaleString(),
+                        })}
+                        centerCaption={
+                          showGoals
+                            ? t('logging:today.proteinOfGoal', {
+                                goal: Math.round(proteinGoal).toLocaleString(),
+                              })
+                            : proteinLeft < 0
+                              ? t('logging:today.proteinOver')
+                              : t('logging:today.proteinLeft')
+                        }
+                      />
+                    ) : (
+                      <CalorieRing
+                        value={eaten.kcal}
+                        goal={budget}
+                        size={ringSize}
+                        thickness={12}
+                        centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
+                        centerCaption={
+                          showGoals
+                            ? t('logging:today.kcalOfGoal', { goal: budget.toLocaleString() })
+                            : over
+                              ? t('logging:today.kcalOver')
+                              : t('logging:today.kcalLeft')
+                        }
+                      />
+                    )}
+                    {/* Stacked under the ring: label and figure on one line, the
+                        bar under them, so each bar has the column's full width. */}
+                    <MacroBars className="w-full" eaten={eaten} targets={targets} showGoal />
+                  </Tappable>
+                )}
+              </Card>
+
+              <View className={columns ? 'flex-1 gap-3' : 'gap-3'}>
+                {/* The GOAL is known before the day is (it falls back to two
+                    litres, which is not a guess about this user), so the tank
+                    keeps its size throughout and only the level waits. */}
+                <WaterCard
+                  className="grow"
+                  date={selectedDate}
+                  ml={day.waterMl}
+                  goalMl={waterGoal}
+                  loading={loading}
+                  paused={!focused}
+                />
+                <ActivityCard steps={activity?.steps} loading={loading} />
+              </View>
+            </View>
+          ) : (
+            <>
+              <Card>
+                <EmptyState
+                  title={t('logging:today.noBudgetTitle')}
+                  description={t('logging:today.noBudgetBody')}
+                  icon={{ set: 'body', name: 'target' }}
+                  action={
+                    <Button onPress={() => router.push('/settings/goals')}>
+                      {t('logging:today.noBudgetAction')}
+                    </Button>
                   }
-                >
-                  {protein ? (
-                    <CalorieRing
-                      value={eaten.protein}
-                      goal={proteinGoal}
-                      tone="hibiscus"
-                      accessibilityLabel={t('logging:today.proteinA11y', {
-                        value: Math.round(eaten.protein),
-                        goal: Math.round(proteinGoal),
-                      })}
-                      size={stackedSummary ? 154 : 112}
-                      thickness={12}
-                      centerLabel={t('logging:today.grams', {
-                        value: Math.round(
-                          showGoals ? eaten.protein : Math.abs(proteinLeft),
-                        ).toLocaleString(),
-                      })}
-                      centerCaption={
-                        showGoals
-                          ? t('logging:today.proteinOfGoal', {
-                              goal: Math.round(proteinGoal).toLocaleString(),
-                            })
-                          : proteinLeft < 0
-                            ? t('logging:today.proteinOver')
-                            : t('logging:today.proteinLeft')
-                      }
-                    />
-                  ) : (
-                    <CalorieRing
-                      value={eaten.kcal}
-                      goal={budget}
-                      size={stackedSummary ? 154 : 112}
-                      thickness={12}
-                      centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
-                      centerCaption={
-                        showGoals
-                          ? t('logging:today.kcalOfGoal', { goal: budget.toLocaleString() })
-                          : over
-                            ? t('logging:today.kcalOver')
-                            : t('logging:today.kcalLeft')
-                      }
-                    />
-                  )}
-                  {/* Sharing the row with the ring, so it asks for the space the
-                    ring leaves. One line per macro, eaten against the goal, so
-                    the three rows stand no taller than the ring. */}
-                  <MacroBars
-                    className={stackedSummary ? 'w-full' : 'flex-1'}
-                    eaten={eaten}
-                    targets={targets}
-                    showGoal
-                    inline={!stackedSummary}
-                  />
-                </Tappable>
-
-                {/* No line under the ring any more. "+360 from moving" explained
-                    a budget higher than the one in Settings, and "A bit over"
-                    softened a ring already reading KCAL OVER; both made the card
-                    taller to say what the ring and the day list below it say.
-                    The workouts that earned the extra are rows in that list. */}
-              </>
-            ) : (
-              <EmptyState
-                title={t('logging:today.noBudgetTitle')}
-                description={t('logging:today.noBudgetBody')}
-                icon={{ set: 'body', name: 'target' }}
-                action={
-                  <Button onPress={() => router.push('/settings/goals')}>
-                    {t('logging:today.noBudgetAction')}
-                  </Button>
-                }
-              />
-            )}
-          </Card>
-
-          {/* Water sits under the ring rather than at the foot of the screen: it is
-          logged all day, a drink at a time, and it is the one thing here that a
-          user reaches for without having eaten anything. Below the entry list it
-          would be under however many rows the day has grown.
-
-          The GOAL is known before the day is — it falls back to two litres,
-          which is not a guess about this user — so the tank keeps its size
-          throughout and only the level waits. That is why the placeholder is
-          inside the card: nothing changes height, and the figure beside the
-          heading is simply absent until there is one. */}
-          {/* Workouts left the tab bar for Groups, and comes back here as a
-          small tile sharing the water's row: on the screen opened every day,
-          beside the other thing done through the day, without a row of its
-          own. Me has a row for it too. */}
-          <View className="flex-row items-stretch gap-3">
-            <WaterCard
-              className="flex-1"
-              date={selectedDate}
-              ml={day.waterMl}
-              goalMl={waterGoal}
-              loading={loading}
-              paused={!focused}
-            />
-            <WorkoutsTile />
-          </View>
+                />
+              </Card>
+              <View className={columns ? 'flex-row items-stretch gap-3' : 'gap-3'}>
+                <WaterCard
+                  className={columns ? 'flex-1' : undefined}
+                  date={selectedDate}
+                  ml={day.waterMl}
+                  goalMl={waterGoal}
+                  paused={!focused}
+                />
+                <ActivityCard className={columns ? 'flex-1' : undefined} steps={activity?.steps} />
+              </View>
+            </>
+          )}
         </>
       )}
 
@@ -815,26 +828,6 @@ function TodayContent() {
               day={day}
               onRowOpenChange={openRows.change}
               title={t('logging:today.dayHeading')}
-              action={
-                // Only when a health store reported the day. Zero steps on an
-                // account with no store would be a claim about the user rather
-                // than about the phone.
-                // Kept out of replays: a step count is Apple Health or Health
-                // Connect data.
-                activity ? (
-                  <ReplayMask style={{ flexShrink: 1, minWidth: 0 }}>
-                    <View className="flex-row items-center gap-1">
-                      <Icon set="scenes" name="sneakers" size={18} />
-                      <Text variant="caption" className="shrink">
-                        {t('logging:today.steps', {
-                          count: activity.steps,
-                          steps: count(activity.steps),
-                        })}
-                      </Text>
-                    </View>
-                  </ReplayMask>
-                ) : undefined
-              }
               extras={[
                 ...workouts.map((workout) => ({
                   key: `workout-${workout.id}`,

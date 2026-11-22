@@ -45,6 +45,8 @@ export const logging = {
      * `EntryList`.
      */
     dayHeading: 'Your day',
+    /** The heading of the card beside the ring with the day's steps and the way into Workouts. */
+    activity: 'Activity',
     /** Opposite the heading, when a health store reported the day. */
     steps_one: '{{steps}} step',
     steps_other: '{{steps}} steps',
@@ -570,6 +572,11 @@ export const logging = {
      * "0 ml / 2 L" reads as a fault.
      */
     count: '{{filled}} / {{goal}} ml',
+    /**
+     * Under the amount on Today's tank: the goal, written as the ring writes its
+     * own ("/2,000 KCAL"), a slash and the figure, so the pair reads as a fraction.
+     */
+    ofGoal: '/{{goal}} ml',
     /**
      * The sheet behind Add, and what is left of the goal beside its heading.
      * "left" rather than "to go", and clamped at zero rather than swapped for a

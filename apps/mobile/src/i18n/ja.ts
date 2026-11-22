@@ -717,6 +717,7 @@ export const ja = {
       showGoals: 'その日の枠を表示',
       showLeft: '残りを表示',
       dayHeading: 'あなたの1日',
+      activity: 'アクティビティ',
       steps_one: '{{steps}} 歩',
       steps_other: '{{steps}} 歩',
       analysing: 'お皿を読み取っています',
@@ -967,6 +968,7 @@ export const ja = {
 
     water: {
       count: '{{filled}} / {{goal}} ml',
+      ofGoal: '/{{goal}} ml',
       addTitle: '水分を追加',
       left: '残り {{amount}} ml',
       add: '{{amount}} ml 追加',

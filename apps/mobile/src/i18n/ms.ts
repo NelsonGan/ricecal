@@ -731,6 +731,7 @@ export const ms = {
       showGoals: 'Tunjuk peruntukan hari ini',
       showLeft: 'Tunjuk apa yang tinggal',
       dayHeading: 'Hari anda',
+      activity: 'Aktiviti',
       steps_one: '{{steps}} langkah',
       steps_other: '{{steps}} langkah',
       analysing: 'Membaca pinggan anda',
@@ -987,6 +988,7 @@ export const ms = {
 
     water: {
       count: '{{filled}} / {{goal}} ml',
+      ofGoal: '/{{goal}} ml',
       addTitle: 'Tambah air',
       left: 'baki {{amount}} ml',
       add: 'Tambah {{amount}} ml',

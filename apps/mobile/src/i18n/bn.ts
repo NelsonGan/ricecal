@@ -708,6 +708,7 @@ export const bn = {
       showGoals: 'দিনের হিসাব দেখান',
       showLeft: 'যা বাকি তা দেখান',
       dayHeading: 'আপনার দিন',
+      activity: 'কার্যকলাপ',
       steps_one: '{{steps}} কদম',
       steps_other: '{{steps}} কদম',
       analysing: 'আপনার থালা পড়া হচ্ছে',
@@ -957,6 +958,7 @@ export const bn = {
 
     water: {
       count: '{{filled}} / {{goal}} ml',
+      ofGoal: '/{{goal}} ml',
       addTitle: 'পানি যোগ করুন',
       left: '{{amount}} ml বাকি',
       add: '{{amount}} ml যোগ করুন',

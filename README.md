@@ -4454,21 +4454,27 @@ catches up when it is swiped to. Picking a day moves
 client-owned state) and everything below follows it: the ring, the water, the
 entry list, and anything logged while it is selected.
 
-**The calorie card is one compact reading.** A 112pt ring beside the three
-macros, each on one line as label, bar and "eaten/goal g", inside less padding
-than a standard card. Nothing sits under the ring: "+360 from moving" and "A bit
+**The day at a glance is two columns.** On the left, one card: the ring over
+the three macros, each a label and "eaten/goal g" over its bar. The ring takes
+the column's width (104 to 160pt). On the right, water over activity, the two
+stretching to the ring card's height. Water is a heading with its Add button
+and a tank under it, the amount large at its foot over "/2,000 ml"; the tank's
+height is measured, the room the row leaves it. Activity is the day's steps,
+when a health store reported them, and a Workouts button, which is the way into
+Workouts from Today. Nothing sits under the ring: "+360 from moving" and "A bit
 over" both made the card taller to repeat what the ring and the list below
 already say. Movement still extends the budget exactly as before.
 
-On narrow phones and with large text, the ring sits above the macro rows, whose
-labels and amounts also stack. Ring figures stay on one line. The seven date
-cells and the four navigation captions limit text scaling to fit their fixed
-widths; their full translated labels remain available to screen readers.
+With text scaled past 130% the columns stack, since a half-width column cannot
+hold the figures. A figure and its unit are one translated string drawn with
+the number large (`SplitFigure`), so the word order stays the translator's.
+The seven date cells and the four navigation captions limit text scaling to fit
+their fixed widths; their full translated labels remain available to screen
+readers.
 
-**The list under the water is "Your day"**: the meals and the health store's
-workouts in one list, newest first, with the day's steps beside the heading when
-a store reported the day. With large text, the steps sit below the complete
-heading. The heading is a word rather than an overline, and
+**The list under the summary is "Your day"**: the meals and the health store's
+workouts in one list, newest first. The heading is a word rather than an
+overline, and
 hairlines sit under it and between rows. Rows are `ItemRow` at its `compact`
 size (a 56pt tile, up to two lines of title, the figure stacked over its unit). A
 workout is a row like a meal, its calories in hibiscus because they were burned,
@@ -5519,7 +5525,7 @@ separate maintenance decision because it locks and rewrites the table.
 Gym sessions logged set by set, the way Hevy and Strong do it, plus the
 routines they start from and the records they set. Today is what went in;
 Workouts is what was done. It was the second tab until Groups needed the room;
-now it is a page, opened from a small tile beside the water card on Today and
+now it is a page, opened from the Workouts button on Today's activity card and
 from the first row of the Activity settings on Me. Its URL stays `/workouts`,
 so the Live Activity, the watch and old notification links still land on it.
 The minimised bar of a running workout floats over the tabs only; the page has

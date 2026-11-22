@@ -717,6 +717,7 @@ export const ta = {
       showGoals: 'அன்றைய வரவைக் காட்டு',
       showLeft: 'மீதியைக் காட்டு',
       dayHeading: 'உங்கள் நாள்',
+      activity: 'செயல்பாடு',
       steps_one: '{{steps}} அடி',
       steps_other: '{{steps}} அடிகள்',
       analysing: 'உங்கள் தட்டைப் படிக்கிறோம்',
@@ -966,6 +967,7 @@ export const ta = {
 
     water: {
       count: '{{filled}} / {{goal}} ml',
+      ofGoal: '/{{goal}} ml',
       addTitle: 'தண்ணீர் சேர்',
       left: '{{amount}} ml மீதி',
       add: '{{amount}} ml சேர்',

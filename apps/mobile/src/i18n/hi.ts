@@ -710,6 +710,7 @@ export const hi = {
       showGoals: 'दिन का हिसाब दिखाएं',
       showLeft: 'जो बचा है वह दिखाएं',
       dayHeading: 'आपका दिन',
+      activity: 'गतिविधि',
       steps_one: '{{steps}} कदम',
       steps_other: '{{steps}} कदम',
       analysing: 'आपकी थाली पढ़ी जा रही है',
@@ -959,6 +960,7 @@ export const hi = {
 
     water: {
       count: '{{filled}} / {{goal}} ml',
+      ofGoal: '/{{goal}} ml',
       addTitle: 'पानी जोड़ें',
       left: '{{amount}} ml बचा',
       add: '{{amount}} ml जोड़ें',

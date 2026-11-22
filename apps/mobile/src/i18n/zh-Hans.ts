@@ -714,6 +714,7 @@ export const zhHans = {
       showGoals: '显示这一天的额度',
       showLeft: '显示还剩多少',
       dayHeading: '你的一天',
+      activity: '活动',
       steps_one: '{{steps}} 步',
       steps_other: '{{steps}} 步',
       analysing: '正在看你的这盘',
@@ -961,6 +962,7 @@ export const zhHans = {
 
     water: {
       count: '{{filled}} / {{goal}} 毫升',
+      ofGoal: '/{{goal}} 毫升',
       addTitle: '加水',
       left: '还差 {{amount}} 毫升',
       add: '加 {{amount}} 毫升',
