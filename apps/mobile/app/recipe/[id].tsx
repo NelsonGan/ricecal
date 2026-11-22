@@ -43,10 +43,10 @@ import {
   Icon,
   IconButton,
   Screen,
-  SegmentedControl,
   Sheet,
   Skeleton,
   Squish,
+  Tabs,
   Tappable,
   Text,
   useToast,
@@ -417,7 +417,11 @@ export default function RecipeDetailScreen() {
       {/* With two panes, the picture and the overview stay on the left and the
           cooking (ingredients and method) goes on the right. */}
       <Aside>
-        <SegmentedControl
+        {/* Tabs rather than a segmented control: these are two views of the
+            recipe, not a value being picked, and the underline reads as the
+            header of the card under it. Against the left edge rather than
+            centred, because everything above them starts there too. */}
+        <Tabs
           options={[
             { value: 'ingredients', label: t('recipes:detail.tabIngredients') },
             { value: 'method', label: t('recipes:detail.tabMethod') },
