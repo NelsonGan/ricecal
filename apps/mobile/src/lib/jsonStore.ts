@@ -47,15 +47,23 @@ export function createJsonStore<T>(id: string, parse: (stored: unknown) => T) {
     return value
   }
 
-  /** Writes `value`, or removes the key for `null`. */
+  /**
+   * Writes `value`, or removes the key for `null`.
+   *
+   * MMKV throws from `set` when the phone has no room left. Callers run in
+   * timers and in a mutation's `onSuccess`, where a throw crashes the app or
+   * fails a save that already happened, so the value is kept for this run
+   * instead and is lost only if the app is killed before space frees up.
+   */
   function set(key: string, value: T | null): void {
-    if (value === null) {
-      storage.remove(key)
-      cache.delete(key)
-    } else {
-      storage.set(key, JSON.stringify(value))
-      cache.set(key, value)
+    try {
+      if (value === null) storage.remove(key)
+      else storage.set(key, JSON.stringify(value))
+    } catch {
+      // Held in the cache below.
     }
+    if (value === null) cache.delete(key)
+    else cache.set(key, value)
     for (const listener of listeners.get(key) ?? []) listener()
   }
 

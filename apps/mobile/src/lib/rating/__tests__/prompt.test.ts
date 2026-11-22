@@ -250,3 +250,23 @@ describe('the answers', () => {
     })
   })
 })
+
+describe('on a full disk', () => {
+  const mmkv = jest.requireMock('react-native-mmkv') as { __failWrites: (on: boolean) => void }
+  afterEach(() => mmkv.__failWrites(false))
+
+  it('counts meals without throwing, and asks once rather than on every meal', () => {
+    // `recordMealLogged` runs after a meal is saved, where a throw fails a save
+    // that already happened and a retry logs the meal twice.
+    mountSheet()
+    mmkv.__failWrites(true)
+    expect(() => logToTheBrink()).not.toThrow()
+    recordMealLogged(USER, 1, READY)
+    settle()
+    expect(seen).toHaveLength(1)
+    ratingDismissed(seen[0])
+    recordMealLogged(USER, 1, READY)
+    settle()
+    expect(seen).toHaveLength(1)
+  })
+})
