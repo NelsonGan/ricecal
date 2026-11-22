@@ -1634,6 +1634,10 @@ export const vi = {
           title: 'Nhiều công thức quá',
           body: 'Bạn đã nhập số video tối đa một tài khoản được nhập trong tháng này. Tháng sau có thể nhập tiếp.',
         },
+        too_long: {
+          title: 'Video quá dài',
+          body: 'Chỉ nhập được video dài tối đa 3 phút.',
+        },
         limit: {
           title: 'Đã hết lượt nhập tháng này',
           body_one: 'Tài khoản miễn phí nhập được {{count}} video mỗi tháng. Pro không giới hạn.',

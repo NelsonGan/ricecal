@@ -1622,6 +1622,10 @@ export const zhHant = {
           title: '食譜已經很多了',
           body: '本月你已匯入一個帳戶可匯入的最多影片。下個月可以繼續匯入。',
         },
+        too_long: {
+          title: '影片太長了',
+          body: '只能匯入 3 分鐘以內的影片。',
+        },
         limit: {
           title: '本月的匯入次數用完了',
           body_one: '免費帳號每月可匯入 {{count}} 部影片。Pro 沒有上限。',

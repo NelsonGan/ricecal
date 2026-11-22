@@ -166,25 +166,50 @@ export function postUserMessage(post: PostText, media: PostMedia['kind']): strin
 }
 
 /**
- * The model that watches. Configurable because OpenRouter slugs move, and off
- * entirely with `OPENROUTER_VIDEO_MODEL=off`, which sends every import down the
- * caption route without a deploy. Not an Anthropic model, so it is billed to
- * OpenRouter credits: Claude does not take video.
+ * The models that watch, none of them Anthropic's (Claude does not take video
+ * or audio), so all are billed to OpenRouter credits. Each is a secret, because
+ * OpenRouter slugs move, and each can be set to `off` without a deploy.
+ *
+ * A downloaded file goes to Muse Ember, then MiMo if Muse fails. Measured on
+ * seven real posts with their text taken away, so that only watching and
+ * listening could answer: Muse named 95% of each creator's key ingredients in
+ * 9 s for about $0.002 a video, Gemini 3.8 Flash 87% for $0.010, MiMo 62%
+ * (it hears the speech, then writes a generic recipe) and took up to 34 s.
+ * Neither of the two takes a YouTube link, which only Gemini fetches itself,
+ * so a Short is still Gemini's.
+ *
+ * Reasoning low on all three: Gemini will not run with it off, answering the
+ * default `{ enabled: false }` with a 400, and the others were measured so.
  */
-const videoModel = (Deno.env.get('OPENROUTER_VIDEO_MODEL') ?? 'google/gemini-3.8-flash').trim()
-export const VIDEO_ROUTE: ModelRoute | null =
-  !videoModel || videoModel.toLowerCase() === 'off'
+function videoRoute(secret: string, fallback: string): ModelRoute | null {
+  const model = (Deno.env.get(secret) ?? fallback).trim()
+  return !model || model.toLowerCase() === 'off'
     ? null
-    : // Gemini 3.8 Flash will not run with reasoning off, and answers the
-      // default `{ enabled: false }` with a 400. Low effort is the least it takes.
-      { ...routeFor(videoModel, 0.2), reasoning: { effort: 'low' } }
+    : { ...routeFor(model, 0.2), reasoning: { effort: 'low' } }
+}
+const FILE_ROUTES = [
+  videoRoute('OPENROUTER_VIDEO_MODEL', 'meta/muse-ember'),
+  videoRoute('OPENROUTER_VIDEO_FALLBACK_MODEL', 'xiaomi/mimo-v2.6-flash'),
+].filter((r): r is ModelRoute => r !== null)
+const LINK_ROUTES = [videoRoute('OPENROUTER_VIDEO_LINK_MODEL', 'google/gemini-3.8-flash')].filter(
+  (r): r is ModelRoute => r !== null,
+)
 
 /**
- * Long enough for a model to watch a three-minute video and write a recipe
- * (a minute-long reel took 10 s); short enough that a stalled call still
- * leaves the caption route its time inside the function's 150 s wall clock.
+ * The models that can watch a video given as a file (`data:`) or as a YouTube
+ * link, in the order they are asked. Empty when every one is off.
+ */
+export function videoRoutes(kind: 'file' | 'link'): readonly ModelRoute[] {
+  return kind === 'file' ? FILE_ROUTES : LINK_ROUTES
+}
+
+/**
+ * How long each model may take, and never past what the caption route needs
+ * kept back. Muse answered every test video in under 15 s, so 30 s is a stall,
+ * and cutting it off there still leaves MiMo (14 s on average) about 25 s.
  * The phone's own wait is not the limit: see `respondWithin`.
  */
+const FIRST_VIDEO_TIMEOUT_MS = 30_000
 const VIDEO_TIMEOUT_MS = 45_000
 
 /**
@@ -339,12 +364,15 @@ export async function importVideoRecipe(
 
   const system = hostedSystem({ name: 'import-video-recipe', bundled: IMPORT_VIDEO_RECIPE_PROMPT })
 
-  if (media.kind === 'video' && VIDEO_ROUTE) {
-    // Twice at most, and only again for an answer that would not parse: the
-    // video model writes a long answer and now and then a key with its quote
-    // wrong, and the caption route that would answer instead cannot see the
-    // video at all. A timeout or an error is not retried.
-    for (let attempt = 0; attempt < 2; attempt++) {
+  if (media.kind === 'video') {
+    // Each model once, in order. A model alone in its list (Gemini, for a
+    // YouTube link) is asked twice for an answer that would not parse: a video
+    // model writes a long answer and now and then a key with its quote wrong,
+    // and the caption route that would answer instead cannot see the video.
+    const chain = [...videoRoutes(media.url.startsWith('data:') ? 'file' : 'link')]
+    if (chain.length === 1) chain.push(chain[0])
+    for (let i = 0; i < chain.length; i++) {
+      const route = chain[i]
       const left = deadline - Date.now() - CAPTION_RESERVE_MS
       if (left < MIN_VIDEO_MS) {
         console.warn('[video-recipe] no time left to watch the video, reading the caption')
@@ -365,17 +393,23 @@ export async function importVideoRecipe(
             },
           ],
           VIDEO_MAX_TOKENS,
-          { route: VIDEO_ROUTE, timeoutMs: Math.min(VIDEO_TIMEOUT_MS, left) },
+          {
+            route,
+            timeoutMs: Math.min(i === 0 ? FIRST_VIDEO_TIMEOUT_MS : VIDEO_TIMEOUT_MS, left),
+          },
         )
         return { recipe: shapeVideoRecipe(raw), analysedFrom: 'video' }
       } catch (error) {
-        const unparsed = error instanceof SyntaxError
+        const next = chain[i + 1]
+        // The same model is asked again only for an answer that would not
+        // parse; a timeout or an error from it would come back the same.
+        const stop = !next || (next === route && !(error instanceof SyntaxError))
         console.warn(
-          `[video-recipe] ${VIDEO_ROUTE.model} could not watch it (${
+          `[video-recipe] ${route.model} could not watch it (${
             error instanceof Error ? error.message.slice(0, 120) : 'error'
-          })${unparsed && attempt === 0 ? ', asking again' : ', reading the caption instead'}`,
+          }), ${stop ? 'reading the caption instead' : next === route ? 'asking again' : `asking ${next.model}`}`,
         )
-        if (!unparsed) break
+        if (stop) break
       }
     }
   }

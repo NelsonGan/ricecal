@@ -26,13 +26,20 @@ import {
   resolveShortLink,
   type VideoLink,
 } from '../_shared/video-link.ts'
-import { type FetchedPost, fetchMedia, fetchPost, MAX_VIDEO_BYTES } from '../_shared/video-post.ts'
+import {
+  type FetchedPost,
+  fetchMedia,
+  fetchPost,
+  MAX_VIDEO_BYTES,
+  MAX_VIDEO_SECONDS,
+  mp4Seconds,
+} from '../_shared/video-post.ts'
 import {
   cachedDraft,
   importVideoRecipe,
   type PostMedia,
-  VIDEO_ROUTE,
   type VideoMockSteer,
+  videoRoutes,
 } from '../_shared/video-recipe.ts'
 
 export type ImportRequest = {
@@ -133,12 +140,20 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     const fetched = await readPost(link, mock?.post)
     if (!fetched) return json({ ok: false, code: 'unreadable', platform: link.platform })
 
+    // Short-form only (`MAX_VIDEO_SECONDS`). Where the page says how long the
+    // video is, a long one is turned away before anything is downloaded.
+    // Not cached: the refusal costs a page read, and the ceiling may move.
+    const tooLong = () =>
+      json({ ok: false, code: 'too_long', platform: link.platform, maxSeconds: MAX_VIDEO_SECONDS })
+    if ((fetched.durationSeconds ?? 0) > MAX_VIDEO_SECONDS) return tooLong()
+
     // The video for the video model, the cover for the caption route and for
     // the card. Fetched together: neither waits on the other.
     const [video, cover] = await Promise.all([
       videoFor(fetched),
       fetched.coverUrl ? fetchMedia(fetched.coverUrl, MAX_COVER_BYTES, 'image/') : null,
     ])
+    if (video === 'too_long') return tooLong()
     const coverMedia: PostMedia = cover
       ? { kind: 'image', base64: photoBase64(cover.bytes), type: cover.type }
       : { kind: 'none' }
@@ -159,7 +174,9 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     // working: a TikTok file that answered 403 is exactly the case where the
     // caption alone (hashtags, the recipe spoken aloud) would wrongly turn the
     // video away for everybody.
-    const watchable = Boolean(fetched.videoUrl) && VIDEO_ROUTE !== null
+    const watchable =
+      Boolean(fetched.videoUrl) &&
+      videoRoutes(fetched.link.platform === 'youtube' ? 'link' : 'file').length > 0
     if (!result.recipe.isRecipe && watchable && result.analysedFrom !== 'video') {
       return json({
         ok: false,
@@ -346,6 +363,7 @@ async function readPost(
       linkedRecipe: mockPost.linkedRecipe ?? null,
       coverUrl: mockPost.coverUrl ?? null,
       videoUrl: mockPost.videoUrl ?? null,
+      durationSeconds: mockPost.durationSeconds ?? null,
     }
   }
   try {
@@ -360,12 +378,22 @@ async function readPost(
  * The video as the video model takes it: YouTube by its link, which the model
  * fetches itself, and anything else downloaded and inlined, since a platform's
  * own video URL is signed for whoever asked for it and nobody else can open it.
+ * `too_long` for a file whose own header says it runs past the ceiling, the
+ * one length a page that says nothing (Facebook, Instagram) still gives away.
  */
-async function videoFor(post: FetchedPost): Promise<PostMedia> {
+async function videoFor(post: FetchedPost): Promise<PostMedia | 'too_long'> {
   if (!post.videoUrl) return { kind: 'none' }
-  if (post.link.platform === 'youtube') return { kind: 'video', url: post.link.canonicalUrl }
+  if (post.link.platform === 'youtube') {
+    // The model fetches the link itself and nothing caps what it watches, so
+    // a video of unknown length gets the caption route rather than a blank
+    // cheque. The watch page that gives the description gives the length.
+    return post.durationSeconds === null
+      ? { kind: 'none' }
+      : { kind: 'video', url: post.link.canonicalUrl }
+  }
   const file = await fetchMedia(post.videoUrl, MAX_VIDEO_BYTES, 'video/', post.videoHeaders)
   if (!file) return { kind: 'none' }
+  if ((mp4Seconds(file.bytes) ?? 0) > MAX_VIDEO_SECONDS) return 'too_long'
   return { kind: 'video', url: `data:${file.type};base64,${photoBase64(file.bytes)}` }
 }
 

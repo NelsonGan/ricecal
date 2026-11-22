@@ -1657,6 +1657,10 @@ export const fil = {
           title: 'Ang dami nang recipe',
           body: 'Naabot mo na ang pinakamaraming video na ma-i-import ng isang account ngayong buwan. Puwede ulit sa susunod na buwan.',
         },
+        too_long: {
+          title: 'Masyadong mahaba ang video',
+          body: 'Mga video na hanggang 3 minuto lang ang ma-i-import.',
+        },
         limit: {
           title: 'Ubos na ang import mo ngayong buwan',
           body_one:

@@ -108,6 +108,7 @@ export type ImportOutcome =
   | 'unsupported_link'
   | 'unreadable'
   | 'not_recipe'
+  | 'too_long'
   | 'failed'
   | 'busy'
   | 'offline'

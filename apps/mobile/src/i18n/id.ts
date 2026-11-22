@@ -1641,6 +1641,10 @@ export const id = {
           title: 'Banyak sekali resepnya',
           body: 'Kamu sudah mengimpor video sebanyak yang bisa dilakukan satu akun bulan ini. Bisa lagi bulan depan.',
         },
+        too_long: {
+          title: 'Videonya terlalu panjang',
+          body: 'Hanya video hingga 3 menit yang bisa diimpor.',
+        },
         limit: {
           title: 'Jatah impor bulan ini habis',
           body_one: 'Akun gratis mengimpor {{count}} video sebulan. Pro tanpa batas.',

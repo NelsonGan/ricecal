@@ -1622,6 +1622,10 @@ export const zhHans = {
           title: '食谱已经很多了',
           body: '本月你已导入一个账户可导入的最多视频。下个月可以继续导入。',
         },
+        too_long: {
+          title: '视频太长了',
+          body: '只能导入 3 分钟以内的视频。',
+        },
         limit: {
           title: '本月的导入次数用完了',
           body_one: '免费账号每月可导入 {{count}} 个视频。Pro 没有上限。',

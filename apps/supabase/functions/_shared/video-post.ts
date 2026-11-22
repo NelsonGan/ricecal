@@ -34,10 +34,18 @@ export type FetchedPost = PostText & {
   videoUrl: string | null
   /** Headers the video URL only answers with (TikTok signs it to the page's cookies). */
   videoHeaders?: Record<string, string>
+  /** How long the video runs, where the page says (TikTok, YouTube, X). */
+  durationSeconds: number | null
 }
 
 /** The biggest video inlined for the model. Base64 makes it a third bigger again. */
 export const MAX_VIDEO_BYTES = 18 * 1024 * 1024
+/**
+ * Imports are for short-form video: a reel, a TikTok, a Short. A model's bill
+ * grows with every second it watches, and three minutes is a YouTube Short's
+ * own ceiling; a twenty-minute cooking show is turned away rather than paid for.
+ */
+export const MAX_VIDEO_SECONDS = 180
 const MAX_PAGE_BYTES = 4 * 1024 * 1024
 const PAGE_TIMEOUT_MS = 10_000
 const MEDIA_TIMEOUT_MS = 20_000
@@ -115,7 +123,57 @@ function base(link: VideoLink): FetchedPost {
     linkedRecipe: null,
     coverUrl: null,
     videoUrl: null,
+    durationSeconds: null,
   }
+}
+
+/** A length in seconds, or null for anything that is not a positive number. */
+function seconds(value: unknown): number | null {
+  const n = typeof value === 'string' ? Number(value) : value
+  return typeof n === 'number' && Number.isFinite(n) && n > 0 ? n : null
+}
+
+/**
+ * How long an MP4 runs, from its movie header (`moov` > `mvhd`). The one
+ * length every downloaded file carries, Facebook's included, whose page says
+ * nothing. Walks the boxes rather than searching for the name, which a video's
+ * own bytes could contain. Exported for its test.
+ */
+export function mp4Seconds(bytes: Uint8Array): number | null {
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
+  const type = (at: number) => String.fromCharCode(...bytes.subarray(at + 4, at + 8))
+  // The box at `at`: where its contents start and where it ends.
+  const box = (at: number, end: number) => {
+    if (at + 8 > end) return null
+    let size = view.getUint32(at)
+    let header = 8
+    if (size === 1) {
+      if (at + 16 > end) return null
+      size = Number(view.getBigUint64(at + 8))
+      header = 16
+    } else if (size === 0) {
+      size = end - at
+    }
+    if (size < header || at + size > end) return null
+    return { body: at + header, end: at + size }
+  }
+  const find = (name: string, from: number, end: number) => {
+    for (let at = from; ; ) {
+      const b = box(at, end)
+      if (!b) return null
+      if (type(at) === name) return b
+      at = b.end
+    }
+  }
+  const moov = find('moov', 0, bytes.byteLength)
+  const mvhd = moov && find('mvhd', moov.body, moov.end)
+  if (!mvhd) return null
+  const v1 = bytes[mvhd.body] === 1
+  const need = v1 ? 32 : 20
+  if (mvhd.body + need > mvhd.end) return null
+  const scale = view.getUint32(mvhd.body + (v1 ? 20 : 12))
+  const length = v1 ? Number(view.getBigUint64(mvhd.body + 24)) : view.getUint32(mvhd.body + 16)
+  return scale > 0 ? seconds(length / scale) : null
 }
 
 // -- Meta tags ---------------------------------------------------------------
@@ -250,6 +308,7 @@ async function readTikTok(link: VideoLink, fetcher: Fetcher): Promise<FetchedPos
     }
   }
   post.caption = item.desc?.trim() || null
+  post.durationSeconds = seconds(item.video?.duration)
   post.coverUrl =
     httpsOrNull(item.video?.cover ?? item.video?.originCover) ??
     httpsOrNull(item.imagePost?.cover?.imageURL?.urlList?.[0])
@@ -316,6 +375,25 @@ export function transcriptFromVtt(vtt: string): string | null {
 
 // -- YouTube ------------------------------------------------------------------
 
+type HttpClientMaker = (options: { http2?: boolean }) => Deno.HttpClient
+let http1Client: Deno.HttpClient | null | undefined
+
+/**
+ * The fetcher, over HTTP/1.1. YouTube's watch page fails over HTTP/2 in the
+ * Supabase edge runtime (Deno 2.1: "http2 error: stream error detected", on
+ * every try), while HTTP/1.1 reads the same page, and the page is where the
+ * description and the length are. A test's own fetcher is left alone.
+ */
+function overHttp1(fetcher: Fetcher): Fetcher {
+  if (fetcher !== globalThis.fetch) return fetcher
+  const make = (Deno as unknown as { createHttpClient?: HttpClientMaker }).createHttpClient
+  http1Client ??= make ? make({ http2: false }) : null
+  const client = http1Client
+  if (!client) return fetcher
+  return ((input: string | URL | Request, init?: RequestInit) =>
+    fetcher(input, { ...init, client } as RequestInit)) as Fetcher
+}
+
 async function readYouTube(link: VideoLink, fetcher: Fetcher): Promise<FetchedPost | null> {
   const post = base(link)
   // oEmbed for the title, the channel and the cover: the documented route, and
@@ -341,10 +419,16 @@ async function readYouTube(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
   }
   // The description, which oEmbed leaves out and which is where a cooking
   // channel writes its ingredients, is in the watch page's player response.
-  const watch = await page(link.canonicalUrl, { 'user-agent': BROWSER_UA }, fetcher).catch(
-    () => null,
-  )
+  const watch = await page(
+    link.canonicalUrl,
+    { 'user-agent': BROWSER_UA },
+    overHttp1(fetcher),
+  ).catch((error) => {
+    console.warn('[video-post] YouTube watch page not read:', String(error).slice(0, 160))
+    return null
+  })
   if (watch) {
+    post.durationSeconds = seconds(watch.text.match(/"lengthSeconds":"(\d+)"/)?.[1])
     const description = watch.text.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/)?.[1]
     if (description) {
       try {
@@ -383,7 +467,10 @@ async function readX(link: VideoLink, fetcher: Fetcher): Promise<FetchedPost | n
     user?: { screen_name?: string; name?: string }
     mediaDetails?: Array<{
       media_url_https?: string
-      video_info?: { variants?: Array<{ content_type?: string; url?: string; bitrate?: number }> }
+      video_info?: {
+        duration_millis?: number
+        variants?: Array<{ content_type?: string; url?: string; bitrate?: number }>
+      }
     }>
   }
   try {
@@ -403,6 +490,8 @@ async function readX(link: VideoLink, fetcher: Fetcher): Promise<FetchedPost | n
   post.caption = t.text.replace(/\s*https:\/\/t\.co\/\w+\s*$/, '').trim() || null
   const media = t.mediaDetails?.find((m) => m.video_info) ?? t.mediaDetails?.[0]
   post.coverUrl = httpsOrNull(media?.media_url_https)
+  const millis = seconds(media?.video_info?.duration_millis)
+  post.durationSeconds = millis === null ? null : millis / 1000
   // The smallest mp4 is plenty for reading a recipe, and the cheapest to send.
   const mp4 = (media?.video_info?.variants ?? [])
     .filter((v) => v.content_type === 'video/mp4' && v.url)

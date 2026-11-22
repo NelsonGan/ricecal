@@ -774,6 +774,7 @@ export function useVideoImportQuota() {
  *   unsupported_link   not a post on a platform this reads
  *   unreadable         the platform would not show the post to us
  *   not_recipe         the video is not a recipe (cached, so asking again is free)
+ *   too_long           past the three minutes a short-form video runs
  *   failed             the model or the database fell over; try again
  *   busy               the hourly ceiling on uncached videos
  *   offline            the request never arrived
@@ -782,6 +783,7 @@ export type VideoImportFailure =
   | 'unsupported_link'
   | 'unreadable'
   | 'not_recipe'
+  | 'too_long'
   | 'failed'
   | 'busy'
   | 'offline'
@@ -819,6 +821,7 @@ const IMPORT_FAILURES = new Set<VideoImportFailure>([
   'unsupported_link',
   'unreadable',
   'not_recipe',
+  'too_long',
   'failed',
   'busy',
 ])

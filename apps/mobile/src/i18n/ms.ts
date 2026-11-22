@@ -1656,6 +1656,10 @@ export const ms = {
           title: 'Banyaknya resipi',
           body: 'Anda sudah mengimport video sebanyak yang boleh bagi satu akaun bulan ini. Boleh lagi bulan depan.',
         },
+        too_long: {
+          title: 'Video terlalu panjang',
+          body: 'Hanya video sehingga 3 minit boleh diimport.',
+        },
         limit: {
           title: 'Tiada import lagi bulan ini',
           body_one: 'Akaun percuma mengimport {{count}} video sebulan. Pro tiada had.',

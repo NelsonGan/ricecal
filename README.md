@@ -3247,7 +3247,7 @@ datacenter may be refused where this was not, so watch `unreadable` in
 | platform | caption | video | how |
 |---|---|---|---|
 | TikTok | yes | yes, and the spoken transcript | the page's rehydration JSON; the file is signed to that page's cookies, and the smallest H.264 copy that fits is taken (`smallestTikTokVideo`), since a two-minute reel's best copy is over the 18 MB the model is sent |
-| YouTube | yes | by link | oEmbed and the watch page; the video model fetches YouTube itself |
+| YouTube | yes | by link | oEmbed and the watch page, which also gives the length; the video model fetches YouTube itself |
 | X | yes | yes | X's own embed endpoint (`cdn.syndication.twimg.com`) |
 | Facebook | yes | yes | the page as a browser asks for it |
 | Instagram, Threads | yes | no | link-preview meta tags (`facebookexternalhit`) |
@@ -3263,17 +3263,33 @@ are followed by hand through the platforms' own hosts only; t.co answers a
 browser with a 200 page and a meta refresh rather than a 301, so that is read
 too (`metaRefresh`).
 
-**Two models, and which one depends on what could be fetched.** With a video
-file (or a YouTube link), `google/gemini-3.8-flash` watches it with its sound,
-because most recipe reels say their amounts out loud or put them on screen.
-Claude does not take video, so this route is billed to OpenRouter credits;
-`OPENROUTER_VIDEO_MODEL` changes it and `off` sends everything down the caption
-route without a deploy. Gemini 3.8 refuses `reasoning: { enabled: false }`
-with a 400, so its route sends `{ effort: 'low' }` and a 12,000 token ceiling.
-Its long answers now and then carry a key with a quote wrong, so an answer that
-will not parse is asked for once more before giving up on the video. Any other
-failure there falls back to the ordinary Haiku-then-Qwen chain with the
-caption, the transcript, the linked recipe and the cover image. Both answer one
+**Short-form only.** A video past three minutes (`MAX_VIDEO_SECONDS`, a YouTube
+Short's own ceiling) is refused with `too_long` and nothing is cached, because
+a video model's bill grows with every second it watches. TikTok, X and YouTube
+say the length on the page, so a long one is refused before anything is
+downloaded; a downloaded file is checked again by its own MP4 header
+(`mp4Seconds`), the one length Facebook and Instagram give away. A YouTube
+video whose page did not say its length is not watched at all: the model
+fetches the link itself, and nothing would cap what it watched.
+
+**The models, and which one depends on what could be fetched.** Most recipe
+reels say their amounts out loud or put them on screen, so where the video can
+be had a video model watches it with its sound. Claude does not take video or
+audio, so these routes are billed to OpenRouter credits. A downloaded file goes
+to `meta/muse-ember`, then `xiaomi/mimo-v2.6-flash` if Muse fails; a YouTube
+link to `google/gemini-3.8-flash`, the only one of the three that fetches
+YouTube itself. Measured on seven real posts with their caption and transcript
+taken away, so only watching and listening could answer: Muse named 95% of the
+creators' key ingredients in 9 s for about $0.002 a video, Gemini 87% for
+$0.010, MiMo 62% (it hears the speech, then writes a generic recipe) in up to
+34 s. Each model is a secret (`OPENROUTER_VIDEO_MODEL`,
+`OPENROUTER_VIDEO_FALLBACK_MODEL`, `OPENROUTER_VIDEO_LINK_MODEL`), and `off`
+takes one out without a deploy. All three get `reasoning: { effort: 'low' }`
+(Gemini refuses `{ enabled: false }` with a 400) and a 12,000 token ceiling.
+Muse gets 30 s, which it never came near, so a stall still leaves MiMo its turn.
+Gemini, alone on its route, is asked once more for an answer that will not
+parse. Any other failure falls back to the ordinary Haiku-then-Qwen chain with
+the caption, the transcript, the linked recipe and the cover image. Both answer one
 prompt (`import-video-recipe`, hosted in PostHog like the rest), which reuses
 the describe path's `RECIPE_SHAPE` and `RECIPE_STEPS` and adds four things: is
 this a recipe at all (a "link in bio" post IS one; a restaurant review, a
@@ -7942,7 +7958,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `video_import`, `new_routine`, `new_group`, `group_icon`, `photo_retention`, `trend_range`, `workout_range`, `review`, `nudge_streak`, `nudge_goal` | Refused capability or milestone offer; trial expiration is a paywall screen value, not a feature. `nudge` (the two-day standing offer) appears only in data from app versions before the milestone offers; `suggest` only from versions released before "what to eat next" was removed |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
-| `outcome` / `ImportOutcome` | `imported`, `existing`, `limit_reached`, `unsupported_link`, `unreadable`, `not_recipe`, `failed`, `busy`, `offline` | `data/recipes.ts` (`Recipe Imported`); `imported` and `existing` mean the server wrote a recipe to the shelf, the rest are its refusal codes, and `offline` is a request with no answer |
+| `outcome` / `ImportOutcome` | `imported`, `existing`, `limit_reached`, `unsupported_link`, `unreadable`, `not_recipe`, `too_long`, `failed`, `busy`, `offline` | `data/recipes.ts` (`Recipe Imported`); `imported` and `existing` mean the server wrote a recipe to the shelf, the rest are its refusal codes, and `offline` is a request with no answer |
 | `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder category only |
 | `plan_direction` | `lose`, `gain`, `maintain` | Locally derived; a missing target or absolute target/current weight difference below 0.5 kg means maintain. Body values never leave the app through analytics |
 | `activity_level` | `sedentary`, `light`, `onFeet`, `veryActive` | Client vocabulary; normalized from database spellings |

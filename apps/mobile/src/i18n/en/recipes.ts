@@ -118,6 +118,10 @@ export const recipes = {
         title: 'That is a lot of recipes',
         body: 'You have imported the most videos one account can this month. More next month.',
       },
+      too_long: {
+        title: 'Video too long',
+        body: 'Only videos up to 3 minutes can be imported.',
+      },
       limit: {
         title: 'No imports left this month',
         body_one: 'A free account imports {{count}} video a month. Pro has no limit.',

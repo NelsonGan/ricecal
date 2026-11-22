@@ -467,3 +467,214 @@ Deno.test('a long TikTok is sent as its smallest copy that fits, H.264 first', a
   )
   eq(smallestTikTokVideo({ video: {} }), null, 'no variants, no answer')
 })
+
+/** An MP4's boxes, written out: `[type, contents]` pairs, nested by array. */
+function mp4(boxes: Array<[string, Uint8Array | Array<[string, Uint8Array]>]>): Uint8Array {
+  const parts = boxes.map(([type, body]) => {
+    const inner = body instanceof Uint8Array ? body : mp4(body)
+    const out = new Uint8Array(8 + inner.length)
+    new DataView(out.buffer).setUint32(0, out.length)
+    out.set(new TextEncoder().encode(type), 4)
+    out.set(inner, 8)
+    return out
+  })
+  const all = new Uint8Array(parts.reduce((n, p) => n + p.length, 0))
+  let at = 0
+  for (const p of parts) {
+    all.set(p, at)
+    at += p.length
+  }
+  return all
+}
+
+function mvhd(version: 0 | 1, timescale: number, duration: number): Uint8Array {
+  const out = new Uint8Array(version === 1 ? 32 : 20)
+  const view = new DataView(out.buffer)
+  out[0] = version
+  if (version === 1) {
+    view.setUint32(20, timescale)
+    view.setBigUint64(24, BigInt(duration))
+  } else {
+    view.setUint32(12, timescale)
+    view.setUint32(16, duration)
+  }
+  return out
+}
+
+Deno.test('an MP4 says how long it runs, wherever its header sits', async () => {
+  const { mp4Seconds } = await import('./video-post.ts')
+  const ftyp: [string, Uint8Array] = ['ftyp', new TextEncoder().encode('isom')]
+  eq(mp4Seconds(mp4([ftyp, ['moov', [['mvhd', mvhd(0, 1000, 45_500)]]]])), 45.5, 'version 0')
+  eq(mp4Seconds(mp4([ftyp, ['moov', [['mvhd', mvhd(1, 90_000, 90_000 * 600)]]]])), 600, 'version 1')
+  // Not fast-started: the header after the media, and media bytes that
+  // happen to spell the header's name must not be read as it.
+  const media = new TextEncoder().encode('....mvhd\u0000\u0000\u0000\u0000junkjunkjunkjunk')
+  eq(
+    mp4Seconds(
+      mp4([
+        ftyp,
+        ['mdat', media],
+        [
+          'moov',
+          [
+            ['trak', new Uint8Array(4)],
+            ['mvhd', mvhd(0, 600, 600 * 30)],
+          ],
+        ],
+      ]),
+    ),
+    30,
+    'moov at the end, past an mdat naming mvhd',
+  )
+  eq(mp4Seconds(mp4([ftyp, ['mdat', media]])), null, 'no movie header')
+  eq(mp4Seconds(new TextEncoder().encode('<html>not a video</html>')), null, 'not an MP4')
+  eq(mp4Seconds(mp4([ftyp, ['moov', [['mvhd', mvhd(0, 0, 100)]]]])), null, 'no timescale')
+  eq(mp4Seconds(mp4([ftyp, ['moov', [['mvhd', new Uint8Array(6)]]]])), null, 'a cut-off header')
+})
+
+/**
+ * `importVideoRecipe` against a stand-in OpenRouter: each request's model is
+ * written down, and `answer` says what that model replies.
+ */
+async function watchWith(
+  media: { kind: 'video'; url: string },
+  answer: (model: string, nth: number) => Response,
+) {
+  const saved = {
+    fetch: globalThis.fetch,
+    mock: Deno.env.get('MOCK_AI'),
+    key: Deno.env.get('OPENROUTER_API_KEY'),
+  }
+  Deno.env.set('MOCK_AI', 'false')
+  Deno.env.set('OPENROUTER_API_KEY', 'test')
+  const asked: string[] = []
+  globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+    const model = JSON.parse(String(init?.body)).model as string
+    asked.push(model)
+    return answer(model, asked.filter((m) => m === model).length)
+  }) as typeof fetch
+  try {
+    const post = {
+      platform: 'tiktok' as const,
+      author: '@cook',
+      title: null,
+      caption: 'Laksa',
+      transcript: null,
+      linkedRecipe: null,
+    }
+    const { analysedFrom } = await importVideoRecipe(
+      post,
+      media,
+      { kind: 'none' },
+      undefined,
+      createMeter(),
+    )
+    return { asked, analysedFrom }
+  } finally {
+    globalThis.fetch = saved.fetch
+    for (const [key, value] of [
+      ['MOCK_AI', saved.mock],
+      ['OPENROUTER_API_KEY', saved.key],
+    ] as const) {
+      if (value === undefined) Deno.env.delete(key)
+      else Deno.env.set(key, value)
+    }
+  }
+}
+
+const laksa = () =>
+  Response.json({
+    choices: [
+      {
+        message: {
+          content: JSON.stringify({
+            is_recipe: true,
+            name: 'Laksa',
+            ingredients: [{ name: 'Rice noodles', amount: 200, unit: 'g', kcal: 220 }],
+          }),
+        },
+        finish_reason: 'stop',
+      },
+    ],
+  })
+const refused = () => new Response('{"error":"no"}', { status: 400 })
+const garbled = () =>
+  Response.json({ choices: [{ message: { content: '{"is_recipe": tru' }, finish_reason: 'stop' }] })
+
+Deno.test('a video file goes to Muse Ember, then MiMo, then the caption', async () => {
+  const file = { kind: 'video' as const, url: 'data:video/mp4;base64,AAAA' }
+  const first = await watchWith(file, () => laksa())
+  eq(first.asked.join(), 'meta/muse-ember', 'Muse answers alone')
+  eq(first.analysedFrom, 'video', 'from the video')
+
+  const second = await watchWith(file, (m) => (m === 'meta/muse-ember' ? refused() : laksa()))
+  eq(second.asked.join(), 'meta/muse-ember,xiaomi/mimo-v2.6-flash', 'MiMo after Muse')
+  eq(second.analysedFrom, 'video', 'still from the video')
+
+  const neither = await watchWith(file, (m) => (m.startsWith('anthropic/') ? laksa() : garbled()))
+  eq(neither.asked.slice(0, 2).join(), 'meta/muse-ember,xiaomi/mimo-v2.6-flash', 'each asked once')
+  eq(neither.asked.length, 3, 'then one caption call, no second go at either')
+  eq(neither.analysedFrom, 'caption', 'the caption answers')
+})
+
+Deno.test('a YouTube link goes to Gemini, asked again only for an answer that would not parse', async () => {
+  const link = { kind: 'video' as const, url: 'https://www.youtube.com/watch?v=3s9njjK_SdY' }
+  const again = await watchWith(link, (m, nth) =>
+    m.startsWith('google/') && nth === 1 ? garbled() : laksa(),
+  )
+  eq(again.asked.join(), 'google/gemini-3.8-flash,google/gemini-3.8-flash', 'twice')
+  eq(again.analysedFrom, 'video', 'the second answer is used')
+
+  const down = await watchWith(link, (m) => (m.startsWith('google/') ? refused() : laksa()))
+  eq(down.asked[0], 'google/gemini-3.8-flash', 'Gemini first')
+  eq(down.asked.filter((m) => m.startsWith('google/')).length, 1, 'an error is not asked again')
+  eq(down.analysedFrom, 'caption', 'the caption answers')
+})
+
+Deno.test('X and YouTube pages say how long their video runs', async () => {
+  const { fetchPost } = await import('./video-post.ts')
+  const fake = (pages: Record<string, string>) =>
+    (async (input: string | URL | Request) => {
+      const url = String(input instanceof Request ? input.url : input)
+      const hit = Object.entries(pages).find(([prefix]) => url.startsWith(prefix))
+      return hit ? new Response(hit[1]) : new Response('', { status: 404 })
+    }) as typeof fetch
+
+  const x = await fetchPost(
+    video('https://x.com/minimalistbaker/status/1834623580987916752'),
+    fake({
+      'https://cdn.syndication.twimg.com/': JSON.stringify({
+        text: 'Muffins',
+        user: { screen_name: 'minimalistbaker' },
+        mediaDetails: [
+          {
+            video_info: {
+              duration_millis: 20666,
+              variants: [{ content_type: 'video/mp4', url: 'https://video.twimg.com/a.mp4' }],
+            },
+          },
+        ],
+      }),
+    }),
+  )
+  eq(x?.durationSeconds, 20.666, 'X, in milliseconds')
+
+  const yt = await fetchPost(
+    video('https://www.youtube.com/shorts/3s9njjK_SdY'),
+    fake({
+      'https://www.youtube.com/oembed': JSON.stringify({
+        title: 'Pesto gnocchi',
+        author_name: 'Cook',
+      }),
+      'https://www.youtube.com/shorts/':
+        '<script>{"lengthSeconds":"45","shortDescription":"Gnocchi"}</script>',
+    }),
+  )
+  eq(yt?.durationSeconds, 45, 'YouTube, from the page with the description')
+
+  const quiet = await fetchPost(
+    video('https://www.youtube.com/shorts/3s9njjK_SdY'),
+    fake({ 'https://www.youtube.com/oembed': JSON.stringify({ title: 'Pesto gnocchi' }) }),
+  )
+  eq(quiet?.durationSeconds, null, 'no watch page, no length')
+})

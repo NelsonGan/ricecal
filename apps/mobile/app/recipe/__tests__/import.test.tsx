@@ -100,6 +100,18 @@ it('says a video is not a recipe and offers another link', async () => {
   expect(mockReplace).not.toHaveBeenCalled()
 })
 
+it('says a long video is too long and offers another link', async () => {
+  const { VideoImportError } = jest.requireMock('@/data') as {
+    VideoImportError: new (code: string) => Error
+  }
+  mockImport.mockRejectedValue(new VideoImportError('too_long'))
+  await renderScreen()
+
+  expect(await screen.findByText('Video too long')).toBeTruthy()
+  expect(screen.getByText('Only videos up to 3 minutes can be imported.')).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Use another link' })).toBeTruthy()
+})
+
 it('does not send anything when the month is spent on a free account', async () => {
   mockQuota.current = { used: 5, limit: 5, remaining: 0, entitled: false }
   await renderScreen()

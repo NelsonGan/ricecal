@@ -263,6 +263,7 @@ function StageRow({ label, state }: { label: string; state: 'done' | 'active' | 
 
 const FAILURE_ICONS: Record<Failure, IconProps> = {
   not_recipe: { set: 'food', name: 'cooking-pot' },
+  too_long: { set: 'system', name: 'video' },
   proLimit: { set: 'system', name: 'calendar' },
   unreadable: { set: 'ui', name: 'unlink' },
   unsupported_link: { set: 'ui', name: 'unlink' },
