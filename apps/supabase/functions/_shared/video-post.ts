@@ -12,7 +12,7 @@
 //   Facebook    yes      yes    yes            the page, as a browser asks
 //   Instagram   yes      yes    no             link-preview meta tags, /media
 //   Threads     yes      card   no             link-preview meta tags
-//   Rednote     rarely   rarely no             blocked for servers outside China
+//   Rednote     yes      yes    yes            the note page's state, as a browser asks
 //
 // Most Instagram and Threads posts keep the recipe out of the caption ("link
 // in bio"), so a recipe page the caption DOES link to is read too
@@ -70,7 +70,7 @@ async function page(
   url: string,
   headers: Record<string, string>,
   fetcher: Fetcher,
-): Promise<{ text: string; cookies: string } | null> {
+): Promise<{ text: string; cookies: string; url: string } | null> {
   const res = await fetcher(url, {
     headers: { 'accept-language': 'en', accept: 'text/html,application/json', ...headers },
     redirect: 'follow',
@@ -80,13 +80,36 @@ async function page(
     await res.body?.cancel()
     return null
   }
-  const bytes = await readBoundedBytes(res.body, MAX_PAGE_BYTES)
+  let bytes = await readBoundedBytes(res.body, MAX_PAGE_BYTES)
+  // Deno's fetch decodes gzip and br but hands a deflate body over as it
+  // came, and the Rednote reader has to offer deflate (`BROWSER_ENCODING`).
+  if (/\bdeflate\b/i.test(res.headers.get('content-encoding') ?? '')) bytes = await inflate(bytes)
   // `getSetCookie` is the only way to read more than one Set-Cookie header.
   const cookies = (res.headers.getSetCookie?.() ?? [])
     .map((c) => c.split(';')[0])
     .filter(Boolean)
     .join('; ')
-  return { text: new TextDecoder().decode(bytes), cookies }
+  // Where the redirects ended. A stub response (a test's) has no url of its own.
+  return { text: new TextDecoder().decode(bytes), cookies, url: res.url || url }
+}
+
+/**
+ * A deflate body decoded, bounded like any page. HTTP's "deflate" is meant to
+ * be zlib-wrapped and is sometimes sent raw, so both are tried; bytes that are
+ * neither (a runtime that already decoded them) are kept as they are.
+ */
+async function inflate(bytes: Uint8Array): Promise<Uint8Array> {
+  for (const format of ['deflate', 'deflate-raw'] as const) {
+    try {
+      const stream = new Blob([new Uint8Array(bytes)])
+        .stream()
+        .pipeThrough(new DecompressionStream(format))
+      return await readBoundedBytes(stream, MAX_PAGE_BYTES)
+    } catch {
+      // Not this format, or too big once decoded: try the next.
+    }
+  }
+  return bytes
 }
 
 /** The page's post, or null when the platform would not say. */
@@ -601,38 +624,120 @@ async function readFacebook(link: VideoLink, fetcher: Fetcher): Promise<FetchedP
 
 // -- Rednote ------------------------------------------------------------------
 
+/**
+ * What every browser sends. Rednote sends a client whose `accept-encoding`
+ * lacks `deflate` to its login page, and Deno's own default is `gzip, br`:
+ * without this every note read as "Log in - rednote", which the model then
+ * judged not a recipe, and that verdict was cached for the video.
+ */
+const BROWSER_ENCODING = 'gzip, deflate, br'
+
 async function readRednote(link: VideoLink, fetcher: Fetcher): Promise<FetchedPost | null> {
-  const got = await page(link.fetchUrl, { 'user-agent': BROWSER_UA }, fetcher)
+  const got = await page(
+    link.fetchUrl,
+    { 'user-agent': BROWSER_UA, 'accept-encoding': BROWSER_ENCODING },
+    fetcher,
+  )
   if (!got) return null
+  // The login wall and the 404 page answer 200 at another path, with the note
+  // only in a `redirectPath` query. Anything that is not the note is unread,
+  // never a post for the model to judge.
+  if (!new URL(got.url).pathname.toLowerCase().includes(link.id)) return null
   const post = base(link)
   // The note's own state, when the page is willing to hand it over.
-  const state = got.text.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\})\s*<\/script>/)?.[1]
-  if (state) {
-    try {
-      const data = JSON.parse(state.replace(/\bundefined\b/g, 'null'))
-      const note = data?.note?.noteDetailMap?.[link.id]?.note
-      if (note) {
-        post.title = typeof note.title === 'string' ? note.title.trim() || null : null
-        post.caption = typeof note.desc === 'string' ? note.desc.trim() || null : null
-        post.author = typeof note.user?.nickname === 'string' ? note.user.nickname : null
-        post.coverUrl = httpsOrNull(note.imageList?.[0]?.urlDefault)
-        const stream = note.video?.media?.stream
-        const variant = stream?.h264?.[0] ?? stream?.h265?.[0]
-        post.videoUrl = httpsOrNull(variant?.masterUrl)
-      }
-    } catch {
-      // A state blob that will not parse is the same as none.
-    }
+  const note = rednoteNote(got.text, link.id)
+  if (note) {
+    post.title = typeof note.title === 'string' ? note.title.trim() || null : null
+    // `#tofu[话题]#` is how a hashtag is stored; the caption reads `#tofu`.
+    post.caption =
+      typeof note.desc === 'string' ? note.desc.replace(/\[话题\]#/g, '').trim() || null : null
+    post.author = typeof note.user?.nickname === 'string' ? note.user.nickname : null
+    // The state names its CDN files over http; the same files answer https.
+    post.coverUrl = httpsOrNull(upgrade(note.imageList?.[0]?.urlDefault))
+    const stream = note.video?.media?.stream
+    const variant = stream?.h264?.[0] ?? stream?.h265?.[0]
+    post.videoUrl = httpsOrNull(upgrade(variant?.masterUrl))
+    post.durationSeconds = seconds(note.video?.capa?.duration)
   }
   if (!post.caption && !post.title) {
+    // A note's tags title it `<note> - rednote`. A page that is not a note
+    // (taken down, a security check) is titled with the site's own name and
+    // described with its slogan: unread, or its "not a recipe" is cached.
     const tags = metaTags(got.text)
-    post.title = tags['og:title'] ?? null
+    const title = tags['og:title']?.replace(/\s*-\s*(?:rednote|小红书)\s*$/i, '').trim()
+    if (!title || /小红书|rednote|xiaohongshu/i.test(title)) return null
+    post.title = title
     post.caption = tags['og:description'] ?? tags.description ?? null
-    post.coverUrl = httpsOrNull(tags['og:image'])
+    // The page names two `og:image`s, the site's logo (protocol-relative)
+    // first, and `metaTags` keeps the first of a name: take the first that
+    // is a picture this can fetch.
+    post.coverUrl =
+      Array.from(got.text.matchAll(/<meta\s[^>]*og:image"[^>]*content\s*=\s*"([^"]+)"/gi), (m) =>
+        httpsOrNull(upgrade(decodeEntities(m[1]))),
+      ).find(Boolean) ?? null
   }
-  // Rednote's error and login pages carry its own generic title.
-  if (!post.caption && (!post.title || /小红书|rednote/i.test(post.title))) return null
   return post
+}
+
+/**
+ * The note in the page's `window.__INITIAL_STATE__`, which is a JavaScript
+ * literal rather than JSON: it holds `undefined` and `new Set([])`, and either
+ * one fails `JSON.parse` for the whole blob.
+ */
+function rednoteNote(html: string, id: string): RednoteNote | null {
+  const state = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\})\s*<\/script>/)?.[1]
+  if (!state) return null
+  try {
+    const data = JSON.parse(jsLiteralToJson(state))
+    return data?.note?.noteDetailMap?.[id.toLowerCase()]?.note ?? null
+  } catch (error) {
+    // A state blob that will not parse is the same as none, but it is said:
+    // a new literal in Rednote's page would otherwise look like a quiet day.
+    console.warn('[video-post] Rednote state did not parse:', String(error).slice(0, 200))
+    return null
+  }
+}
+
+/**
+ * A JavaScript object literal as JSON, for the few things that are not JSON:
+ * `undefined`, `NaN` and `Infinity` become `null`, and `new Set(x)` and
+ * `new Map(x)` become `x` (an array). Strings are copied untouched, so a
+ * caption that says "undefined" or "new Set(" keeps saying it.
+ */
+export function jsLiteralToJson(source: string): string {
+  const token =
+    /"(?:[^"\\]|\\.)*"|\bundefined\b|-?\bNaN\b|-?\bInfinity\b|\bnew\s+(?:Set|Map)\s*\(|[()]/g
+  // One entry per open bracket: whether its closing one is dropped with it.
+  const opened: boolean[] = []
+  return source.replace(token, (match) => {
+    if (match.startsWith('"')) return match
+    if (match === '(') {
+      opened.push(false)
+      return match
+    }
+    if (match === ')') return opened.pop() ? '' : match
+    if (match.startsWith('new')) {
+      opened.push(true)
+      return ''
+    }
+    return 'null'
+  })
+}
+
+/** The parts of a note this reads. Every field is the page's, so none is trusted. */
+type RednoteNote = {
+  title?: unknown
+  desc?: unknown
+  user?: { nickname?: unknown }
+  imageList?: Array<{ urlDefault?: unknown }>
+  video?: {
+    capa?: { duration?: unknown }
+    media?: { stream?: Record<string, Array<{ masterUrl?: unknown }> | undefined> }
+  }
+}
+
+function upgrade(value: unknown): unknown {
+  return typeof value === 'string' ? value.replace(/^http:\/\//i, 'https://') : value
 }
 
 // -- A recipe page the caption links to ----------------------------------------

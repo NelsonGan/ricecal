@@ -202,7 +202,7 @@ export function parseVideoLink(text: string): VideoLink | ShortLink | null {
 
   if (host === 'xiaohongshu.com' || host === 'rednote.com') {
     // `/explore/<id>`, `/discovery/item/<id>`, `/user/profile/<user>/<id>`.
-    const id = parts.find((p) => /^[0-9a-f]{24}$/i.test(p))
+    const id = parts.find((p) => /^[0-9a-f]{24}$/i.test(p))?.toLowerCase()
     if (!id) return null
     const canonicalUrl = `https://www.xiaohongshu.com/explore/${id}`
     // A note page answers only with the share token it was opened with, and
@@ -211,7 +211,7 @@ export function parseVideoLink(text: string): VideoLink | ShortLink | null {
     const fetchUrl = token
       ? `${canonicalUrl}?xsec_token=${encodeURIComponent(token)}&xsec_source=pc_share`
       : canonicalUrl
-    return { platform: 'rednote', id: id.toLowerCase(), canonicalUrl, fetchUrl }
+    return { platform: 'rednote', id, canonicalUrl, fetchUrl }
   }
 
   return null

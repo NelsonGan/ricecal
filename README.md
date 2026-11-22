@@ -3235,7 +3235,7 @@ datacenter may be refused where this was not, so watch `unreadable` in
 | X | yes | yes | X's own embed endpoint (`cdn.syndication.twimg.com`) |
 | Facebook | yes | yes | the page as a browser asks for it |
 | Instagram, Threads | yes | no | link-preview meta tags (`facebookexternalhit`); Instagram's cover from `/p/<code>/media/?size=l` |
-| Rednote | rarely | no | blocked for servers outside China; answers `unreadable` |
+| Rednote | yes | yes | the note page's `__INITIAL_STATE__` (a JavaScript literal with `undefined` and `new Set([])` in it, so not JSON as it stands), opened with the share link's `xsec_token`. Rednote sends any client whose `accept-encoding` lacks `deflate` to its login page, and Deno's default is `gzip, br`, so the reader sends a browser's. A page that ended anywhere but the note (login, 404) is `unreadable`, never a post for the model to judge, or its "not a recipe" is cached for the video |
 
 Instagram and Threads creators mostly keep the recipe out of the caption ("link
 in bio"), so a recipe page the caption DOES link to is read as well: its
