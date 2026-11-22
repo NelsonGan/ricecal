@@ -400,8 +400,8 @@ export type Events = {
    */
   'Recipe Imported': { platform: string; outcome: ImportOutcome }
   /**
-   * `pending` is not a third verdict, it is the review having failed to run,
-   * which leaves the recipe public and invisible.
+   * Publishing lists a recipe immediately (`approved`). The union keeps
+   * `rejected` and `pending` to match the existing column enum and history.
    */
   'Recipe Published': { outcome: 'approved' | 'rejected' | 'pending' }
   'Recipe Copied': NoProps

@@ -52,6 +52,7 @@ const FIRST_PAINT = COLUMNS * 8
 export type IconPickerProps = {
   visible: boolean
   onClose: () => void
+  onDismiss?: () => void
   /** What is on the row now, so the current choice reads as chosen. */
   selected?: IconRef
   onSelect: (icon: IconRef) => void
@@ -82,7 +83,14 @@ type Tab = 'search' | 'camera'
  * The drawings are searchable rather than a grid: two hundred choices is more
  * than anyone scrolls through, and the names are dish names.
  */
-export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }: IconPickerProps) {
+export function IconPicker({
+  visible,
+  onClose,
+  onDismiss,
+  selected,
+  onSelect,
+  onPickPhoto,
+}: IconPickerProps) {
   const { t } = useTranslation(['logging', 'common'])
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<Tab>('search')
@@ -123,6 +131,7 @@ export function IconPicker({ visible, onClose, selected, onSelect, onPickPhoto }
     <Sheet
       visible={visible}
       onClose={onClose}
+      onDismiss={onDismiss}
       closeLabel={t('common:action.close')}
       title={t('logging:icon.title')}
       // No description. It read "Just for this entry. A photo of the real plate

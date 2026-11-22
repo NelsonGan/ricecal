@@ -74,14 +74,13 @@ export function LocationCard({
                 key={`${location.latitude},${location.longitude}`}
                 still
                 initialRegion={regionAround(location)}
-              >
-                <maps.Marker
-                  coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-                  tracksViewChanges={false}
-                >
-                  <Icon set="ui" name="location" size={26} />
-                </maps.Marker>
-              </AppMap>
+              />
+              {/* Drawn as an overlay over the centered still map rather than a
+                  native Marker, avoiding Android Google Maps snapshotting an
+                  undecoded image icon into a blank pin. */}
+              <View className="absolute inset-0 items-center justify-center">
+                <Icon set="ui" name="location" size={26} />
+              </View>
             </View>
           ) : (
             <Icon set="ui" name="chevron-right" size={20} tintColor={colors.faint} />

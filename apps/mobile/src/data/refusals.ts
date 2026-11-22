@@ -165,7 +165,7 @@ export type RefusalOptions = {
  * Matched across every user's entry rather than by id: this file has no session
  * to ask, and the cache is cleared on every account change.
  */
-function storeSaysPaid(): boolean {
+export function storeSaysPaid(): boolean {
   return queryClient
     .getQueriesData<StoreEntitlement | null>({ queryKey: keys.storeEntitlementAll() })
     .some(([, value]) => value?.active === true)

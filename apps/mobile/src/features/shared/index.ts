@@ -22,6 +22,7 @@ export {
   ItemRow,
   type ItemRowProps,
   ROW_TILE,
+  ROW_TILE_COMPACT,
 } from './ItemRow'
 export { LanguageAiNote, LanguageHelpButton } from './LanguageHelp'
 export { MacroBars, type MacroBarsProps } from './MacroBars'

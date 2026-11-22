@@ -217,6 +217,11 @@ const CAPTION_RESERVE_MS = 70_000
 /** Less than this and watching the video is not worth starting. */
 const MIN_VIDEO_MS = 15_000
 
+/** Whether enough time remains before `deadline` to bother downloading and watching a video. */
+export function hasVideoTimeLeft(deadline: number, now = Date.now()): boolean {
+  return deadline - now - CAPTION_RESERVE_MS >= MIN_VIDEO_MS
+}
+
 /** Fifteen ingredients with seven fields each, plus the steps and the times. */
 const MAX_TOKENS = 3000
 /** The same answer with room for the video model's reasoning, which it cannot skip. */

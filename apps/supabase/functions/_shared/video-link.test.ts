@@ -884,3 +884,58 @@ Deno.test('each preview reader names a cover worth keeping, and a fallback', asy
   eq(noPage?.coverUrl, 'https://i.ytimg.com/vi/zJi7h-nKngw/hqdefault.jpg', 'no page, as before')
   eq(noPage?.coverFallbackUrl, null, 'and nothing behind it')
 })
+
+Deno.test('parseVideoLink stops before Rednote fullwidth punctuation and checks later URLs', () => {
+  const rednote = parseVideoLink('好吃 http://xhslink.com/a/AbC123，复制本条信息打开小红书')
+  eq(rednote && 'short' in rednote ? rednote.short : null, true, 'stops at fullwidth comma (short)')
+  eq(
+    rednote && 'short' in rednote ? rednote.url : null,
+    'http://xhslink.com/a/AbC123',
+    'stops at fullwidth comma with no space',
+  )
+  eq(rednote?.platform, 'rednote', 'keeps rednote platform')
+  eq(
+    parseVideoLink('See https://example.com/blog and https://youtu.be/zJi7h-nKngw')?.platform,
+    'youtube',
+    'skips unsupported first URL to find supported second URL',
+  )
+  eq(parseVideoLink('https://vm.tiktok.com:8443/ZSabc123/'), null, 'rejects non-default port')
+  eq(
+    parseVideoLink('https://user:pass@www.instagram.com/reel/CnkNjXVsAJv/'),
+    null,
+    'rejects credentials',
+  )
+})
+
+Deno.test('isPrivateAddress blocks IPv6 mapped, SIIT, NAT64, multicast and uncompressed loopback', async () => {
+  const { isPrivateAddress } = await import('./video-post.ts')
+  for (const address of [
+    '0:0:0:0:0:0:0:1',
+    '0:0:0:0:0:0:0:0',
+    '::ffff:7f00:1',
+    '::ffff:a9fe:a9fe',
+    '::ffff:0:169.254.169.254',
+    '64:ff9b::10.0.0.1',
+    '64:ff9b:1::1',
+    'ff02::1',
+    '::169.254.169.254',
+  ]) {
+    eq(isPrivateAddress(address), true, `${address} must be treated as private`)
+  }
+  for (const address of ['2606:2800:220:1:248:1893:25c8:1946', '2001:4860:4860::8888']) {
+    eq(isPrivateAddress(address), false, `${address} is public`)
+  }
+})
+
+Deno.test('respondWithin handles client stream cancel without throwing or leaking timers', async () => {
+  const { respondWithin } = await import('./http.ts')
+  let finish!: (res: Response) => void
+  const work = new Promise<Response>((resolve) => {
+    finish = resolve
+  })
+  const res = await respondWithin(work, 10, 15)
+  eq(res.status, 200, 'streams 200')
+  await res.body?.cancel()
+  finish(Response.json({ ok: true }))
+  await new Promise((r) => setTimeout(r, 40))
+})

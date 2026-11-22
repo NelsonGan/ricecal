@@ -6,6 +6,7 @@ import { Keyboard, type TextInputInstance, View } from 'react-native'
 import {
   type Recipe,
   type RecipeShelf,
+  useEntitlement,
   useRecipeQuota,
   useRecipes,
   useVideoImportQuota,
@@ -50,7 +51,7 @@ const SKELETON_CARDS = ['c1', 'c2', 'c3', 'c4'] as const
  * It used to be "My foods", a row in Settings, and it was a shelf of tiles with a
  * calorie figure under each. People who cook asked for a recipe box, so the tab
  * reads like one: the picture and the time first (the meta line under each
- * card), the plus button opening the three ways to add a recipe in a sheet, and
+ * card), the plus button opening the four ways to add a recipe in a sheet, and
  * the one-tap log still on every card, because logging what you cooked is what
  * the rest of the app is for.
  *
@@ -59,9 +60,10 @@ const SKELETON_CARDS = ['c1', 'c2', 'c3', 'c4'] as const
  * people keep short, and search already narrows it, so it went.
  */
 export default function RecipesTab() {
-  const { t } = useTranslation(['recipes', 'common', 'paywall'])
+  const { t } = useTranslation(['recipes', 'common', 'paywall', 'logging'])
   const router = useRouter()
   const requirePro = useRequirePro()
+  const { entitled: storeEntitled } = useEntitlement()
   const quota = useRecipeQuota()
   const imports = useVideoImportQuota()
   const toast = useToast()
@@ -97,12 +99,12 @@ export default function RecipesTab() {
     next?.()
   }
 
-  const { data: recipes = [], isPending } = useRecipes(shelf, activeQuery)
+  const { data: recipes = [], isPending, isPaused, isError } = useRecipes(shelf, activeQuery)
 
-  // Only while this shelf has never answered. A background refetch
-  // keeps what is on screen, an empty answer included, so logging from a card
-  // does not blink the grid into skeletons and back.
-  const loading = isPending
+  // Only while this shelf has never answered and is actually fetching. Offline
+  // on an uncached shelf leaves the query paused, which shows the offline empty
+  // state rather than infinite skeletons.
+  const loading = isPending && !isPaused
   const searched = activeQuery.trim().length > 0
   // Not while the entitlement is still loading: until it lands every account
   // looks free, and a Pro user saw "0 of 3 free" flash past.
@@ -134,7 +136,7 @@ export default function RecipesTab() {
     // recipes kept, so the kept-recipe ceiling does not stand in front of it.
     if (start === 'video') {
       const left = imports.data
-      if (left && !left.entitled && left.remaining <= 0) {
+      if (left && !storeEntitled && !left.entitled && left.remaining <= 0) {
         openPaywall(toast, { title: proFeatureTitle('video_import'), feature: 'video_import' })
         return
       }
@@ -194,7 +196,8 @@ export default function RecipesTab() {
   }
 
   // Free accounts only: Pro's ceiling is an abuse limit and is never printed.
-  const importsLeft = imports.data && !imports.data.entitled ? imports.data.remaining : undefined
+  const importsLeft =
+    imports.data && !storeEntitled && !imports.data.entitled ? imports.data.remaining : undefined
 
   /**
    * One serving, into today. Not gated, for the reason the detail screen gives:
@@ -281,7 +284,19 @@ export default function RecipesTab() {
       ) : null}
 
       {!loading && recipes.length === 0 ? (
-        searched ? (
+        isPaused ? (
+          <EmptyState
+            title={t('logging:search.offlineTitle')}
+            description={t('logging:search.mineOfflineBody')}
+            icon={{ set: 'ui', name: 'offline' }}
+          />
+        ) : isError ? (
+          <EmptyState
+            title={t('logging:search.errorTitle')}
+            description={t('logging:search.errorBody')}
+            icon={{ set: 'ui', name: 'warning' }}
+          />
+        ) : searched ? (
           <EmptyState
             title={t('recipes:search.none')}
             description={t('recipes:search.noneBody')}
@@ -384,6 +399,7 @@ export default function RecipesTab() {
         }
         closeLabel={t('common:action.close')}
         scrollable={false}
+        behindKeyboard
       >
         <ImportVideoPanel onSubmit={submitVideo} />
       </Sheet>

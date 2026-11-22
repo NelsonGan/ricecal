@@ -116,6 +116,18 @@ test("Apple's places become one-line addresses without the name or the country",
     },
   ])
   assert.equal(addressOf({ formattedAddressLines: 'not a list' }, 'x'), '')
+
+  const deduped = toPlaceResults({
+    results: [
+      { id: 'dup', name: 'First', coordinate: { latitude: 3.1, longitude: 101.6 } },
+      { id: 'dup', name: 'Duplicate', coordinate: { latitude: 3.1, longitude: 101.6 } },
+      { id: 'two', name: 'Second', coordinate: { latitude: 3.2, longitude: 101.7 } },
+    ],
+  })
+  assert.deepEqual(
+    deduped.map((p) => p.id),
+    ['dup', 'two'],
+  )
 })
 
 test('the Maps auth token is a verifiable ES256 JWT for the server API', async () => {

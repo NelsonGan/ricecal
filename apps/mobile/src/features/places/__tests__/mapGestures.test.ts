@@ -15,6 +15,15 @@ describe('scaleFrom', () => {
     expect(SCALE.lngPerPoint).toBeCloseTo(0.0001)
     expect(SCALE.latPerPoint).toBeCloseTo(0.0001)
   })
+
+  it('normalises longitude span across the antimeridian', () => {
+    const across = scaleFrom(
+      { latitude: 10, longitude: 179 },
+      { latitude: 8, longitude: -179 },
+      { width: 200, height: 200 },
+    )
+    expect(across.lngPerPoint).toBeCloseTo(0.01)
+  })
 })
 
 describe('pannedCenter', () => {
@@ -23,8 +32,12 @@ describe('pannedCenter', () => {
     expect(pannedCenter(KL, SCALE, 0, 400).latitude).toBeCloseTo(3.18)
   })
 
-  it('never pans past the poles', () => {
+  it('never pans past the poles and wraps longitude into [-180, 180]', () => {
     expect(pannedCenter({ ...KL, latitude: 84 }, SCALE, 0, 80_000).latitude).toBe(85)
+    expect(
+      pannedCenter({ latitude: 0, longitude: 179 }, { lngPerPoint: 1, latPerPoint: 1 }, -2, 0)
+        .longitude,
+    ).toBeCloseTo(-179)
   })
 })
 

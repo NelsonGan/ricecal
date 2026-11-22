@@ -55,17 +55,24 @@ function isPlaceResult(value: unknown): value is PlaceResult {
   const place = value as Record<string, unknown>
   return (
     typeof place.name === 'string' &&
+    place.name.trim().length > 0 &&
     typeof place.latitude === 'number' &&
     typeof place.longitude === 'number' &&
     Number.isFinite(place.latitude) &&
-    Number.isFinite(place.longitude)
+    Number.isFinite(place.longitude) &&
+    place.latitude >= -90 &&
+    place.latitude <= 90 &&
+    place.longitude >= -180 &&
+    place.longitude <= 180
   )
 }
 
 async function post(
   path: '/search' | '/reverse' | '/nearby',
   body: object,
+  signal?: AbortSignal,
 ): Promise<PlaceResult[]> {
+  if (signal?.aborted) throw new PlaceSearchError('network', 'aborted')
   let token: string | undefined
   try {
     token = (await supabase.auth.getSession()).data.session?.access_token
@@ -74,16 +81,25 @@ async function post(
   }
   if (!token) throw new PlaceSearchError('network', 'no session')
 
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  const forwardAbort = () => controller.abort()
+  signal?.addEventListener('abort', forwardAbort, { once: true })
+  if (signal?.aborted) controller.abort()
+
   let response: Response
   try {
     response = await fetch(`${baseUrl()}${path}`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
+      signal: controller.signal,
     })
   } catch (error) {
     throw new PlaceSearchError('network', error instanceof Error ? error.message : 'network')
+  } finally {
+    clearTimeout(timer)
+    signal?.removeEventListener('abort', forwardAbort)
   }
 
   let payload: { places?: unknown; error?: string } = {}
@@ -114,27 +130,42 @@ export function searchPlaces({
   query,
   near,
   language,
+  signal,
 }: {
   query: string
   /** Ranks places near here first; the Worker rounds it and never stores it. */
   near?: { latitude: number; longitude: number } | null
   language?: string | null
+  signal?: AbortSignal
 }): Promise<PlaceResult[]> {
-  return post('/search', {
-    query: query.trim(),
-    ...(near ? { latitude: near.latitude, longitude: near.longitude } : {}),
-    language: appleLanguage(language),
-  })
+  return post(
+    '/search',
+    {
+      query: query.trim(),
+      ...(near ? { latitude: near.latitude, longitude: near.longitude } : {}),
+      language: appleLanguage(language),
+    },
+    signal,
+  )
 }
 
-type AroundSpot = { latitude: number; longitude: number; language?: string | null }
+type AroundSpot = {
+  latitude: number
+  longitude: number
+  language?: string | null
+  signal?: AbortSignal
+}
 
 function around(path: '/reverse' | '/nearby', spot: AroundSpot): Promise<PlaceResult[]> {
-  return post(path, {
-    latitude: spot.latitude,
-    longitude: spot.longitude,
-    language: appleLanguage(spot.language),
-  })
+  return post(
+    path,
+    {
+      latitude: spot.latitude,
+      longitude: spot.longitude,
+      language: appleLanguage(spot.language),
+    },
+    spot.signal,
+  )
 }
 
 export async function reverseGeocodePlace(spot: AroundSpot): Promise<PlaceResult | null> {

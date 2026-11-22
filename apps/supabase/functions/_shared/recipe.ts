@@ -1,15 +1,9 @@
-// The two model calls recipes make, and their mocks.
+// The recipe model calls (photograph read and text description), and their mocks.
 //
-// Same contract as everything in llm.ts: a shape-checked value or a throw. What
-// differs is what a failure means, and the two calls are opposite cases.
-//
-// Reading a pot out of a photograph is a convenience: it fills a form the user
-// is about to check line by line, so a failed read is a form they fill in
-// themselves.
-//
-// Reviewing a recipe somebody asked to publish is a gate, and a gate that fails
-// open is not a gate. Every failure leaves the recipe at `pending`, invisible in
-// the community tab.
+// Same contract as everything in llm.ts: a shape-checked value or a throw.
+// Reading a pot out of a photograph or a description is a convenience: it fills
+// a form the user is about to check line by line, so a failed read is a form
+// they fill in themselves.
 
 import type { Meter } from './entitlement.ts'
 import { guessIcon, ICON_INSTRUCTION, type IconChoice, resolveIcon } from './icons.ts'
@@ -62,8 +56,12 @@ export const clamp = (value: unknown, lo: number, hi: number, fallback: number):
   return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : fallback
 }
 
-export const text = (value: unknown, max: number): string =>
-  typeof value === 'string' ? value.trim().slice(0, max) : ''
+export const text = (value: unknown, max: number): string => {
+  if (typeof value !== 'string') return ''
+  const trimmed = value.trim()
+  const points = Array.from(trimmed)
+  return points.length <= max ? trimmed : points.slice(0, max).join('')
+}
 
 /**
  * Nothing edible carries more than about 9 kcal a gram, so a figure above it is
@@ -276,7 +274,7 @@ export const RECIPE_SHAPE =
   'Salt and pepper especially: they carry no calories and they are still ' +
   'ingredients, so a dish seasoned with them lists them. Season every savoury ' +
   'dish, and write down what you seasoned it with. ' +
-  'And write down what the dish plainly needs even when nobody mentioned it — the ' +
+  'And write down what the dish plainly needs even when nobody mentioned it: the ' +
   'cooking fat above all, then the aromatics, the spice paste broken into what it ' +
   'is made of, the sauce assembled at the end. A rendang is not beef and coconut ' +
   'milk; it is those plus the chillies, shallots, garlic, lemongrass and galangal ' +

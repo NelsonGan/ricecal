@@ -9,10 +9,9 @@ import type { ReportReason } from './types'
 /**
  * The two things a reader can do about somebody else's cooking.
  *
- * App Review guideline 1.2 asks for four things from an app whose users see each
- * other's writing. The filter before posting is `functions/recipes
- * {action:review}`, the published contact is the help row, and taking something
- * down is `service_role`'s; these two belong to the reader.
+ * App Review guideline 1.2 asks for moderation tools on user-generated content.
+ * The published contact is the help row, taking something down is
+ * `service_role`'s, and these two belong to the reader.
  *
  * Neither write is what makes the recipe disappear. A restrictive read policy on
  * `recipes` does that (see `schemas/24_moderation.sql`), so every screen honours
@@ -49,13 +48,14 @@ export function useReportRecipe() {
         )
       if (error) throw error
     },
-    onSuccess: (_result, { recipeId, reason }) => {
+    onSuccess: (_result, { reason }) => {
       // The reason and nothing else. Which recipe was reported is in Postgres,
       // where it can be acted on; what this answers is whether the four
       // reasons are the right four.
       track('Recipe Reported', { reason })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.recipe(recipeId) })
+      queryClient.invalidateQueries({ queryKey: ['recipe'] })
+      queryClient.invalidateQueries({ queryKey: ['recipe'] })
     },
   })
 }
@@ -91,6 +91,7 @@ export function useBlockAuthor() {
       await queryClient.cancelQueries({ queryKey: keys.social(userId) })
       await queryClient.resetQueries({ queryKey: keys.social(userId) })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
+      queryClient.invalidateQueries({ queryKey: ['recipe'] })
       // A block also hides the author's row, messages and invites. The boards
       // and chats are cleared rather than marked stale, or going back to one
       // drew the blocked person again until its refetch landed.

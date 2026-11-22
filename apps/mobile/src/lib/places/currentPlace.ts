@@ -116,8 +116,9 @@ export async function resolveCurrentPlace({
   const language = currentLanguage()
   const reusable = cached
   if (!fresh && stillGood(reusable, language)) return reusable
-  // Two callers at once (a meal tagged as its page previews the tag) share a fix.
-  const flight = inFlight?.language === language ? inFlight : null
+  // Two callers at once (a meal tagged as its page previews the tag) share a fix,
+  // unless a fresh fix was explicitly requested.
+  const flight = !fresh && inFlight?.language === language ? inFlight : null
   if (flight && (flight.remote || !remote)) return flight.promise
   if (flight) {
     // The preview never asks the Worker. A save that joins it keeps its fix but

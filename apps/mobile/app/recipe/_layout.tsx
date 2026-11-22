@@ -24,7 +24,8 @@ import { Spinner } from '@/ui'
 export default function RecipeLayout() {
   const { session, loading } = useSession()
   const pathname = usePathname()
-  const { url } = useGlobalSearchParams<{ url?: string }>()
+  const { url: rawUrl } = useGlobalSearchParams<{ url?: string | string[] }>()
+  const url = Array.isArray(rawUrl) ? rawUrl[0] : rawUrl
 
   if (loading) {
     return (

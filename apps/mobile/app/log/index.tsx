@@ -334,7 +334,7 @@ function LogSheet() {
       pathname: '/log/search',
       params: { q: search.query, tracked: search.tracked ? '1' : '0', source: 'mine' },
     })
-    router.push('/recipe/edit')
+    router.push({ pathname: '/recipe/edit', params: { date: selectedDate } })
   }
 
   // Takes the snapshot rather than a food, because the three things this sheet

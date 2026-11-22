@@ -85,6 +85,7 @@ jest.mock('@/features/recipes', () => ({
   },
   RecipeSteps: () => null,
   sourceHost: (url: string) => url,
+  splitSteps: jest.requireActual('@/features/recipes/RecipeSteps').splitSteps,
   ShareSheet: () => null,
   useCopyRecipe: () => ({ copy: jest.fn(), busy: false }),
   useRecipeLogDate: (date?: string) => ({ logDate: date ?? '2026-10-20', isToday: !date }),
@@ -129,6 +130,7 @@ it('asks to delete only once the menu has finished closing', async () => {
 
   await user.press(screen.getByText('Delete'))
   await waitFor(() => expect(mockRemove).toHaveBeenCalledWith({ id: 'recipe-1', photoPath: null }))
+  await finishDismissing()
   // Back to the Recipes tab underneath, not a second tab bar replacing this page.
   expect(mockLeave).toHaveBeenCalled()
   expect(mockReplace).not.toHaveBeenCalled()

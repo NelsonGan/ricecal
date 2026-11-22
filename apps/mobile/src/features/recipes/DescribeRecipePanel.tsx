@@ -23,7 +23,7 @@ export type DescribeRecipePanelProps = {
  * beside it, which has to align an icon against a wrapping line.
  */
 export function DescribeRecipePanel({ onSubmit, autoFocus = false }: DescribeRecipePanelProps) {
-  const { t } = useTranslation(['recipes', 'common'])
+  const { t } = useTranslation('recipes')
   const [text, setText] = useState('')
 
   const send = () => {
@@ -36,8 +36,8 @@ export function DescribeRecipePanel({ onSubmit, autoFocus = false }: DescribeRec
       <TextField
         value={text}
         onChangeText={setText}
-        placeholder={t('recipes:new.describePlaceholder')}
-        hint={t('recipes:new.describeHint')}
+        placeholder={t('new.describePlaceholder')}
+        hint={t('new.describeHint')}
         autoFocus={autoFocus}
         multiline
         // The return key inserts a newline in a multiline field, so it cannot
@@ -52,7 +52,7 @@ export function DescribeRecipePanel({ onSubmit, autoFocus = false }: DescribeRec
       />
 
       <Button fullWidth disabled={!text.trim()} onPress={send}>
-        {t('recipes:new.describeAction')}
+        {t('new.describeAction')}
       </Button>
     </View>
   )

@@ -5,7 +5,7 @@ import { track } from '@/lib/analytics'
 import type { MeasureUnit } from '@/lib/measures'
 import { supabase } from '@/lib/supabase'
 import { unwrap, unwrapMaybe, unwrapOne } from './client'
-import { invalidateGroupBoards, keys } from './keys'
+import { keys } from './keys'
 import { displayUnitOf, toIcon, toRecipe, toRecipeIngredient } from './mappers'
 import { removeMealPhoto } from './photos'
 import { refusalFrom, ScanLimitError } from './refusals'
@@ -22,8 +22,8 @@ import type { IconRef, Macros, Recipe, RecipeIngredient, RecipeTag, RecipeUnit }
  * else does, built by `snapshotFromRecipe`.
  *
  * Two writes are RPCs rather than updates, because they touch columns the client
- * has no grant on: publishing may only move a recipe to `pending`, and saving a
- * copy bumps a counter on somebody else's row.
+ * has no grant on: publishing toggles `is_public` directly on the owner's row,
+ * and saving a copy bumps a counter on somebody else's row.
  */
 
 /**
@@ -406,22 +406,18 @@ export function useSaveRecipe() {
         servings: input.servings,
       })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
+      queryClient.invalidateQueries({ queryKey: RECIPE_PREFIX })
+      queryClient.invalidateQueries({ queryKey: RECIPE_INGREDIENTS_PREFIX })
       queryClient.invalidateQueries({ queryKey: keys.recipe(recipeId) })
       queryClient.invalidateQueries({ queryKey: keys.recipeIngredients(recipeId) })
-      // Editing a recipe reprices its mirror, and the mirror is what past
-      // entries point at — so every day that has ever logged it now shows a
-      // different number. Which days those are is not something this mutation
-      // can know, hence the whole prefix.
-      queryClient.invalidateQueries({ queryKey: keys.dayAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.trendsAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.dayMarksAll(userId) })
-      invalidateGroupBoards(queryClient, userId)
     },
   })
 }
 
 /** Every single-recipe query, by row id or by share slug: `keys.recipe`'s prefix. */
 const RECIPE_PREFIX = ['recipe'] as const
+/** Every recipe-ingredients query, by row id or by share slug. */
+const RECIPE_INGREDIENTS_PREFIX = ['recipe-ingredients'] as const
 
 /**
  * Star one of your own recipes, or take the star off. Optimistic, because a
@@ -486,11 +482,14 @@ export function useDeleteRecipe() {
         await supabase.from('recipes').delete().eq('id', id).eq('owner_id', userId).select('id'),
       )
       // After the row, as everywhere else: an object deleted for a row that
-      // then fails to delete leaves a recipe pointing at nothing.
-      if (photoPath) await removeMealPhoto(photoPath)
+      // then fails to delete leaves a recipe pointing at nothing. A failed R2
+      // sweep must not undo the already-deleted row's UI feedback or cache refresh.
+      if (photoPath) await removeMealPhoto(photoPath).catch(() => {})
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
+      queryClient.invalidateQueries({ queryKey: RECIPE_PREFIX })
+      queryClient.invalidateQueries({ queryKey: RECIPE_INGREDIENTS_PREFIX })
     },
   })
 }
@@ -511,6 +510,7 @@ export function usePublishRecipe() {
   const queryClient = useQueryClient()
 
   return useMutation({
+    scope: { id: 'recipe-publish' },
     mutationFn: async ({
       id,
       isPublic,
@@ -523,11 +523,11 @@ export function usePublishRecipe() {
       )
       return { status: status ?? 'pending' }
     },
-    onSuccess: (result, { id, isPublic }) => {
+    onSuccess: (result, { isPublic }) => {
       // Only the publishing direction; unpublishing is not counted.
       if (isPublic) track('Recipe Published', { outcome: result.status })
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
-      queryClient.invalidateQueries({ queryKey: keys.recipe(id) })
+      queryClient.invalidateQueries({ queryKey: RECIPE_PREFIX })
     },
   })
 }
@@ -754,11 +754,13 @@ export class VideoImportError extends Error {
 export class VideoImportLimitError extends Error {
   readonly used: number
   readonly limit: number
-  constructor(used: number, limit: number) {
+  readonly entitled: boolean
+  constructor(used: number, limit: number, entitled = false) {
     super('Monthly video import limit reached')
     this.name = 'VideoImportLimitError'
     this.used = used
     this.limit = limit
+    this.entitled = entitled
   }
 }
 
@@ -812,6 +814,7 @@ export function useImportRecipe() {
         code?: string
         used?: number
         limit?: number
+        entitled?: boolean
         recipe_id?: string
         existing?: boolean
         community?: boolean
@@ -832,15 +835,18 @@ export function useImportRecipe() {
 
       if (body?.code === 'import_limit') {
         track('Recipe Imported', { platform: body.platform ?? 'unknown', outcome: 'limit_reached' })
-        throw new VideoImportLimitError(
-          body.used ?? FREE_VIDEO_IMPORTS,
-          body.limit ?? FREE_VIDEO_IMPORTS,
-        )
+        const limit = body.limit ?? FREE_VIDEO_IMPORTS
+        const entitled = body.entitled ?? limit > FREE_VIDEO_IMPORTS
+        throw new VideoImportLimitError(body.used ?? FREE_VIDEO_IMPORTS, limit, entitled)
       }
+      // Distinguish a non-JSON HTTP gateway error (502/504 HTML) from a real
+      // transport failure so online users do not get told they are offline.
+      const gotResponse =
+        !error || typeof (error as { context?: { status?: unknown } })?.context?.status === 'number'
       const code: VideoImportFailure =
         body?.code && IMPORT_FAILURES.has(body.code as VideoImportFailure)
           ? (body.code as VideoImportFailure)
-          : body
+          : body || gotResponse
             ? 'failed'
             : 'offline'
       track('Recipe Imported', { platform: body?.platform ?? 'unknown', outcome: code })

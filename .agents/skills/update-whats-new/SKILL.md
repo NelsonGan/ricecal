@@ -1,6 +1,6 @@
 ---
 name: update-whats-new
-description: Write the store What's New note for a RiceCal release in apps/app-studio and open a PR. Reads the note that is live, finds the ricecal commits it does not cover, and rewrites the note in all 23 listing locales. Use when asked to update the What's New / release notes / store note, or to say what changed in the new version.
+description: Write the store What's New note for a RiceCal release in apps/app-studio and open a PR. Reads the note that is live, finds the ricecal commits it does not cover, and rewrites the note in all 25 listing locales. Use when asked to update the What's New / release notes / store note, or to say what changed in the new version.
 ---
 
 # What's New
@@ -212,7 +212,7 @@ spent before it, read out of the old repository's history:
 
 Reach for one that fits the release rather than the most famous one left.
 
-## 5. Translate into all 23 locales
+## 5. Translate into all 25 locales
 
 Branch before the first edit, so nothing is written on `main`:
 
@@ -220,8 +220,8 @@ Branch before the first edit, so nothing is written on `main`:
 git checkout -b <a-branch-named-after-the-change>
 ```
 
-The locales are `en ms zh id th vi ja ko hi fil es fr de pt it nl ru tr pl uk
-sv nb da`, plus whatever the file holds if that list has grown. Edit `whatsNew` in place for
+The locales are `en ms zh id th vi ja ko hi ta bn fil es fr de pt it nl ru tr pl
+uk sv nb da`, plus whatever the file holds if that list has grown. Edit `whatsNew` in place for
 every one of them; touch no `description`.
 
 **Take each locale's verb form from money2time's current note**, which is the
@@ -243,7 +243,7 @@ where it does not, translate plainly. Keep **RiceCal** untranslated.
 ```sh
 pnpm typecheck
 git diff --stat                        # appDescriptions.ts and nothing else
-grep -c 'whatsNew:' src/data/appDescriptions.ts   # still 23
+grep -c 'whatsNew:' src/data/appDescriptions.ts   # still 25
 ```
 
 Then the two things a diff does not show. Play's 500 character cap:
@@ -288,7 +288,7 @@ a bullet, or gained a comma, passes every check above.
 python3 - <<'PY'
 import re
 src = open('src/data/appDescriptions.ts').read()
-rows = re.findall(r"\n  ([a-z]{2,3}): \{.*?whatsNew: `(.*?)`,", src, re.S)
+rows = re.findall(r"\n  ([a-z-]+): \{.*?whatsNew: `(.*?)`,", src, re.S)
 n = len([l for l in rows[0][1].split('\n') if l.startswith('- ')])
 for loc, note in rows:
     lines = note.split('\n')

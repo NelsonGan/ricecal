@@ -491,6 +491,7 @@ function CustomPanel({
         value={name}
         onChangeText={setName}
         placeholder={t('recipes:ingredient.namePlaceholder')}
+        maxLength={120}
         autoFocus
       />
 

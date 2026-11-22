@@ -128,7 +128,7 @@ function SearchScreen() {
         }
         onCreateOwn={() => {
           if (recipeQuota.atLimit && !requirePro('new_recipe')) return
-          router.push('/recipe/edit')
+          router.push({ pathname: '/recipe/edit', params: { date: selectedDate } })
         }}
       />
     </Screen>

@@ -57,6 +57,7 @@ jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))
 jest.mock('@/data/refusals', () => ({
   openPaywall: (...args: unknown[]) => mockOpenPaywall(...args),
   proFeatureTitle: () => 'Importing more than 5 videos a month needs RiceCal Pro.',
+  storeSaysPaid: () => false,
 }))
 jest.mock('@/data', () => {
   class VideoImportError extends Error {
@@ -66,13 +67,20 @@ jest.mock('@/data', () => {
       this.code = code
     }
   }
-  class VideoImportLimitError extends Error {}
+  class VideoImportLimitError extends Error {
+    entitled: boolean
+    constructor(_used = 0, _limit = 0, entitled = false) {
+      super('limit')
+      this.entitled = entitled
+    }
+  }
   class Offline extends Error {
     code = 'offline'
   }
   return {
     VideoImportError,
     VideoImportLimitError,
+    useEntitlement: () => ({ entitled: false }),
     useImportRecipe: () => ({ mutateAsync: mockImport, isPending: true }),
     useVideoImportQuota: () => ({ data: mockQuota.current, ...mockQuotaState.current }),
     Offline,

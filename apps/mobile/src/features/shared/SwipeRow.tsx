@@ -222,12 +222,17 @@ export function SwipeRow({
   }, [fired, offset, folded])
   const run = useCallback(
     (action: SwipeAction) => {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
       const left = action.onPress()
       if (left instanceof Promise) {
         void left.then((gone) => {
-          if (!gone) restore()
+          if (gone) {
+            void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
+          } else {
+            restore()
+          }
         }, restore)
+      } else {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {})
       }
     },
     [restore],

@@ -15,7 +15,7 @@
 // it can be retried; a verdict is, so a dance clip costs one look.
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Meter } from '../_shared/entitlement.ts'
+import { type Meter, reconcileEntitlement } from '../_shared/entitlement.ts'
 import { json } from '../_shared/http.ts'
 import { mockActive, photoBase64 } from '../_shared/llm.ts'
 import { copyObject, deleteObject, newKey, r2Configured, writeObject } from '../_shared/r2.ts'
@@ -35,6 +35,7 @@ import {
 } from '../_shared/video-post.ts'
 import {
   cachedDraft,
+  hasVideoTimeLeft,
   importVideoRecipe,
   type PostMedia,
   type VideoMockSteer,
@@ -79,6 +80,9 @@ const IMPORT_BUDGET_MS = 135_000
 /** The most a share link may take to follow, across all its hops. */
 const SHORT_LINK_MS = 15_000
 
+/** Mirrors `free_monthly_imports()` in Postgres so we can tell a free refusal from Pro. */
+const FREE_MONTHLY_IMPORTS = 5
+
 export async function handleImport(body: ImportRequest, ctx: ImportContext): Promise<Response> {
   const deadline = Date.now() + IMPORT_BUDGET_MS
   const { db, userId, meter } = ctx
@@ -105,8 +109,18 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
   if (!row) {
     // The month's allowance is claimed when the recipe is made, below, so it
     // is only spent on a recipe that arrives. Checked here too, so an account
-    // with none left is not made to wait for a model it cannot use.
-    const left = await allowance(db, userId)
+    // with none left is not made to wait for a model it cannot use. If the row
+    // thinks this is a free account at its ceiling, reconcile with RevenueCat
+    // once in case a purchase webhook never landed (matching `claimScan`).
+    let left = await allowance(db, userId)
+    if (
+      left &&
+      left.remaining <= 0 &&
+      left.monthly_limit <= FREE_MONTHLY_IMPORTS &&
+      (await reconcileEntitlement(db, userId))
+    ) {
+      left = await allowance(db, userId)
+    }
     if (left && left.remaining <= 0) {
       return json(
         {
@@ -115,6 +129,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
           platform: link.platform,
           used: left.used,
           limit: left.monthly_limit,
+          entitled: left.monthly_limit > FREE_MONTHLY_IMPORTS,
         },
         429,
       )
@@ -141,7 +156,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
 
     // The video for the video model, the cover for the caption route and for
     // the card. Fetched together: neither waits on the other.
-    const [video, cover] = await Promise.all([videoFor(fetched), fetchCover(fetched)])
+    const [video, cover] = await Promise.all([videoFor(fetched, deadline), fetchCover(fetched)])
     if (video === 'too_long') return tooLong()
     const coverMedia: PostMedia = cover
       ? { kind: 'image', base64: photoBase64(cover.bytes), type: cover.type }
@@ -162,10 +177,9 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     // "There to watch" is the post having a video at all, not the download
     // working: a TikTok file that answered 403 is exactly the case where the
     // caption alone (hashtags, the recipe spoken aloud) would wrongly turn the
-    // video away for everybody. A YouTube video is never watched (see
-    // `videoFor`), so its caption's verdict is the only one there will be.
-    const watchable =
-      Boolean(fetched.videoUrl) && fetched.link.platform !== 'youtube' && videoRoutes().length > 0
+    // video away for everybody. YouTube leaves `videoUrl` null, so its
+    // caption's verdict is the only one there will be.
+    const watchable = Boolean(fetched.videoUrl) && videoRoutes().length > 0
     if (!result.recipe.isRecipe && watchable && result.analysedFrom !== 'video') {
       return json({
         ok: false,
@@ -254,18 +268,28 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     }
   }
 
-  const { data: made, error: makeError } = await db
-    .rpc('import_recipe_for', { p_user: userId, p_import: row.id, p_photo_path: photoPath })
-    .maybeSingle<{
-      recipe_id: string | null
-      existing: boolean
-      allowed: boolean
-      used: number
-      monthly_limit: number
-      community_recipe_id: string | null
-      community_review: 'pending' | 'approved' | 'rejected' | null
-      is_community: boolean
-    }>()
+  const runMake = () =>
+    db
+      .rpc('import_recipe_for', { p_user: userId, p_import: row.id, p_photo_path: photoPath })
+      .maybeSingle<{
+        recipe_id: string | null
+        existing: boolean
+        allowed: boolean
+        used: number
+        monthly_limit: number
+        is_community: boolean
+      }>()
+
+  let { data: made, error: makeError } = await runMake()
+  if (
+    !makeError &&
+    made &&
+    !made.allowed &&
+    made.monthly_limit <= FREE_MONTHLY_IMPORTS &&
+    (await reconcileEntitlement(db, userId))
+  ) {
+    ;({ data: made, error: makeError } = await runMake())
+  }
 
   if (makeError || !made) {
     console.error('[recipes/import] import_recipe_for failed:', makeError?.message)
@@ -281,6 +305,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
         platform: row.platform,
         used: made.used,
         limit: made.monthly_limit,
+        entitled: made.monthly_limit > FREE_MONTHLY_IMPORTS,
       },
       429,
     )
@@ -390,8 +415,11 @@ async function readPost(
  * the only model that fetched a YouTube link itself was Gemini, which is not
  * used. A Short gets the caption route: its title, description and cover.
  */
-async function videoFor(post: FetchedPost): Promise<PostMedia | 'too_long'> {
-  if (!post.videoUrl || post.link.platform === 'youtube') return { kind: 'none' }
+async function videoFor(post: FetchedPost, deadline: number): Promise<PostMedia | 'too_long'> {
+  if (!post.videoUrl) return { kind: 'none' }
+  if (mockActive() || videoRoutes().length === 0 || !hasVideoTimeLeft(deadline)) {
+    return { kind: 'none' }
+  }
   const file = await fetchMedia(post.videoUrl, MAX_VIDEO_BYTES, 'video/', post.videoHeaders)
   if (!file) return { kind: 'none' }
   if ((mp4Seconds(file.bytes) ?? 0) > MAX_VIDEO_SECONDS) return 'too_long'
@@ -412,10 +440,15 @@ export function clip(value: string | null | undefined, max: number): string | nu
 
 /** `promise`, or `fallback` once `ms` have passed without it. */
 export function within<T, F>(promise: Promise<T>, ms: number, fallback: F): Promise<T | F> {
+  let timer: ReturnType<typeof setTimeout> | undefined
   return Promise.race([
     promise,
-    new Promise<F>((resolve) => setTimeout(() => resolve(fallback), ms)),
-  ])
+    new Promise<F>((resolve) => {
+      timer = setTimeout(() => resolve(fallback), ms)
+    }),
+  ]).finally(() => {
+    if (timer !== undefined) clearTimeout(timer)
+  })
 }
 
 function errorText(error: unknown): string {

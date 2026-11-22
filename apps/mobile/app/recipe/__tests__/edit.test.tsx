@@ -155,11 +155,13 @@ jest.mock('@/ui', () => {
       visible,
       title,
       onConfirm,
+      onDismiss,
       confirmLabel,
     }: {
       visible: boolean
       title: string
       onConfirm: () => void
+      onDismiss?: () => void
       confirmLabel: string
     }) =>
       visible ? (
@@ -168,7 +170,10 @@ jest.mock('@/ui', () => {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={confirmLabel}
-            onPress={onConfirm}
+            onPress={() => {
+              onConfirm()
+              onDismiss?.()
+            }}
           >
             <Text>{confirmLabel}</Text>
           </Pressable>

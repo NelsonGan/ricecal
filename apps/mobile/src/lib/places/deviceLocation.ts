@@ -167,11 +167,15 @@ export function placeFromGeocodedAddress(
   }
 }
 
+const GEOCODE_TIMEOUT_MS = 4_000
+
 async function describeOnDevice(coordinate: Coordinate): Promise<PlaceResult | null> {
   const Location = locationModule()
   if (!Location) return null
   try {
-    const [first] = await Location.reverseGeocodeAsync(coordinate)
+    const result = await withDeadline(Location.reverseGeocodeAsync(coordinate), GEOCODE_TIMEOUT_MS)
+    if (result === TIMED_OUT) return null
+    const [first] = result
     return first ? placeFromGeocodedAddress(coordinate, first as GeocodedAddress) : null
   } catch {
     // Android without Play services, or iOS's geocoder rate limit.
@@ -186,14 +190,18 @@ async function describeOnDevice(coordinate: Coordinate): Promise<PlaceResult | n
  */
 export async function describeCoordinate(
   coordinate: Coordinate,
-  { language, remote = true }: { language?: string | null; remote?: boolean } = {},
+  {
+    language,
+    remote = true,
+    signal,
+  }: { language?: string | null; remote?: boolean; signal?: AbortSignal } = {},
 ): Promise<PlaceResult | null> {
   const onDevice = await describeOnDevice(coordinate)
-  if (onDevice || !remote) return onDevice
+  if (onDevice || !remote || signal?.aborted) return onDevice
   try {
-    const remote = await reverseGeocodePlace({ ...coordinate, language })
-    return remote
-      ? { ...remote, latitude: coordinate.latitude, longitude: coordinate.longitude }
+    const found = await reverseGeocodePlace({ ...coordinate, language, signal })
+    return found
+      ? { ...found, latitude: coordinate.latitude, longitude: coordinate.longitude }
       : null
   } catch {
     return null

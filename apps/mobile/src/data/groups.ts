@@ -787,6 +787,10 @@ export function useGroupChatLive(groupId: string): boolean {
             p_events: true,
             p_dislikes: true,
           })) as unknown as GroupMessage[]
+          // A rapid second vote started while this catch-up was in flight: drop
+          // this answer so it cannot overwrite the newer optimistic state; the
+          // second vote triggers a fresh catch-up once it settles.
+          if (voting()) return
           // No thread yet (its first read failed or is still to come), or a
           // gap the newest few cannot bridge: read the whole page.
           let whole = false
@@ -1685,7 +1689,20 @@ export function useGroupAction() {
             predicate: named('group_messages'),
             refetchType: 'none',
           })
-          for (const catchUp of openChats) catchUp()
+          // Only catch up open chats once no other rapid vote is still in flight
+          // (TanStack Query keeps the settling mutation itself `pending` until
+          // `onSettled` returns, so > 1 means another vote is still running).
+          if (
+            client
+              .getMutationCache()
+              .findAll({ status: 'pending' })
+              .filter(
+                (mutation) =>
+                  (mutation.state.variables as GroupAction | undefined)?.action === 'react',
+              ).length <= 1
+          ) {
+            for (const catchUp of openChats) catchUp()
+          }
           return
         case 'move':
           return

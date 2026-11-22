@@ -15,7 +15,7 @@ import {
   type WaterDay,
   type WeightReading,
 } from '@/data'
-import { formatTime, ItemRow, usePortionWords } from '@/features/shared'
+import { formatTime, ItemRow, ROW_TILE_COMPACT, usePortionWords } from '@/features/shared'
 import { datePattern } from '@/lib/dates'
 import { eatenQuantity, portionLabel } from '@/lib/portions'
 import { showChange, showWeight, UNIT_KEY, type WeightUnit } from '@/lib/units'
@@ -231,7 +231,8 @@ function Tile({ tone, children }: { tone?: 'water'; children: ReactNode }) {
   return (
     <View
       className={cn(
-        'h-[48px] w-[48px] items-center justify-center rounded-sm',
+        ROW_TILE_COMPACT,
+        'items-center justify-center rounded-sm',
         tone === 'water' ? 'bg-water-soft' : 'bg-track',
       )}
     >

@@ -182,6 +182,7 @@ export function useEntitlementSync(): void {
       queryClient.setQueryData<StoreEntitlement | null>(keys.storeEntitlement(userId), entitlement)
       void queryClient.invalidateQueries({ queryKey: keys.subscription(userId) })
       void queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
+      void queryClient.invalidateQueries({ queryKey: keys.videoImports(userId) })
     })
   }, [queryClient, userId])
 
@@ -228,6 +229,7 @@ async function healEntitlement(queryClient: QueryClient, userId: string): Promis
     // plan line, the scans-left count, and the ceiling behind it.
     await queryClient.invalidateQueries({ queryKey: keys.subscription(userId) })
     await queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
+    await queryClient.invalidateQueries({ queryKey: keys.videoImports(userId) })
   } catch {
     // Offline, or the endpoint is not deployed yet. The gates are already open
     // on the store's word and the webhook may still land; there is nothing to

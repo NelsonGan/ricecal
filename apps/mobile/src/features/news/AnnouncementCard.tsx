@@ -207,9 +207,10 @@ export function AnnouncementCard({
   }
 
   // Android has no `onDismiss`; its modal is gone once `visible` is false.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runQueued reads refs only
   useEffect(() => {
     if (!visible && Platform.OS !== 'ios') runQueued()
-  })
+  }, [visible])
 
   if (!shown || !card) return null
 

@@ -96,8 +96,9 @@ export const keys = {
   entryIngredients: (entryId: string) => ['entry-ingredients', entryId] as const,
 
   foodSearch: (userId: string, query: string) => ['food-search', userId, query] as const,
-  /** Place search text: never persisted, see `shouldPersistQuery`. */
-  placeSearch: (query: string, language: string) => ['place-search', query, language] as const,
+  /** Place search text + rounded location bias: never persisted, see `shouldPersistQuery`. */
+  placeSearch: (query: string, language: string, nearKey = 'none') =>
+    ['place-search', query, language, nearKey] as const,
   food: (id: string) => ['food', id] as const,
   /**
    * What this account has eaten before, newest first, one row per dish. Not

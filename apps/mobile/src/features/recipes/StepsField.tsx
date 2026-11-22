@@ -92,7 +92,6 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
     const next = joinedSteps(draft)
     if (changed && next !== value) onChange(next)
     setEditing(false)
-    setReady(false)
     setFocusKey(null)
     setActiveKey(null)
   }
@@ -182,82 +181,81 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
       <Sheet
         visible={editing}
         onClose={close}
+        onDismiss={() => setReady(false)}
         title={t('recipes:edit.stepsSheetTitle')}
         closeLabel={t('common:action.close')}
         fullHeight
         onShow={() => setReady(true)}
       >
-        {editing ? (
-          <View className="gap-3">
-            {draft.map((step, index) => (
-              <View
-                key={step.key}
-                className={cn(
-                  'overflow-hidden rounded-md border-[3px] bg-surface',
-                  activeKey === step.key ? 'border-pandan' : 'border-line',
-                )}
-              >
-                <View className="min-h-[42px] flex-row items-center justify-between border-line border-b-2 px-4">
-                  <Text variant="label" className="text-pandan-ink">
-                    {t('recipes:edit.stepLabel', { count: index + 1 })}
-                  </Text>
-                  <Tappable
-                    className="min-h-[40px] flex-row items-center gap-1.5 px-1"
-                    hitSlop={2}
-                    accessibilityRole="button"
-                    accessibilityLabel={t('recipes:edit.removeStep', { count: index + 1 })}
-                    onPress={() => removeStep(step.key)}
-                  >
-                    <Icon set="ui" name="delete" size={14} tintColor={colors.hibiscusInk} />
-                    <Text variant="caption" className="text-hibiscus-ink">
-                      {t('recipes:ingredient.remove')}
-                    </Text>
-                  </Tappable>
-                </View>
-                <TextField
-                  ref={(input) => {
-                    if (input) inputs.current.set(step.key, input)
-                    else inputs.current.delete(step.key)
-                  }}
-                  containerClassName="gap-0"
-                  value={step.text}
-                  // A newline is the stored row delimiter. Keeping it out of a
-                  // row means pasted text cannot create steps with no matching
-                  // Add action or remove control.
-                  onChangeText={(text) => updateStep(step.key, oneLine(text))}
-                  placeholder={t('recipes:edit.stepPlaceholder')}
-                  accessibilityLabel={t('recipes:edit.stepLabel', { count: index + 1 })}
-                  onFocus={() => setActiveKey(step.key)}
-                  onBlur={() => setActiveKey((current) => (current === step.key ? null : current))}
-                  multiline
-                  submitBehavior="blurAndSubmit"
-                  returnKeyType="done"
-                  className="min-h-[76px] items-start rounded-none border-0 px-4 py-2"
-                  inputClassName="pt-2"
-                  textAlignVertical="top"
-                />
-              </View>
-            ))}
-
-            <Tappable
-              className="min-h-[50px] flex-row items-center gap-3 rounded-md bg-pandan-soft px-4"
-              onPress={addStep}
-              accessibilityRole="button"
-              accessibilityLabel={t('recipes:edit.addStep')}
+        <View className="gap-3">
+          {draft.map((step, index) => (
+            <View
+              key={step.key}
+              className={cn(
+                'overflow-hidden rounded-md border-[3px] bg-surface',
+                activeKey === step.key ? 'border-pandan' : 'border-line',
+              )}
             >
-              <View className="h-[30px] w-[30px] items-center justify-center rounded-full bg-surface">
-                <Icon set="ui" name="plus" size={16} />
+              <View className="min-h-[42px] flex-row items-center justify-between border-line border-b-2 px-4">
+                <Text variant="label" className="text-pandan-ink">
+                  {t('recipes:edit.stepLabel', { count: index + 1 })}
+                </Text>
+                <Tappable
+                  className="min-h-[40px] flex-row items-center gap-1.5 px-1"
+                  hitSlop={2}
+                  accessibilityRole="button"
+                  accessibilityLabel={t('recipes:edit.removeStep', { count: index + 1 })}
+                  onPress={() => removeStep(step.key)}
+                >
+                  <Icon set="ui" name="delete" size={14} tintColor={colors.hibiscusInk} />
+                  <Text variant="caption" className="text-hibiscus-ink">
+                    {t('recipes:ingredient.remove')}
+                  </Text>
+                </Tappable>
               </View>
-              <Text variant="label" className="text-pandan-ink">
-                {t('recipes:edit.addStep')}
-              </Text>
-            </Tappable>
+              <TextField
+                ref={(input) => {
+                  if (input) inputs.current.set(step.key, input)
+                  else inputs.current.delete(step.key)
+                }}
+                containerClassName="gap-0"
+                value={step.text}
+                // A newline is the stored row delimiter. Keeping it out of a
+                // row means pasted text cannot create steps with no matching
+                // Add action or remove control.
+                onChangeText={(text) => updateStep(step.key, oneLine(text))}
+                placeholder={t('recipes:edit.stepPlaceholder')}
+                accessibilityLabel={t('recipes:edit.stepLabel', { count: index + 1 })}
+                onFocus={() => setActiveKey(step.key)}
+                onBlur={() => setActiveKey((current) => (current === step.key ? null : current))}
+                multiline
+                submitBehavior="blurAndSubmit"
+                returnKeyType="done"
+                className="min-h-[76px] items-start rounded-none border-0 px-4 py-2"
+                inputClassName="pt-2"
+                textAlignVertical="top"
+              />
+            </View>
+          ))}
 
-            <Button fullWidth onPress={close}>
-              {t('common:action.done')}
-            </Button>
-          </View>
-        ) : null}
+          <Tappable
+            className="min-h-[50px] flex-row items-center gap-3 rounded-md bg-pandan-soft px-4"
+            onPress={addStep}
+            accessibilityRole="button"
+            accessibilityLabel={t('recipes:edit.addStep')}
+          >
+            <View className="h-[30px] w-[30px] items-center justify-center rounded-full bg-surface">
+              <Icon set="ui" name="plus" size={16} />
+            </View>
+            <Text variant="label" className="text-pandan-ink">
+              {t('recipes:edit.addStep')}
+            </Text>
+          </Tappable>
+
+          <Button fullWidth onPress={close}>
+            {t('common:action.done')}
+          </Button>
+        </View>
       </Sheet>
     </View>
   )

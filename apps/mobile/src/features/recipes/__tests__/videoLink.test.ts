@@ -19,8 +19,21 @@ describe('findVideoLink', () => {
     ['https://www.threads.net/@cook/post/DQ1-TOCjY3l', 'threads'],
     ['https://fb.watch/abcDEF/', 'facebook'],
     ['http://xhslink.com/a/AbC123 复制本条信息', 'rednote'],
+    ['这道菜超好吃 http://xhslink.com/a/AbC123，复制本条信息打开小红书', 'rednote'],
   ])('names the platform of %s', (text, platform) => {
     expect(findVideoLink(text)?.platform).toBe(platform)
+  })
+
+  it('stops before Rednote fullwidth punctuation and Chinese text with no space', () => {
+    expect(findVideoLink('做饭教程 http://xhslink.com/a/AbC123，复制本条信息')).toEqual({
+      platform: 'rednote',
+      url: 'http://xhslink.com/a/AbC123',
+    })
+  })
+
+  it('rejects links with non-default ports or embedded credentials', () => {
+    expect(findVideoLink('https://vm.tiktok.com:8443/ZSabc123/')).toBeNull()
+    expect(findVideoLink('https://user:pass@www.instagram.com/reel/CnkNjXVsAJv/')).toBeNull()
   })
 
   it('reads a link with no scheme, as one typed or copied out of a caption', () => {

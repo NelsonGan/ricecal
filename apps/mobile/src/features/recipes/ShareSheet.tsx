@@ -83,6 +83,7 @@ export function ShareSheet({ visible, onClose, recipe }: ShareSheetProps) {
             title={t('recipes:share.publicTitle')}
             description={t('recipes:share.publicBody')}
             value={recipe.isPublic}
+            disabled={publish.isPending}
             onValueChange={setPublic}
           />
         </Card>

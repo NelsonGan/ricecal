@@ -25,8 +25,11 @@ function changed() {
 }
 
 export function useTickedIngredients(recipeId: string) {
-  const ticked = useSyncExternalStore(subscribe, () => ticks.get(recipeId) ?? NONE)
+  const ticked = useSyncExternalStore(subscribe, () =>
+    recipeId ? (ticks.get(recipeId) ?? NONE) : NONE,
+  )
   const toggle = (ingredientId: string) => {
+    if (!recipeId) return
     const next = new Set(ticks.get(recipeId) ?? NONE)
     if (next.has(ingredientId)) next.delete(ingredientId)
     else next.add(ingredientId)
@@ -41,6 +44,7 @@ export function useTickedIngredients(recipeId: string) {
  * this an app left in memory opened a recipe days later already struck through.
  */
 export function forgetCookSession(recipeId: string) {
+  if (!recipeId) return
   ticks.delete(recipeId)
   steps.delete(recipeId)
   changed()
@@ -48,8 +52,9 @@ export function forgetCookSession(recipeId: string) {
 
 /** The step cook mode is on, zero-based. Reset to the start once the meal is done. */
 export function useCookStep(recipeId: string) {
-  const step = useSyncExternalStore(subscribe, () => steps.get(recipeId) ?? 0)
+  const step = useSyncExternalStore(subscribe, () => (recipeId ? (steps.get(recipeId) ?? 0) : 0))
   const setStep = (next: number) => {
+    if (!recipeId) return
     steps.set(recipeId, Math.max(0, next))
     changed()
   }

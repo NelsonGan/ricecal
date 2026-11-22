@@ -52,30 +52,38 @@ export type VideoLink = {
 /** A link that has to be followed before it says which video it is. */
 export type ShortLink = { short: true; url: string; platform: VideoPlatform }
 
-const URL_IN_TEXT = /https?:\/\/[^\s<>"'`]+/i
+// RFC 3986 ASCII URL characters only, matching SharedLink.swift and ShareLink.kt:
+// Rednote's share copy puts a fullwidth comma and Chinese text immediately after
+// the link with no space (`http://xhslink.com/a/AbC123，复制本条信息`).
+const URL_IN_TEXT = /https?:\/\/[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=%]+/gi
+const BARE_URL =
+  /^(?:www\.|m\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+\/[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=%]+$/i
 
 /**
- * The first link in whatever arrived. A share sheet hands over "Check out this
- * reel! https://…" as often as a bare link, and a link pasted from a message
- * has trailing punctuation.
+ * Every plausible HTTP(S) link in whatever arrived. A share sheet hands over
+ * "Check out this reel! https://…" as often as a bare link, and a link pasted
+ * from a message has trailing punctuation or precedes another non-video URL.
  */
-function firstUrl(text: string): URL | null {
+function urlsIn(text: string): URL[] {
   const trimmed = text.trim()
-  const match = trimmed.match(URL_IN_TEXT)
   // A bare host with no scheme ("instagram.com/reel/X") is how a link reads
   // when it was typed or copied out of a caption.
-  const raw = match
-    ? match[0]
-    : /^(?:www\.|m\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)+\/\S+$/i.test(trimmed)
-      ? `https://${trimmed}`
-      : null
-  if (!raw) return null
-  try {
-    const url = new URL(raw.replace(/[).,!?;:'"\]]+$/, ''))
-    return url.protocol === 'https:' || url.protocol === 'http:' ? url : null
-  } catch {
-    return null
+  const candidates = BARE_URL.test(trimmed)
+    ? [`https://${trimmed}`]
+    : Array.from(trimmed.matchAll(URL_IN_TEXT), (m) => m[0])
+  const out: URL[] = []
+  for (const raw of candidates) {
+    try {
+      const url = new URL(raw.replace(/[).,!?;:'"\]]+$/, ''))
+      if (url.protocol !== 'https:' && url.protocol !== 'http:') continue
+      if (url.username || url.password) continue
+      if (url.port && url.port !== '80' && url.port !== '443') continue
+      out.push(url)
+    } catch {
+      // Not a URL after all.
+    }
   }
+  return out
 }
 
 /** The host without `www.`, `m.` or `mobile.`, lower case. */
@@ -105,8 +113,14 @@ const SHORT_HOSTS: Record<string, VideoPlatform> = {
  * no link of a platform this reads.
  */
 export function parseVideoLink(text: string): VideoLink | ShortLink | null {
-  const url = firstUrl(text)
-  if (!url) return null
+  for (const url of urlsIn(text)) {
+    const parsed = parseVideoUrl(url)
+    if (parsed) return parsed
+  }
+  return null
+}
+
+function parseVideoUrl(url: URL): VideoLink | ShortLink | null {
   const host = bareHost(url)
   const parts = segments(url)
 

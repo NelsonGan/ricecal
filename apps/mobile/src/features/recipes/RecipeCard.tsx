@@ -110,7 +110,7 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
           <Text variant="label" numberOfLines={2} className={logs ? 'pr-[34px]' : undefined}>
             {recipe.name}
           </Text>
-          <Text variant="caption" numberOfLines={1}>
+          <Text variant="caption" numberOfLines={1} className={logs ? 'pr-[34px]' : undefined}>
             {meta}
           </Text>
         </View>
