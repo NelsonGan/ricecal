@@ -1440,6 +1440,17 @@ export async function writeEntry(
   }
 }
 
+/**
+ * A part's weight as `food_log_ingredients.grams` will take it: numeric(7,1),
+ * above zero and at most 20 kg. Anything else is dropped to "not weighed",
+ * because one refused weight fails the whole insert and loses every part.
+ */
+const storableGrams = (grams: number | null): number | null => {
+  if (grams === null || !Number.isFinite(grams)) return null
+  const stored = Math.round(grams * 10) / 10
+  return stored > 0 && stored <= 20000 ? stored : null
+}
+
 /** The breakdown rows for an entry. Exported for scan-refine's re-resolve. */
 export async function writeIngredients(
   db: SupabaseClient,
@@ -1461,13 +1472,14 @@ export async function writeIngredients(
       serving_factor: 1,
       quantity: ingredient.quantity,
       display_label: ingredient.displayLabel,
-      grams: ingredient.grams,
+      grams: storableGrams(ingredient.grams),
       position: index,
     })),
   )
   // A failed breakdown never fails the entry, but partial parts must not be
   // left behind.
   if (error) {
+    console.error(`[cascade] parts not written: ${error.message}`)
     await db.from('food_log_ingredients').delete().eq('food_log_id', foodLogId)
     return []
   }
