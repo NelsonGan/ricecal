@@ -1,6 +1,6 @@
 import { type Ref, useImperativeHandle, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TextInput, View } from 'react-native'
+import { TextInput, useWindowDimensions, View } from 'react-native'
 
 import { useAddWater } from '@/data'
 import { SplitFigure } from '@/features/shared/SplitFigure'
@@ -21,7 +21,9 @@ import {
 
 /**
  * The least the tank is drawn at, before the card has been measured and on a
- * row that gives it no more. Room for the two lines of its figure.
+ * row that gives it no more. Room for the two lines of its figure at the
+ * default text size; it grows with the text, or with large text the figure
+ * stands out above the tank.
  */
 const MIN_TANK_HEIGHT = 84
 
@@ -75,7 +77,9 @@ export function WaterCard({
   const addWater = useAddWater(date)
 
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [tankHeight, setTankHeight] = useState(MIN_TANK_HEIGHT - TANK_INSET)
+  const { fontScale } = useWindowDimensions()
+  const minTank = Math.round(MIN_TANK_HEIGHT * Math.min(1.6, Math.max(1, fontScale)))
+  const [tankHeight, setTankHeight] = useState(minTank - TANK_INSET)
 
   /**
    * One path for both directions, because the server has one: a removal is an
@@ -132,37 +136,44 @@ export function WaterCard({
         </View>
 
         <View
-          className="flex-1 px-2 pb-2"
-          style={{ minHeight: MIN_TANK_HEIGHT }}
+          className="flex-1"
+          style={{ minHeight: minTank }}
           onLayout={(event) => {
             const next = Math.round(event.nativeEvent.layout.height) - TANK_INSET
             if (next > 0 && next !== tankHeight) setTankHeight(next)
           }}
         >
-          <WaterTank
-            value={ml}
-            goal={goalMl}
-            loading={loading}
-            paused={paused}
-            height={tankHeight}
-            // The card's corner less the inset, so the tank's curve runs
-            // parallel to the card's rather than sitting in it as a second
-            // shape with its own idea of round.
-            radius={radius.card - TANK_INSET}
-            accessibilityLabel={t('logging:water.level', {
-              filled: millilitres(ml),
-              goal: millilitres(goalMl),
-            })}
-          >
-            {(onWater) => (
-              /* The figure at the FOOT of the tank, where the water is on any
+          {/* ABSOLUTE, so the tank cannot size the box it is measured from. In
+              the flow, a tank drawn at the measured height made that box at
+              least as tall, so it could only ever grow: switching to a day
+              with a taller ring card left the tank at the taller size, and the
+              activity card under it was squeezed to nothing. */}
+          <View className="absolute inset-x-2 top-0 bottom-2">
+            <WaterTank
+              value={ml}
+              goal={goalMl}
+              loading={loading}
+              paused={paused}
+              height={tankHeight}
+              // The card's corner less the inset, so the tank's curve runs
+              // parallel to the card's rather than sitting in it as a second
+              // shape with its own idea of round.
+              radius={radius.card - TANK_INSET}
+              accessibilityLabel={t('logging:water.level', {
+                filled: millilitres(ml),
+                goal: millilitres(goalMl),
+              })}
+            >
+              {(onWater) => (
+                /* The figure at the FOOT of the tank, where the water is on any
                  day somebody has drunk anything, so it reads as the level's own
                  number. `TankAmount` explains the two inks. */
-              <View className="flex-1 justify-end px-3 pb-2">
-                <TankAmount ml={ml} goalMl={goalMl} onWater={onWater} />
-              </View>
-            )}
-          </WaterTank>
+                <View className="flex-1 justify-end px-3 pb-1.5">
+                  <TankAmount ml={ml} goalMl={goalMl} onWater={onWater} />
+                </View>
+              )}
+            </WaterTank>
+          </View>
         </View>
       </Card>
 
@@ -200,6 +211,7 @@ function TankAmount({ ml, goalMl, onWater }: { ml: number; goalMl: number; onWat
       <SplitFigure
         text={t('common:volume.ml', { value: figure })}
         figure={figure}
+        size="md"
         className={ink}
       />
       <Text variant="caption" className={ink} numberOfLines={1}>

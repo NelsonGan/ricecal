@@ -33,8 +33,12 @@ export function ActivityCard({ steps, loading = false, className }: ActivityCard
   const router = useRouter()
 
   return (
-    <Card className={className} contentClassName="flex-1 justify-between gap-2 p-4">
-      <View className="gap-1">
+    // No `flex-1` inside: the card is sized by what it holds, and the water card
+    // above it takes whatever height is left. A `flex-1` surface has a basis of
+    // nothing, so in a column whose height is still being settled it measured
+    // as empty and the water card grew over it.
+    <Card className={className} contentClassName="gap-2.5 px-4 pt-3.5 pb-4">
+      <View className="gap-0.5">
         <View className="flex-row items-center gap-1.5">
           <Icon set="scenes" name="sneakers" size={20} />
           <Text variant="label" className="shrink" numberOfLines={1}>

@@ -7,6 +7,11 @@ export type SplitFigureProps = {
   text: string
   /** The formatted number inside it, which is drawn large. */
   figure: string
+  /**
+   * `lg` for a figure with the tile to itself; `md` for one inside the water
+   * tank, which has to stay under the surface on a day well past half full.
+   */
+  size?: 'md' | 'lg'
   /** Colour for both halves, for a figure drawn over water. */
   className?: string
 }
@@ -24,7 +29,7 @@ export type SplitFigureProps = {
  * sets a line height, and a nested span with its own line height pushes the
  * line taller than the big figure on iOS.
  */
-export function SplitFigure({ text, figure, className }: SplitFigureProps) {
+export function SplitFigure({ text, figure, size = 'lg', className }: SplitFigureProps) {
   const at = text.indexOf(figure)
   const before = at < 0 ? '' : text.slice(0, at)
   const after = at < 0 ? '' : text.slice(at + figure.length)
@@ -33,7 +38,7 @@ export function SplitFigure({ text, figure, className }: SplitFigureProps) {
   return (
     <Text
       variant="displayMd"
-      className={className}
+      className={cn(size === 'md' && 'text-[26px]', className)}
       numberOfLines={1}
       adjustsFontSizeToFit
       minimumFontScale={0.6}

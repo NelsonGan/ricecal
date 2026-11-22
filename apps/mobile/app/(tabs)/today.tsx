@@ -174,7 +174,7 @@ function TodayContent() {
   // little air, so it is as large as the column allows on every phone and
   // never wider than it was designed at on a tablet.
   const column = columns ? (width - 2 * spacing.gutter - 12) / 2 : width - 2 * spacing.gutter
-  const ringSize = Math.round(Math.min(160, Math.max(104, column - 32 - 8)))
+  const ringSize = Math.round(Math.min(160, Math.max(104, column - 28 - 8)))
 
   /**
    * The tour, offered once and never again.
@@ -688,7 +688,7 @@ function TodayContent() {
                   column's width. */}
               <Card
                 className={columns ? 'flex-1' : undefined}
-                contentClassName="flex-1 justify-center p-4"
+                contentClassName="flex-1 justify-center px-3.5 py-4"
               >
                 {loading || !targets ? (
                   <Skeleton className="w-full" height={ringSize + 156} />
@@ -784,7 +784,7 @@ function TodayContent() {
                   }
                 />
               </Card>
-              <View className={columns ? 'flex-row items-stretch gap-3' : 'gap-3'}>
+              <View className={columns ? 'flex-row items-start gap-3' : 'gap-3'}>
                 <WaterCard
                   className={columns ? 'flex-1' : undefined}
                   date={selectedDate}
