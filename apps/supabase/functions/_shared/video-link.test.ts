@@ -717,51 +717,68 @@ Deno.test('a TikTok page that comes back without its post is asked for once more
   eq(gone.count(), 2, 'after one more look, not more')
 })
 
-Deno.test("an Instagram cover is the post's clean frame, and the preview's when that is refused", async () => {
+Deno.test('each preview reader names a cover worth keeping, and a fallback', async () => {
   const { fetchPost } = await import('./video-post.ts')
-  const preview =
-    '<meta property="og:description" content="12 likes - cook on May 1, 2026: &quot;Tomato pasta&quot;." />' +
-    '<meta property="og:image" content="https://scontent.cdninstagram.com/v/preview.jpg?stp=s640x640_tt6" />'
-  const reel = video('https://www.instagram.com/reel/DRf3Hv_jJmS/')
-  const instagram = (media: Response) => {
-    const asked: string[] = []
-    const fetcher = (async (input: string | URL | Request, init?: RequestInit) => {
+  const fake = (pages: Record<string, string>) =>
+    (async (input: string | URL | Request) => {
       const url = String(input instanceof Request ? input.url : input)
-      asked.push(`${url} ${init?.redirect ?? 'follow'}`)
-      if (url.startsWith('https://www.instagram.com/p/DRf3Hv_jJmS/media/')) return media
-      if (url.startsWith('https://www.instagram.com/reel/')) return new Response(preview)
-      return new Response('', { status: 404 })
+      const hit = Object.entries(pages).find(([prefix]) => url.startsWith(prefix))
+      return hit ? new Response(hit[1]) : new Response('', { status: 404 })
     }) as typeof fetch
-    return { fetcher, asked }
-  }
-  const moved = (location: string) => new Response(null, { status: 302, headers: { location } })
+  const preview = (image: string) =>
+    '<meta property="og:description" content="12 likes - cook on May 1, 2026: &quot;Tomato pasta&quot;." />' +
+    `<meta property="og:image" content="${image}" />`
 
-  const clean = instagram(moved('https://instagram.fkul15-1.fna.fbcdn.net/v/frame.jpg?stp=dst-jpg'))
-  const post = await fetchPost(reel, clean.fetcher)
-  eq(
-    post?.coverUrl,
-    'https://instagram.fkul15-1.fna.fbcdn.net/v/frame.jpg?stp=dst-jpg',
-    'the frame',
+  // Instagram: its clean, larger frame first, the preview (with the play
+  // button burned in) only when that address gives no picture.
+  const ig = await fetchPost(
+    video('https://www.instagram.com/reel/DRf3Hv_jJmS/'),
+    fake({ 'https://www.instagram.com/reel/': preview('https://scontent.cdninstagram.com/p.jpg') }),
   )
-  eq(
-    clean.asked.some((a) => a.endsWith('/media/?size=l manual')),
-    true,
-    'the redirect is read, not followed',
-  )
+  eq(ig?.coverUrl, 'https://www.instagram.com/p/DRf3Hv_jJmS/media/?size=l', 'Instagram frame')
+  eq(ig?.coverFallbackUrl, 'https://scontent.cdninstagram.com/p.jpg', 'Instagram preview')
+  eq(Boolean(ig?.coverIsCard), false, 'an Instagram frame is a photo')
 
-  const refused = await fetchPost(reel, instagram(new Response('', { status: 404 })).fetcher)
-  eq(
-    refused?.coverUrl,
-    'https://scontent.cdninstagram.com/v/preview.jpg?stp=s640x640_tt6',
-    'preview',
+  // Threads: the preview is a card of the whole post. Read, never kept.
+  const threads = await fetchPost(
+    video('https://www.threads.com/@pinchofnom/post/DQ1-TOCjY3l'),
+    fake({ 'https://www.threads.com/': preview('https://scontent.fbcdn.net/card.jpg') }),
   )
+  eq(threads?.coverUrl, 'https://scontent.fbcdn.net/card.jpg', 'Threads card')
+  eq(threads?.coverIsCard, true, 'marked as a card')
 
-  const elsewhere = await fetchPost(reel, instagram(moved('https://example.com/a.jpg')).fetcher)
-  eq(elsewhere?.coverUrl?.includes('preview.jpg'), true, 'a redirect off Instagram is not followed')
-
-  const login = await fetchPost(
-    reel,
-    instagram(moved('https://www.instagram.com/accounts/login/')).fetcher,
+  // YouTube: the watch page's own picture, a Short's at its full portrait
+  // size, and oEmbed's 4:3 thumbnail only behind it.
+  const oembed = JSON.stringify({
+    title: 'Gnocchi',
+    thumbnail_url: 'https://i.ytimg.com/vi/3s9njjK_SdY/hqdefault.jpg',
+  })
+  const short = await fetchPost(
+    video('https://www.youtube.com/shorts/3s9njjK_SdY'),
+    fake({
+      'https://www.youtube.com/oembed': oembed,
+      'https://www.youtube.com/shorts/':
+        '<meta property="og:image" content="https://i.ytimg.com/vi/3s9njjK_SdY/oar2.jpg?sqp=x&amp;rs=y">',
+    }),
   )
-  eq(login?.coverUrl?.includes('preview.jpg'), true, 'nor one to the login page')
+  eq(short?.coverUrl, 'https://i.ytimg.com/vi/3s9njjK_SdY/oardefault.jpg', 'a Short, portrait')
+  eq(short?.coverFallbackUrl, 'https://i.ytimg.com/vi/3s9njjK_SdY/oar2.jpg?sqp=x&rs=y', 'as named')
+
+  const long = await fetchPost(
+    video('https://www.youtube.com/watch?v=zJi7h-nKngw'),
+    fake({
+      'https://www.youtube.com/oembed': oembed.replaceAll('3s9njjK_SdY', 'zJi7h-nKngw'),
+      'https://www.youtube.com/watch':
+        '<meta property="og:image" content="https://i.ytimg.com/vi/zJi7h-nKngw/maxresdefault.jpg">',
+    }),
+  )
+  eq(long?.coverUrl, 'https://i.ytimg.com/vi/zJi7h-nKngw/maxresdefault.jpg', 'an HD video')
+  eq(long?.coverFallbackUrl, 'https://i.ytimg.com/vi/zJi7h-nKngw/hqdefault.jpg', 'oEmbed behind it')
+
+  const noPage = await fetchPost(
+    video('https://www.youtube.com/watch?v=zJi7h-nKngw'),
+    fake({ 'https://www.youtube.com/oembed': JSON.stringify({ title: 'Gnocchi' }) }),
+  )
+  eq(noPage?.coverUrl, 'https://i.ytimg.com/vi/zJi7h-nKngw/hqdefault.jpg', 'no page, as before')
+  eq(noPage?.coverFallbackUrl, null, 'and nothing behind it')
 })

@@ -149,10 +149,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
 
     // The video for the video model, the cover for the caption route and for
     // the card. Fetched together: neither waits on the other.
-    const [video, cover] = await Promise.all([
-      videoFor(fetched),
-      fetched.coverUrl ? fetchMedia(fetched.coverUrl, MAX_COVER_BYTES, 'image/') : null,
-    ])
+    const [video, cover] = await Promise.all([videoFor(fetched), fetchCover(fetched)])
     if (video === 'too_long') return tooLong()
     const coverMedia: PostMedia = cover
       ? { kind: 'image', base64: photoBase64(cover.bytes), type: cover.type }
@@ -188,7 +185,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
 
     const id = crypto.randomUUID()
     let photoKey: string | null = null
-    if (result.recipe.isRecipe && cover && r2Configured()) {
+    if (result.recipe.isRecipe && cover && !fetched.coverIsCard && r2Configured()) {
       try {
         photoKey = `imports/${id}.jpg`
         await writeObject(photoKey, cover.bytes, cover.type)
@@ -347,6 +344,15 @@ async function allowance(db: SupabaseClient, userId: string): Promise<Allowance 
   return data ?? null
 }
 
+/** The post's cover, from its second address when the first gives no picture. */
+async function fetchCover(post: FetchedPost) {
+  for (const url of [post.coverUrl, post.coverFallbackUrl]) {
+    const got = url ? await fetchMedia(url, MAX_COVER_BYTES, 'image/') : null
+    if (got) return got
+  }
+  return null
+}
+
 /** The post, or the mock's stand-in for one. */
 async function readPost(
   link: VideoLink,
@@ -362,6 +368,8 @@ async function readPost(
       transcript: mockPost.transcript ?? null,
       linkedRecipe: mockPost.linkedRecipe ?? null,
       coverUrl: mockPost.coverUrl ?? null,
+      coverFallbackUrl: mockPost.coverFallbackUrl ?? null,
+      coverIsCard: mockPost.coverIsCard ?? false,
       videoUrl: mockPost.videoUrl ?? null,
       durationSeconds: mockPost.durationSeconds ?? null,
     }
