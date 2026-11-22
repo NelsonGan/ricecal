@@ -775,6 +775,26 @@ Deno.test('each preview reader names a cover worth keeping, and a fallback', asy
   eq(long?.coverUrl, 'https://i.ytimg.com/vi/zJi7h-nKngw/maxresdefault.jpg', 'an HD video')
   eq(long?.coverFallbackUrl, 'https://i.ytimg.com/vi/zJi7h-nKngw/hqdefault.jpg', 'oEmbed behind it')
 
+  const same = await fetchPost(
+    video('https://www.youtube.com/watch?v=zJi7h-nKngw'),
+    fake({
+      'https://www.youtube.com/oembed': oembed.replaceAll('3s9njjK_SdY', 'zJi7h-nKngw'),
+      'https://www.youtube.com/watch':
+        '<meta property="og:image" content="https://i.ytimg.com/vi/zJi7h-nKngw/hqdefault.jpg">',
+    }),
+  )
+  eq(same?.coverFallbackUrl, null, 'the same picture is not asked for twice')
+
+  const webp = await fetchPost(
+    video('https://www.youtube.com/shorts/3s9njjK_SdY'),
+    fake({
+      'https://www.youtube.com/oembed': oembed,
+      'https://www.youtube.com/shorts/':
+        '<meta property="og:image" content="https://i9.ytimg.com/vi_webp/3s9njjK_SdY/oar2.webp">',
+    }),
+  )
+  eq(webp?.coverUrl, 'https://i.ytimg.com/vi/3s9njjK_SdY/oardefault.jpg', 'a Short on another host')
+
   const noPage = await fetchPost(
     video('https://www.youtube.com/watch?v=zJi7h-nKngw'),
     fake({ 'https://www.youtube.com/oembed': JSON.stringify({ title: 'Gnocchi' }) }),

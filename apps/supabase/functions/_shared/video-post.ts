@@ -268,8 +268,9 @@ async function readPreview(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
   } else {
     post.coverUrl = httpsOrNull(tags['og:image'])
     // Threads answers a link preview with a picture of the whole post (its
-    // text, its logo and a play button over a small frame), never the frame
-    // alone. Worth showing the model; not a photograph of the dish.
+    // text, its logo, and the video or photos small inside it), for a photo
+    // post as much as a video. Worth showing the model; not a photograph of
+    // the dish.
     post.coverIsCard = true
   }
   post.videoUrl = httpsOrNull(tags['og:video'] ?? tags['og:video:secure_url'])
@@ -482,12 +483,12 @@ async function readYouTube(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
   const ogImage = watch ? httpsOrNull(metaTags(watch.text)['og:image']) : null
   const hq = `https://i.ytimg.com/vi/${link.id}/hqdefault.jpg`
   const fallback = post.coverUrl ?? hq
-  if (ogImage && /^https:\/\/i\.ytimg\.com\/vi\/[^/]+\/oar/.test(ogImage)) {
+  if (ogImage && /^https:\/\/i\d*\.ytimg\.com\/vi(?:_webp)?\/[^/]+\/oar/.test(ogImage)) {
     post.coverUrl = `https://i.ytimg.com/vi/${link.id}/oardefault.jpg`
     post.coverFallbackUrl = ogImage
   } else {
     post.coverUrl = ogImage ?? fallback
-    post.coverFallbackUrl = ogImage ? fallback : null
+    post.coverFallbackUrl = ogImage && ogImage !== fallback ? fallback : null
   }
   // The video model fetches YouTube itself, by the watch link.
   post.videoUrl = link.canonicalUrl
@@ -859,9 +860,10 @@ export async function fetchMedia(
   typePrefix: 'image/' | 'video/',
   headers: Record<string, string> = { 'user-agent': BROWSER_UA },
   fetcher: Fetcher = fetch,
+  timeoutMs: number = MEDIA_TIMEOUT_MS,
 ): Promise<{ bytes: Uint8Array; type: string } | null> {
   try {
-    const res = await fetcher(url, { headers, signal: AbortSignal.timeout(MEDIA_TIMEOUT_MS) })
+    const res = await fetcher(url, { headers, signal: AbortSignal.timeout(timeoutMs) })
     const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
     const length = Number(res.headers.get('content-length') ?? 0)
     if (!res.ok || !type.startsWith(typePrefix) || length > maxBytes) {

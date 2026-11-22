@@ -63,6 +63,8 @@ const IMPORT_COLUMNS = 'id, status, reason, photo_key, platform, author_handle, 
 
 /** A cover is a picture for a card; past this it is not a cover. */
 const MAX_COVER_BYTES = 5 * 1024 * 1024
+/** How long a cover's first address gets when it has a second. */
+const FIRST_COVER_MS = 6_000
 
 type ImportContext = {
   db: SupabaseClient
@@ -344,13 +346,26 @@ async function allowance(db: SupabaseClient, userId: string): Promise<Allowance 
   return data ?? null
 }
 
-/** The post's cover, from its second address when the first gives no picture. */
+/**
+ * The post's cover, from its second address when the first gives no picture.
+ * The first is given less time when there is a second, so a stalled address
+ * costs the import a few seconds rather than its whole cover budget twice.
+ */
 async function fetchCover(post: FetchedPost) {
-  for (const url of [post.coverUrl, post.coverFallbackUrl]) {
-    const got = url ? await fetchMedia(url, MAX_COVER_BYTES, 'image/') : null
-    if (got) return got
+  if (post.coverUrl) {
+    const first = await fetchMedia(
+      post.coverUrl,
+      MAX_COVER_BYTES,
+      'image/',
+      undefined,
+      undefined,
+      post.coverFallbackUrl ? FIRST_COVER_MS : undefined,
+    )
+    if (first) return first
   }
-  return null
+  return post.coverFallbackUrl
+    ? await fetchMedia(post.coverFallbackUrl, MAX_COVER_BYTES, 'image/')
+    : null
 }
 
 /** The post, or the mock's stand-in for one. */

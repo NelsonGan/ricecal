@@ -3253,7 +3253,7 @@ datacenter may be refused where this was not, so watch `unreadable` in
 | YouTube | yes | by link | oEmbed and the watch page, which also gives the length; the video model fetches YouTube itself |
 | X | yes | yes | X's own embed endpoint (`cdn.syndication.twimg.com`) |
 | Facebook | yes | yes | the page as a browser asks for it |
-| Instagram, Threads | yes | no | link-preview meta tags (`facebookexternalhit`) |
+| Instagram, Threads | yes | no | link-preview meta tags (`facebookexternalhit`); Instagram's cover from `/p/<code>/media/?size=l` |
 | Rednote | rarely | no | blocked for servers outside China; answers `unreadable` |
 
 Instagram and Threads creators mostly keep the recipe out of the caption ("link
@@ -3333,6 +3333,14 @@ client grant. Saved copies carry the credit and not `import_id`.
 `imports/<id>.jpg` (a prefix `ownsKey` never signs for a client), and copied
 into each importer's own `meals/<user>/` prefix with an S3 copy, so it is theirs
 to delete and a deleted original does not take everybody's picture with it.
+Each platform's picture is chosen for that job. Instagram's preview image is
+small and has a play button burned into it, so the cover is the post's own
+frame from `/p/<code>/media/?size=l`, with the preview behind it. YouTube's is
+the watch page's `og:image` (`oardefault`, 720 by 1280, for a Short) rather
+than oEmbed's 480 by 360 `hqdefault`, which pillarboxes a Short. Threads only
+ever answers with a rendering of the whole post, text and logo included, so
+its picture is shown to the model and never kept: a Threads import has no
+photo.
 
 **The allowance is its own meter.** Five imports a month on a free account
 (`free_monthly_imports()`, the user's own calendar month), and an unprinted 200
