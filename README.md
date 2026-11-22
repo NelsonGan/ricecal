@@ -4470,7 +4470,7 @@ workouts in one list, newest first, with the day's steps beside the heading when
 a store reported the day. With large text, the steps sit below the complete
 heading. The heading is a word rather than an overline, and
 hairlines sit under it and between rows. Rows are `ItemRow` at its `compact`
-size (a 56pt tile, one line of title, the figure stacked over its unit). A
+size (a 56pt tile, up to two lines of title, the figure stacked over its unit). A
 workout is a row like a meal, its calories in hibiscus because they were burned,
 and it opens the workout's own page.
 `EntryList` takes those rows as `extras`, already drawn, so the shared list does
@@ -6926,7 +6926,7 @@ Six of those numbers live in `packages/shared` for the copy to interpolate,
 and all six are enforced in Postgres: `free_daily_scans()`,
 `free_recipe_limit()`, `free_monthly_imports()`, `free_routine_limit()`,
 `free_group_limit()`, `free_photo_retention_days()`.
-A fifth,
+A seventh,
 `lapsed_photo_grace_days()`, is Postgres-only, because the grace period is not
 advertised and a promise about it would be one more thing that cannot be
 narrowed later.
@@ -7834,7 +7834,7 @@ events, 815 weekly users, 338 installs) ×4.3.
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
 | Meal locations (`Locations Toggled`, `Meal Location Set`, `Food Map Opened`, `Locations Offer Shown`) | 4,500 | New, so no history: the offer once per account (~1,500), a toggle after it or from the 1.3.0 news card's Turn on Locations (once per phone, a few hundred), a map visit or two a week by those who turn Locations on, and hand-picked places. The automatic tag adds no event (`Meal Logged`'s `located`) |
 | Video imports (`Recipe Imported`) | 3,000 | New, so no history: one event per import attempt. Free accounts are capped at five recipes a month and failures are a fraction of that; assumes a few hundred importers a month, Pro ones importing a few times a week |
-| **Total** | **~306,000 (31%)** | Room for three times today's audience |
+| **Total** | **~310,000 (31%)** | Room for three times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -8000,7 +8000,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `referral_source` | `xiaohongshu`, `instagram`, `tiktok`, `youtube`, `threads`, `facebook`, `reddit`, `friend`, `other`, `appStore`, `googlePlay` | `app/(onboarding)/source.tsx`; selected answer, not verified acquisition attribution |
 | Log-sheet `panel` | `camera`, `describe`, `search` | `app/log/index.tsx`; legacy `barcode`/`label` map to camera and `recipes` maps to search. Initial panel only |
 | Camera `with_note` | `true` when words were added after the shutter; `false` for Skip, an empty note, the setting switched off, the packet-label handoff, or a device with no camera (no photo, so no note is sent) | `data/snap.ts`; camera `Meal Logged` only, absent on every other method. The note's text is diary content and is never sent |
-| Entry `changed` | Any supplied patch fields among `when`, `quantity`, `plate`, `serving`, `name`, `note`, `icon`, `photo`, `overrides` | `data/entries.ts`; field names only, never edited values |
+| Entry `changed` | Any supplied patch fields among `when`, `quantity`, `plate`, `serving`, `name`, `note`, `icon`, `photo`, `overrides`, `location` | `data/entries.ts`; field names only, never edited values |
 | Share `platform` | `instagram`, `tiktok`, `xiaohongshu`, `facebook`, `threads`, `x` | `features/settings/social.ts`; requested external shortcut, not verified sharing |
 | Import `platform` | `instagram`, `tiktok`, `youtube`, `x`, `threads`, `facebook`, `rednote`, or `unknown` | `data/recipes.ts` (`Recipe Imported`); the platform the server read the link as, never the link or the post |
 | Entry deletion `source` | Calling source string, or `unknown` when absent | `data/entries.ts`; not an unrestricted note or an automatic screen name |

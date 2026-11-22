@@ -19,27 +19,33 @@ export function useCurrentPlace({ active }: { active: boolean }) {
   const [coordinate, setCoordinate] = useState<Coordinate | null>(null)
   const run = useRef(0)
 
-  const locate = useCallback(async (fresh = false) => {
+  const locate = useCallback(async (fresh = false): Promise<Coordinate | null> => {
     const id = ++run.current
     setStatus('locating')
     const located = await currentCoordinate({ fresh })
-    if (id !== run.current) return
+    if (id !== run.current) return null
     if (typeof located === 'string') {
       setStatus(located)
-      return
+      return null
     }
     setCoordinate(located)
     setStatus('ready')
+    return located
   }, [])
 
   // `locate` checks the permission again and says what to offer if refused.
-  const request = useCallback(async () => {
+  const request = useCallback(async (): Promise<Coordinate | null> => {
     await requestLocationPermission()
     return locate()
   }, [locate])
 
   useEffect(() => {
-    if (!active) return undefined
+    if (!active) {
+      run.current += 1
+      setCoordinate(null)
+      setStatus('idle')
+      return undefined
+    }
     void locate()
     // Closing drops the answer of a fix still in flight.
     return () => {

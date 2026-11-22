@@ -8,6 +8,7 @@ import { useHeld } from './useHeld'
 export type ConfirmSheetProps = {
   visible: boolean
   onClose: () => void
+  onDismiss?: () => void
   onConfirm: () => void | Promise<void>
   title: string
   description?: string
@@ -38,6 +39,7 @@ export type ConfirmSheetProps = {
 export function ConfirmSheet({
   visible,
   onClose,
+  onDismiss,
   onConfirm,
   title,
   description,
@@ -68,6 +70,7 @@ export function ConfirmSheet({
     <Sheet
       visible={visible}
       onClose={onClose}
+      onDismiss={onDismiss}
       dismissible={!pending}
       // The drag handle dismisses, which is exactly what the neutral button
       // does, so it says the same word rather than asking for a third label.

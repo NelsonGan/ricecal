@@ -266,9 +266,15 @@ export function toPlaceResults(payload: unknown): PlaceResult[] {
   const results = (payload as { results?: unknown } | null)?.results
   if (!Array.isArray(results)) return []
   const out: PlaceResult[] = []
+  const seenIds = new Set<string>()
   for (const item of results) {
     const place = toPlaceResult((item ?? {}) as ApplePlace)
-    if (place) out.push(place)
+    if (!place) continue
+    if (place.id) {
+      if (seenIds.has(place.id)) continue
+      seenIds.add(place.id)
+    }
+    out.push(place)
     if (out.length >= MAX_RESULTS) break
   }
   return out
@@ -361,8 +367,14 @@ async function mintAccessToken(env: PlacesEnv, nowMs: number, keyId: string): Pr
   const response = await fetchWithTimeout(`${APPLE_MAPS_ORIGIN}/v1/token`, {
     headers: { Authorization: `Bearer ${authToken}` },
   })
-  if (response.status === 429) throw new PlacesError('capacity', 503)
-  if (!response.ok) throw new PlacesError('upstream', 502)
+  if (response.status === 429) {
+    await response.body?.cancel()
+    throw new PlacesError('capacity', 503)
+  }
+  if (!response.ok) {
+    await response.body?.cancel()
+    throw new PlacesError('upstream', 502)
+  }
   const body = (await response.json()) as { accessToken?: unknown; expiresInSeconds?: unknown }
   if (typeof body.accessToken !== 'string' || !body.accessToken) {
     throw new PlacesError('upstream', 502)
@@ -385,11 +397,18 @@ export async function appleGet(env: PlacesEnv, path: string, nowMs = Date.now())
       headers: { Authorization: `Bearer ${token}` },
     })
     if (response.status === 401 && attempt === 0) {
+      await response.body?.cancel()
       cachedAccessToken = null
       continue
     }
-    if (response.status === 429) throw new PlacesError('capacity', 503)
-    if (!response.ok) throw new PlacesError('upstream', 502)
+    if (response.status === 429) {
+      await response.body?.cancel()
+      throw new PlacesError('capacity', 503)
+    }
+    if (!response.ok) {
+      await response.body?.cancel()
+      throw new PlacesError('upstream', 502)
+    }
     return response.json()
   }
   throw new PlacesError('upstream', 502)

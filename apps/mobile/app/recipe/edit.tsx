@@ -85,17 +85,19 @@ const DEFAULT_RECIPE_ICON: IconRef = { set: 'food', name: 'cooking-pot' }
  * because the reader on the server fetches the object out of the bucket.
  */
 export default function RecipeFormScreen() {
-  const { t } = useTranslation(['recipes', 'common', 'paywall'])
+  const { t } = useTranslation(['recipes', 'common', 'paywall', 'profile'])
   const router = useRouter()
   const navigation = useNavigation()
   const goBack = useBack('/recipes')
   const toast = useToast()
 
-  const params = useLocalSearchParams<{ id?: string; read?: string }>()
+  const params = useLocalSearchParams<{ id?: string; read?: string; date?: string }>()
   const recipeId = params.id
-  const { data: existing } = useRecipe(recipeId)
-  const { data: existingIngredients } = useRecipeIngredients(recipeId)
+  const { data: existing, isPending: recipePending } = useRecipe(recipeId)
+  const { data: existingIngredients, isPending: ingredientsPending } =
+    useRecipeIngredients(recipeId)
   const { data: settings } = useSettings()
+  const loadingExisting = Boolean(recipeId && (recipePending || ingredientsPending))
 
   const save = useSaveRecipe()
   const read = useReadRecipe()
@@ -136,6 +138,8 @@ export default function RecipeFormScreen() {
   /** A drawing waiting on the confirmation, because choosing it discards a photo. */
   const [pendingIcon, setPendingIcon] = useState<IconRef | undefined>(undefined)
   const [picking, setPicking] = useState(false)
+  const afterPicker = useRef<(() => void) | null>(null)
+  const discardingRef = useRef(false)
 
   const [dirty, setDirty] = useState(false)
   /** Null is closed; a missing key adds, and a key replaces that staged row. */
@@ -148,10 +152,28 @@ export default function RecipeFormScreen() {
   const [reading, setReading] = useState<'photo' | 'text' | null>(() => initialRead?.kind ?? null)
   const [leaving, setLeaving] = useState(false)
   const mounted = useRef(true)
+  const savedRef = useRef(false)
+  const savingRef = useRef(false)
+  const photoPathRef = useRef<string | null>(null)
+  photoPathRef.current = photoPath
+  const existingPhotoRef = useRef<string | null | undefined>(undefined)
+  existingPhotoRef.current = existing?.photoPath
   useEffect(() => {
     mounted.current = true
     return () => {
       mounted.current = false
+      // Sweep a newly uploaded session photo if the user leaves without saving
+      // (skip while a save is still in flight so we never delete a photo the
+      // recipe row is about to reference).
+      const staged = photoPathRef.current
+      if (
+        !savedRef.current &&
+        !savingRef.current &&
+        staged &&
+        staged !== existingPhotoRef.current
+      ) {
+        removeMealPhoto(staged).catch(() => {})
+      }
     }
   }, [])
 
@@ -247,8 +269,6 @@ export default function RecipeFormScreen() {
   const attachPhoto = async (uri: string): Promise<string | null> => {
     setPicking(false)
     setLocalPhoto(uri)
-    pictureChosen.current = true
-    touch()
 
     setAttaching(true)
     let key: string
@@ -268,6 +288,8 @@ export default function RecipeFormScreen() {
       return null
     }
 
+    pictureChosen.current = true
+    touch()
     // A photo retaken before Save orphans the one it replaces, and Save only
     // knows about the key the form OPENED with — so the sweep for a mid-session
     // replacement has to happen here. Never the key the recipe was saved with:
@@ -356,6 +378,7 @@ export default function RecipeFormScreen() {
   }, [initialRead])
 
   const commit = async () => {
+    if (attaching) return
     // Save stays live without a name and says why here: a dead button at the
     // foot of a long form explains nothing, and the name is off screen by then.
     if (!ready) {
@@ -368,10 +391,12 @@ export default function RecipeFormScreen() {
     const sourceUrl = normaliseSourceUrl(source)
     if (source.trim() && !sourceUrl) {
       setSourceError(t('recipes:edit.sourceInvalid'))
+      toast.show({ title: t('recipes:edit.sourceInvalid'), tone: 'warning' })
       return
     }
 
     let result: Awaited<ReturnType<typeof save.mutateAsync>>
+    savingRef.current = true
     try {
       result = await save.mutateAsync({
         id: recipeId,
@@ -388,6 +413,7 @@ export default function RecipeFormScreen() {
         sourceUrl,
       })
     } catch (error) {
+      savingRef.current = false
       // The free tier's ceiling, met at the write rather than the button. The
       // plus button checks the count first, so what is left is a third recipe
       // saved on another phone, or a form opened before a subscription lapsed.
@@ -410,24 +436,31 @@ export default function RecipeFormScreen() {
       return
     }
 
+    savingRef.current = false
+    savedRef.current = true
     toast.show({ title: t('recipes:edit.saved'), tone: 'success' })
 
     // An edit goes back to the recipe page that opened it, which the save has
-    // already refreshed. That page holds the log sheet's day, and a fresh one
-    // pushed in its place would log into today instead. Only that page, by its
-    // row id, in this group's own stack: a form opened cold has nothing under
-    // it to go back to, and a page opened by share slug is cached under the
-    // slug, which the save does not refresh.
+    // already refreshed (both row id and share slug caches). That page holds
+    // the log sheet's day, and a fresh one pushed in its place would log into
+    // today instead.
     const state = navigation.getState()
     const below = state && state.index > 0 ? state.routes[state.index - 1] : undefined
     const belowId = (below?.params as { id?: string } | undefined)?.id
-    if (recipeId && below?.name === '[id]' && belowId === result.id) {
+    if (
+      recipeId &&
+      below?.name === '[id]' &&
+      (belowId === result.id || (existing?.shareSlug && belowId === existing.shareSlug))
+    ) {
       navigation.goBack()
       return
     }
     // `replace`, so the back gesture from the recipe lands on the list rather
     // than on the form that no longer has anything to save.
-    router.replace({ pathname: '/recipe/[id]', params: { id: result.id } })
+    router.replace({
+      pathname: '/recipe/[id]',
+      params: { id: result.id, ...(params.date ? { date: params.date } : {}) },
+    })
   }
 
   const leave = () => {
@@ -447,7 +480,7 @@ export default function RecipeFormScreen() {
         />
       }
       footer={
-        !reading ? (
+        !reading && !loadingExisting ? (
           <View className="gap-2">
             {/* The preview. Reads the staged values, so it cannot disagree
                 with what Save is about to write. */}
@@ -461,7 +494,7 @@ export default function RecipeFormScreen() {
                 })}
               </Text>
             ) : null}
-            <Button fullWidth loading={save.isPending} onPress={commit}>
+            <Button fullWidth loading={save.isPending || attaching} onPress={commit}>
               {t('recipes:edit.save')}
             </Button>
           </View>
@@ -477,6 +510,12 @@ export default function RecipeFormScreen() {
           arrive around it. For these few seconds there is no answer to edit. */}
       {reading ? (
         <ReadingRecipe source={reading} />
+      ) : loadingExisting ? (
+        <View className="gap-4">
+          <Skeleton className="h-[130px] w-full" />
+          <Skeleton className="h-[52px] w-full" />
+          <Skeleton className="h-[140px] w-full" />
+        </View>
       ) : (
         <>
           {/* The picture first, as on the recipe itself: it is the biggest
@@ -498,6 +537,7 @@ export default function RecipeFormScreen() {
               touch()
             }}
             placeholder={t('recipes:edit.namePlaceholder')}
+            maxLength={120}
           />
 
           {/* Three short answers in one card, the way onboarding asks for a
@@ -628,16 +668,30 @@ export default function RecipeFormScreen() {
           <IconPicker
             visible={picking}
             onClose={() => setPicking(false)}
+            onDismiss={() => {
+              const next = afterPicker.current
+              afterPicker.current = null
+              next?.()
+            }}
             selected={icon ?? undefined}
-            // Held back for the confirmation below when there is a photo to lose.
-            onSelect={(next) => (photoPath || localPhoto ? setPendingIcon(next) : applyIcon(next))}
+            // Held back for the confirmation below when there is a photo to lose,
+            // deferred until IconPicker's own Modal finishes dismissing on iOS.
+            onSelect={(next) => {
+              if (photoPath || localPhoto) {
+                afterPicker.current = () => setPendingIcon(next)
+              } else {
+                applyIcon(next)
+              }
+            }}
             // The other way to answer the same question, in the same sheet. It
             // only changes the PICTURE: reading the pot out of a photograph is
             // what the "Photo" tile on the Recipes tab does, and doing it here
             // too would refill a form the cook has already been through.
             onPickPhoto={(uri) => {
               void attachPhoto(uri).then((key) => {
-                if (!key) toast.show({ title: t('recipes:new.scanFailed'), tone: 'warning' })
+                if (!key && mounted.current) {
+                  toast.show({ title: t('profile:account.photoFailed'), tone: 'warning' })
+                }
               })
             }}
           />
@@ -682,14 +736,20 @@ export default function RecipeFormScreen() {
       <ConfirmSheet
         visible={leaving}
         onClose={() => setLeaving(false)}
+        onDismiss={() => {
+          if (discardingRef.current) {
+            discardingRef.current = false
+            goBack()
+          }
+        }}
         title={t('recipes:edit.discardTitle')}
         description={t('recipes:edit.discardBody')}
         confirmLabel={t('recipes:edit.discardConfirm')}
         cancelLabel={t('common:action.cancel')}
         tone="danger"
         onConfirm={() => {
+          discardingRef.current = true
           setLeaving(false)
-          goBack()
         }}
       />
     </Screen>
@@ -738,6 +798,7 @@ function RecipePicture({
         tall ? 'h-[260px]' : 'h-[130px]',
       )}
       onPress={onPress}
+      disabled={attaching}
       accessibilityRole="button"
       accessibilityLabel={t('edit.changePicture')}
     >

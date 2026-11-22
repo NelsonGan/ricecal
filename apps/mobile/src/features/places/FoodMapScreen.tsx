@@ -100,14 +100,20 @@ export function FoodMapScreen() {
   )
   const groupByKey = useMemo(() => new Map(groups.map((group) => [group.key, group])), [groups])
 
+  // Fixed at the first render: react-native-maps re-applies a changed
+  // `initialRegion` on the new architecture, which snapped every pan back.
+  // Every later move is a fit (`fitAll`) or a tap.
+  const [initialRegion] = useState<MapRegion>(
+    () => regionFor(groups, { padding: 1.5, minDelta: ONE_SPOT_DELTA }) ?? HOME_REGION,
+  )
   // The clusters follow the region, but not while a hand is on the map: the
   // iOS gesture layer moves the camera every frame and MapKit reports each
   // move, which re-rendered the whole screen and every pin per frame. The
   // latest region is kept in a ref and committed when the gesture ends.
   // MapKit reports nothing after the app's own `animateToRegion`, so a move
   // the screen makes records where it went itself (`moveTo`).
-  const [region, setRegion] = useState<MapRegion>(HOME_REGION)
-  const regionRef = useRef<MapRegion>(HOME_REGION)
+  const [region, setRegion] = useState<MapRegion>(initialRegion)
+  const regionRef = useRef<MapRegion>(initialRegion)
   const moving = useRef(false)
   const onRegionChange = useCallback((next: MapRegion) => {
     regionRef.current = next
@@ -127,12 +133,6 @@ export function FoodMapScreen() {
       onRegionChange(target)
     },
     [onRegionChange],
-  )
-  // Fixed at the first render: react-native-maps re-applies a changed
-  // `initialRegion` on the new architecture, which snapped every pan back.
-  // Every later move is a fit (`fitAll`) or a tap.
-  const [initialRegion] = useState<MapRegion>(
-    () => regionFor(groups, { padding: 1.5, minDelta: ONE_SPOT_DELTA }) ?? HOME_REGION,
   )
   const clusterer = useMemo(() => createPlaceClusterer(groups), [groups])
   const markers = useMemo(() => clusterer(region, width), [clusterer, region, width])
@@ -221,7 +221,9 @@ export function FoodMapScreen() {
       // A bubble that can still split zooms in to where it does; one that
       // cannot (places at one point, or past the last zoom) lists its places.
       if (marker.expansionZoom <= CLUSTER_MAX_ZOOM && marker.expansionZoom > zoom) {
-        const delta = longitudeDeltaForZoom(marker.expansionZoom, width)
+        // Add 0.5 so `Math.floor(zoom)` in the clusterer clears `expansionZoom`
+        // even after float rounding or viewport aspect adjustments.
+        const delta = longitudeDeltaForZoom(marker.expansionZoom + 0.5, width)
         moveTo(regionAround(marker, delta))
         return
       }
@@ -312,10 +314,11 @@ export function FoodMapScreen() {
                 if (marker.kind === 'cluster') {
                   const selected =
                     selection?.kind === 'cluster' &&
+                    marker.groups.length === selection.keys.length &&
                     marker.groups.every((group) => selection.keys.includes(group.key))
                   return (
                     <ClusterPin
-                      key={marker.key}
+                      key={`${marker.key}:${selected ? 'on' : 'off'}`}
                       id={marker.key}
                       latitude={marker.latitude}
                       longitude={marker.longitude}

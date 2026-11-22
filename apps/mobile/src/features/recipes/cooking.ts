@@ -5,7 +5,7 @@ import { snapshotFromRecipe } from '@/data/snapshot'
 
 /**
  * The cook's side of a recipe: how long it takes, how much of each thing goes
- * in for the number of people tonight, and which recipes a filter chip keeps.
+ * in for the number of people tonight, and which ingredients a step names.
  *
  * Pure and React-free, like `basis.ts`, so the arithmetic the screens show is
  * the arithmetic the tests pin.

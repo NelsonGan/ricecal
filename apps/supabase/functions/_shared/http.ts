@@ -62,25 +62,63 @@ export async function respondWithin(
     console.error('[respondWithin]', error)
     return failed()
   })
+  let graceTimer: ReturnType<typeof setTimeout> | undefined
   const early = await Promise.race([
     settled,
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), graceMs)),
-  ])
+    new Promise<null>((resolve) => {
+      graceTimer = setTimeout(() => resolve(null), graceMs)
+    }),
+  ]).finally(() => {
+    if (graceTimer !== undefined) clearTimeout(graceTimer)
+  })
   if (early) return early
 
   const encoder = new TextEncoder()
+  let closed = false
+  let beat: ReturnType<typeof setInterval> | undefined
+  const stopBeat = () => {
+    if (beat !== undefined) {
+      clearInterval(beat)
+      beat = undefined
+    }
+  }
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      const beat = setInterval(() => controller.enqueue(encoder.encode(' ')), heartbeatMs)
+      beat = setInterval(() => {
+        if (closed) {
+          stopBeat()
+          return
+        }
+        try {
+          controller.enqueue(encoder.encode(' '))
+        } catch {
+          closed = true
+          stopBeat()
+        }
+      }, heartbeatMs)
       try {
         const done = await settled
-        controller.enqueue(encoder.encode(await done.text()))
+        const body = await done.text()
+        if (!closed) controller.enqueue(encoder.encode(body))
       } catch {
-        controller.enqueue(encoder.encode(JSON.stringify({ ok: false, code: 'failed' })))
+        if (!closed) {
+          controller.enqueue(encoder.encode(JSON.stringify({ ok: false, code: 'failed' })))
+        }
       } finally {
-        clearInterval(beat)
-        controller.close()
+        stopBeat()
+        if (!closed) {
+          closed = true
+          try {
+            controller.close()
+          } catch {
+            // The caller already disconnected and closed the stream.
+          }
+        }
       }
+    },
+    cancel() {
+      closed = true
+      stopBeat()
     },
   })
   return new Response(stream, { status: 200, headers: { 'Content-Type': 'application/json' } })

@@ -559,42 +559,47 @@ function OwnFoodList({
   return (
     <>
       {create}
-      {recipes.map((recipe, index) => (
-        <Card key={recipe.id}>
-          <ItemRow
-            title={recipe.name}
-            titleLines={1}
-            icon={recipe.icon}
-            photoPath={recipe.photoPath}
-            // What one serving costs, which is what the plus beside it writes.
-            // Under the name so the action has a clear column of its own.
-            value={recipe.perServing.kcal}
-            unit={t('common:unit.kcal')}
-            valueUnderTitle
-            onPress={() => onOpen(recipe)}
-            trailing={
-              <IconButton
-                // IconButton defaults to `self-start` for heading actions. A
-                // result action belongs at the row's vertical centre instead.
-                className="self-center"
-                size="sm"
-                variant="primary"
-                accessibilityLabel={`${t('common:action.add')}, ${recipe.name}`}
-                onPress={() => {
-                  track('Food Picked', {
-                    position: index + 1,
-                    results: recipes.length,
-                    source: 'recipe',
-                  })
-                  onPick(recipe)
-                }}
-              >
-                <Icon set="ui" name="plus" size={18} tintColor={colors.onPandan} />
-              </IconButton>
-            }
-          />
-        </Card>
-      ))}
+      {recipes.map((recipe, index) => {
+        const priced = recipe.ingredientCount > 0
+        return (
+          <Card key={recipe.id}>
+            <ItemRow
+              title={recipe.name}
+              titleLines={1}
+              icon={recipe.icon}
+              photoPath={recipe.photoPath}
+              // What one serving costs, which is what the plus beside it writes.
+              // Under the name so the action has a clear column of its own.
+              value={priced ? recipe.perServing.kcal : undefined}
+              unit={priced ? t('common:unit.kcal') : undefined}
+              valueUnderTitle
+              onPress={() => onOpen(recipe)}
+              trailing={
+                priced ? (
+                  <IconButton
+                    // IconButton defaults to `self-start` for heading actions. A
+                    // result action belongs at the row's vertical centre instead.
+                    className="self-center"
+                    size="sm"
+                    variant="primary"
+                    accessibilityLabel={`${t('common:action.add')}, ${recipe.name}`}
+                    onPress={() => {
+                      track('Food Picked', {
+                        position: index + 1,
+                        results: recipes.length,
+                        source: 'recipe',
+                      })
+                      onPick(recipe)
+                    }}
+                  >
+                    <Icon set="ui" name="plus" size={18} tintColor={colors.onPandan} />
+                  </IconButton>
+                ) : undefined
+              }
+            />
+          </Card>
+        )
+      })}
     </>
   )
 }

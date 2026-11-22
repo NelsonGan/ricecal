@@ -50,6 +50,9 @@ export function LocationsOffer() {
     if (!userId || !due || !focused || announcing || visible) return
     const timer = setTimeout(() => {
       if (ratingAskBooked() || floorTaken('locations')) return
+      // Claim the floor synchronously before the state update renders, closing
+      // the window where a rating ask timer could fire between setVisible and useEffect.
+      holdFloor('locations', true)
       answerLocationsOffer(userId)
       track('Locations Offer Shown', {})
       setVisible(true)

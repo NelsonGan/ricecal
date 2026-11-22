@@ -7,13 +7,14 @@ import { View } from 'react-native'
 import Animated, { FadeIn } from 'react-native-reanimated'
 
 import {
+  useEntitlement,
   useImportRecipe,
   useVideoImportQuota,
   VideoImportError,
   type VideoImportFailure,
   VideoImportLimitError,
 } from '@/data'
-import { openPaywall, proFeatureTitle } from '@/data/refusals'
+import { openPaywall, proFeatureTitle, storeSaysPaid } from '@/data/refusals'
 import { ImportRing } from '@/features/recipes/ImportRing'
 import { PlatformLogo } from '@/features/recipes/PlatformLogo'
 import { findVideoLink } from '@/features/recipes/videoLink'
@@ -64,6 +65,7 @@ export default function ImportRecipeScreen() {
   const link = findVideoLink(raw)
 
   const importRecipe = useImportRecipe()
+  const { entitled: storeEntitled } = useEntitlement()
   const quota = useVideoImportQuota()
   const [failure, setFailure] = useState<Failure | null>(link ? null : 'unsupported_link')
   const [stage, setStage] = useState(0)
@@ -85,10 +87,13 @@ export default function ImportRecipeScreen() {
   }, [])
 
   // Once per link: StrictMode mounts twice, and the share sheet can hand the
-  // same screen a second link while it is open.
+  // same screen a second link while it is open. `requestId` invalidates any
+  // earlier in-flight import so it cannot overwrite a newer import's UI.
   const started = useRef<string | null>(null)
+  const requestId = useRef(0)
   const start = () => {
     if (!link) return
+    const currentRequest = ++requestId.current
     started.current = link.url
     setFailure(null)
     setStage(0)
@@ -100,7 +105,7 @@ export default function ImportRecipeScreen() {
           : result.community
             ? t('recipes:import.doneCommunity')
             : t('recipes:import.done')
-        if (mounted.current && onTop.current) {
+        if (mounted.current && onTop.current && requestId.current === currentRequest) {
           toast.show({ title, tone: 'success' })
           router.replace({ pathname: '/recipe/[id]', params: { id: result.recipeId } })
         } else {
@@ -116,36 +121,52 @@ export default function ImportRecipeScreen() {
         }
       })
       .catch((error: unknown) => {
+        if (!mounted.current || requestId.current !== currentRequest) return
         if (error instanceof VideoImportLimitError) {
           // Pro's ceiling is an abuse limit, not something to sell: a paywall
           // for a plan the user already has would be the wrong answer.
-          if (quota.data?.entitled) {
-            if (mounted.current) setFailure('proLimit')
+          if (error.entitled || quota.data?.entitled) {
+            setFailure('proLimit')
             return
           }
-          if (mounted.current) setFailure('limit')
+          if (storeEntitled || storeSaysPaid()) {
+            setFailure('failed')
+            if (onTop.current) {
+              toast.show({ title: t('paywall:limit.confirming'), tone: 'warning' })
+            }
+            return
+          }
+          setFailure('limit')
           if (onTop.current) {
             openPaywall(toast, { title: proFeatureTitle('video_import'), feature: 'video_import' })
           }
           return
         }
-        if (!mounted.current) return
         setFailure(error instanceof VideoImportError ? error.code : 'failed')
       })
   }
+  const startRef = useRef(start)
+  startRef.current = start
 
   // A free account with nothing left this month is told before anything is
-  // sent; the server refuses it anyway, after a round trip.
-  const spent = quota.data ? !quota.data.entitled && quota.data.remaining <= 0 : false
+  // sent; the server refuses it anyway, after a round trip. `storeEntitled`
+  // overrides a stale free row right after upgrading on `/paywall`.
+  const spent = quota.data
+    ? !storeEntitled && !quota.data.entitled && quota.data.remaining <= 0
+    : false
   // Waits for the allowance only while it is actually being fetched. Offline,
   // the query is paused and would stay pending for good; the import is sent
   // anyway, fails at once, and the screen says the user is offline.
   const waiting = quota.isPending && quota.fetchStatus !== 'paused'
   // biome-ignore lint/correctness/useExhaustiveDependencies: starts once per link, see `started`
   useEffect(() => {
-    if (!link || started.current === link.url || waiting) return
+    if (!link) {
+      started.current = null
+      setFailure('unsupported_link')
+      return
+    }
+    if (started.current === link.url || waiting) return
     if (spent) {
-      started.current = link.url
       setFailure('limit')
       return
     }
@@ -159,16 +180,16 @@ export default function ImportRecipeScreen() {
   // lands while an import is running is the same import, and is left alone.
   const failed = useRef(false)
   failed.current = failure !== null && failure !== 'limit' && failure !== 'proLimit'
-  // biome-ignore lint/correctness/useExhaustiveDependencies: `start` reads the current link
+  const linkUrl = link?.url ?? null
   useEffect(() => {
     const subscription = Linking.addEventListener('url', ({ url }) => {
       const { path, queryParams } = Linking.parse(url)
       const shared = typeof queryParams?.url === 'string' ? findVideoLink(queryParams.url) : null
-      if (path?.replace(/^\/+/, '') !== 'recipe/import' || !link || !failed.current) return
-      if (shared?.url === link.url) start()
+      if (path?.replace(/^\/+/, '') !== 'recipe/import' || !linkUrl || !failed.current) return
+      if (shared?.url === linkUrl) startRef.current()
     })
     return () => subscription.remove()
-  }, [link?.url])
+  }, [linkUrl])
 
   useEffect(() => {
     if (failure || !importRecipe.isPending) return

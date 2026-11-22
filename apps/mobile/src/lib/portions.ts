@@ -249,7 +249,12 @@ export function portionLabel(
   if (lead) return measured(lead)
 
   const { count, noun } = countedNoun(label)
-  const bracket = labelAmount(label.match(/\([^)]*\)/)?.[0] ?? '')
+  const brackets = label.match(/\([^)]*\)/g) ?? []
+  let bracket: { count: number; unit: MeasureUnit } | null = null
+  for (const part of brackets) {
+    bracket = labelAmount(part)
+    if (bracket) break
+  }
   if (bracket && (!noun || GENERIC.has(noun) || SIZES.has(noun))) {
     return measured(bracket)
   }

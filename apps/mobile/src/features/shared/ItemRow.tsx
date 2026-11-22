@@ -81,8 +81,8 @@ export type ItemRowProps = {
    * then to the placeholder, so a row is never blank.
    */
   photoPath?: string
-  /** The row's primary number. */
-  value: number | string
+  /** The row's primary number. Omit when there is no figure to show (e.g. an unpriced recipe). */
+  value?: number | string
   /** What the number is in. Omit for a unitless count. */
   unit?: string
   /** Put the value directly below the title instead of at the right edge. */
@@ -135,24 +135,27 @@ export function ItemRow({
   const { data: photoUrl, isLoading: resolving } = useMealPhotoUrl(photoPath)
   const photo = storedImageSource(photoPath, photoUrl, photoUri)
 
-  const valueLabel = (
-    <View className={compact ? 'items-end' : 'flex-row items-baseline gap-1'}>
-      <Text
-        variant="numeric"
-        className={cn(
-          valueUnderTitle || compact ? 'text-[17px] leading-[21px]' : 'text-[19px] leading-[24px]',
-          valueTones[valueTone],
-        )}
-      >
-        {typeof value === 'number' ? value.toLocaleString() : value}
-      </Text>
-      {unit ? (
-        <Text variant={valueUnderTitle || compact ? 'micro' : 'caption'} className="text-muted">
-          {unit}
+  const valueLabel =
+    value !== undefined ? (
+      <View className={compact ? 'items-end' : 'flex-row items-baseline gap-1'}>
+        <Text
+          variant="numeric"
+          className={cn(
+            valueUnderTitle || compact
+              ? 'text-[17px] leading-[21px]'
+              : 'text-[19px] leading-[24px]',
+            valueTones[valueTone],
+          )}
+        >
+          {typeof value === 'number' ? value.toLocaleString() : value}
         </Text>
-      ) : null}
-    </View>
-  )
+        {unit ? (
+          <Text variant={valueUnderTitle || compact ? 'micro' : 'caption'} className="text-muted">
+            {unit}
+          </Text>
+        ) : null}
+      </View>
+    ) : null
 
   const tile = (
     <View
@@ -252,7 +255,7 @@ export function ItemRow({
       accessibilityState={{ busy }}
       accessibilityLabel={[
         title,
-        busy ? undefined : unit ? `${value} ${unit}` : String(value),
+        busy || value === undefined ? undefined : unit ? `${value} ${unit}` : String(value),
         detail,
         ...tags,
       ]

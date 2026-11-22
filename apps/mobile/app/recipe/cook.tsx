@@ -67,16 +67,20 @@ export default function CookModeScreen() {
   const step = steps[index] ?? ''
 
   // VoiceOver does not read a live region on iOS, so a new step is announced.
-  // Not on arrival, where the header already says where the cook is.
-  const announced = useRef<string | null>(null)
+  // Tracked by index rather than text so identical consecutive steps still
+  // announce. Not on arrival, where the header already says where the cook is.
+  const announced = useRef<number | null>(null)
   useEffect(() => {
     // Finishing resets the step to the first, which is not a step to read out.
     if (!step || finished) return
-    if (announced.current !== null && announced.current !== step) {
+    if (announced.current !== null && announced.current !== index) {
       AccessibilityInfo.announceForAccessibility(step)
     }
-    announced.current = step
-  }, [step, finished])
+    announced.current = index
+  }, [index, step, finished])
+
+  const showChecklist =
+    ingredients.length > 0 && !isPending && Boolean(recipe) && steps.length > 0 && !finished
 
   const header = (
     <AppBar
@@ -85,7 +89,7 @@ export default function CookModeScreen() {
       onBack={() => goBack()}
       backLabel={t('recipes:cook.close')}
       action={
-        ingredients.length > 0 ? (
+        showChecklist ? (
           <IconButton
             size="sm"
             variant="neutral"
@@ -128,11 +132,9 @@ export default function CookModeScreen() {
       <Screen header={header}>
         <EmptyState
           title={t('recipes:detail.noSteps')}
+          description={recipe.isMine ? t('recipes:cook.noSteps') : undefined}
           icon={{ set: 'food', name: 'cooking-pot' }}
         />
-        <Text variant="body" className="text-center text-muted">
-          {t('recipes:cook.noSteps')}
-        </Text>
       </Screen>
     )
   }

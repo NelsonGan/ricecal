@@ -36,7 +36,7 @@ export function WorkoutItem({ workout }: { workout: WorkoutSummary }) {
         t('workouts:history.sets', { count: workout.setCount }),
       ]}
       tagTone="hibiscus"
-      value={counted ? counted : Math.round(workout.durationS / 60)}
+      value={counted ? counted : Math.max(1, Math.round(workout.durationS / 60))}
       unit={counted ? t('common:unit.kcal') : t('workouts:history.minutes')}
       valueTone={counted ? 'hibiscus' : 'ink'}
       compact

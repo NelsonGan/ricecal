@@ -83,6 +83,8 @@ describe('portionLabel', () => {
     expect(say(1.5, 'Quantity not specified')).toBe('1½ servings')
     // A code the import wrote is still a unit it can read.
     expect(say(1.5, '383 GRM')).toBe('574.5 g')
+    // Inspects later parentheticals when the first is not a measurement.
+    expect(say(1, '1 regular (approx) (350 ml)')).toBe('350 ml')
   })
 
   it('multiplies a count of servings the label carries', () => {

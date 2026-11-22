@@ -53,6 +53,7 @@ export type ToggleRowProps = {
   description?: string
   value: boolean
   onValueChange: (value: boolean) => void
+  disabled?: boolean
   leading?: ReactNode
   divider?: boolean
   className?: string
@@ -70,6 +71,7 @@ export function ToggleRow({
   description,
   value,
   onValueChange,
+  disabled,
   leading,
   divider = true,
   className,
@@ -82,7 +84,12 @@ export function ToggleRow({
           <Text variant="label">{title}</Text>
           {description ? <Text variant="meta">{description}</Text> : null}
         </View>
-        <Switch value={value} onValueChange={onValueChange} accessibilityLabel={title} />
+        <Switch
+          value={value}
+          onValueChange={onValueChange}
+          disabled={disabled}
+          accessibilityLabel={title}
+        />
       </View>
       {divider ? <View className="h-px bg-line" /> : null}
     </View>

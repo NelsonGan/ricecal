@@ -73,13 +73,12 @@ final class ShareViewController: UIViewController {
     let group = DispatchGroup()
     let lock = NSLock()
     var candidates: [(rank: Int, order: Int, text: String)] = []
-    var order = 0
+    var nextOrder = 0
 
-    func add(_ rank: Int, _ text: String?) {
+    func add(_ rank: Int, _ order: Int, _ text: String?) {
       guard let text, !text.isEmpty else { return }
       lock.lock()
       candidates.append((rank, order, text))
-      order += 1
       lock.unlock()
     }
 
@@ -87,14 +86,18 @@ final class ShareViewController: UIViewController {
       for provider in item.attachments ?? [] {
         for (rank, type) in [(0, UTType.url), (1, UTType.plainText)]
         where provider.hasItemConformingToTypeIdentifier(type.identifier) {
+          let order = nextOrder
+          nextOrder += 1
           group.enter()
           provider.loadItem(forTypeIdentifier: type.identifier, options: nil) { value, _ in
-            add(rank, text(of: value))
+            add(rank, order, text(of: value))
             group.leave()
           }
         }
       }
-      add(2, item.attributedContentText?.string)
+      let order = nextOrder
+      nextOrder += 1
+      add(2, order, item.attributedContentText?.string)
     }
 
     group.notify(queue: .global()) {

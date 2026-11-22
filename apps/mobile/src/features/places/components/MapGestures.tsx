@@ -17,16 +17,23 @@ export function scaleFrom(
   bottomRight: LatLng,
   size: { width: number; height: number },
 ): MapScale {
+  let dLng = bottomRight.longitude - topLeft.longitude
+  if (dLng < 0) dLng += 360
   return {
-    lngPerPoint: (bottomRight.longitude - topLeft.longitude) / Math.max(1, size.width),
+    lngPerPoint: dLng / Math.max(1, size.width),
     latPerPoint: (topLeft.latitude - bottomRight.latitude) / Math.max(1, size.height),
   }
+}
+
+function wrapLongitude(longitude: number): number {
+  const wrapped = ((((longitude + 180) % 360) + 360) % 360) - 180
+  return wrapped === -180 && longitude > 0 ? 180 : wrapped
 }
 
 /** Where a drag of (dx, dy) points moves `center` to: the map follows the finger. */
 export function pannedCenter(center: LatLng, scale: MapScale, dx: number, dy: number): LatLng {
   return {
-    longitude: center.longitude - dx * scale.lngPerPoint,
+    longitude: wrapLongitude(center.longitude - dx * scale.lngPerPoint),
     latitude: Math.max(-85, Math.min(85, center.latitude + dy * scale.latPerPoint)),
   }
 }
@@ -84,35 +91,55 @@ export function MapGestures({
    * close over, so a plain variable set after touch down read as null in them
    * and no drag moved the map.
    */
-  const start = useRef<{ camera: Camera; scale: MapScale } | null>(null)
+  const panStart = useRef<{ camera: Camera; scale: MapScale } | null>(null)
+  const pinchStart = useRef<Camera | null>(null)
+  const activeGestures = useRef(0)
 
   const gestures = useMemo(() => {
-    const read = () => {
+    const readPan = () => {
       const map = mapRef.current
       if (!map) return
       const { size } = props.current
-      start.current = null
+      panStart.current = null
       void Promise.all([
         map.getCamera(),
         map.coordinateForPoint({ x: 0, y: 0 }),
         map.coordinateForPoint({ x: size.width, y: size.height }),
       ])
         .then(([camera, topLeft, bottomRight]) => {
-          start.current = { camera, scale: scaleFrom(topLeft, bottomRight, size) }
+          panStart.current = { camera, scale: scaleFrom(topLeft, bottomRight, size) }
         })
         .catch(() => undefined)
     }
-    const began = () => props.current.onGestureStart?.()
-    const ended = () => props.current.onGestureEnd?.()
+    const readPinch = () => {
+      const map = mapRef.current
+      if (!map) return
+      pinchStart.current = null
+      void map
+        .getCamera()
+        .then((camera) => {
+          pinchStart.current = camera
+        })
+        .catch(() => undefined)
+    }
+    const began = () => {
+      activeGestures.current += 1
+      if (activeGestures.current === 1) props.current.onGestureStart?.()
+    }
+    const ended = () => {
+      if (activeGestures.current === 0) return
+      activeGestures.current -= 1
+      if (activeGestures.current === 0) props.current.onGestureEnd?.()
+    }
 
     const pan = Gesture.Pan()
       .runOnJS(true)
       .minDistance(4)
-      .onBegin(read)
+      .onBegin(readPan)
       .onStart(began)
       .onEnd(ended)
       .onUpdate((event) => {
-        const at = start.current
+        const at = panStart.current
         if (!at) return
         mapRef.current?.setCamera({
           center: pannedCenter(at.camera.center, at.scale, event.translationX, event.translationY),
@@ -121,13 +148,13 @@ export function MapGestures({
 
     const pinch = Gesture.Pinch()
       .runOnJS(true)
-      .onBegin(read)
+      .onBegin(readPinch)
       .onStart(began)
       .onEnd(ended)
       .onUpdate((event) => {
-        const at = start.current
-        if (!at?.camera.altitude) return
-        mapRef.current?.setCamera({ altitude: pinchedAltitude(at.camera.altitude, event.scale) })
+        const at = pinchStart.current
+        if (!at?.altitude) return
+        mapRef.current?.setCamera({ altitude: pinchedAltitude(at.altitude, event.scale) })
       })
 
     const doubleTap = Gesture.Tap()

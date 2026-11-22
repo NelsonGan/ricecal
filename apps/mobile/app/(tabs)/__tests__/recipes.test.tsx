@@ -45,6 +45,7 @@ jest.mock('@/features/logging', () => {
 jest.mock('@/data', () => ({
   snapshotFromRecipe: (recipe: { name: string }) => ({ name: recipe.name }),
   storedImageSource: () => undefined,
+  useEntitlement: () => ({ entitled: false }),
   useLogFood: () => ({ mutateAsync: mockLog, isPending: false }),
   useMealPhotoUrl: () => ({ data: undefined, isLoading: false }),
   useRecipeQuota: () => ({ count: 4, limit: null, atLimit: false, loading: false }),

@@ -1,6 +1,6 @@
 import * as Linking from 'expo-linking'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -25,6 +25,7 @@ import {
   RecipeSteps,
   ShareSheet,
   sourceHost,
+  splitSteps,
   useCopyRecipe,
   useRecipeLogDate,
   useTickedIngredients,
@@ -87,7 +88,7 @@ export default function RecipeDetailScreen() {
 
   const { id, date } = useLocalSearchParams<{ id: string; date?: string }>()
   const { data: recipe, isPending } = useRecipe(id)
-  const { data: ingredients = [] } = useRecipeIngredients(id)
+  const { data: ingredients = [], isPending: ingredientsPending } = useRecipeIngredients(id)
 
   const { logDate, isToday } = useRecipeLogDate(date)
   const favourite = useFavouriteRecipe()
@@ -103,16 +104,35 @@ export default function RecipeDetailScreen() {
    */
   const [cookingFor, setCookingFor] = useState<number | null>(null)
   /** Ingredients already in the pot. This visit only; see `IngredientChecklist`. */
-  const [ticked, toggleTick] = useTickedIngredients(id ?? '')
+  const [ticked, toggleTick] = useTickedIngredients(recipe?.id ?? id ?? '')
   const [logging, setLogging] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [menu, setMenu] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [reporting, setReporting] = useState(false)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+    }
+  }, [])
+  // Reset local UI state if this route instance is reused for another recipe id.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset when the route param changes
+  useEffect(() => {
+    setSection('ingredients')
+    setCookingFor(null)
+    setLogging(false)
+    setSharing(false)
+    setMenu(false)
+    setDeleting(false)
+    setReporting(false)
+  }, [id])
   // What the menu's button opens, held until the menu's own window is gone.
   // iOS will not present a modal while another is still dismissing, so opening
   // the delete or share sheet in the same tap left it unshown.
   const afterMenu = useRef<(() => void) | null>(null)
+  const deletedRef = useRef(false)
 
   // Internal navigation carries the row id. A link carries the bearer slug,
   // which the photo signer needs as well as the recipe queries.
@@ -135,25 +155,27 @@ export default function RecipeDetailScreen() {
    * the next fetch, and staying here would leave the reader looking at the thing
    * they just asked never to see again while the query behind it 404s.
    */
+  const moderating = report.isPending || block.isPending
+
   const submitReport = async (reason: ReportReason) => {
-    if (!recipe) return
+    if (!recipe || moderating) return
     setReporting(false)
     try {
       await report.mutateAsync({ recipeId: recipe.id, reason })
       toast.show({ title: t('recipes:report.done') })
-      leave()
+      if (mounted.current) leave()
     } catch {
       toast.show({ title: t('recipes:report.failed'), tone: 'error' })
     }
   }
 
   const blockCook = async () => {
-    if (!recipe) return
+    if (!recipe || moderating) return
     setReporting(false)
     try {
       await block.mutateAsync(recipe.ownerId)
       toast.show({ title: t('recipes:report.blocked') })
-      leave()
+      if (mounted.current) leave()
     } catch {
       toast.show({ title: t('recipes:report.failed'), tone: 'error' })
     }
@@ -198,6 +220,8 @@ export default function RecipeDetailScreen() {
 
   const cooking = cookingFor ?? recipe.servings
   const priced = recipe.ingredientCount > 0
+  const hasSteps = splitSteps(recipe.steps ?? '').length > 0
+  const hasFooter = hasSteps || priced || recipe.isMine
   // A recipe from a video is the video's creator's, whoever imported it, so
   // they are the one credited, on your own copy too.
   const credit = recipe.videoCredit
@@ -220,7 +244,12 @@ export default function RecipeDetailScreen() {
 
   const copy = async () => {
     const newId = await copyRecipe({ recipeId: recipe.id, shareSlug: sharedSlug })
-    if (newId) router.replace({ pathname: '/recipe/[id]', params: { id: newId } })
+    if (newId) {
+      router.replace({
+        pathname: '/recipe/[id]',
+        params: { id: newId, ...(date ? { date } : {}) },
+      })
+    }
   }
 
   const startCooking = () =>
@@ -307,32 +336,34 @@ export default function RecipeDetailScreen() {
          person at the stove, on every recipe that has a method to page
          through. */
       footer={
-        <View className="flex-row items-center gap-2.5">
-          {recipe.steps ? (
-            <Button
-              className="flex-1"
-              variant="secondary"
-              leftIcon={<Icon set="food" name="cooking-pot" size={22} />}
-              onPress={startCooking}
-            >
-              {t('recipes:detail.startCooking')}
-            </Button>
-          ) : null}
-          {/* Your own recipe with nothing in it yet costs nothing to log, so
-              the thing to do next is to fill it in. */}
-          {priced ? (
-            <Button className="flex-1" onPress={() => setLogging(true)}>
-              {isToday ? t('recipes:detail.addToDay') : t('common:action.add')}
-            </Button>
-          ) : recipe.isMine ? (
-            <Button
-              className="flex-1"
-              onPress={() => router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })}
-            >
-              {t('recipes:edit.addIngredient')}
-            </Button>
-          ) : null}
-        </View>
+        hasFooter ? (
+          <View className="flex-row items-center gap-2.5">
+            {hasSteps ? (
+              <Button
+                className="flex-1"
+                variant="secondary"
+                leftIcon={<Icon set="food" name="cooking-pot" size={22} />}
+                onPress={startCooking}
+              >
+                {t('recipes:detail.startCooking')}
+              </Button>
+            ) : null}
+            {/* Your own recipe with nothing in it yet costs nothing to log, so
+                the thing to do next is to fill it in. */}
+            {priced ? (
+              <Button className="flex-1" onPress={() => setLogging(true)}>
+                {isToday ? t('recipes:detail.addToDay') : t('common:action.add')}
+              </Button>
+            ) : recipe.isMine ? (
+              <Button
+                className="flex-1"
+                onPress={() => router.push({ pathname: '/recipe/edit', params: { id: recipe.id } })}
+              >
+                {t('recipes:edit.addIngredient')}
+              </Button>
+            ) : null}
+          </View>
+        ) : undefined
       }
     >
       {/* Tall enough for the whole dish when there is a photograph of it. A
@@ -446,7 +477,7 @@ export default function RecipeDetailScreen() {
                     <IconButton
                       size="xs"
                       variant="neutral"
-                      hitSlop={6}
+                      hitSlop={3}
                       disabled={cooking <= 1}
                       accessibilityLabel={t('common:a11y.decrease')}
                       onPress={() => setCookingFor(Math.max(1, cooking - 1))}
@@ -456,7 +487,7 @@ export default function RecipeDetailScreen() {
                     <IconButton
                       size="xs"
                       variant="neutral"
-                      hitSlop={6}
+                      hitSlop={3}
                       disabled={cooking >= MAX_COOKING_FOR}
                       accessibilityLabel={t('common:a11y.increase')}
                       onPress={() => setCookingFor(Math.min(MAX_COOKING_FOR, cooking + 1))}
@@ -473,6 +504,12 @@ export default function RecipeDetailScreen() {
                   onToggle={toggleTick}
                 />
               </View>
+            ) : ingredientsPending && recipe.ingredientCount > 0 ? (
+              <View className="gap-3">
+                <Skeleton className="h-[20px] w-3/4" />
+                <Skeleton className="h-[20px] w-2/3" />
+                <Skeleton className="h-[20px] w-1/2" />
+              </View>
             ) : (
               <Text variant="body" className="text-muted">
                 {t('recipes:detail.noIngredients')}
@@ -482,14 +519,14 @@ export default function RecipeDetailScreen() {
         ) : (
           <Card
             title={
-              recipe.isMine
+              recipe.isMine || credit
                 ? t('recipes:detail.steps')
                 : t('recipes:detail.stepsFrom', {
                     name: recipe.authorName || t('recipes:someCook'),
                   })
             }
           >
-            {recipe.steps ? (
+            {hasSteps && recipe.steps ? (
               <RecipeSteps steps={recipe.steps} />
             ) : (
               <Text variant="body" className="text-muted">
@@ -506,9 +543,7 @@ export default function RecipeDetailScreen() {
           <Tappable
             className="flex-row items-center gap-3 rounded-tile border-[3px] border-line bg-surface px-4 py-3"
             accessibilityRole="link"
-            accessibilityLabel={t('recipes:import.watch', {
-              platform: t(`recipes:platform.${credit.platform}`),
-            })}
+            accessibilityLabel={t('recipes:import.watch', { platform: creditPlatform })}
             onPress={() => {
               Linking.openURL(credit.url).catch(() => {})
             }}
@@ -516,10 +551,10 @@ export default function RecipeDetailScreen() {
             <PlatformLogo platform={credit.platform} size={36} />
             <View className="min-w-0 flex-1">
               <Text variant="caption">
-                {t('recipes:import.watch', { platform: t(`recipes:platform.${credit.platform}`) })}
+                {t('recipes:import.watch', { platform: creditPlatform })}
               </Text>
               <Text variant="label" numberOfLines={1}>
-                {credit.author || t(`recipes:platform.${credit.platform}`)}
+                {credit.author || creditPlatform}
               </Text>
             </View>
             <Icon set="ui" name="chevron-right" size={18} />
@@ -635,13 +670,20 @@ export default function RecipeDetailScreen() {
         scrollable={false}
       >
         {REPORT_REASONS.map((reason) => (
-          <Button key={reason} variant="secondary" fullWidth onPress={() => submitReport(reason)}>
+          <Button
+            key={reason}
+            variant="secondary"
+            fullWidth
+            disabled={moderating}
+            onPress={() => submitReport(reason)}
+          >
             {t(`recipes:report.${reason}`)}
           </Button>
         ))}
         <Button
           variant="danger"
           fullWidth
+          disabled={moderating}
           leftIcon={<Icon set="ui" name="close" size={20} />}
           onPress={blockCook}
         >
@@ -652,16 +694,26 @@ export default function RecipeDetailScreen() {
       <ConfirmSheet
         visible={deleting}
         onClose={() => setDeleting(false)}
+        onDismiss={() => {
+          if (deletedRef.current) {
+            deletedRef.current = false
+            leave()
+          }
+        }}
         title={t('recipes:detail.deleteTitle')}
         description={t('recipes:detail.deleteBody')}
         confirmLabel={t('common:action.delete')}
         cancelLabel={t('common:action.cancel')}
         tone="danger"
         onConfirm={async () => {
-          await remove.mutateAsync({ id: recipe.id, photoPath: recipe.photoPath })
-          setDeleting(false)
+          try {
+            await remove.mutateAsync({ id: recipe.id, photoPath: recipe.photoPath })
+          } catch {
+            toast.show({ title: t('recipes:report.failed'), tone: 'error' })
+            throw new Error('delete failed')
+          }
+          deletedRef.current = true
           toast.show({ title: t('recipes:detail.deleted'), tone: 'neutral' })
-          leave()
         }}
       />
     </Screen>

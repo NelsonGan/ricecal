@@ -7,7 +7,7 @@
 //
 //   platform    caption  cover  video          how
 //   TikTok      yes      yes    yes + speech   the page's rehydration JSON
-//   YouTube     yes      yes    by link        oEmbed and the watch page
+//   YouTube     yes      yes    no             oEmbed and the watch page
 //   X           yes      yes    yes            X's own embed endpoint
 //   Facebook    yes      yes    yes            the page, as a browser asks
 //   Instagram   yes      yes    no             link-preview meta tags, /media
@@ -37,7 +37,7 @@ export type FetchedPost = PostText & {
    * fine for the model to read, wrong as the recipe's photograph.
    */
   coverIsCard?: boolean
-  /** A file the function can download, or for YouTube the watch link. */
+  /** A video file the function can download, or null when the platform does not expose one. */
   videoUrl: string | null
   /** Headers the video URL only answers with (TikTok signs it to the page's cookies). */
   videoHeaders?: Record<string, string>
@@ -123,10 +123,19 @@ export async function fetchPost(
   // The recipe page the caption links to, if there is one. Never fatal.
   // Bounded as a whole: two links of four hops each could otherwise spend
   // most of the import's time on a page that is only a bonus.
-  const linked = await Promise.race([
-    readLinkedRecipe(post.caption ?? '', fetcher).catch(() => null),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), LINKED_RECIPE_MS)),
-  ])
+  const caption = post.caption ?? ''
+  let linked: string | null = null
+  if (recipeLinks(caption).length > 0) {
+    let timer: ReturnType<typeof setTimeout> | undefined
+    linked = await Promise.race([
+      readLinkedRecipe(caption, fetcher).catch(() => null),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), LINKED_RECIPE_MS)
+      }),
+    ]).finally(() => {
+      if (timer !== undefined) clearTimeout(timer)
+    })
+  }
   return { ...post, linkedRecipe: linked ?? post.linkedRecipe ?? null }
 }
 
@@ -296,7 +305,7 @@ async function readPreview(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
     // the dish.
     post.coverIsCard = true
   }
-  post.videoUrl = httpsOrNull(tags['og:video'] ?? tags['og:video:secure_url'])
+  post.videoUrl = httpsOrNull(tags['og:video']) ?? httpsOrNull(tags['og:video:secure_url'])
   return post
 }
 
@@ -369,13 +378,16 @@ async function readTikTok(link: VideoLink, fetcher: Fetcher): Promise<FetchedPos
   post.caption = item.desc?.trim() || null
   post.durationSeconds = seconds(item.video?.duration)
   post.coverUrl =
-    httpsOrNull(item.video?.cover ?? item.video?.originCover) ??
+    httpsOrNull(item.video?.cover) ??
+    httpsOrNull(item.video?.originCover) ??
     httpsOrNull(item.imagePost?.cover?.imageURL?.urlList?.[0])
 
   // The file is signed to the page's own cookies, so it is fetched with them
   // and the page as the referrer, exactly as the page itself would.
   post.videoUrl =
-    smallestTikTokVideo(item) ?? httpsOrNull(item.video?.playAddr ?? item.video?.downloadAddr)
+    smallestTikTokVideo(item) ??
+    httpsOrNull(item.video?.playAddr) ??
+    httpsOrNull(item.video?.downloadAddr)
   if (post.videoUrl) {
     post.videoHeaders = {
       'user-agent': BROWSER_UA,
@@ -455,13 +467,20 @@ function overHttp1(fetcher: Fetcher): Fetcher {
 
 async function readYouTube(link: VideoLink, fetcher: Fetcher): Promise<FetchedPost | null> {
   const post = base(link)
-  // oEmbed for the title, the channel and the cover: the documented route, and
-  // the one least likely to be refused.
-  const oembed = await page(
-    `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(link.canonicalUrl)}`,
-    { 'user-agent': BROWSER_UA },
-    fetcher,
-  ).catch(() => null)
+  // oEmbed for the title, channel and fallback cover; watch page for the
+  // description, length and higher-res cover. Both are independent, so run them
+  // together.
+  const [oembed, watch] = await Promise.all([
+    page(
+      `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(link.canonicalUrl)}`,
+      { 'user-agent': BROWSER_UA },
+      fetcher,
+    ).catch(() => null),
+    page(link.canonicalUrl, { 'user-agent': BROWSER_UA }, overHttp1(fetcher)).catch((error) => {
+      console.warn('[video-post] YouTube watch page not read:', String(error).slice(0, 160))
+      return null
+    }),
+  ])
   if (oembed) {
     try {
       const o = JSON.parse(oembed.text) as {
@@ -476,16 +495,6 @@ async function readYouTube(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
       // Fall through to the watch page.
     }
   }
-  // The description, which oEmbed leaves out and which is where a cooking
-  // channel writes its ingredients, is in the watch page's player response.
-  const watch = await page(
-    link.canonicalUrl,
-    { 'user-agent': BROWSER_UA },
-    overHttp1(fetcher),
-  ).catch((error) => {
-    console.warn('[video-post] YouTube watch page not read:', String(error).slice(0, 160))
-    return null
-  })
   if (watch) {
     post.durationSeconds = seconds(watch.text.match(/"lengthSeconds":"(\d+)"/)?.[1])
     const description = watch.text.match(/"shortDescription":"((?:[^"\\]|\\.)*)"/)?.[1]
@@ -513,8 +522,6 @@ async function readYouTube(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
     post.coverUrl = ogImage ?? fallback
     post.coverFallbackUrl = ogImage && ogImage !== fallback ? fallback : null
   }
-  // The video model fetches YouTube itself, by the watch link.
-  post.videoUrl = link.canonicalUrl
   return post
 }
 
@@ -670,11 +677,15 @@ async function readRednote(link: VideoLink, fetcher: Fetcher): Promise<FetchedPo
     post.caption = tags['og:description'] ?? tags.description ?? null
     // The page names two `og:image`s, the site's logo (protocol-relative)
     // first, and `metaTags` keeps the first of a name: take the first that
-    // is a picture this can fetch.
+    // is a picture this can fetch, regardless of attribute order.
     post.coverUrl =
-      Array.from(got.text.matchAll(/<meta\s[^>]*og:image"[^>]*content\s*=\s*"([^"]+)"/gi), (m) =>
-        httpsOrNull(upgrade(decodeEntities(m[1]))),
-      ).find(Boolean) ?? null
+      Array.from(got.text.matchAll(/<meta\s+[^>]*>/gi), (m) => {
+        const tag = m[0]
+        const key = tag.match(/(?:property|name)\s*=\s*"([^"]+)"/i)?.[1]?.toLowerCase()
+        if (key !== 'og:image') return null
+        const content = tag.match(/content\s*=\s*"([^"]+)"/i)?.[1]
+        return content ? httpsOrNull(upgrade(decodeEntities(content))) : null
+      }).find(Boolean) ?? null
   }
   return post
 }
@@ -759,13 +770,19 @@ export function isFetchableHost(hostname: string): boolean {
   return true
 }
 
+function hasSafePortAndAuth(url: URL): boolean {
+  if (url.username || url.password) return false
+  return !url.port || url.port === '80' || url.port === '443'
+}
+
 /** Candidate recipe links in a caption, in order. Exported for its test. */
 export function recipeLinks(caption: string): URL[] {
   const out: URL[] = []
-  for (const match of caption.matchAll(/https?:\/\/[^\s<>"'`)\]]+/gi)) {
+  for (const match of caption.matchAll(/https?:\/\/[A-Za-z0-9\-._~:/?#[\]@!$&'()*+,;=%]+/gi)) {
     try {
-      const url = new URL(match[0].replace(/[.,!?;:]+$/, ''))
+      const url = new URL(match[0].replace(/[).,!?;:]+$/, ''))
       if (url.protocol !== 'https:' && url.protocol !== 'http:') continue
+      if (!hasSafePortAndAuth(url)) continue
       if (!isFetchableHost(url.hostname) || NOT_RECIPE_HOSTS.test(url.hostname)) continue
       // A bare domain is a shop or a home page; a recipe has a path.
       if (url.pathname.length <= 1) continue
@@ -880,8 +897,19 @@ export async function readLinkedRecipe(
       const location = res.headers.get('location')
       if (res.status >= 300 && res.status < 400 && location) {
         await res.body?.cancel()
-        const next = new URL(location, url)
-        if (!isFetchableHost(next.hostname) || !/^https?:$/.test(next.protocol)) break
+        let next: URL
+        try {
+          next = new URL(location, url)
+        } catch {
+          break
+        }
+        if (
+          !isFetchableHost(next.hostname) ||
+          !/^https?:$/.test(next.protocol) ||
+          !hasSafePortAndAuth(next)
+        ) {
+          break
+        }
         url = next
         continue
       }
@@ -901,17 +929,7 @@ export async function readLinkedRecipe(
   return null
 }
 
-/** Whether an address is loopback, private, link-local, CGNAT or otherwise not the internet. */
-export function isPrivateAddress(address: string): boolean {
-  const a = address.toLowerCase()
-  if (a.includes(':')) {
-    // IPv6: loopback, unspecified, unique local, link local, and v4-mapped.
-    if (a === '::1' || a === '::') return true
-    if (/^f[cd]/.test(a) || /^fe[89ab]/.test(a)) return true
-    const mapped = a.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/)?.[1]
-    return mapped ? isPrivateAddress(mapped) : false
-  }
-  const [p, q] = a.split('.').map(Number)
+function isPrivateIpv4Octets(p: number, q: number): boolean {
   return (
     p === 0 ||
     p === 10 ||
@@ -923,6 +941,83 @@ export function isPrivateAddress(address: string): boolean {
     (p === 198 && (q === 18 || q === 19)) ||
     p >= 224
   )
+}
+
+function parseIpv6Groups(raw: string): number[] | null {
+  const address = raw.split('%')[0].toLowerCase()
+  const halves = address.split('::')
+  if (halves.length > 2) return null
+
+  const parseSide = (side: string): number[] | null => {
+    if (!side) return []
+    const parts = side.split(':')
+    const out: number[] = []
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i]
+      if (part.includes('.')) {
+        if (i !== parts.length - 1) return null
+        const octets = part.split('.').map(Number)
+        if (octets.length !== 4 || octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+          return null
+        }
+        out.push((octets[0] << 8) | octets[1], (octets[2] << 8) | octets[3])
+      } else {
+        if (!/^[0-9a-f]{1,4}$/.test(part)) return null
+        out.push(Number.parseInt(part, 16))
+      }
+    }
+    return out
+  }
+
+  const left = parseSide(halves[0])
+  if (!left) return null
+  if (halves.length === 1) return left.length === 8 ? left : null
+  const right = parseSide(halves[1])
+  if (!right) return null
+  const fill = 8 - left.length - right.length
+  if (fill < 1) return null
+  return [...left, ...new Array<number>(fill).fill(0), ...right]
+}
+
+/** Whether an address is loopback, private, link-local, CGNAT or otherwise not the internet. */
+export function isPrivateAddress(address: string): boolean {
+  const a = address.trim().toLowerCase()
+  if (a.includes(':')) {
+    const g = parseIpv6Groups(a)
+    // Fail closed on malformed addresses.
+    if (!g) return true
+    const zeros = (end: number) => g.slice(0, end).every((n) => n === 0)
+    // Unspecified (::), loopback (::1), and deprecated IPv4-compatible (::/96).
+    if (zeros(6)) return true
+    // Unique local (fc00::/7), link-local (fe80::/10), multicast (ff00::/8).
+    if ((g[0] & 0xfe00) === 0xfc00 || (g[0] & 0xffc0) === 0xfe80 || (g[0] & 0xff00) === 0xff00) {
+      return true
+    }
+    // Discard-only (100::/64) and documentation (2001:db8::/32).
+    if (
+      (g[0] === 0x0100 && g[1] === 0 && g[2] === 0 && g[3] === 0) ||
+      (g[0] === 0x2001 && g[1] === 0x0db8)
+    ) {
+      return true
+    }
+    // IPv4-mapped (::ffff:0:0/96) and SIIT (::ffff:0:0:0/96): check embedded IPv4.
+    const ipv4Mapped = zeros(5) && g[5] === 0xffff
+    const siit = zeros(4) && g[4] === 0xffff && g[5] === 0
+    // NAT64 well-known (64:ff9b::/96) and local-use (64:ff9b:1::/48).
+    const nat64Local = g[0] === 0x0064 && g[1] === 0xff9b && g[2] === 1
+    if (nat64Local) return true
+    const nat64WellKnown =
+      g[0] === 0x0064 && g[1] === 0xff9b && g[2] === 0 && g[3] === 0 && g[4] === 0 && g[5] === 0
+    if (ipv4Mapped || siit || nat64WellKnown) {
+      return isPrivateIpv4Octets(g[6] >> 8, g[6] & 0xff)
+    }
+    return false
+  }
+  const octets = a.split('.').map(Number)
+  if (octets.length !== 4 || octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+    return true
+  }
+  return isPrivateIpv4Octets(octets[0], octets[1])
 }
 
 /**
@@ -948,7 +1043,9 @@ function httpsOrNull(value: unknown): string | null {
   if (typeof value !== 'string') return null
   try {
     const url = new URL(value)
-    return url.protocol === 'https:' && isFetchableHost(url.hostname) ? url.toString() : null
+    return url.protocol === 'https:' && hasSafePortAndAuth(url) && isFetchableHost(url.hostname)
+      ? url.toString()
+      : null
   } catch {
     return null
   }
@@ -956,8 +1053,10 @@ function httpsOrNull(value: unknown): string | null {
 
 /**
  * A cover or a video, bounded, and only of the kind asked for: a platform that
- * answers an image URL with an HTML error page must not have that page sent to
- * a model as a photo.
+ * answers an image URL with an HTML error page or SVG must not have that sent
+ * to a model or stored as a cover. Redirect hops are validated manually (both
+ * URL syntax and DNS resolution) within one shared timeout budget so a CDN
+ * redirect cannot reach an internal host or multiply the timeout.
  */
 export async function fetchMedia(
   url: string,
@@ -966,16 +1065,49 @@ export async function fetchMedia(
   headers: Record<string, string> = { 'user-agent': BROWSER_UA },
   fetcher: Fetcher = fetch,
   timeoutMs: number = MEDIA_TIMEOUT_MS,
+  resolves: (host: string) => Promise<boolean> = fetcher === fetch
+    ? resolvesPublicly
+    : () => Promise.resolve(true),
 ): Promise<{ bytes: Uint8Array; type: string } | null> {
   try {
-    const res = await fetcher(url, { headers, signal: AbortSignal.timeout(timeoutMs) })
-    const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
-    const length = Number(res.headers.get('content-length') ?? 0)
-    if (!res.ok || !type.startsWith(typePrefix) || length > maxBytes) {
-      await res.body?.cancel()
-      return null
+    let current = httpsOrNull(url)
+    if (!current) return null
+    const deadline = Date.now() + timeoutMs
+    for (let hop = 0; hop < 4; hop++) {
+      if (!(await resolves(new URL(current).hostname))) return null
+      const remaining = deadline - Date.now()
+      if (remaining <= 0) return null
+      const res = await fetcher(current, {
+        headers,
+        redirect: 'manual',
+        signal: AbortSignal.timeout(remaining),
+      })
+      const location = res.headers.get('location')
+      if (res.status >= 300 && res.status < 400 && location) {
+        await res.body?.cancel()
+        let next: string | null = null
+        try {
+          next = httpsOrNull(new URL(location, current).toString())
+        } catch {
+          return null
+        }
+        if (!next) return null
+        current = next
+        continue
+      }
+      const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
+      const length = Number(res.headers.get('content-length') ?? 0)
+      const typeAllowed =
+        typePrefix === 'image/'
+          ? type.startsWith('image/') && !type.includes('svg')
+          : type.startsWith('video/')
+      if (!res.ok || !typeAllowed || length > maxBytes) {
+        await res.body?.cancel()
+        return null
+      }
+      return { bytes: await readBoundedBytes(res.body, maxBytes), type }
     }
-    return { bytes: await readBoundedBytes(res.body, maxBytes), type }
+    return null
   } catch (error) {
     console.warn(
       `[video-post] ${typePrefix} not fetched:`,

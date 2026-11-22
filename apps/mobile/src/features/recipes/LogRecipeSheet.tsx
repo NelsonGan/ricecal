@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
@@ -46,6 +46,14 @@ export function LogRecipeSheet({
   const { t } = useTranslation(['recipes', 'common'])
   const { log, pending } = useLogRecipe()
   const [quantity, setQuantity] = useState(1)
+  const loggedRef = useRef(false)
+
+  useEffect(() => {
+    if (visible) {
+      setQuantity(1)
+      loggedRef.current = false
+    }
+  }, [visible])
 
   // The whole pot is the end of the scale, and a pot that feeds one still
   // reaches two, for the second sandwich.
@@ -57,10 +65,13 @@ export function LogRecipeSheet({
    * Half, then every whole serving while there is room for them, then the
    * whole pot at the end. Past four, "Whole pot" at the end runs into the mark
    * before it and a scale of numbers becomes a ruler, so a bigger pot marks
-   * half, the middle and the end.
+   * half, the middle and the end. Only label the end mark "Whole pot", so a
+   * single-serving recipe does not put "Whole pot" in the middle beside "2".
    */
   const potLabel = (value: number) =>
-    value === recipe.servings ? t('recipes:detail.portion.pot') : servingsText(value)
+    value === recipe.servings && value === max
+      ? t('recipes:detail.portion.pot')
+      : servingsText(value)
   const wholes =
     max <= 4 ? Array.from({ length: max }, (_, index) => index + 1) : [Math.round(max / 2), max]
   const marks = [0.5, ...wholes].map((value) => ({ value, label: potLabel(value) }))
@@ -72,7 +83,12 @@ export function LogRecipeSheet({
     <Sheet
       visible={visible}
       onClose={onClose}
-      onShow={() => setQuantity(1)}
+      onDismiss={() => {
+        if (loggedRef.current) {
+          loggedRef.current = false
+          onLogged?.()
+        }
+      }}
       title={t('recipes:detail.logTitle')}
       closeLabel={t('common:action.close')}
       scrollable={false}
@@ -82,8 +98,8 @@ export function LogRecipeSheet({
           loading={pending}
           onPress={() =>
             log(recipe, quantity, logDate, () => {
+              loggedRef.current = true
               onClose()
-              onLogged?.()
             })
           }
         >

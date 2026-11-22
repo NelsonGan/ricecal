@@ -401,7 +401,8 @@ select is(
 select is(
   (select count(*)::integer
    from (values ('barcode_misses'), ('food_scan_items'), ('food_scan_misses'),
-                ('job_runs'), ('recipe_saves'), ('social_counters'),
+                ('job_runs'), ('recipe_imports'), ('recipe_import_runs'),
+                ('recipe_saves'), ('social_counters'),
                 ('social_rate_limits'), ('groups'), ('group_members'), ('group_invites'),
                 ('group_reactions'), ('group_nudges'), ('group_messages'),
                 ('group_message_reports'), ('group_reports'), ('push_tokens')) expected(table_name)
@@ -422,8 +423,8 @@ select is(
                           ('MAINTAIN')) privileges(privilege_name)
        where pg_catalog.has_table_privilege(roles.role_name, c.oid, privileges.privilege_name)
      )),
-  16,
-  'all sixteen service-only tables deny every client privilege and every client row'
+  18,
+  'all eighteen service-only tables deny every client privilege and every client row'
 );
 
 select is(

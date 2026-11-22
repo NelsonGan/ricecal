@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { type LayoutChangeEvent, View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
@@ -80,21 +80,34 @@ export function Slider({
     [width],
   )
 
-  const gesture = Gesture.Pan()
-    .enabled(!disabled)
-    .minDistance(0)
-    .onBegin((event) => {
-      dragging.value = true
-      dragValue.value = positionToValue(event.x, width.value, min, max, step)
-      runOnJS(onChange)(dragValue.value)
-    })
-    .onUpdate((event) => {
-      dragValue.value = positionToValue(event.x, width.value, min, max, step)
-      runOnJS(onChange)(dragValue.value)
-    })
-    .onFinalize(() => {
-      dragging.value = false
-    })
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  const emitChange = useCallback((next: number) => {
+    onChangeRef.current(next)
+  }, [])
+
+  const gesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(!disabled)
+        .minDistance(0)
+        .onBegin((event) => {
+          dragging.value = true
+          const next = positionToValue(event.x, width.value, min, max, step)
+          dragValue.value = next
+          runOnJS(emitChange)(next)
+        })
+        .onUpdate((event) => {
+          const next = positionToValue(event.x, width.value, min, max, step)
+          if (next === dragValue.value) return
+          dragValue.value = next
+          runOnJS(emitChange)(next)
+        })
+        .onFinalize(() => {
+          dragging.value = false
+        }),
+    [disabled, dragging, dragValue, emitChange, max, min, step, width],
+  )
 
   /**
    * The thumb travels inside the track rather than across it. At `ratio * width -
@@ -162,7 +175,11 @@ export function Slider({
       {marks ? (
         // Positioned on the thumb's travel, the same arithmetic as `thumbStyle`,
         // so "2" sits exactly under a thumb resting on 2.
-        <View className="h-[20px]" importantForAccessibility="no-hide-descendants">
+        <View
+          className="h-[20px]"
+          importantForAccessibility="no-hide-descendants"
+          accessibilityElementsHidden
+        >
           {trackWidth > 0
             ? marks.map((mark) => {
                 const travel = Math.max(0, trackWidth - THUMB)

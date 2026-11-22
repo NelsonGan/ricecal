@@ -68,16 +68,7 @@ export function fitMapToPoints(
     return
   }
   // Google Maps adds edgePadding to the map's own padding.
-  const edgePadding =
-    Platform.OS === 'android'
-      ? margin
-      : {
-          top: margin.top + mapPadding.top,
-          right: margin.right + mapPadding.right,
-          bottom: margin.bottom + mapPadding.bottom,
-          left: margin.left + mapPadding.left,
-        }
-  map.fitToCoordinates([...points], { edgePadding, animated })
+  map.fitToCoordinates([...points], { edgePadding: margin, animated })
 }
 
 /**

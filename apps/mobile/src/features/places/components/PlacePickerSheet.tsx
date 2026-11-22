@@ -33,6 +33,7 @@ import {
   placeKey,
   placeOfLocation,
   regionAround,
+  regionFor,
   toEntryLocation,
 } from '../lib/placeLocation'
 import { useCurrentPlace } from '../services/useCurrentPlace'
@@ -131,30 +132,48 @@ export function PlacePickerSheet({
   const centerRef = useRef<Coordinate | null>(null)
   const moving = useRef(false)
 
+  const myCoordinate = locating ? here.coordinate : null
   const trimmed = query.trim()
   const searching = trimmed.length >= MIN_QUERY
   const typed = useDebouncedValue(trimmed, SEARCH_DEBOUNCE_MS)
-  // Read when a search fires, so moving the map or a fix landing ranks the
-  // next search without starting one by itself.
-  const nearRef = useRef<Coordinate | null>(null)
-  nearRef.current = center ?? here.coordinate
+  // Snapshot the search bias once per debounced query so framing search results
+  // or panning the map during a search never refires Apple search, while typing
+  // a new search after moving to another area gets a fresh key and bias.
+  const biasQuery = visible && searching && typed.length >= MIN_QUERY ? typed : null
+  const biasRef = useRef<{ query: string | null; near: Coordinate | null }>({
+    query: null,
+    near: null,
+  })
+  if (biasQuery !== biasRef.current.query) {
+    biasRef.current = {
+      query: biasQuery,
+      near: biasQuery ? (centerRef.current ?? myCoordinate) : null,
+    }
+  }
+  const searchNear = biasRef.current.near
+  const nearKey = searchNear
+    ? `${searchNear.latitude.toFixed(2)},${searchNear.longitude.toFixed(2)}`
+    : 'none'
 
   // Where the map first opens: the entry's own place, else the phone, else the
   // last place the user tagged, else the city the catalogue is centred on.
   const opening = useMemo<Coordinate | null>(() => {
     if (!visible) return null
     if (current) return current
-    if (here.coordinate) return here.coordinate
+    if (myCoordinate) return myCoordinate
     const last = located.data?.[0]?.location
     if (last) return last
-    return here.status === 'locating' || here.status === 'idle' ? null : HOME_COORDINATE
-  }, [visible, current, here.coordinate, here.status, located.data])
+    return locating && (here.status === 'locating' || here.status === 'idle')
+      ? null
+      : HOME_COORDINATE
+  }, [visible, current, myCoordinate, locating, here.status, located.data])
   const [initial, setInitial] = useState<Coordinate | null>(null)
   useEffect(() => {
     if (!visible) {
       // An answer still on its way is about the last visit's spot: drop it, or
       // it lands in the list the next opening keeps until its own arrives.
       settleId.current++
+      centerRef.current = null
       setInitial(null)
       setCenter(null)
       setSelected(null)
@@ -164,6 +183,7 @@ export function PlacePickerSheet({
       return
     }
     if (!initial && opening) {
+      centerRef.current = opening
       setInitial(opening)
       setCenter(opening)
       if (current) setSelected({ place: placeOfLocation(current), source: 'recent' })
@@ -182,32 +202,38 @@ export function PlacePickerSheet({
   useEffect(() => {
     if (!visible || !center || searching) return undefined
     const id = ++settleId.current
+    const controller = new AbortController()
     // The old spot's name is not this one's: until the new one is named the
     // pin is on nothing, and Use this spot waits rather than saving the last.
     setSpot(null)
     const timer = setTimeout(() => {
       setNearby((now) => (now.kind === 'done' ? now : { kind: 'loading' }))
-      nearbyPlaces({ ...center, language })
+      nearbyPlaces({ ...center, language, signal: controller.signal })
         .then((places) => {
           if (id === settleId.current) setNearby({ kind: 'done', places })
         })
         .catch((error: unknown) => {
           if (id === settleId.current) setNearby({ kind: 'error', code: errorCode(error) })
         })
-      void describeCoordinate(center, { language }).then((place) => {
+      void describeCoordinate(center, { language, signal: controller.signal }).then((place) => {
         if (id === settleId.current) setSpot(place)
       })
     }, SETTLE_MS)
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+      settleId.current++
+    }
   }, [visible, center, searching, language])
 
   // A query asked once is answered from the phone's cache after that, so
-  // typing it again spends nothing.
+  // typing it again spends nothing, while dropping out of memory after 5 min.
   const search = useQuery({
-    queryKey: keys.placeSearch(typed, language),
-    queryFn: () => searchPlaces({ query: typed, near: nearRef.current, language }),
-    enabled: visible && typed.length >= MIN_QUERY,
+    queryKey: keys.placeSearch(typed, language, nearKey),
+    queryFn: ({ signal }) => searchPlaces({ query: typed, near: searchNear, language, signal }),
+    enabled: visible && searching && typed.length >= MIN_QUERY,
     staleTime: Number.POSITIVE_INFINITY,
+    gcTime: 5 * 60_000,
     retry: false,
   })
   const results: Listing = !searching
@@ -218,39 +244,52 @@ export function PlacePickerSheet({
         ? { kind: 'error', code: errorCode(search.error) }
         : { kind: 'done', places: search.data ?? [] }
 
-  // The results, framed: a search is often for somewhere else.
+  // The results, framed: a search is often for somewhere else. Computed via
+  // `regionFor` rather than `fitToCoordinates` to avoid iOS 27's over-wide
+  // framing bug and zero-area single-point bounding boxes.
   useEffect(() => {
+    if (!visible || !searching) return
     const points = search.data?.slice(0, 8) ?? []
     if (points.length === 0 || !mapRef.current) return
-    mapRef.current.fitToCoordinates(points, {
-      edgePadding: { top: 120, right: 48, bottom: 48, left: 48 },
-      animated: true,
-    })
-  }, [search.data])
+    const framed = regionFor(points, { padding: 1.4, minDelta: 0.006 })
+    if (framed) mapRef.current.animateToRegion(framed, 300)
+  }, [visible, searching, search.data])
 
   // Nearest first, from wherever the distances are measured: the phone if it
-  // is known, else the pin.
-  const from = here.coordinate ?? center
+  // is known, else the pin. Deduplicated by `placeKey` so duplicate POIs never
+  // produce duplicate React keys.
+  const from = myCoordinate ?? center
   const listing = searching ? results : nearby
   const listed = listing.kind === 'done' ? listing.places : null
-  const list = useMemo(
-    () =>
-      !listed
-        ? []
-        : from
-          ? [...listed].sort((a, b) => distanceMeters(from, a) - distanceMeters(from, b))
-          : listed,
-    [listed, from],
-  )
+  const list = useMemo(() => {
+    if (!listed) return []
+    const unique: PlaceResult[] = []
+    const seen = new Set<string>()
+    for (const place of listed) {
+      const key = placeKey(place)
+      if (seen.has(key)) continue
+      seen.add(key)
+      unique.push(place)
+    }
+    return from ? unique.sort((a, b) => distanceMeters(from, a) - distanceMeters(from, b)) : unique
+  }, [listed, from])
   const listSource: PlaceSource = searching ? 'search' : 'nearby'
 
-  // What the pin is on: a chosen place, a listed place right under it, or the
-  // spot itself.
+  // What the pin is on: a chosen place, the listed place closest to the pin
+  // within `SNAP_METERS`, or the spot itself.
   const pinned = useMemo(() => {
     if (selected) return selected
     if (center) {
-      const under = list.find((place) => distanceMeters(center, place) <= SNAP_METERS)
-      if (under) return { place: under, source: listSource }
+      let best: PlaceResult | null = null
+      let bestDistance = SNAP_METERS
+      for (const place of list) {
+        const d = distanceMeters(center, place)
+        if (d <= bestDistance) {
+          best = place
+          bestDistance = d
+        }
+      }
+      if (best) return { place: best, source: listSource }
     }
     // The spot is not named while a search is showing, so it would be stale.
     return spot && !searching ? { place: spot, source: 'current' as const } : null
@@ -264,8 +303,10 @@ export function PlacePickerSheet({
   }
 
   const jumpTo = (place: PlaceResult, source: PlaceSource) => {
+    const next = { latitude: place.latitude, longitude: place.longitude }
+    centerRef.current = next
     setSelected({ place, source })
-    setCenter({ latitude: place.latitude, longitude: place.longitude })
+    setCenter(next)
     mapRef.current?.animateToRegion(regionAround(place), 300)
   }
 
@@ -277,14 +318,29 @@ export function PlacePickerSheet({
     onSelect(toEntryLocation(pinned.place), pinned.source)
   }
 
+  const movePinTo = (coord: Coordinate) => {
+    centerRef.current = coord
+    setSelected(null)
+    setCenter(coord)
+    mapRef.current?.animateToRegion(regionAround(coord), 300)
+  }
+
   const locateMe = () => {
-    if (here.status === 'ask') return void here.request()
+    if (here.status === 'ask') {
+      void here.request().then((coord) => {
+        if (coord) movePinTo(coord)
+      })
+      return
+    }
     if (here.status === 'blocked' || here.status === 'services_off')
       return void openLocationSettings()
-    if (here.coordinate) {
-      setSelected(null)
-      mapRef.current?.animateToRegion(regionAround(here.coordinate), 300)
-    } else void here.refresh()
+    if (myCoordinate) {
+      movePinTo(myCoordinate)
+    } else {
+      void here.refresh().then((coord) => {
+        if (coord) movePinTo(coord)
+      })
+    }
   }
 
   const listMessage = (() => {

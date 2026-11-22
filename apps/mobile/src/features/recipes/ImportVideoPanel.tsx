@@ -10,7 +10,6 @@ import { findVideoLink, VIDEO_PLATFORMS } from './videoLink'
 export type ImportVideoPanelProps = {
   /** The link to import. Only ever called with one `findVideoLink` accepted. */
   onSubmit: (url: string) => void
-  autoFocus?: boolean
 }
 
 /**
@@ -28,8 +27,8 @@ export type ImportVideoPanelProps = {
  * the same tile marks the recipe once it is made. Once a link is pasted, its
  * platform stays lit and the rest step back.
  */
-export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPanelProps) {
-  const { t } = useTranslation(['recipes', 'common'])
+export function ImportVideoPanel({ onSubmit }: ImportVideoPanelProps) {
+  const { t } = useTranslation('recipes')
   const [text, setText] = useState('')
   const found = findVideoLink(text)
   // Only once something is there that is not a link we read: an empty field
@@ -46,10 +45,9 @@ export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPan
       <TextField
         value={text}
         onChangeText={setText}
-        placeholder={t('recipes:import.placeholder')}
-        accessibilityLabel={t('recipes:import.placeholder')}
-        error={wrong ? t('recipes:import.unsupported') : undefined}
-        autoFocus={autoFocus}
+        placeholder={t('import.placeholder')}
+        accessibilityLabel={t('import.placeholder')}
+        error={wrong ? t('import.unsupported') : undefined}
         autoCapitalize="none"
         autoCorrect={false}
         keyboardType="url"
@@ -71,7 +69,7 @@ export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPan
             className="h-10 items-center justify-center rounded-full bg-pandan-soft px-4 active:opacity-70"
           >
             <Text className="font-body-black text-[15px] leading-[20px] text-pandan-ink">
-              {t('recipes:import.paste')}
+              {t('import.paste')}
             </Text>
           </Tappable>
         }
@@ -83,8 +81,8 @@ export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPan
       <View
         className="flex-row justify-between px-1"
         accessible
-        accessibilityLabel={`${t('recipes:import.worksWith')}: ${VIDEO_PLATFORMS.map((p) =>
-          t(`recipes:platform.${p}`),
+        accessibilityLabel={`${t('import.worksWith')}: ${VIDEO_PLATFORMS.map((p) =>
+          t(`platform.${p}`),
         ).join(', ')}`}
       >
         {VIDEO_PLATFORMS.map((platform) => (
@@ -100,7 +98,7 @@ export function ImportVideoPanel({ onSubmit, autoFocus = false }: ImportVideoPan
       </View>
 
       <Button fullWidth disabled={!found} onPress={() => found && onSubmit(found.url)}>
-        {t('recipes:import.action')}
+        {t('import.action')}
       </Button>
     </View>
   )

@@ -207,6 +207,9 @@ function ask(userId: string, trigger: RatingTrigger, now: number): void {
   }
   pending = setTimeout(() => {
     pending = null
+    // Re-check right before showing: another modal (Locations offer or news
+    // card) may have taken the floor during the delay.
+    if (floorTaken('rating')) return
     if (deliver({ trigger, userId }) > 0) track('Rating Prompt Shown', { trigger })
   }, ASK_DELAY_MS)
 }

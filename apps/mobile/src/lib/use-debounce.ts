@@ -17,6 +17,13 @@ export function useDebouncedValue<T>(value: T, delay = 140): T {
   const [debounced, setDebounced] = useState(value)
 
   useEffect(() => {
+    // Clearing a search field should take effect at once rather than leaving
+    // the previous query alive for `delay` ms (where typing a fresh character
+    // before the timer fires would run a query for the old text).
+    if (value === '') {
+      setDebounced(value)
+      return
+    }
     const timer = setTimeout(() => setDebounced(value), delay)
     return () => clearTimeout(timer)
   }, [value, delay])

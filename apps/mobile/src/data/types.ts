@@ -300,10 +300,10 @@ export type Recipe = {
   steps?: string
 
   isMine: boolean
-  /** The owner asked for it to be listed. Not the same as it being listed. */
+  /** Whether the recipe is listed on the community shelf. */
   isPublic: boolean
   review: RecipeReviewStatus
-  /** Why the review turned it down, shown to the owner. */
+  /** Legacy review note column kept for backwards compatibility with older rows. */
   reviewNote?: string
   /** Who to credit on a community card. Empty on your own. */
   authorName: string

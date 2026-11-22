@@ -787,6 +787,10 @@ export function useGroupChatLive(groupId: string): boolean {
             p_events: true,
             p_dislikes: true,
           })) as unknown as GroupMessage[]
+          // A rapid second vote started while this catch-up was in flight: drop
+          // this answer so it cannot overwrite the newer optimistic state; the
+          // second vote triggers a fresh catch-up once it settles.
+          if (voting()) return
           // No thread yet (its first read failed or is still to come), or a
           // gap the newest few cannot bridge: read the whole page.
           let whole = false
@@ -816,13 +820,16 @@ export function useGroupChatLive(groupId: string): boolean {
           return input?.action === action && 'groupId' in input && input.groupId === groupId
         })
     const sending = () => pendingOf('message')
-    // A vote names no group: its line may land in any chat.
+    // A vote names no group: its line may land in any chat. Ignore offline
+    // paused mutations so queued votes do not suppress catch-ups indefinitely.
     const voting = () =>
       client
         .getMutationCache()
         .findAll({ status: 'pending' })
         .some(
-          (mutation) => (mutation.state.variables as GroupAction | undefined)?.action === 'react',
+          (mutation) =>
+            !mutation.state.isPaused &&
+            (mutation.state.variables as GroupAction | undefined)?.action === 'react',
         )
     openChats.add(catchUp)
     const stop = listen(chatTopic(groupId), {
@@ -1685,7 +1692,21 @@ export function useGroupAction() {
             predicate: named('group_messages'),
             refetchType: 'none',
           })
-          for (const catchUp of openChats) catchUp()
+          // Only catch up open chats once no other rapid vote is still in flight
+          // (TanStack Query keeps the settling mutation itself `pending` until
+          // `onSettled` returns, so > 1 means another vote is still running).
+          if (
+            client
+              .getMutationCache()
+              .findAll({ status: 'pending' })
+              .filter(
+                (mutation) =>
+                  !mutation.state.isPaused &&
+                  (mutation.state.variables as GroupAction | undefined)?.action === 'react',
+              ).length <= 1
+          ) {
+            for (const catchUp of openChats) catchUp()
+          }
           return
         case 'move':
           return

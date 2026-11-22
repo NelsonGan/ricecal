@@ -423,14 +423,36 @@ export function locationColumns(location: EntryLocation | null) {
   // the whole insert, and the meal with it. By code point, so an emoji at the
   // cut is dropped whole rather than leaving half a surrogate pair that
   // Postgres refuses just the same. (`char_length` counts code points too.)
-  const cut = (value: string | undefined, max: number) =>
-    value ? Array.from(value).slice(0, max).join('') : null
+  const cut = (value: string | undefined, max: number) => {
+    const trimmed = value?.trim()
+    return trimmed ? Array.from(trimmed).slice(0, max).join('') : null
+  }
+  const name = location ? cut(location.name, 200) : null
+  const valid =
+    location !== null &&
+    name !== null &&
+    Number.isFinite(location.latitude) &&
+    Number.isFinite(location.longitude) &&
+    location.latitude >= -90 &&
+    location.latitude <= 90 &&
+    location.longitude >= -180 &&
+    location.longitude <= 180
+  if (!valid) {
+    return {
+      latitude: null,
+      longitude: null,
+      location_name: null,
+      location_address: null,
+      location_id: null,
+      location_category: null,
+    }
+  }
   return {
-    latitude: location?.latitude ?? null,
-    longitude: location?.longitude ?? null,
-    location_name: location ? cut(location.name, 200) : null,
-    location_address: cut(location?.address, 300),
-    location_id: cut(location?.placeId, 200),
-    location_category: cut(location?.category, 64),
+    latitude: location.latitude,
+    longitude: location.longitude,
+    location_name: name,
+    location_address: cut(location.address, 300),
+    location_id: cut(location.placeId, 200),
+    location_category: cut(location.category, 64),
   }
 }
