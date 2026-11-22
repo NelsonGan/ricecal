@@ -2,6 +2,8 @@ import '@/i18n'
 
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
+import { useEffect } from 'react'
+import { useTickedIngredients } from '@/features/recipes'
 import { render, screen, userEvent } from '@/test-utils'
 import { ToastProvider } from '@/ui'
 import CookModeScreen from '../cook'
@@ -35,7 +37,11 @@ const mockIngredients = [
 
 jest.mock('expo-keep-awake', () => ({ useKeepAwake: jest.fn() }))
 jest.mock('expo-router', () => ({
-  useLocalSearchParams: () => ({ id: mockRecipe.current.id ?? 'kari', servings: '2' }),
+  // `route` stands in for a share slug: the recipe was opened from a link.
+  useLocalSearchParams: () => ({
+    id: mockRecipe.current.route ?? mockRecipe.current.id ?? 'kari',
+    servings: '2',
+  }),
   useRouter: () => ({ replace: mockReplace }),
 }))
 jest.mock('@/lib/navigation', () => ({ useBack: () => mockBack, useCloseStack: () => mockBack }))
@@ -119,4 +125,23 @@ it('offers no log for a recipe with nothing in it', async () => {
   expect(screen.queryByText('Add to today')).toBeNull()
   await user.press(screen.getByText('Add an ingredient'))
   expect(mockReplace).toHaveBeenCalledWith({ pathname: '/recipe/edit', params: { id: 'empty' } })
+})
+
+it('keeps the ticks from the recipe page when the recipe was opened from a share link', async () => {
+  // The recipe page files ticks under the row id (`recipe?.id ?? id`) and
+  // opens cook mode with the route's id, which for a shared link is the slug.
+  const rowId = mockRecipe.current.id as string
+  mockRecipe.current = { id: rowId, route: 'Ab3dEf7hJk' }
+  function TickOnRecipePage() {
+    const [, toggle] = useTickedIngredients(rowId)
+    // biome-ignore lint/correctness/useExhaustiveDependencies: once, as a tap would
+    useEffect(() => toggle('i1'), [])
+    return null
+  }
+  await render(<TickOnRecipePage />)
+
+  const user = userEvent.setup()
+  await renderScreen()
+  await user.press(screen.getByText('Blend the paste.'))
+  expect(screen.getByRole('checkbox', { name: /Chicken thigh/ })).toBeChecked()
 })

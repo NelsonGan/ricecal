@@ -62,11 +62,15 @@ export default function CookModeScreen() {
   const recipe = localiseRecipe(stored, shown)
   const ingredients = localiseIngredients(storedIngredients, shown)
 
-  const [savedIndex, setIndex] = useCookStep(params.id ?? '')
+  // The session is the recipe's row, as on the recipe page: opened from a
+  // shared link, the route's id is the slug, and the ticks made there would
+  // be under another key.
+  const session = stored?.id ?? params.id ?? ''
+  const [savedIndex, setIndex] = useCookStep(session)
   const [finished, setFinished] = useState(false)
   const [logging, setLogging] = useState(false)
   const [showIngredients, setShowIngredients] = useState(false)
-  const [ticked, toggleTick] = useTickedIngredients(params.id ?? '')
+  const [ticked, toggleTick] = useTickedIngredients(session)
 
   const pages = cookingSteps(stored?.steps, language.translation?.steps, !language.english)
   const steps = pages.map((page) => page.text)
@@ -159,7 +163,7 @@ export default function CookModeScreen() {
   const advance = () => {
     if (last) {
       // Done with this pot: the next visit starts at the top, unticked.
-      forgetCookSession(params.id ?? '')
+      forgetCookSession(session)
       setFinished(true)
     } else setIndex(index + 1)
   }
