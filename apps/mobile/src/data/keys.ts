@@ -112,8 +112,9 @@ export const keys = {
    * with whatever is in the search field. The shelf is part of the key because
    * the three are different queries with different ordering and visibility.
    */
-  recipes: (userId: string, shelf: string, query: string) =>
-    ['recipes', userId, shelf, query] as const,
+  /** `language` because a search also matches the name in it (`recipes.translations`). */
+  recipes: (userId: string, shelf: string, query: string, language = 'en') =>
+    ['recipes', userId, shelf, query, language] as const,
   /**
    * The prefix of all of them, which is what the write side wants. Publishing a
    * recipe moves it off my shelf onto the community's and saving a copy moves

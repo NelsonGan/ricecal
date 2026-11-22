@@ -1765,6 +1765,7 @@ export const ta = {
       perServing: 'ஒரு பங்குக்கு',
       tabIngredients: 'பொருட்கள்',
       tabMethod: 'வழிமுறை',
+      language: 'செய்முறையின் மொழி',
       cookingFor: 'எத்தனை பேருக்கு',
       tick: '{{name}} ஐக் குறி',
       source: 'மூலம்',

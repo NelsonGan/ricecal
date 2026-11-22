@@ -19,6 +19,8 @@ import {
 import {
   IngredientChecklist,
   LogRecipeSheet,
+  localiseIngredients,
+  localiseRecipe,
   PlatformLogo,
   RecipeNutrition,
   RecipeStats,
@@ -27,6 +29,7 @@ import {
   sourceHost,
   splitSteps,
   useCopyRecipe,
+  useRecipeLanguage,
   useRecipeLogDate,
   useTickedIngredients,
 } from '@/features/recipes'
@@ -44,6 +47,7 @@ import {
   Icon,
   IconButton,
   Screen,
+  SegmentedControl,
   Sheet,
   Skeleton,
   Squish,
@@ -87,8 +91,15 @@ export default function RecipeDetailScreen() {
   const colors = useThemeColors()
 
   const { id, date } = useLocalSearchParams<{ id: string; date?: string }>()
-  const { data: recipe, isPending } = useRecipe(id)
-  const { data: ingredients = [], isPending: ingredientsPending } = useRecipeIngredients(id)
+  const { data: stored, isPending } = useRecipe(id)
+  const { data: storedIngredients = [], isPending: ingredientsPending } = useRecipeIngredients(id)
+  // An imported recipe in the reader's language when it has been translated
+  // into it, and English otherwise or when they switch back. Everything below
+  // reads these, so the sheets log and share what the page shows.
+  const language = useRecipeLanguage(stored)
+  const shown = language.english ? undefined : language.translation
+  const recipe = localiseRecipe(stored, shown)
+  const ingredients = localiseIngredients(storedIngredients, shown)
 
   const { logDate, isToday } = useRecipeLogDate(date)
   const favourite = useFavouriteRecipe()
@@ -452,14 +463,34 @@ export default function RecipeDetailScreen() {
             recipe, not a value being picked, and the underline reads as the
             header of the card under it. Against the left edge rather than
             centred, because everything above them starts there too. */}
-        <Tabs
-          options={[
-            { value: 'ingredients', label: t('recipes:detail.tabIngredients') },
-            { value: 'method', label: t('recipes:detail.tabMethod') },
-          ]}
-          value={section}
-          onChange={setSection}
-        />
+        {/* The switch back to English, at the end of the tabs, only on a
+            recipe that has been translated into the reader's language. Both
+            halves name a language in itself, so either can be read by
+            somebody who cannot read the other. */}
+        <View className="flex-row items-center gap-3">
+          <Tabs
+            className="flex-1"
+            options={[
+              { value: 'ingredients', label: t('recipes:detail.tabIngredients') },
+              { value: 'method', label: t('recipes:detail.tabMethod') },
+            ]}
+            value={section}
+            onChange={setSection}
+          />
+          {language.translation ? (
+            <SegmentedControl
+              size="sm"
+              className="w-[156px]"
+              accessibilityLabel={t('recipes:detail.language')}
+              options={[
+                { value: 'translated', label: language.label },
+                { value: 'english', label: 'English' },
+              ]}
+              value={language.english ? 'english' : 'translated'}
+              onChange={(value) => language.setEnglish(value === 'english')}
+            />
+          ) : null}
+        </View>
 
         {section === 'ingredients' ? (
           <Card>

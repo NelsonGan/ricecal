@@ -3204,6 +3204,8 @@ functions/recipes/import.ts {action: 'import'}: cache, fetch, model, write
 _shared/video-link.ts       which video a link names (pure, tested)
 _shared/video-post.ts       what each platform says about a post, signed out
 _shared/video-recipe.ts     the prompt, the video route and the caption route
+_shared/recipe-translation.ts  the recipe in the importer's language (tested)
+features/recipes/recipeLanguage.ts  which language a recipe is shown in, and the switch
 schemas/25_recipe_imports.sql  the cache, the allowance, import_recipe_for
 ```
 
@@ -3287,6 +3289,46 @@ mukbang or a haul is not), the creator is the authority on amounts, ingredient
 names and steps are written in English because one cached draft serves every
 reader, and the caption is fenced as data, because it is a stranger's text and
 the answer is shown to everybody who imports the video.
+
+**English for everybody, and the reader's own language beside it.** The draft
+stays English, the one language every reader can fall back on. The app sends
+its language with the import (`language`; a build that sends none gets
+English, as every build did before), and anything but English gets the draft translated as
+well: the name (to the dish's usual name in that language, so Char kway teow
+is 炒粿条 in Chinese and Nasi lemak stays Nasi lemak in Thai), the method a line
+a step, and the ingredient names. One Haiku call (`translate-recipe`), Qwen if
+Haiku fails, each given only what is left of the import's deadline; any failure
+leaves the recipe in English and the import goes on. An answer is kept whole or
+not at all (`shapeTranslation`: the name, a line for every line of the method,
+a name for every ingredient), because the first translation into a language is
+cached for everybody and never asked for again, and half of one would leave a
+translated name over an English method for good. The translation is cached per
+video and language in `recipe_imports.translations`, so the second Chinese
+importer of a reel gets it free, and `store_recipe_import_translation` copies
+the one that stands onto the video's community recipe and the importer's own
+recipe, including one they imported before the translation existed. A cached
+video is only translated for an account that will get a recipe from it (one
+already on its shelf, or an import left this month), and the call counts
+against the hour's twenty model runs, so a link sent once per language cannot
+buy twelve translations. So a Chinese reader of the community card sees it in Chinese and a Thai
+reader sees English, until somebody imports that video in Thai.
+
+`recipes.translations` holds them as `{"zh-Hans": {"name", "steps",
+"ingredients": {"<English name>": …}}}`. The recipe's own columns are always
+the English. Ingredient names are keyed by the English name rather than by
+position, so one the owner renamed, added or reordered shows its own English
+rather than another row's translation; a rewritten name or method drops that
+half of every translation (`recipes_drop_stale_translations`). It is in neither
+client grant, and saved copies carry it. On the recipe page a translated recipe
+has a small `中文 | English` switch at the end of the Ingredients and Method
+tabs; the choice holds for that recipe while the app is open, so cook mode
+follows it, and every visit after opens in the reader's language again. Cards,
+the log screen's recipe list and logging use the name on screen, and searching
+recipes matches it as well as the English. Cook mode pages a translated recipe
+a line a step in both languages, so switching mid-cook stays on the same step,
+and finds the ingredients a step names in the English step, since a Chinese or
+Thai step has no spaces to find a word between. Editing a recipe edits the
+English.
 
 **One video, one community card.** The first importer's recipe is published
 and listed at once, as a hand-written one is. Everybody after gets a private recipe of their own,
@@ -8359,7 +8401,7 @@ scan's vision call, catalogue pick and nutrition estimate read as one trace.
 
 | Property | Value |
 | --- | --- |
-| `$ai_span_name` | What the call is for: `analyse_photo`, `describe_meal`, `pick_candidate`, `estimate_nutrition`, `interpret_instruction`, `read_recipe_photo`, `describe_recipe`, `suggest_meals`, `moderate_submission`, `import_video_recipe`. `review_recipe` appears only in events from before November 2026, when the recipe publish review was removed |
+| `$ai_span_name` | What the call is for: `analyse_photo`, `describe_meal`, `pick_candidate`, `estimate_nutrition`, `interpret_instruction`, `read_recipe_photo`, `describe_recipe`, `suggest_meals`, `moderate_submission`, `import_video_recipe`, `translate_recipe`. `review_recipe` appears only in events from before November 2026, when the recipe publish review was removed |
 | `$ai_model`, `$ai_provider`, `$ai_base_url` | The OpenRouter model the request named: `anthropic/claude-haiku-5.5` (`OPENROUTER_BYOK_MODEL`) or the Qwen fallback (`OPENROUTER_MODEL`), `openrouter` |
 | `$ai_input_tokens`, `$ai_output_tokens`, `$ai_cache_read_input_tokens`, `$ai_cache_creation_input_tokens` | From OpenRouter's `usage`: the cache pair is the system prompt read from or written to Anthropic's prompt cache (`prompt_tokens_details.cached_tokens` / `cache_write_tokens`) |
 | `$ai_total_cost_usd`, `$ai_cost_passthrough` | What the call cost us, not re-priced: OpenRouter's charge (`usage.cost`), plus, when our own key paid, what Anthropic bills directly (`usage.cost_details.upstream_inference_cost`), since under BYOK `cost` is only OpenRouter's fee |
@@ -8400,6 +8442,7 @@ without a deploy.
 | `suggest-meals` | `suggest_meals` | `SUGGEST_MEAL_PROMPT`, `_shared/suggest.ts` |
 | `moderate-submission` | `moderate_submission` | `REVIEW_PROMPT`, `social/review.ts` |
 | `import-video-recipe` | `import_video_recipe` | `IMPORT_VIDEO_RECIPE_PROMPT`, `_shared/video-recipe.ts` |
+| `translate-recipe` | `translate_recipe` | `TRANSLATE_RECIPE_PROMPT`, `_shared/recipe-translation.ts` |
 
 - `_shared/prompts.ts` fetches each prompt with `POSTHOG_PROMPTS_API_KEY`
   ([Function secrets](#function-secrets)) and caches it in the isolate for 30

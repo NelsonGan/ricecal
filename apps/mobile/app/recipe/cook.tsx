@@ -6,12 +6,15 @@ import { AccessibilityInfo, View } from 'react-native'
 
 import { useRecipe, useRecipeIngredients } from '@/data'
 import {
+  cookingSteps,
   forgetCookSession,
   IngredientChecklist,
   ingredientsInStep,
   LogRecipeSheet,
-  splitSteps,
+  localiseIngredients,
+  localiseRecipe,
   useCookStep,
+  useRecipeLanguage,
   useRecipeLogDate,
   useTickedIngredients,
 } from '@/features/recipes'
@@ -51,8 +54,13 @@ export default function CookModeScreen() {
   const closeRecipe = useCloseStack('/recipes')
   const { logDate, isToday } = useRecipeLogDate(params.date)
 
-  const { data: recipe, isPending } = useRecipe(params.id)
-  const { data: ingredients = [] } = useRecipeIngredients(params.id)
+  const { data: stored, isPending } = useRecipe(params.id)
+  const { data: storedIngredients = [] } = useRecipeIngredients(params.id)
+  // In whichever language the recipe page was showing.
+  const language = useRecipeLanguage(stored)
+  const shown = language.english ? undefined : language.translation
+  const recipe = localiseRecipe(stored, shown)
+  const ingredients = localiseIngredients(storedIngredients, shown)
 
   const [savedIndex, setIndex] = useCookStep(params.id ?? '')
   const [finished, setFinished] = useState(false)
@@ -60,7 +68,8 @@ export default function CookModeScreen() {
   const [showIngredients, setShowIngredients] = useState(false)
   const [ticked, toggleTick] = useTickedIngredients(params.id ?? '')
 
-  const steps = splitSteps(recipe?.steps ?? '')
+  const pages = cookingSteps(stored?.steps, language.translation?.steps, !language.english)
+  const steps = pages.map((page) => page.text)
   // Clamped once, here: the remembered step can be past the end of a method
   // that has been edited shorter since, and every reading below uses this one.
   const index = Math.min(savedIndex, Math.max(0, steps.length - 1))
@@ -140,7 +149,12 @@ export default function CookModeScreen() {
   }
 
   const last = index >= steps.length - 1
-  const needed = ingredientsInStep(step, ingredients)
+  // Found in the English step by the English names, then shown translated:
+  // the words of a Chinese or Thai step have no spaces between them to find.
+  const named = new Set(
+    ingredientsInStep(pages[index]?.english ?? step, storedIngredients).map((item) => item.id),
+  )
+  const needed = ingredients.filter((item) => named.has(item.id))
   const priced = recipe.ingredientCount > 0
   const advance = () => {
     if (last) {

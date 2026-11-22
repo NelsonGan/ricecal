@@ -107,7 +107,9 @@ select
   -- server wrote all three out of the platform's own answer. See `recipes`.
   r.import_platform,
   r.import_author,
-  r.import_url
+  r.import_url,
+  -- An imported recipe in other languages. See `recipes.translations`.
+  r.translations
   -- `food_id` and `default_serving_id` were here, so a screen could log a pot
   -- through the catalogue without a second round trip for two ids it used once.
   -- There is no mirror to name and no portion row to point at: a pot is logged
@@ -183,7 +185,8 @@ as $$
     d.is_mine and d.is_favourite as is_favourite,
     d.import_platform,
     d.import_author,
-    d.import_url
+    d.import_url,
+    d.translations
   from public.recipe_details d
   where (select auth.uid()) is not null
     and d.share_slug = p_share_slug
@@ -366,18 +369,19 @@ begin
   -- tile would be permanently blank. Worse, it would ALIAS: the original author
   -- deleting their recipe deletes that object, and every copy of it goes dark.
   -- The illustration copies, because a drawing belongs to nobody. So do the
-  -- times and meal tags, and the video credit, which belongs to the dish; the
+  -- times and meal tags, the video credit, which belongs to the dish, and its
+  -- translations, which are of the same words; the
   -- source link and the star stay with their owner. `import_id` does not: a
   -- saved copy is a recipe kept, not a video imported, and counts as one.
   insert into public.recipes (
     owner_id, name, icon_set, icon_name, servings, steps, source_recipe_id,
     prep_minutes, cook_minutes, tags,
-    import_platform, import_author, import_url
+    import_platform, import_author, import_url, translations
   )
   values (
     v_user, src.name, src.icon_set, src.icon_name, src.servings, src.steps, src.id,
     src.prep_minutes, src.cook_minutes, src.tags,
-    src.import_platform, src.import_author, src.import_url
+    src.import_platform, src.import_author, src.import_url, src.translations
   )
   returning id into v_new;
 
@@ -477,12 +481,12 @@ begin
   insert into public.recipes (
     owner_id, name, icon_set, icon_name, servings, steps, source_recipe_id,
     prep_minutes, cook_minutes, tags,
-    import_platform, import_author, import_url
+    import_platform, import_author, import_url, translations
   )
   values (
     v_user, src.name, src.icon_set, src.icon_name, src.servings, src.steps, src.id,
     src.prep_minutes, src.cook_minutes, src.tags,
-    src.import_platform, src.import_author, src.import_url
+    src.import_platform, src.import_author, src.import_url, src.translations
   )
   returning id into v_new;
 

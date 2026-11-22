@@ -1686,6 +1686,7 @@ export type Database = {
           reason: string | null
           status: string
           title: string | null
+          translations: Json
           updated_at: string
           video_id: string
         }
@@ -1705,6 +1706,7 @@ export type Database = {
           reason?: string | null
           status: string
           title?: string | null
+          translations?: Json
           updated_at?: string
           video_id: string
         }
@@ -1724,6 +1726,7 @@ export type Database = {
           reason?: string | null
           status?: string
           title?: string | null
+          translations?: Json
           updated_at?: string
           video_id?: string
         }
@@ -1946,6 +1949,7 @@ export type Database = {
           source_recipe_id: string | null
           steps: string | null
           tags: string[]
+          translations: Json
           updated_at: string
         }
         Insert: {
@@ -1972,6 +1976,7 @@ export type Database = {
           source_recipe_id?: string | null
           steps?: string | null
           tags?: string[]
+          translations?: Json
           updated_at?: string
         }
         Update: {
@@ -1998,6 +2003,7 @@ export type Database = {
           source_recipe_id?: string | null
           steps?: string | null
           tags?: string[]
+          translations?: Json
           updated_at?: string
         }
         Relationships: [
@@ -3130,6 +3136,7 @@ export type Database = {
           total_fat_g: number | null
           total_kcal: number | null
           total_protein_g: number | null
+          translations: Json | null
           updated_at: string | null
         }
         Relationships: [
@@ -3927,6 +3934,7 @@ export type Database = {
           total_fat_g: number | null
           total_kcal: number | null
           total_protein_g: number | null
+          translations: Json | null
           updated_at: string | null
         }[]
         SetofOptions: {
@@ -4150,10 +4158,6 @@ export type Database = {
           remaining: number
           used: number
         }[]
-      }
-      recipe_mark_for_review: {
-        Args: { p_recipe_id: string }
-        Returns: undefined
       }
       reconcile_activity_sessions: {
         Args: {
@@ -4832,6 +4836,15 @@ export type Database = {
       social_unread_notification_count: { Args: never; Returns: number }
       social_workout_count: { Args: { p_user_id: string }; Returns: number }
       social_workout_post: { Args: { p_workout_id: string }; Returns: string }
+      store_recipe_import_translation: {
+        Args: {
+          p_import: string
+          p_language: string
+          p_translation: Json
+          p_user: string
+        }
+        Returns: undefined
+      }
       sync_weight_readings: {
         Args: {
           p_provider: Database['public']['Enums']['health_provider']

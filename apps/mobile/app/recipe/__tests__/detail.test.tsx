@@ -1,6 +1,5 @@
-import '@/i18n'
-
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import i18n from '@/i18n'
 
 import { act, render, screen, userEvent, waitFor } from '@/test-utils'
 import { ToastProvider } from '@/ui'
@@ -73,6 +72,7 @@ jest.mock('@/data', () => ({
 jest.mock('@/data/refusals', () => ({ openPaywall: jest.fn() }))
 jest.mock('@/features/paywall', () => ({ useRequirePro: () => jest.fn(() => true) }))
 jest.mock('@/features/recipes', () => ({
+  ...jest.requireActual('@/features/recipes/recipeLanguage'),
   IngredientChecklist: () => null,
   RecipeNutrition: () => {
     const { Text } = jest.requireActual('react-native') as typeof import('react-native')
@@ -186,4 +186,47 @@ it('asks for ingredients rather than offering to log an empty recipe of your own
   await user.press(screen.getByText('Add an ingredient'))
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/recipe/edit', params: { id: 'recipe-1' } })
   mockRecipe.current = {}
+})
+
+describe('a recipe imported in another language', () => {
+  const translated = {
+    translations: {
+      'zh-Hans': { name: '鸡蛋三明治', ingredients: { Egg: '鸡蛋' } },
+    },
+  }
+
+  afterEach(async () => {
+    mockRecipe.current = {}
+    await act(() => i18n.changeLanguage('en'))
+  })
+
+  it('is read in English, with no switch, by somebody whose app is in English', async () => {
+    mockRecipe.current = translated
+    await renderScreen()
+
+    expect(screen.getByText('Family Mart Egg Mayo Sandwich')).toBeOnTheScreen()
+    expect(screen.queryByText('中文')).toBeNull()
+  })
+
+  it('is read in the reader language, and switched back to English', async () => {
+    mockRecipe.current = translated
+    await act(() => i18n.changeLanguage('zh-Hans'))
+    const user = userEvent.setup()
+    await renderScreen()
+
+    expect(screen.getByText('鸡蛋三明治')).toBeOnTheScreen()
+    await user.press(screen.getByText('English'))
+    expect(screen.getByText('Family Mart Egg Mayo Sandwich')).toBeOnTheScreen()
+    await user.press(screen.getByText('中文'))
+    expect(screen.getByText('鸡蛋三明治')).toBeOnTheScreen()
+  })
+
+  it('is read in English by a reader whose language it has not been translated into', async () => {
+    mockRecipe.current = translated
+    await act(() => i18n.changeLanguage('th'))
+    await renderScreen()
+
+    expect(screen.getByText('Family Mart Egg Mayo Sandwich')).toBeOnTheScreen()
+    expect(screen.queryByText('English')).toBeNull()
+  })
 })

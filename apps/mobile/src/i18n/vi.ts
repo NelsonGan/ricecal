@@ -1769,6 +1769,7 @@ export const vi = {
       perServing: 'mỗi khẩu phần',
       tabIngredients: 'Nguyên liệu',
       tabMethod: 'Cách làm',
+      language: 'Ngôn ngữ công thức',
       cookingFor: 'Nấu cho',
       tick: 'Đánh dấu {{name}}',
       source: 'Nguồn',

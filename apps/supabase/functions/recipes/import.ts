@@ -26,6 +26,12 @@ import { json } from '../_shared/http.ts'
 import { mockActive, photoBase64 } from '../_shared/llm.ts'
 import { copyObject, deleteObject, newKey, r2Configured, writeObject } from '../_shared/r2.ts'
 import {
+  type TranslationMockSteer,
+  translateRecipe,
+  translationLanguage,
+  translationSource,
+} from '../_shared/recipe-translation.ts'
+import {
   isShortLink,
   parseVideoLink,
   resolveShortLink,
@@ -51,8 +57,14 @@ import {
 export type ImportRequest = {
   action: 'import'
   url?: string
+  /**
+   * The app's language. Anything but English gets the recipe translated as
+   * well (`recipe-translation.ts`); a build that sends none gets English, as
+   * every build did before.
+   */
+  language?: string
   /** Mock mode only: a post to use instead of fetching one, and the model's answer. */
-  mock?: VideoMockSteer & { post?: Partial<FetchedPost> }
+  mock?: VideoMockSteer & { post?: Partial<FetchedPost>; translation?: TranslationMockSteer }
 }
 
 type ImportRow = {
@@ -63,9 +75,12 @@ type ImportRow = {
   photo_key: string | null
   platform: string
   author_handle: string | null
+  draft: unknown
+  translations: Record<string, unknown> | null
 }
 
-const IMPORT_COLUMNS = 'id, status, reason, photo_key, platform, author_handle, community_recipe_id'
+const IMPORT_COLUMNS =
+  'id, status, reason, photo_key, platform, author_handle, community_recipe_id, draft, translations'
 
 /** A cover is a picture for a card; past this it is not a cover. */
 const MAX_COVER_BYTES = 5 * 1024 * 1024
@@ -122,6 +137,8 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
 
   // -- The cache.
   let row = await findImport(db, link)
+  /** Whether this request has already counted a model run against the hour's ceiling. */
+  let claimedRun = false
 
   if (!row) {
     // The month's allowance is claimed when the recipe is made, below, so it
@@ -159,6 +176,7 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     if (runError) console.error('[recipes/import] run claim failed, allowing:', runError.message)
     else if (allowed === false)
       return json({ ok: false, code: 'busy', platform: link.platform }, 429)
+    claimedRun = true
 
     const fetched = await readPost(link, mock?.post)
     if (!fetched) return json({ ok: false, code: 'unreadable', platform: link.platform })
@@ -264,6 +282,24 @@ export async function handleImport(body: ImportRequest, ctx: ImportContext): Pro
     .eq('import_id', row.id)
     .limit(1)
     .maybeSingle()
+
+  // -- The reader's language.
+  //
+  // Before a new recipe is made, so it is written with the translation already
+  // on it (`import_recipe_for` copies the cache's). A video somebody already
+  // imported in this language costs nothing, and a recipe this account made
+  // before that is handed the translation now. Otherwise this is one text model
+  // call, and a failure leaves the recipe in English.
+  const language = translationLanguage(body.language)
+  if (language) {
+    const cached = row.translations?.[language]
+    if (cached) {
+      if (mine) await storeTranslation(db, row.id, language, cached, userId)
+    } else if (claimedRun || (await mayTranslate(db, userId, Boolean(mine)))) {
+      await translateImport(db, row, language, userId, meter, deadline, mock?.translation)
+    }
+  }
+
   if (mine) {
     return done({
       recipeId: mine.id,
@@ -344,6 +380,68 @@ function done(result: { recipeId: string; existing: boolean; community: boolean;
     platform: result.row.platform,
     author: result.row.author_handle,
   })
+}
+
+/**
+ * Translate the cached draft into `language` and keep it: on the cache, on
+ * the video's community recipe, and on this account's own recipe from it if
+ * there is one already. Never throws.
+ */
+async function translateImport(
+  db: SupabaseClient,
+  row: ImportRow,
+  language: string,
+  userId: string,
+  meter: Meter,
+  deadline: number,
+  mock: TranslationMockSteer | undefined,
+): Promise<void> {
+  const source = translationSource(row.draft)
+  if (!source) return
+  try {
+    // A few seconds kept back for writing the recipe after this.
+    const translation = await translateRecipe(source, language, meter, deadline - 5_000, mock)
+    if (translation) await storeTranslation(db, row.id, language, translation, userId)
+  } catch (error) {
+    console.warn('[recipes/import] translation failed:', errorText(error))
+  }
+}
+
+/**
+ * Keep a translation on the cache (the first into each language stands) and
+ * copy the one that stands onto the community recipe and this account's own.
+ */
+async function storeTranslation(
+  db: SupabaseClient,
+  importId: string,
+  language: string,
+  translation: unknown,
+  userId: string,
+): Promise<void> {
+  const { error } = await db.rpc('store_recipe_import_translation', {
+    p_import: importId,
+    p_language: language,
+    p_translation: translation,
+    p_user: userId,
+  })
+  if (error) console.error('[recipes/import] translation not stored:', error.message)
+}
+
+/**
+ * Whether a cached video may be translated for this account: only when a
+ * recipe will come of it (one already on their shelf, or an import left this
+ * month), and counted against the hour's model runs like an uncached video.
+ * Without this, an account at its limit could send a cached link once per
+ * language and have each translated before being told no.
+ */
+async function mayTranslate(db: SupabaseClient, userId: string, mine: boolean): Promise<boolean> {
+  if (!mine) {
+    const left = await allowance(db, userId)
+    if (left && left.remaining <= 0) return false
+  }
+  const { data: allowed, error } = await db.rpc('claim_recipe_import_run', { p_user: userId })
+  if (error) console.error('[recipes/import] run claim failed, allowing:', error.message)
+  return allowed !== false
 }
 
 async function findImport(db: SupabaseClient, link: VideoLink): Promise<ImportRow | null> {

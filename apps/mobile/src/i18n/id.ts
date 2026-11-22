@@ -1776,6 +1776,7 @@ export const id = {
       perServing: 'per porsi',
       tabIngredients: 'Bahan',
       tabMethod: 'Cara membuat',
+      language: 'Bahasa resep',
       cookingFor: 'Memasak untuk',
       tick: 'Centang {{name}}',
       source: 'Sumber',

@@ -1,6 +1,7 @@
 import { FREE_RECIPES, FREE_VIDEO_IMPORTS } from '@ricecal/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import { currentLanguage } from '@/i18n'
 import { track } from '@/lib/analytics'
 import type { MeasureUnit } from '@/lib/measures'
 import { supabase } from '@/lib/supabase'
@@ -43,8 +44,12 @@ export function useRecipes(shelf: RecipeShelf, query = '') {
   const userId = useUserId()
   const needle = query.trim()
 
+  // Not subscribed: every screen with a list re-renders on a language change
+  // through its own `useTranslation`, which re-runs this with the new key.
+  const language = currentLanguage()
+
   return useQuery({
-    queryKey: keys.recipes(userId, shelf, needle),
+    queryKey: keys.recipes(userId, shelf, needle, language),
     queryFn: async (): Promise<Recipe[]> => {
       let request = supabase.from('recipe_details').select(RECIPE_COLUMNS)
 
@@ -70,7 +75,21 @@ export function useRecipes(shelf: RecipeShelf, query = '') {
       // a person does by reading them.
       // `%` and `_` are wildcards to `ilike`: escaped, so "50%" finds the dish
       // called that and a lone "_" is not a match for every recipe.
-      if (needle) request = request.ilike('name', `%${needle.replace(/[\\%_]/g, '\\$&')}%`)
+      //
+      // An imported recipe is also found by the name it is shown under in the
+      // app's language (`recipes.translations`), since that is the name on its
+      // card. Inside `or` the pattern is double-quoted, with `"` and `\`
+      // escaped for PostgREST on top of the `ilike` escaping.
+      if (needle) {
+        const pattern = `%${needle.replace(/[\\%_]/g, '\\$&')}%`
+        if (language === 'en') request = request.ilike('name', pattern)
+        else {
+          const quoted = `"${pattern.replace(/[\\"]/g, '\\$&')}"`
+          request = request.or(
+            `name.ilike.${quoted},translations->${language}->>name.ilike.${quoted}`,
+          )
+        }
+      }
 
       return unwrap(await request.limit(100)).map(toRecipe)
     },
@@ -811,7 +830,9 @@ export function useImportRecipe() {
     },
     mutationFn: async (url: string): Promise<ImportedRecipe> => {
       const { data, error } = await supabase.functions.invoke('recipes', {
-        body: { action: 'import', url },
+        // The app's language: anything but English gets the recipe in that
+        // language too, kept beside the English. See `recipeLanguage.ts`.
+        body: { action: 'import', url, language: currentLanguage() },
       })
       const body = (error ? await errorBody(error) : data) as {
         ok?: boolean

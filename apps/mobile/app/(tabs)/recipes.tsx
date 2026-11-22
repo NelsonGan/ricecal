@@ -20,11 +20,13 @@ import {
   ImportVideoPanel,
   RecipeCard,
   type RecipeStart,
+  shownRecipe,
   stageRecipeRead,
   useLogRecipe,
   useRecipeLogDate,
 } from '@/features/recipes'
 import { ScreenTitle } from '@/features/shared'
+import { currentLanguage } from '@/i18n'
 import { useDebouncedValue } from '@/lib/use-debounce'
 import { useThemeColors } from '@/theme/useTheme'
 import {
@@ -204,7 +206,8 @@ export default function RecipesTab() {
    * logging a pot reaches no model and costs nothing. `useLogRecipe` offers the
    * undo, which matters on a plus this easy to reach.
    */
-  const logOne = (recipe: Recipe) => log(recipe, 1, logDate)
+  // Under the name the card shows, which may be a translation.
+  const logOne = (recipe: Recipe) => log(shownRecipe(recipe, currentLanguage()), 1, logDate)
 
   return (
     <Screen>

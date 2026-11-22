@@ -1755,6 +1755,7 @@ export const th = {
       perServing: 'ต่อที่',
       tabIngredients: 'ส่วนประกอบ',
       tabMethod: 'วิธีทำ',
+      language: 'ภาษาของสูตร',
       cookingFor: 'ทำสำหรับ',
       tick: 'ติ๊ก{{name}}',
       source: 'ที่มา',

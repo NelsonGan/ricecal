@@ -40,6 +40,7 @@ export type AiSpan =
   | 'suggest_meals'
   | 'moderate_submission'
   | 'import_video_recipe'
+  | 'translate_recipe'
 
 /** Who and what an invocation's generations belong to. */
 export type AiContext = {
