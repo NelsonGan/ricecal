@@ -69,14 +69,25 @@ function appVersion(): string {
   return Constants.expoConfig?.version ?? '1.0.0'
 }
 
+/** States a full disk would not let us write down, held for this run. */
+const unsaved = new Map<string, string>()
+
 function read(userId: string, now: number): RatingState {
-  const parsed = parseState(storage.getString(key(userId)))
+  const parsed = parseState(unsaved.get(userId) ?? storage.getString(key(userId)))
   const state = parsed ?? initialState(now, appVersion())
   return reconcileVersion(state, now, appVersion())
 }
 
 function write(userId: string, state: RatingState): void {
-  storage.set(key(userId), JSON.stringify(state))
+  const json = JSON.stringify(state)
+  try {
+    storage.set(key(userId), json)
+    unsaved.delete(userId)
+  } catch {
+    // MMKV throws from `set` when the phone has no room left, and the callers
+    // run beside a meal write that has already happened. Held for this run.
+    unsaved.set(userId, json)
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -274,5 +285,6 @@ export function ratingFeedbackOpened({ trigger }: RatingRequest): void {
 export function resetRatingStateForTest(userId: string): void {
   if (pending) clearTimeout(pending)
   pending = null
+  unsaved.delete(userId)
   storage.remove(key(userId))
 }

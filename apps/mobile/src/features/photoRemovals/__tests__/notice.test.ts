@@ -50,3 +50,21 @@ describe('noticeDue', () => {
     expect(noticeDue('n1', now.getTime() + NOTICE_DAYS * DAY)).toBe(true)
   })
 })
+
+describe('markNoticed', () => {
+  const mmkv = jest.requireMock('react-native-mmkv') as { __failWrites: (on: boolean) => void }
+  it('does not throw on a full disk, and keeps the notice quiet for this run', () => {
+    // Called from the notice's timer, where a throw is a crash.
+    mmkv.__failWrites(true)
+    try {
+      expect(() => markNoticed('full-disk', now.getTime())).not.toThrow()
+    } finally {
+      mmkv.__failWrites(false)
+    }
+    expect(noticeDue('full-disk', now.getTime() + DAY)).toBe(false)
+    // Space frees up: a later notice is written, and the held one gives way.
+    const later = now.getTime() + (NOTICE_DAYS + 1) * DAY
+    markNoticed('full-disk', later)
+    expect(noticeDue('full-disk', later + DAY)).toBe(false)
+  })
+})

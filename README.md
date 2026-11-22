@@ -6564,7 +6564,11 @@ The live workout, the outbox and the workout preferences all sit on
 key is written again, which is what lets a memoised card see that nothing
 changed: parsing the stored string on every read gave React a new tree each
 time. Every write goes through it, so a cached key is never read back from
-MMKV, which React asks for several times a render.
+MMKV, which React asks for several times a render. On a full disk MMKV throws
+from `set`, and the throw reaches the caller, so a workout never looks saved when
+it is not. A store made with `bestEffort` (the Locations preferences, written from
+the offer's timer and after a meal is saved) keeps the value in that cache for
+the run instead; the disk keeps the old value for the next launch.
 
 ### Saving, and the charts
 

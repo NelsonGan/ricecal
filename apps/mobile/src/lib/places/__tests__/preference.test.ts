@@ -59,3 +59,18 @@ describe('the offer', () => {
     expect(offerDue(a)).toBe(false)
   })
 })
+
+describe('on a full disk', () => {
+  const mmkv = jest.requireMock('react-native-mmkv') as { __failWrites: (on: boolean) => void }
+  afterEach(() => mmkv.__failWrites(false))
+
+  it('counts a meal and answers the offer without throwing, once per run', () => {
+    // Both run where a throw does damage: after a meal is saved, and in the
+    // offer's timer on Today.
+    mmkv.__failWrites(true)
+    expect(() => recordMealForLocationsOffer(a)).not.toThrow()
+    expect(offerDue(a)).toBe(true)
+    expect(() => answerLocationsOffer(a)).not.toThrow()
+    expect(offerDue(a)).toBe(false)
+  })
+})

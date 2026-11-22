@@ -31,14 +31,19 @@ type Preference = {
   offer: OfferState
 }
 
-const store = createJsonStore<Preference>('ricecal-places', (stored) => {
-  const value = (stored ?? {}) as Partial<Preference>
-  return {
-    enabled: value.enabled === true,
-    autoTag: value.autoTag !== false,
-    offer: value.offer === 'due' || value.offer === 'answered' ? value.offer : null,
-  }
-})
+const store = createJsonStore<Preference>(
+  'ricecal-places',
+  (stored) => {
+    const value = (stored ?? {}) as Partial<Preference>
+    return {
+      enabled: value.enabled === true,
+      autoTag: value.autoTag !== false,
+      offer: value.offer === 'due' || value.offer === 'answered' ? value.offer : null,
+    }
+  },
+  // Written from the offer's timer and after a meal is saved (`jsonStore`).
+  { bestEffort: true },
+)
 
 function update(userId: string, change: Partial<Preference>): void {
   store.set(userId, { ...store.get(userId), ...change })

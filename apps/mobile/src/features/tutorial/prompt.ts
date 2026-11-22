@@ -16,8 +16,11 @@ const storage = createMMKV({ id: 'ricecal-tutorial' })
 
 const key = (userId: string) => `offered:${userId}`
 
+/** Offers made this run that a full disk would not let us write down. */
+const unsaved = new Set<string>()
+
 export function tutorialOffered(userId: string): boolean {
-  return storage.getBoolean(key(userId)) ?? false
+  return unsaved.has(userId) || (storage.getBoolean(key(userId)) ?? false)
 }
 
 /**
@@ -29,5 +32,12 @@ export function tutorialOffered(userId: string): boolean {
  * screen, which is what makes once-only safe rather than merely tidy.
  */
 export function markTutorialOffered(userId: string): void {
-  storage.set(key(userId), true)
+  try {
+    storage.set(key(userId), true)
+  } catch {
+    // MMKV throws from `set` when the phone has no room left, and this runs in
+    // a timer, where a throw crashes the app. Held for this run instead, so the
+    // next launch offers it again.
+    unsaved.add(userId)
+  }
 }
