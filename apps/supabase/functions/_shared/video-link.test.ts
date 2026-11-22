@@ -12,6 +12,7 @@ import { isShortLink, parseVideoLink, resolveShortLink, type VideoLink } from '.
 import {
   decodeEntities,
   isFetchableHost,
+  jsLiteralToJson,
   ldRecipe,
   ldRecipeText,
   metaTags,
@@ -110,7 +111,7 @@ Deno.test('each platform parses to its own id and a link rebuilt from it', () =>
       'https://www.xiaohongshu.com/explore/6411CF99000000001300B6D9?xsec_token=AB12',
       'rednote',
       '6411cf99000000001300b6d9',
-      'https://www.xiaohongshu.com/explore/6411CF99000000001300B6D9',
+      'https://www.xiaohongshu.com/explore/6411cf99000000001300b6d9',
     ],
   ]
   for (const [text, platform, id, canonical] of cases) {
@@ -127,6 +128,91 @@ Deno.test('a Rednote share token is kept for fetching and never shown', () => {
   )
   eq(link.canonicalUrl.includes('xsec_token'), false, 'the credit link has no token')
   eq(link.fetchUrl.includes('xsec_token=AB12'), true, 'the fetch keeps it')
+})
+
+Deno.test('a Rednote note is read from its state, and its login wall is not a post', async () => {
+  const { fetchPost } = await import('./video-post.ts')
+  const id = '69ca6c4f000000001a020ca9'
+  const link = video(`https://www.xiaohongshu.com/explore/${id}?xsec_token=AB12`)
+  // The page's state as Rednote writes it: a JavaScript literal, not JSON.
+  const state =
+    `{"note":{"noteDetailMap":{"${id}":{"comments":{"fetchedIds":new Set([])},"note":{` +
+    '"title":"Braised tofu","desc":"Three bowls of rice! #tofu[话题]# #homecooking[话题]#",' +
+    '"user":{"nickname":"cook"},"imageList":[{"urlDefault":"http://sns-web-i10.rednotecdn.com/c.jpg"}],' +
+    '"video":{"capa":{"duration":22},"media":{"stream":{"h264":[{"masterUrl":"http://sns-v27.rednotecdn.com/v.mp4"}]}}}' +
+    '}}}},"user":undefined}'
+  const note = `<script>window.__INITIAL_STATE__=${state}</script>`
+  const seen: Array<string | null> = []
+  const answer = (body: string, url?: string) =>
+    (async (_input: string | URL | Request, init?: RequestInit) => {
+      seen.push(new Headers(init?.headers).get('accept-encoding'))
+      const res = new Response(body)
+      if (url) Object.defineProperty(res, 'url', { value: url })
+      return res
+    }) as typeof fetch
+
+  const post = await fetchPost(link, answer(note))
+  eq(post?.title, 'Braised tofu', 'title')
+  eq(post?.caption, 'Three bowls of rice! #tofu #homecooking', 'caption, hashtags plain')
+  eq(post?.author, 'cook', 'author')
+  eq(post?.coverUrl, 'https://sns-web-i10.rednotecdn.com/c.jpg', 'cover over https')
+  eq(post?.videoUrl, 'https://sns-v27.rednotecdn.com/v.mp4', 'video over https')
+  eq(post?.durationSeconds, 22, 'length')
+  eq(seen[0]?.includes('deflate'), true, "a browser's accept-encoding, or Rednote shows its login")
+
+  const wall =
+    '<meta property="og:title" content="Log in - rednote - share, connect, love">' +
+    '<meta property="og:description" content="Join rednote and connect with people">'
+  const login = `https://www.rednote.com/login?redirectPath=${encodeURIComponent(`/explore/${id}`)}`
+  eq(await fetchPost(link, answer(wall, login)), null, 'the login wall is unread, not judged')
+
+  // A taken-down note or a security check answers at the note's own path,
+  // titled with the site's name. Unread too.
+  const site =
+    '<meta property="og:title" content="小红书 - 你的生活兴趣社区">' +
+    '<meta property="og:description" content="2 亿人的生活经验，都在小红书">'
+  eq(await fetchPost(link, answer(site)), null, 'a page that is not the note is unread')
+
+  // No state, but the note's own tags: read from those.
+  const tags =
+    '<meta name="og:image" content="//fe-s10.rednotecdn.com/fe-platform/logo.png">' +
+    '<meta property="og:title" content="Braised tofu - rednote">' +
+    '<meta property="og:description" content="Three bowls of rice!">' +
+    '<meta property="og:image" content="http://sns-web-i10.rednotecdn.com/c.jpg">'
+  const tagged = await fetchPost(link, answer(tags))
+  eq(tagged?.title, 'Braised tofu', 'the title without the site')
+  eq(tagged?.coverUrl, 'https://sns-web-i10.rednotecdn.com/c.jpg', 'its cover over https')
+
+  // An id pasted in capitals is one note, and its page still counts as it.
+  const upper = video(`https://www.xiaohongshu.com/explore/${id.toUpperCase()}?xsec_token=AB12`)
+  eq(upper.id, id, 'one key')
+  eq(upper.canonicalUrl, link.canonicalUrl, 'one credit link')
+  const landed = `https://www.rednote.com/discovery/item/${id.toUpperCase()}`
+  eq((await fetchPost(upper, answer(note, landed)))?.title, 'Braised tofu', 'read at any case')
+
+  // Deno hands a deflate body over undecoded.
+  const squeezed = await new Response(
+    new Blob([note]).stream().pipeThrough(new CompressionStream('deflate')),
+  ).arrayBuffer()
+  const deflated = (async () =>
+    new Response(squeezed, { headers: { 'content-encoding': 'deflate' } })) as typeof fetch
+  eq((await fetchPost(link, deflated))?.title, 'Braised tofu', 'a deflate page is inflated')
+})
+
+Deno.test('a page state that is JavaScript, not JSON, still parses, strings untouched', () => {
+  const json = jsLiteralToJson(
+    '{"a":undefined,"b":new Set([]),"c":new Set([["x",1],["y",new Set([2])]]),' +
+      '"d":new Map([["k",{"v":NaN}]]),"e":-Infinity,' +
+      '"s":"leave it undefined, new Set( and (brackets) stay","q":"say \\"undefined\\""}',
+  )
+  const data = JSON.parse(json)
+  eq(data.a, null, 'undefined')
+  eq(JSON.stringify(data.b), '[]', 'an empty Set')
+  eq(JSON.stringify(data.c), '[["x",1],["y",[2]]]', 'nested Sets')
+  eq(data.d[0][1].v, null, 'a Map, and NaN')
+  eq(data.e, null, 'Infinity')
+  eq(data.s, 'leave it undefined, new Set( and (brackets) stay', 'a string as it was')
+  eq(data.q, 'say "undefined"', 'escaped quotes inside a string')
 })
 
 Deno.test('share links are followed before they name anything', () => {
