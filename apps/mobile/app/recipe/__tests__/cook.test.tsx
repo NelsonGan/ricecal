@@ -1,8 +1,7 @@
 import '@/i18n'
 
-import { SafeAreaProvider } from 'react-native-safe-area-context'
-
 import { useEffect } from 'react'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useTickedIngredients } from '@/features/recipes'
 import { render, screen, userEvent } from '@/test-utils'
 import { ToastProvider } from '@/ui'
