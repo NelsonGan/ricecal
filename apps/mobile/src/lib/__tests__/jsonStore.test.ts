@@ -24,12 +24,22 @@ describe('on a full disk', () => {
   const mmkv = jest.requireMock('react-native-mmkv') as { __failWrites: (on: boolean) => void }
   afterEach(() => mmkv.__failWrites(false))
 
-  it('keeps the value for this run instead of throwing', () => {
-    // MMKV throws from `set` when the phone has no room left, and callers run in
-    // timers and mutation callbacks, where a throw is a crash or a failed save.
-    const store = createJsonStore<{ n: number } | null>('test-json-store-full', (stored) =>
-      stored && typeof stored === 'object' ? (stored as { n: number }) : null,
-    )
+  const parse = (stored: unknown) =>
+    stored && typeof stored === 'object' ? (stored as { n: number }) : null
+
+  it('throws by default, so a workout cannot look saved when it is not', () => {
+    const store = createJsonStore<{ n: number } | null>('test-json-store-strict', parse)
+    mmkv.__failWrites(true)
+    expect(() => store.set('a', { n: 3 })).toThrow(/MMKV/)
+    expect(store.get('a')).toBeNull()
+  })
+
+  it('keeps the value for this run instead of throwing, when made best effort', () => {
+    // MMKV throws from `set` when the phone has no room left, and these callers
+    // run in timers and mutation callbacks, where a throw is a crash or a failed save.
+    const store = createJsonStore<{ n: number } | null>('test-json-store-full', parse, {
+      bestEffort: true,
+    })
     mmkv.__failWrites(true)
     expect(() => store.set('a', { n: 3 })).not.toThrow()
     expect(store.get('a')).toEqual({ n: 3 })

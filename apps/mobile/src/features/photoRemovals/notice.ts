@@ -21,6 +21,7 @@ const unsaved = new Map<string, number>()
 export function markNoticed(userId: string, now: number = Date.now()): void {
   try {
     storage.set(key(userId), now)
+    unsaved.delete(userId)
   } catch {
     // MMKV throws from `set` when the phone has no room left, and this runs in
     // the notice's timer, where a throw crashes the app. Held for this run.

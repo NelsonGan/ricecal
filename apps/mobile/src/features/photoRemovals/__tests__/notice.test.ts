@@ -62,5 +62,9 @@ describe('markNoticed', () => {
       mmkv.__failWrites(false)
     }
     expect(noticeDue('full-disk', now.getTime() + DAY)).toBe(false)
+    // Space frees up: a later notice is written, and the held one gives way.
+    const later = now.getTime() + (NOTICE_DAYS + 1) * DAY
+    markNoticed('full-disk', later)
+    expect(noticeDue('full-disk', later + DAY)).toBe(false)
   })
 })

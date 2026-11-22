@@ -22,7 +22,11 @@ import { createMMKV } from 'react-native-mmkv'
  * `parse` turns what was stored (or nothing) into a value, once per stored
  * string: defaults, shape checks and migrations belong there.
  */
-export function createJsonStore<T>(id: string, parse: (stored: unknown) => T) {
+export function createJsonStore<T>(
+  id: string,
+  parse: (stored: unknown) => T,
+  options: { bestEffort?: boolean } = {},
+) {
   const storage = createMMKV({ id })
   const listeners = new Map<string, Set<() => void>>()
   const cache = new Map<string, T>()
@@ -50,17 +54,19 @@ export function createJsonStore<T>(id: string, parse: (stored: unknown) => T) {
   /**
    * Writes `value`, or removes the key for `null`.
    *
-   * MMKV throws from `set` when the phone has no room left. Callers run in
-   * timers and in a mutation's `onSuccess`, where a throw crashes the app or
-   * fails a save that already happened, so the value is kept for this run
-   * instead and is lost only if the app is killed before space frees up.
+   * MMKV throws from `set` when the phone has no room left. By default that
+   * throw reaches the caller: the live workout and the outbox must not look
+   * saved when they are not. A store made with `bestEffort` keeps the value in
+   * the cache for this run instead, for callers in timers and in a save's
+   * `onSuccess`, where a throw is a crash or a failed save that already
+   * happened. The disk keeps its old value, which comes back next launch.
    */
   function set(key: string, value: T | null): void {
     try {
       if (value === null) storage.remove(key)
       else storage.set(key, JSON.stringify(value))
-    } catch {
-      // Held in the cache below.
+    } catch (error) {
+      if (!options.bestEffort) throw error
     }
     if (value === null) cache.delete(key)
     else cache.set(key, value)
