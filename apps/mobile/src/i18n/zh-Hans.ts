@@ -1940,6 +1940,31 @@ export const zhHans = {
     done: '知道了',
     next: '下一步',
     pageOf: '第 {{page}} 页，共 {{count}} 页',
+    update130: {
+      title: '视频食谱、社交标签页等更新',
+    },
+    recipeImport: {
+      title: '把烹饪视频变成食谱',
+      body: '粘贴 TikTok、Instagram、小红书等平台的链接，我们帮你写好食谱。',
+      exampleName: '咖喱叻沙',
+      previewLabel: '烹饪视频变成食谱的示例',
+    },
+    socialTab: {
+      title: '好友和小组合并为一个标签页',
+      body: '小组的今日动态现在显示在“社交”的动态上方。',
+      exampleGroup: '午餐搭子',
+      previewLabel: '“社交”标签页示例',
+    },
+    mealPlaces: {
+      title: '记住在哪里吃的',
+      body: '为餐食标记用餐地点，并在美食地图上一览无遗。',
+      previewLabel: '标记了地点的餐食示例',
+    },
+    kitchenUnits: {
+      title: '杯、勺等单位',
+      body: '可以用茶匙、汤匙和杯记录食物，不只是克和份。',
+      previewLabel: '以杯计量的食物示例',
+    },
     groupsNews: {
       title: '小组：和朋友一起吃',
     },

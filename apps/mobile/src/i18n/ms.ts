@@ -1979,6 +1979,31 @@ export const ms = {
     done: 'Faham',
     next: 'Seterusnya',
     pageOf: 'Halaman {{page}} daripada {{count}}',
+    update130: {
+      title: 'Resipi video, satu tab Sosial dan banyak lagi',
+    },
+    recipeImport: {
+      title: 'Jadikan video masakan resipi',
+      body: 'Tampal pautan dari TikTok, Instagram, Rednote dan lain-lain, dan kami tuliskan resipinya.',
+      exampleName: 'Laksa kari',
+      previewLabel: 'Video masakan yang dijadikan resipi',
+    },
+    socialTab: {
+      title: 'Rakan dan kumpulan dalam satu tab',
+      body: 'Hari kumpulan anda kini di atas suapan dalam Sosial.',
+      exampleGroup: 'Geng makan tengah hari',
+      previewLabel: 'Contoh tab Sosial',
+    },
+    mealPlaces: {
+      title: 'Ingat tempat anda makan',
+      body: 'Tanda makanan dengan tempat anda makan, dan lihat semuanya pada peta makanan.',
+      previewLabel: 'Contoh makanan yang ditanda dengan tempatnya',
+    },
+    kitchenUnits: {
+      title: 'Cawan, sudu dan banyak lagi',
+      body: 'Catat makanan dalam sudu teh, sudu besar dan cawan, bukan hanya gram dan hidangan.',
+      previewLabel: 'Contoh makanan yang disukat dalam cawan',
+    },
     groupsNews: {
       title: 'Kumpulan: makan bersama rakan',
     },

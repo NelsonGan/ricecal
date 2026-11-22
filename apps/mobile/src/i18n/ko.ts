@@ -1943,6 +1943,31 @@ export const ko = {
     done: '확인',
     next: '다음',
     pageOf: '{{count}}페이지 중 {{page}}페이지',
+    update130: {
+      title: '영상 레시피, 하나의 소셜 탭 외',
+    },
+    recipeImport: {
+      title: '요리 영상을 레시피로',
+      body: 'TikTok, Instagram, Rednote 등의 링크를 붙여 넣으면 레시피를 써 드려요.',
+      exampleName: '커리 락사',
+      previewLabel: '요리 영상이 레시피가 되는 예시',
+    },
+    socialTab: {
+      title: '친구와 그룹을 한 탭에서',
+      body: '이제 그룹의 하루가 소셜의 피드 위에 보여요.',
+      exampleGroup: '점심 메이트',
+      previewLabel: '소셜 탭 예시',
+    },
+    mealPlaces: {
+      title: '어디서 먹었는지 기억하기',
+      body: '식사에 먹은 장소를 기록하고, 푸드 맵에서 한눈에 확인하세요.',
+      previewLabel: '장소가 기록된 식사 예시',
+    },
+    kitchenUnits: {
+      title: '컵, 스푼 등',
+      body: '그램과 인분뿐 아니라 작은술, 큰술, 컵으로도 기록할 수 있어요.',
+      previewLabel: '컵으로 잰 음식 예시',
+    },
     groupsNews: {
       title: '그룹: 친구와 함께 먹기',
     },

@@ -4617,6 +4617,9 @@ Sunday weeks, calendar months and all time, by `log_date`. It reads one query
 (`useLocatedEntries`, the newest 2,000 tagged entries, served by the partial
 index `food_logs_user_located_idx`) and filters it per period.
 
+**The 1.3.0 news card** turns Locations on from its places page, the same way
+the offer's button does (see "News announcements").
+
 **The one-time offer**, "Remember where you eat?", follows a meal logged on
 this phone while Locations is off (`recordMealForLocationsOffer`, beside
 `recordMealLogged`). It is stored as answered before it is on screen, so a
@@ -7442,6 +7445,32 @@ names the Apple Watch there and nowhere else: the watch app is iOS only.
   profile within 30 seconds, so a card another phone has shown is not shown
   again from a persisted cache.
 
+### 1.3.0
+
+`update_1_3_0_2026_11` is four pages, one per change in the release, each
+picture drawn in `Update130Preview.tsx`: a cooking video becoming a recipe, with
+the TikTok, Instagram and Rednote logos on the video (button: Recipes); the
+Social tab in miniature, group pills over the group's day over the feed
+(button: Social); a meal's place on a drawn map, wearing the food map's pin
+(button: Turn on Locations); and the food page's unit picker with cups chosen
+(no button). The map is drawn rather than a real `AppMap`, so a card swiped past
+loads no tiles.
+
+**The places page turns Locations on.** Locations is new and off until turned
+on (see "Meal locations"), so its button does what the one-time offer's does:
+`setLocationsEnabled` for this phone, `Locations Toggled` with `source:
+announcement`, and the system's location prompt only once the card has gone,
+since iOS presents nothing over a modal on its way down. It is per phone, like
+the switch, so it is a tap and never part of `see_announcements`. With
+Locations already on, the page has no button.
+
+It folds the 1.1.0 card, not the Groups card. On 2026-11-22, 1,939 of the
+hosted project's 4,112 onboarded accounts had never been shown 1.1.0, so its
+pages and its Auto post foods switch still need a way to reach them (see the
+fold under Groups below). Every one of them had also missed Groups, but Groups
+switches nothing and the Social page carries its news, so it stays in the list
+under Me rather than adding two more pages to a seven-page card.
+
 ### Groups
 
 `groups_2026_10` is two pages: the board (a picture of a day of meals with a
@@ -7819,9 +7848,9 @@ events, 815 weekly users, 338 installs) ×4.3.
 | `$identify` and `$set` | 4,000 | One identify per sign-in; person properties only when a value changes (persisted diff in `posthog.ts`) |
 | RevenueCat server events | 300 | ~60 lifecycle events a week |
 | Website (`$pageview` and five decisions) | 1,000 | ~120 events a week |
-| Meal locations (`Locations Toggled`, `Meal Location Set`, `Food Map Opened`, `Locations Offer Shown`) | 4,000 | New, so no history: the offer once per account (~1,500), a toggle after it, a map visit or two a week by those who turn Locations on, and hand-picked places. The automatic tag adds no event (`Meal Logged`'s `located`) |
+| Meal locations (`Locations Toggled`, `Meal Location Set`, `Food Map Opened`, `Locations Offer Shown`) | 4,500 | New, so no history: the offer once per account (~1,500), a toggle after it or from the 1.3.0 news card's Turn on Locations (once per phone, a few hundred), a map visit or two a week by those who turn Locations on, and hand-picked places. The automatic tag adds no event (`Meal Logged`'s `located`) |
 | Video imports (`Recipe Imported`) | 3,000 | New, so no history: one event per import attempt. Free accounts are capped at five recipes a month and failures are a fraction of that; assumes a few hundred importers a month, Pro ones importing a few times a week |
-| **Total** | **~305,500 (31%)** | Room for three times today's audience |
+| **Total** | **~306,000 (31%)** | Room for three times today's audience |
 
 | Other PostHog product | Free allowance / month | Expected use |
 | --- | --- | --- |
@@ -7877,7 +7906,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` | Camera/describe request reaches a reported outcome; once per attempt, including refusals, empty food, failure and detached requests. |
 | Barcode Scanned | ricecal_barcode_scanned | outcome: 'found' &#124; 'not_found' &#124; 'error' | `app/log/food/[id].tsx` | Barcode lookup settles; once per barcode value on the mounted food route. Reopening the route can count again. |
 | Entry Updated | ricecal_entry_updated | changed: string[] | `src/data/entries.ts` | Entry update succeeds; each successful save, with names of changed fields. |
-| Locations Toggled | ricecal_locations_toggled | enabled: boolean; source: 'settings' &#124; 'offer' | `src/features/places/components/LocationsSettingsCard.tsx`<br>`src/features/places/components/LocationsOffer.tsx` | The Locations switch in Personalisation changes, or the one-time offer's Turn on Locations is tapped; once per change. |
+| Locations Toggled | ricecal_locations_toggled | enabled: boolean; source: 'settings' &#124; 'offer' &#124; 'announcement' | `src/features/places/components/LocationsSettingsCard.tsx`<br>`src/features/places/components/LocationsOffer.tsx`<br>`src/features/news/AnnouncementCard.tsx` | The Locations switch in Personalisation changes, or Turn on Locations is tapped on the one-time offer or the 1.3.0 news card's places page; once per change. |
 | Meal Location Set | ricecal_meal_location_set | source: 'current' &#124; 'nearby' &#124; 'recent' &#124; 'search' | `app/log/food/[id].tsx` | A place picked by hand in the picker is saved on an entry, or a composed entry carrying one is added; once per successful save. `current` is the pin left on an unlisted spot, `nearby` a place from the Nearby list or its pins, `recent` a recent-place chip, `search` a search result. The automatic tag is Meal Logged's `located`. |
 | Food Map Opened | ricecal_food_map_opened | places: number | `src/features/places/FoodMapScreen.tsx` | The food map's tagged meals arrive; once per visit, with the places in the opening period. |
 | Locations Offer Shown | ricecal_locations_offer_shown | none | `src/features/places/components/LocationsOffer.tsx` | The "Remember where you eat?" sheet is put up; at most once per phone and account. |
@@ -8001,7 +8030,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Widget water `preset` | Home-screen action preset volume | Widget action choice; no daily water total or diary history |
 | `announcement` | An id from `features/news/announcements.ts`, lowercase letters, digits and underscores (checked by `see_announcements`); currently `feed_auto_share_2026_10` | Never free text; a renamed id is a new announcement |
 | `source` / `AnnouncementSource` | `launch`, `settings` | `launch` is the card the app puts over Today; `settings` is one opened from the News list under Me |
-| `cta` / `AnnouncementCta` | `edit_profile`, `personalisation`, `groups` | Where a page's button leads, named for analytics; a tap, not a changed setting |
+| `cta` / `AnnouncementCta` | `edit_profile`, `personalisation`, `groups`, `recipes`, `social`, `locations` | Where a page's button leads, named for analytics; a tap, not a changed setting |
 | Announcement `via` | `done` ("Got it" on the last page), `close` (cross, scrim or back gesture) | Closing without a page's button |
 | Announcement `page` | The page, from 1, that the button was tapped or the card closed on | How far people read is `Dismissed` broken down by `page`; `done` is always the last page |
 | Group `visibility`, `via`, `by`, `meal`, `reaction` | `private`/`public`; `invite`/`public`; `handle`/`email` (an email address typed into the invite field); `breakfast`/`lunch`/`dinner` (the board column, not the diary's `Meal`); `like`/`dislike` | `src/lib/analytics/events.ts`; never a group name, a handle, an address, a food or a message |

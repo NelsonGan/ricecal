@@ -1964,6 +1964,31 @@ export const id = {
     done: 'Oke',
     next: 'Lanjut',
     pageOf: 'Halaman {{page}} dari {{count}}',
+    update130: {
+      title: 'Resep dari video, satu tab Sosial, dan lainnya',
+    },
+    recipeImport: {
+      title: 'Ubah video masak jadi resep',
+      body: 'Tempel tautan dari TikTok, Instagram, Rednote, dan lainnya, lalu kami tuliskan resepnya.',
+      exampleName: 'Laksa kari',
+      previewLabel: 'Video masak yang diubah menjadi resep',
+    },
+    socialTab: {
+      title: 'Teman dan grup dalam satu tab',
+      body: 'Hari grupmu kini ada di atas linimasa di Sosial.',
+      exampleGroup: 'Geng makan siang',
+      previewLabel: 'Contoh tab Sosial',
+    },
+    mealPlaces: {
+      title: 'Ingat tempat kamu makan',
+      body: 'Tandai makanan dengan tempat kamu makan, dan lihat semuanya di peta makan.',
+      previewLabel: 'Contoh makanan yang ditandai dengan tempatnya',
+    },
+    kitchenUnits: {
+      title: 'Cangkir, sendok, dan lainnya',
+      body: 'Catat makanan dalam sendok teh, sendok makan, dan cangkir, tidak hanya gram dan porsi.',
+      previewLabel: 'Contoh makanan yang diukur dengan cangkir',
+    },
     groupsNews: {
       title: 'Grup: makan bersama teman',
     },
