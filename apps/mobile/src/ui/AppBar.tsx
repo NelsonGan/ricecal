@@ -7,6 +7,7 @@ import { Icon } from './Icon'
 import { IconButton } from './IconButton'
 import { Tappable } from './Tappable'
 import { Text } from './Text'
+import { TEXT_SCALES } from './textScale'
 
 export type AppBarProps = {
   /**
@@ -168,6 +169,7 @@ export function AppBar({
            field here would read as a form opening over the bar, which is what
            the card under it used to be and the reason this moved. */
         <TextInput
+          allowFontScaling={TEXT_SCALES}
           value={titleEdit.value}
           onChangeText={titleEdit.onChangeText}
           onBlur={titleEdit.onDone}

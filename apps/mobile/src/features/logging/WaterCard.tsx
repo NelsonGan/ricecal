@@ -1,6 +1,6 @@
 import { type Ref, useImperativeHandle, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { TextInput, useWindowDimensions, View } from 'react-native'
+import { TextInput, View } from 'react-native'
 
 import { useAddWater } from '@/data'
 import { SplitFigure } from '@/features/shared/SplitFigure'
@@ -14,7 +14,9 @@ import {
   IconButton,
   Sheet,
   Squish,
+  TEXT_SCALES,
   Text,
+  useFontScale,
   useNumpadField,
   useToast,
   WaterTank,
@@ -78,7 +80,7 @@ export function WaterCard({
   const addWater = useAddWater(date)
 
   const [sheetOpen, setSheetOpen] = useState(false)
-  const { fontScale } = useWindowDimensions()
+  const fontScale = useFontScale()
   const minCard = Math.round(MIN_CARD_HEIGHT * Math.min(1.6, Math.max(1, fontScale)))
   const [tankHeight, setTankHeight] = useState(minCard)
 
@@ -376,6 +378,7 @@ function CustomAmount({
           layout say it. */}
       <View className="mt-md flex-row items-end justify-center gap-3">
         <TextInput
+          allowFontScaling={TEXT_SCALES}
           value={typed}
           onChangeText={setTyped}
           placeholder={t('logging:water.customPlaceholder')}

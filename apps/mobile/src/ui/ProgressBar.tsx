@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -10,6 +10,7 @@ import Animated, {
 import { motion } from '@/theme/tokens'
 import { cn } from './cn'
 import { Text } from './Text'
+import { useFontScale } from './textScale'
 
 const fills = {
   pandan: 'bg-pandan',
@@ -116,7 +117,7 @@ export function MacroBar({
   inline = false,
   className,
 }: MacroBarProps) {
-  const { fontScale } = useWindowDimensions()
+  const fontScale = useFontScale()
   const wideText = fontScale > 1.3
   if (inline && !wideText) {
     return (

@@ -9,7 +9,7 @@ import { measureFigure, useMeasureText } from '@/features/shared/useMeasureText'
 import { type MeasureUnit, roundedFor, stepFor, steppedTo } from '@/lib/measures'
 import { formatPortion } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
-import { Card, cn, Divider, Icon, Sheet, Tappable, Text, useNumpadField } from '@/ui'
+import { Card, cn, Divider, Icon, Sheet, Tappable, TEXT_SCALES, Text, useNumpadField } from '@/ui'
 import {
   displayUnitFor,
   type IngredientKey,
@@ -114,6 +114,7 @@ function AmountField({
 
   return (
     <TextInput
+      allowFontScaling={TEXT_SCALES}
       value={typed ?? figure}
       onChangeText={setTyped}
       onSubmitEditing={commit}

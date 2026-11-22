@@ -1,6 +1,6 @@
 import { Text as Span } from 'react-native'
 
-import { cn, Text } from '@/ui'
+import { cn, TEXT_SCALES, Text } from '@/ui'
 
 export type SplitFigureProps = {
   /** The whole translated phrase: "8,426 steps", "1,500 ml", "8,426 歩". */
@@ -44,9 +44,17 @@ export function SplitFigure({ text, figure, size = 'lg', className }: SplitFigur
       minimumFontScale={0.6}
       maxFontSizeMultiplier={1.3}
     >
-      {before ? <Span className={small}>{before}</Span> : null}
+      {before ? (
+        <Span className={small} allowFontScaling={TEXT_SCALES}>
+          {before}
+        </Span>
+      ) : null}
       {at < 0 ? text : figure}
-      {after ? <Span className={small}>{after}</Span> : null}
+      {after ? (
+        <Span className={small} allowFontScaling={TEXT_SCALES}>
+          {after}
+        </Span>
+      ) : null}
     </Text>
   )
 }

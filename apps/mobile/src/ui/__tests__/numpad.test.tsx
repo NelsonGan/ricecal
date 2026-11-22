@@ -3,13 +3,7 @@ import { StyleSheet } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { fireEvent, render, screen, userEvent, waitFor } from '../../test-utils'
-import {
-  NUMPAD_BODY_HEIGHT,
-  NumpadHost,
-  NumpadProvider,
-  numpadHeaderHeight,
-  useNumpadZone,
-} from '../Numpad'
+import { NUMPAD_BODY_HEIGHT, NumpadHost, NumpadProvider, useNumpadZone } from '../Numpad'
 import { Text } from '../Text'
 import { TextField } from '../TextField'
 
@@ -386,12 +380,9 @@ describe('Numpad', () => {
     await openPad()
 
     // The pad's body plus the home indicator's inset, for the host drawing it.
-    // The header grows with the text size, which the test renderer reports as large.
-    const { fontScale } = require('react-native').Dimensions.get('window')
-    const header = numpadHeaderHeight(fontScale)
-    expect(seen.near.at(-1)?.height).toBe(
-      NUMPAD_BODY_HEIGHT - numpadHeaderHeight(1) + header + METRICS.insets.bottom,
-    )
+    // The test renderer reports a large text size, and the header stays at its
+    // designed height anyway: text does not scale (`textScale.ts`).
+    expect(seen.near.at(-1)?.height).toBe(NUMPAD_BODY_HEIGHT + METRICS.insets.bottom)
     // And nothing at all for the one that is not, at any point.
     expect(seen.far.every((r) => r.height === 0)).toBe(true)
 

@@ -5,7 +5,7 @@ import { subDays } from 'date-fns/subDays'
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 import {
   type ActivitySession,
   dateKey,
@@ -74,6 +74,7 @@ import {
   SkeletonRow,
   Tappable,
   Text,
+  useFontScale,
   usePaneWidth,
   useToast,
   useWindowLayout,
@@ -162,7 +163,7 @@ function TodayContent() {
   const router = useRouter()
   const focused = useIsFocused()
   const toast = useToast()
-  const { fontScale } = useWindowDimensions()
+  const fontScale = useFontScale()
   // The pane's width, which is the window's on every iPhone but iPhone Duo.
   const width = usePaneWidth()
   const { split } = useWindowLayout()

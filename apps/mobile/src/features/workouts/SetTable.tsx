@@ -6,7 +6,7 @@ import type { LastSet } from '@/data'
 import { SwipeRow } from '@/features/shared/SwipeRow'
 import { UNIT_KEY, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
-import { cn, Icon, type NumpadTools, Tappable, Text, useNumpadField } from '@/ui'
+import { cn, Icon, type NumpadTools, Tappable, TEXT_SCALES, Text, useNumpadField } from '@/ui'
 import type { Tracking } from './catalogue'
 import { SET_KIND_KEY, setBadges } from './copy'
 import { fieldKey, useFieldOrder } from './fieldOrder'
@@ -588,6 +588,7 @@ function NumberCell({
   return (
     <CellTouch focus={() => numpad.ref.current?.focus()}>
       <TextInput
+        allowFontScaling={TEXT_SCALES}
         key={hintKey(placeholder)}
         value={typed ?? value}
         onChangeText={change}
@@ -657,6 +658,7 @@ function DurationCell({
   return (
     <CellTouch focus={() => numpad.ref.current?.focus()}>
       <TextInput
+        allowFontScaling={TEXT_SCALES}
         key={hintKey(placeholder)}
         value={shown}
         onChangeText={change}

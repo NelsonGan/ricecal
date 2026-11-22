@@ -1,6 +1,6 @@
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 
-import { Text } from '@/ui'
+import { Text, useFontScale } from '@/ui'
 import { labelWidth, spreadLabels } from './axis'
 
 export type AxisLabel = {
@@ -15,7 +15,7 @@ export type AxisLabel = {
  * `TrendLine`, so every chart thins its labels the same way.
  */
 export function AxisLabels({ labels, span }: { labels: readonly AxisLabel[]; span: number }) {
-  const { fontScale } = useWindowDimensions()
+  const fontScale = useFontScale()
   const widths = labels.map((label) => labelWidth(label.text) * fontScale)
   const placed =
     span > 0

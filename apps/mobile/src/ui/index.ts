@@ -148,6 +148,7 @@ export {
   type ToastTone,
   useToast,
 } from './Toast'
+export { TEXT_SCALES, useFontScale } from './textScale'
 export { useHeld } from './useHeld'
 export { WaterTank, type WaterTankProps } from './WaterTank'
 export { type DayStatus, type WeekDay, WeekStrip, type WeekStripProps } from './WeekStrip'

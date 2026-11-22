@@ -7,7 +7,7 @@ import { PartRow } from '@/features/shared/PartRow'
 import { roundHalfUp } from '@/lib/nutrition'
 import { formatPortion, titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Card, cn, Divider, Text, useNumpadField } from '@/ui'
+import { Button, Card, cn, Divider, TEXT_SCALES, Text, useNumpadField } from '@/ui'
 import { PartLine } from './PartLine'
 import {
   type PartEdits,
@@ -76,6 +76,7 @@ function GramsField({
 
   return (
     <TextInput
+      allowFontScaling={TEXT_SCALES}
       value={typed ?? t('detail.gramsShort', { grams: grams.toLocaleString() })}
       onChangeText={setTyped}
       onSubmitEditing={commit}
