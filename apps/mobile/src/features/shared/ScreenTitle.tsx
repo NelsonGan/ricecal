@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 
-import { cn, Text } from '@/ui'
+import { cn, Text, useFontScale } from '@/ui'
 
 export type ScreenTitleProps = {
   title: string
@@ -27,7 +27,7 @@ export type ScreenTitleProps = {
  * back button. A root screen has neither, so its larger title stays left aligned.
  */
 export function ScreenTitle({ title, leading, trailing, className }: ScreenTitleProps) {
-  const { fontScale } = useWindowDimensions()
+  const fontScale = useFontScale()
   const wideText = fontScale > 1.3
   return (
     <View className={cn('gap-3 pt-1', className)} accessibilityRole="header">

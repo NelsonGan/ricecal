@@ -5,7 +5,7 @@ import { TextInput, View } from 'react-native'
 import { type ExerciseBests, type LastSet, useCurrentWeight } from '@/data'
 import type { WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
-import { Badge, Card, Icon, IconButton, Tappable, Text } from '@/ui'
+import { Badge, Card, Icon, IconButton, Tappable, TEXT_SCALES, Text } from '@/ui'
 import type { Category } from './catalogue'
 import { ExerciseArt } from './ExerciseArt'
 import { type DistanceUnit, shortClock } from './format'
@@ -151,6 +151,7 @@ export const ExerciseCard = memo(function ExerciseCard({
 
       {noting ? (
         <TextInput
+          allowFontScaling={TEXT_SCALES}
           value={exercise.notes}
           onChangeText={(notes) => handlers.notes(key, notes)}
           placeholder={t('workouts:logger.exerciseNotes')}

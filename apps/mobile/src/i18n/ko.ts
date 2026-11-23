@@ -712,6 +712,7 @@ export const ko = {
       showGoals: '그날의 예산 보기',
       showLeft: '남은 양 보기',
       dayHeading: '나의 하루',
+      activity: '활동',
       steps_one: '{{steps}}걸음',
       steps_other: '{{steps}}걸음',
       analysing: '접시를 읽는 중',
@@ -960,7 +961,7 @@ export const ko = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} ml',
+      ofGoal: '/{{goal}} ml',
       addTitle: '물 추가',
       left: '{{amount}} ml 남음',
       add: '{{amount}} ml 추가',

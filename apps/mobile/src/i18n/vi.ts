@@ -716,6 +716,7 @@ export const vi = {
       showGoals: 'Hiện hạn mức của ngày',
       showLeft: 'Hiện phần còn lại',
       dayHeading: 'Ngày của bạn',
+      activity: 'Hoạt động',
       steps_one: '{{steps}} bước',
       steps_other: '{{steps}} bước',
       analysing: 'Đang đọc đĩa của bạn',
@@ -966,7 +967,7 @@ export const vi = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} ml',
+      ofGoal: '/{{goal}} ml',
       addTitle: 'Thêm nước',
       left: 'còn {{amount}} ml',
       add: 'Thêm {{amount}} ml',

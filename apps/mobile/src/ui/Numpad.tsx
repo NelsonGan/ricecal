@@ -11,12 +11,7 @@ import {
   useState,
   useSyncExternalStore,
 } from 'react'
-import {
-  type TextInputInstance,
-  type TextInputProps,
-  useWindowDimensions,
-  View,
-} from 'react-native'
+import { type TextInputInstance, type TextInputProps, View } from 'react-native'
 import Animated, {
   Easing,
   type SharedValue,
@@ -34,6 +29,7 @@ import { Icon } from './Icon'
 import { Squish } from './Squish'
 import { Tappable } from './Tappable'
 import { Text } from './Text'
+import { useFontScale } from './textScale'
 
 /**
  * Layout of the pad, in points, and the arithmetic that turns it into a height.
@@ -258,7 +254,7 @@ export function NumpadProvider({ children, labels }: NumpadProviderProps) {
    */
   const [shown, setShown] = useState<Session | null>(null)
 
-  const { fontScale } = useWindowDimensions()
+  const fontScale = useFontScale()
   // Read, not subscribed to: changing language re-renders the whole app.
   const headerHeight = numpadHeaderHeight(
     fontScale,

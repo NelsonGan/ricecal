@@ -5,6 +5,7 @@ import { useThemeColors } from '@/theme/useTheme'
 import { cn } from './cn'
 import { useNumpadField } from './Numpad'
 import { Text } from './Text'
+import { TEXT_SCALES } from './textScale'
 
 /**
  * The keyboard types that mean "a number", and so get the app's own pad
@@ -223,6 +224,7 @@ export const TextField = forwardRef<TextInputInstance, TextFieldProps>(function 
             </Text>
           ) : null}
           <TextInput
+            allowFontScaling={TEXT_SCALES}
             editable={editable}
             value={value}
             onChangeText={onChangeText}

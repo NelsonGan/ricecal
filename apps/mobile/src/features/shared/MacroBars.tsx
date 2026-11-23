@@ -21,6 +21,8 @@ export type MacroBarsProps = {
   showGoal?: boolean
   /** One line per macro. See `MacroBar`'s `inline`. */
   inline?: boolean
+  /** Tighter stacked rows. See `MacroBar`'s `compact`. */
+  compact?: boolean
   className?: string
 }
 
@@ -39,6 +41,7 @@ export function MacroBars({
   targets,
   showGoal = false,
   inline = false,
+  compact = false,
   className,
 }: MacroBarsProps) {
   const { t } = useTranslation()
@@ -64,7 +67,7 @@ export function MacroBars({
   return (
     // Inline rows are spaced wider than stacked ones: with nothing above each bar,
     // three rows at the stacked gap read as one block beside the ring.
-    <View className={cn(inline ? 'gap-4' : 'gap-2.5', className)}>
+    <View className={cn(inline ? 'gap-4' : compact ? 'gap-2' : 'gap-2.5', className)}>
       {rows.map((row) => (
         <MacroBar
           key={row.key}
@@ -80,6 +83,7 @@ export function MacroBars({
           value={progressOf(row.grams, row.goal)}
           tone={row.tone}
           inline={inline}
+          compact={compact}
         />
       ))}
     </View>

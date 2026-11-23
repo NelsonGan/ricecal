@@ -45,7 +45,9 @@ export const logging = {
      * `EntryList`.
      */
     dayHeading: 'Your day',
-    /** Opposite the heading, when a health store reported the day. */
+    /** The heading of the card beside the ring with the day's steps and the way into Workouts. */
+    activity: 'Activity',
+    /** The figure on the activity card, when a health store reported the day. */
     steps_one: '{{steps}} step',
     steps_other: '{{steps}} steps',
     /** A snapped plate whose dish is still being worked out. */
@@ -565,11 +567,11 @@ export const logging = {
    */
   water: {
     /**
-     * Drunk against the goal. A slash rather than "of", as the ring and the
-     * macro bars write a fraction, and one unit printed once at the end, because
-     * "0 ml / 2 L" reads as a fault.
+     * Under the amount on Today's tank: the goal, written as the ring writes its
+     * own ("/2,000 KCAL"), a slash and the figure, so the pair reads as a fraction.
+     * Millilitres like the amount over it, because "0 ml / 2 L" reads as a fault.
      */
-    count: '{{filled}} / {{goal}} ml',
+    ofGoal: '/{{goal}} ml',
     /**
      * The sheet behind Add, and what is left of the goal beside its heading.
      * "left" rather than "to go", and clamped at zero rather than swapped for a

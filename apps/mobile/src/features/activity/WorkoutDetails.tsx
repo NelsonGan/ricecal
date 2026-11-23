@@ -1,14 +1,14 @@
 import { format } from 'date-fns/format'
 import { parseISO } from 'date-fns/parseISO'
 import { useTranslation } from 'react-i18next'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 
 import type { ActivitySession } from '@/data'
 import { formatTime } from '@/features/shared'
 import { datePattern } from '@/lib/dates'
 import { ZONE_ORDER } from '@/lib/health'
 import { ReplayMask } from '@/lib/replay-mask'
-import { Card, cn, Icon, type IconProps, Text } from '@/ui'
+import { Card, cn, Icon, type IconProps, Text, useFontScale } from '@/ui'
 import { clock, count } from './format'
 import { HeartRateCard } from './HeartRateCard'
 import { workoutIcon, workoutKindKey } from './workoutKind'
@@ -33,7 +33,7 @@ const TONES: Record<WorkoutTone, { fill: string; line: string; ink: string }> = 
  */
 export function WorkoutDetails({ session }: { session: ActivitySession }) {
   const { t } = useTranslation(['activity', 'common'])
-  const { fontScale } = useWindowDimensions()
+  const fontScale = useFontScale()
   const wideText = fontScale > 1.3
   const details = workoutDetails(session)
   const tone = TONES[details.tone]

@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 
 import { type HrZones, ZONE_KEY, ZONE_ORDER, type ZoneName } from '@/lib/health'
 import { ReplayMask } from '@/lib/replay-mask'
-import { Card, cn, Icon, Text } from '@/ui'
+import { Card, cn, Icon, Text, useFontScale } from '@/ui'
 import { clock } from './format'
 
 const ZONE_FILL: Record<ZoneName, string> = {
@@ -32,7 +32,7 @@ export function HeartRateCard({
   chart?: ReactNode
 }) {
   const { t } = useTranslation(['activity'])
-  const { fontScale } = useWindowDimensions()
+  const fontScale = useFontScale()
   const wideText = fontScale > 1.3
   const zoneTotal = zones ? ZONE_ORDER.reduce((sum, zone) => sum + zones[zone], 0) : 0
 

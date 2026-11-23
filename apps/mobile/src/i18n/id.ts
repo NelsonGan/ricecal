@@ -724,6 +724,7 @@ export const id = {
       showGoals: 'Tampilkan jatah hari ini',
       showLeft: 'Tampilkan sisanya',
       dayHeading: 'Harimu',
+      activity: 'Aktivitas',
       steps_one: '{{steps}} langkah',
       steps_other: '{{steps}} langkah',
       analysing: 'Membaca piringmu',
@@ -975,7 +976,7 @@ export const id = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} ml',
+      ofGoal: '/{{goal}} ml',
       addTitle: 'Tambah air',
       left: 'sisa {{amount}} ml',
       add: 'Tambah {{amount}} ml',

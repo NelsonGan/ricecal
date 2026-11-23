@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
-import { PixelRatio, View } from 'react-native'
+import { View } from 'react-native'
 
 import { titleCase } from '@/lib/portions'
-import { cn, Text, type TextVariant } from '@/ui'
+import { cn, Text, type TextVariant, useFontScale } from '@/ui'
 import { countLabel } from './parts'
 
 /**
@@ -35,6 +35,7 @@ export function PartLine({
   /** Anything that trails the name in the same run, like the weight bracket. */
   children?: ReactNode
 }) {
+  const fontScale = useFontScale()
   return (
     /* THREE BOXES IN A ROW RATHER THAN ONE RUN OF TEXT, and the × is why.
        It has to be smaller than the words either side — at the full 17px, beside
@@ -68,7 +69,7 @@ export function PartLine({
       <Text
         variant={variant}
         className="font-body text-[13px] text-muted"
-        style={{ transform: [{ translateY: -PixelRatio.getFontScale() }] }}
+        style={{ transform: [{ translateY: -fontScale }] }}
       >
         ×
       </Text>

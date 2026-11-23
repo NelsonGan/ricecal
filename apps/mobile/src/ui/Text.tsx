@@ -2,6 +2,7 @@ import { Platform, Text as RNText, type TextProps as RNTextProps, StyleSheet } f
 
 import { cn } from './cn'
 import { useTextScript } from './TextScript'
+import { TEXT_SCALES } from './textScale'
 
 /**
  * The type ramp from section 02 of the design system. Baloo 2 (`font-display*`)
@@ -173,6 +174,8 @@ export function Text({
       style={[androidTightening, style, leading]}
       adjustsFontSizeToFit={adjustsFontSizeToFit}
       {...rest}
+      // After the spread, so no caller can opt back in. See `textScale.ts`.
+      allowFontScaling={TEXT_SCALES}
     />
   )
 }

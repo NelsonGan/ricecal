@@ -730,6 +730,7 @@ export const fil = {
       showGoals: 'Ipakita ang badyet ng araw',
       showLeft: 'Ipakita ang natitira',
       dayHeading: 'Ang araw mo',
+      activity: 'Aktibidad',
       steps_one: '{{steps}} hakbang',
       steps_other: '{{steps}} hakbang',
       analysing: 'Binabasa ang plato mo',
@@ -982,7 +983,7 @@ export const fil = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} ml',
+      ofGoal: '/{{goal}} ml',
       addTitle: 'Magdagdag ng tubig',
       left: '{{amount}} ml pa',
       add: 'Dagdagan ng {{amount}} ml',

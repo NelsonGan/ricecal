@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -10,6 +10,7 @@ import Animated, {
 import { motion } from '@/theme/tokens'
 import { cn } from './cn'
 import { Text } from './Text'
+import { useFontScale } from './textScale'
 
 const fills = {
   pandan: 'bg-pandan',
@@ -85,6 +86,12 @@ export type MacroBarProps = {
    * taller than the ring beside it.
    */
   inline?: boolean
+  /**
+   * The stacked row drawn tighter: less air between the label and its bar, and
+   * a thinner bar. For Today, where the bars sit under the ring in a half-width
+   * column and every point of their height pushes the meal list down.
+   */
+  compact?: boolean
   className?: string
 }
 
@@ -114,9 +121,10 @@ export function MacroBar({
   value,
   tone = 'kaya',
   inline = false,
+  compact = false,
   className,
 }: MacroBarProps) {
-  const { fontScale } = useWindowDimensions()
+  const fontScale = useFontScale()
   const wideText = fontScale > 1.3
   if (inline && !wideText) {
     return (
@@ -141,7 +149,7 @@ export function MacroBar({
   }
 
   return (
-    <View className={cn('gap-2', className)}>
+    <View className={cn(compact ? 'gap-1' : 'gap-2', className)}>
       <View
         className={wideText ? 'gap-1' : 'flex-row flex-wrap items-center justify-between gap-1'}
       >
@@ -153,7 +161,7 @@ export function MacroBar({
       <ProgressBar
         value={value}
         tone={tone}
-        height={12}
+        height={compact ? 9 : 12}
         accessibilityLabel={`${label} ${amount}`}
       />
     </View>

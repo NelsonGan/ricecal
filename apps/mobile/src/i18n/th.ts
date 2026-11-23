@@ -713,6 +713,7 @@ export const th = {
       showGoals: 'แสดงโควตาของวันนี้',
       showLeft: 'แสดงส่วนที่เหลือ',
       dayHeading: 'วันของคุณ',
+      activity: 'กิจกรรม',
       steps_one: '{{steps}} ก้าว',
       steps_other: '{{steps}} ก้าว',
       analysing: 'กำลังอ่านจานของคุณ',
@@ -959,7 +960,7 @@ export const th = {
     },
 
     water: {
-      count: '{{filled}} / {{goal}} มล.',
+      ofGoal: '/{{goal}} มล.',
       addTitle: 'เพิ่มน้ำ',
       left: 'เหลืออีก {{amount}} มล.',
       add: 'เพิ่ม {{amount}} มล.',

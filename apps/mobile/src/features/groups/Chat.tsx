@@ -95,6 +95,7 @@ import {
   SkeletonRow,
   Spinner,
   Tappable,
+  TEXT_SCALES,
   Text,
 } from '@/ui'
 import { MacroChips, Thumbs, useVote } from './MealSheet'
@@ -935,6 +936,7 @@ const Composer = memo(function Composer({
           style={{ marginBottom: (SEND - 44) / 2 }}
         >
           <TextInput
+            allowFontScaling={TEXT_SCALES}
             ref={ref}
             value={value}
             onChangeText={onChange}

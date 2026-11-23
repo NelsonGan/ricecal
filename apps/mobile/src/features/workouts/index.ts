@@ -1,4 +1,5 @@
 export { ActionSheet } from './ActionSheet'
+export { ActivityCard, type ActivityCardProps } from './ActivityCard'
 export { type Burn, burnNote, workoutBurn } from './burn'
 export {
   ActiveWorkoutBar,
@@ -89,4 +90,3 @@ export {
   WorkoutUnavailable,
 } from './WorkoutForm'
 export { WorkoutItem } from './WorkoutItem'
-export { WorkoutsTile } from './WorkoutsTile'

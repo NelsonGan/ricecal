@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Animated, useWindowDimensions, View } from 'react-native'
+import { Animated, View } from 'react-native'
 
 import type { DayLog, Entry } from '@/data'
 import { storedImageSource, useMealPhotoUrl, useRefiningEntries } from '@/data'
 import { eatenQuantity, portionLabel } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
-import { Card, cn, Icon, IconButton, Text } from '@/ui'
+import { Card, cn, Icon, IconButton, Text, useFontScale } from '@/ui'
 import { ItemRow, ROW_TILE_COMPACT, ROW_TILE_COMPACT_ICON } from './ItemRow'
 import { MealPhoto } from './MealPhoto'
 import { SwipeRow } from './SwipeRow'
@@ -86,7 +86,7 @@ export function EntryList({
   action,
   extras = [],
 }: EntryListProps) {
-  const { fontScale } = useWindowDimensions()
+  const fontScale = useFontScale()
   const wideText = fontScale > 1.3
   // Newest first. The day used to read in the order it happened, which put the
   // meal just logged at the bottom of a growing list — and the thing a user

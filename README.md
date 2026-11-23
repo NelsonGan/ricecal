@@ -1396,7 +1396,8 @@ setting, a metric rather than a word. `Text` combines that script floor with a
 through classes or an inline style.
 Roomy Nunito prose keeps the leading it was designed with.
 
-**Let native text scale the leading once.** React Native scales `lineHeight`
+**Let native text scale the leading once** (dormant while text does not scale;
+see *Text does not scale* below). React Native scales `lineHeight`
 alongside font size on both iOS and Android. Multiplying it by
 `PixelRatio.getFontScale()` in `Text` too made large-text screens grow huge gaps
 and clipped single-line headings. `Text` resolves the floor in unscaled points
@@ -4496,21 +4497,31 @@ catches up when it is swiped to. Picking a day moves
 client-owned state) and everything below follows it: the ring, the water, the
 entry list, and anything logged while it is selected.
 
-**The calorie card is one compact reading.** A 112pt ring beside the three
-macros, each on one line as label, bar and "eaten/goal g", inside less padding
-than a standard card. Nothing sits under the ring: "+360 from moving" and "A bit
+**The day at a glance is two columns.** On the left, one card: the ring over
+the three macros, each a label and "eaten/goal g" over a thin bar. The ring
+takes the column's width up to 120pt: a larger one only made the summary taller
+and pushed the meal list off the first screen. The ring card is sized by what
+it holds (`grow`, never `flex-1`, on its surface, or a shorter right column
+clips the ring). On the right, water over activity, the two stretching to the
+ring card's height. The water card is the tank, edge to edge,
+with its heading and Add button across the top and the amount large at its foot
+over "/2,000 ml", all drawn on the water; the tank's height is measured, the
+room the row leaves it. Activity is the day's steps,
+when a health store reported them, and a Workouts button, which is the way into
+Workouts from Today. Nothing sits under the ring: "+360 from moving" and "A bit
 over" both made the card taller to repeat what the ring and the list below
 already say. Movement still extends the budget exactly as before.
 
-On narrow phones and with large text, the ring sits above the macro rows, whose
-labels and amounts also stack. Ring figures stay on one line. The seven date
-cells and the four navigation captions limit text scaling to fit their fixed
-widths; their full translated labels remain available to screen readers.
+Text does not follow the phone's text size (see *The design system*), so the
+two columns hold at every text setting. They stack only on a pane under about
+330pt (an Android phone at its largest display size), where a half-width card
+cannot hold the 104pt ring. A figure and its unit are one translated
+string drawn with the number large (`SplitFigure`), so the word order stays the
+translator's.
 
-**The list under the water is "Your day"**: the meals and the health store's
-workouts in one list, newest first, with the day's steps beside the heading when
-a store reported the day. With large text, the steps sit below the complete
-heading. The heading is a word rather than an overline, and
+**The list under the summary is "Your day"**: the meals and the health store's
+workouts in one list, newest first. The heading is a word rather than an
+overline, and
 hairlines sit under it and between rows. Rows are `ItemRow` at its `compact`
 size (a 56pt tile, up to two lines of title, the figure stacked over its unit). A
 workout is a row like a meal, its calories in hibiscus because they were burned,
@@ -4556,8 +4567,8 @@ by the screen that does not want it.
 Arrows rather than a pager: twelve taps reaches a year where the strip needs
 fifty-two swipes, and a paging grid a screen tall would fight the vertical
 scroll of the screen. The month title wraps between the arrows and the legend
-wraps onto extra rows with large text. Fixed date cells limit scaling like the
-week strip; their buttons announce full translated dates and verdicts.
+wraps onto extra rows in a long translation. The date cells' buttons announce
+full translated dates and verdicts.
 
 The view mode is not persisted. The diary is the screen this app opens on, and a
 launch landing on a month grid because of a tap three days ago would be the app
@@ -4783,22 +4794,24 @@ card produced "0 ml / 2 L", a fraction whose two halves are in different units.
 **The card is the tank.** `ui/WaterTank.tsx` fills the whole rectangle, carries
 two waves at different speeds so it reads as liquid rather than as a moving
 graph, and tips its surface left and right when the card first appears and on
-every drink. Everything else is drawn on it, in the top-right corner: the figure,
-small, and an Add button beside it. On Today it is 60pt tall, enough for that
-readout and a band of water. A short bar inside
-the card with the button beside it was tried and reverted: the tank as the card
-is the design.
+every drink. Everything else is drawn on it: the heading and an Add button
+across the top, and the day's amount large at the foot over "/2,000 ml". On
+Today its height is measured, the room the activity card under it leaves in the
+column beside the ring. A short bar inside the card with the button beside it
+was tried and reverted, and so was a heading over a tank inset in the card: the
+tank as the card is the design.
 
 **A full tank is still.** Once the goal is met it is drawn solid, with no waves,
 no slosh and no brim. A surface still moving at the top read as a day not yet
 done, and it was a frame of work every 16 ms for a picture with nothing left to
 say.
 
-There is no heading. The word "Water" over a tank of water is a label the picture
-already carries, and the drop beside the figure is what identifies it on a day
-the tank is empty. It went through two shapes to get here: a tall glass beside a
-column of quick-add buttons, which took a third of the screen, and then a band
-with the figure above it, which was three boxes saying one thing. The choosing
+It has a heading, "Water" with a drop, because beside the ring it is a tile
+among tiles and each tile in that column says what it is in the same place. As
+a full-width band it had none. It went through two shapes before that: a tall
+glass beside a column of quick-add buttons, which took a third of the screen,
+and then a band with the figure above it, which was three boxes saying one
+thing. The choosing
 happens in a sheet, and the undo is a toast, because a button that appears after
 every drink is a control that exists to be ignored.
 
@@ -5390,8 +5403,9 @@ There are no stored pulse traces, routes, laps, repetitions or personal records,
 so the page cannot draw them. (A gym workout recorded on the Apple Watch does keep
 its trace; see "The Apple Watch app".) `features/activity/WorkoutDetails.tsx` owns the
 layout and `workoutMetrics.ts` owns the sport-specific measurement choices.
-With large text, supporting measurements stack and the decorative illustration
-gives its space to the figures. Zone names can wrap instead of truncating.
+Zone names can wrap instead of truncating. (A large-text layout, where
+supporting measurements stack and the illustration gives way, is still in the
+code but never shows while text does not scale.)
 
 The app bar's delete removes a synced workout from RiceCal only, and says the
 store keeps it. The store still holds it and the sync re-reads a week on every
@@ -5561,7 +5575,7 @@ separate maintenance decision because it locks and rewrites the table.
 Gym sessions logged set by set, the way Hevy and Strong do it, plus the
 routines they start from and the records they set. Today is what went in;
 Workouts is what was done. It was the second tab until Groups needed the room;
-now it is a page, opened from a small tile beside the water card on Today and
+now it is a page, opened from the Workouts button on Today's activity card and
 from the first row of the Activity settings on Me. Its URL stays `/workouts`,
 so the Live Activity, the watch and old notification links still land on it.
 The minimised bar of a running workout floats over the tabs only; the page has
@@ -8760,6 +8774,17 @@ default is a word the design system has no business having; a missing label is
 now a compile error. `ConfirmSheet` passes its own `cancelLabel` down as the
 sheet's `closeLabel` rather than asking for a third, because the drag handle
 does what the neutral button does.
+
+**Text does not scale.** Nothing follows the phone's text size setting:
+`TEXT_SCALES` in `src/ui/textScale.ts` is off, `Text` and every `TextInput`
+pass it as `allowFontScaling`, and `useFontScale()` reads 1, so the layouts that
+used to change shape for large text keep their designed one. Each screen had
+answered large text its own way (capped, stacked or clipped), which made a
+different app at every setting; with it off there is one app, the one in the
+designs. A new `TextInput` passes `allowFontScaling={TEXT_SCALES}`, and a layout
+reads `useFontScale()`, never `fontScale` off the window.
+`src/ui/__tests__/text-scale.test.tsx` reads the source for both. The widgets
+and the watch app are SwiftUI and still follow the setting.
 
 **Never write a colour literal.** Use a role (`bg-pandan`, `text-muted`). Roles
 resolve per mode automatically; a hex does not. For Skia, charts and other

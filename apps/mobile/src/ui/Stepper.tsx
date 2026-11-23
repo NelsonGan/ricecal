@@ -9,6 +9,7 @@ import { Icon } from './Icon'
 import { IconButton } from './IconButton'
 import { useNumpadField } from './Numpad'
 import { Text } from './Text'
+import { TEXT_SCALES } from './textScale'
 
 export type StepperProps = {
   value: number
@@ -197,6 +198,7 @@ export function Stepper({
             row of height in a control that is already three deep. */}
         {editable ? (
           <TextInput
+            allowFontScaling={TEXT_SCALES}
             value={typed ?? format(value)}
             editable={!disabled}
             onChangeText={setTyped}
