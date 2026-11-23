@@ -7,6 +7,7 @@ import {
   knownPlaces,
   nearFirst,
   placeKey,
+  regionAround,
   regionFor,
   toEntryLocation,
 } from '../lib/placeLocation'
@@ -196,5 +197,30 @@ describe('regionFor', () => {
     })
     const both = regionFor([VILLAGE_PARK, ALI_MAMAK], { padding: 2 })
     expect(both?.longitudeDelta).toBeCloseTo((ALI_MAMAK.longitude - VILLAGE_PARK.longitude) * 2)
+  })
+})
+
+// A cluster's zoom on a world-wide map asked `regionAround` for 200° and MapKit
+// raised, closing the app; a first frame from New Zealand to Iceland reached
+// past the north pole.
+describe('regions MapKit takes', () => {
+  const valid = (r: { latitude: number; latitudeDelta: number; longitudeDelta: number }) => {
+    expect(r.latitudeDelta).toBeLessThanOrEqual(180)
+    expect(r.longitudeDelta).toBeLessThanOrEqual(360)
+    expect(Math.abs(r.latitude) + r.latitudeDelta / 2).toBeLessThanOrEqual(90)
+  }
+  it('caps a zoom wider than the globe', () => {
+    valid(regionAround({ latitude: 3.15, longitude: 101.7 }, 200))
+  })
+  it('keeps a first frame between the poles', () => {
+    const framed = regionFor(
+      [
+        { latitude: -40, longitude: 175 },
+        { latitude: 65, longitude: -21 },
+      ],
+      { padding: 1.5 },
+    )
+    expect(framed).not.toBeNull()
+    if (framed) valid(framed)
   })
 })

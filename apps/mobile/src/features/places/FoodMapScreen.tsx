@@ -42,6 +42,7 @@ import {
   groupByPlace,
   HOME_COORDINATE,
   type MapRegion,
+  mapKitRegion,
   type PlaceGroup,
   regionAround,
   regionFor,
@@ -129,8 +130,9 @@ export function FoodMapScreen() {
   const moveTo = useCallback(
     (target: MapRegion | null, duration = 300) => {
       if (!target) return
-      mapRef.current?.animateToRegion(target, duration)
-      onRegionChange(target)
+      const safe = mapKitRegion(target)
+      mapRef.current?.animateToRegion(safe, duration)
+      onRegionChange(safe)
     },
     [onRegionChange],
   )

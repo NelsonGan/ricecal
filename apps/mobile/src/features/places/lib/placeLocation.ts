@@ -168,6 +168,30 @@ export type MapRegion = {
   longitudeDelta: number
 }
 
+/** The widest region MapKit takes, a little inside its own limits. */
+export const MAX_LATITUDE_DELTA = 170
+export const MAX_LONGITUDE_DELTA = 359
+
+/**
+ * A region MapKit will take. `-[MKMapView setRegion:]` raises on a span past
+ * 180° of latitude or 360° of longitude, or one that reaches past a pole, and
+ * the raise closes the app; every region a screen sends goes through this.
+ */
+export function mapKitRegion(region: MapRegion): MapRegion {
+  const latitudeDelta = Math.min(MAX_LATITUDE_DELTA, Math.max(1e-6, region.latitudeDelta))
+  const longitudeDelta = Math.min(MAX_LONGITUDE_DELTA, Math.max(1e-6, region.longitudeDelta))
+  const reach = 90 - latitudeDelta / 2
+  return {
+    latitude: Math.max(-reach, Math.min(reach, region.latitude)),
+    longitude:
+      Math.abs(region.longitude) <= 180
+        ? region.longitude
+        : ((((region.longitude + 180) % 360) + 360) % 360) - 180,
+    latitudeDelta,
+    longitudeDelta,
+  }
+}
+
 /** Where a map opens with nothing to show: Kuala Lumpur. */
 export const HOME_COORDINATE: Coordinate = { latitude: 3.139, longitude: 101.6869 }
 
@@ -176,12 +200,13 @@ const STREET_DELTA = 0.006
 
 /** A square region around one point. */
 export function regionAround(point: Coordinate, delta = STREET_DELTA): MapRegion {
-  return {
+  // A cluster's zoom on a world-wide map asks for a delta past 180.
+  return mapKitRegion({
     latitude: point.latitude,
     longitude: point.longitude,
     latitudeDelta: delta,
     longitudeDelta: delta,
-  }
+  })
 }
 
 /** The smallest box around the points, padded, for a map's first frame. */
@@ -200,10 +225,10 @@ export function regionFor(
     minLng = Math.min(minLng, point.longitude)
     maxLng = Math.max(maxLng, point.longitude)
   }
-  return {
+  return mapKitRegion({
     latitude: (minLat + maxLat) / 2,
     longitude: (minLng + maxLng) / 2,
-    latitudeDelta: Math.min(170, Math.max(minDelta, (maxLat - minLat) * padding)),
-    longitudeDelta: Math.min(360, Math.max(minDelta, (maxLng - minLng) * padding)),
-  }
+    latitudeDelta: Math.max(minDelta, (maxLat - minLat) * padding),
+    longitudeDelta: Math.max(minDelta, (maxLng - minLng) * padding),
+  })
 }
