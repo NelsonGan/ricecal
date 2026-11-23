@@ -288,6 +288,22 @@ Deno.test('a Facebook share link is asked for as a browser navigates, or it erro
   const followed = await resolveShortLink(share, fetcher)
   eq(followed?.platform, 'facebook', 'followed to Facebook')
   eq(followed?.id, '1416517550411230', 'followed to the reel')
+
+  // The other platforms keep the request they always got.
+  let tiktokMode: string | null = 'unasked'
+  const tiktokFetcher = ((_url: string, init?: RequestInit) => {
+    tiktokMode = new Headers(init?.headers).get('sec-fetch-mode')
+    return Promise.resolve(
+      new Response(null, {
+        status: 302,
+        headers: { location: 'https://www.tiktok.com/@cook/video/7187898389240040750' },
+      }),
+    )
+  }) as unknown as typeof fetch
+  const tiktok = parseVideoLink('https://vm.tiktok.com/ZSabc123/')
+  if (!tiktok || !isShortLink(tiktok)) throw new Error('not a short link')
+  eq((await resolveShortLink(tiktok, tiktokFetcher))?.id, '7187898389240040750', 'TikTok followed')
+  eq(tiktokMode, null, 'TikTok is not sent the navigation headers')
 })
 
 Deno.test('preview tags give the caption without the likes and the date', () => {
