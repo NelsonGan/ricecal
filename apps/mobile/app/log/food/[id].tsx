@@ -773,7 +773,8 @@ function FoodDetail() {
     ...chips.portions,
     ...chips.measures.map(({ serving: option }) => option),
   ].map((option) => {
-    const next = option.id === chosen ? quantity : switchedQuantity(serving, quantity, option)
+    const next =
+      option.id === chosen ? quantity : switchedQuantity(serving, quantity, option, basis)
     const measure = measureOf(option.label)
     const portionWord =
       servingUnit(option.label) === null && /serving/i.test(option.label)
@@ -792,7 +793,7 @@ function FoodDetail() {
         kcal: Math.round(food.macros.kcal * option.factor * next).toLocaleString(),
       }),
       selected: option.id === chosen,
-      disabled: !canSwitch(serving, quantity, option),
+      disabled: !canSwitch(serving, quantity, option, basis),
       onPress: () => {
         pickPortion(option)
         setChoosingUnit(false)
@@ -811,7 +812,7 @@ function FoodDetail() {
     if (option.id === chosen) return
     // A choice made, so the opening portion must not land on top of it.
     openedOn.current = food.id
-    const next = switchedQuantity(serving, quantity, option)
+    const next = switchedQuantity(serving, quantity, option, basis)
     setServingId(option.id)
     setQuantity(next)
     schedulePortion({ quantity: next, servingId: option.id })

@@ -2489,7 +2489,13 @@ new one shows "150 g" (`portionLabel` reads the amount out of the label).
 
 **Picking a unit keeps the amount eaten; picking a portion keeps the count.** Two
 regular plates become two large ones, which is what "Large" means. One 350 g
-plate picked in grams becomes 350 g, not one gram. A spoon or cup count lands on
+plate picked in grams becomes 350 g, not one gram. Where the dish says what it
+weighs (or holds), the grams come from that weight, as the "≈ 700 g" under the
+stepper does, not from the stored "100 g" factor: 0.286 for a 350 g plate made
+two plates 699 g. Only where the unit's factor is that weight to its three
+places, and the same way back, so grams and back is the same count; a
+catalogue's own "100 g" row priced off another weight keeps the factors, or the
+grams would say one amount and the calories another. A spoon or cup count lands on
 a quarter only when one is within 2%, so switching units never moves what was
 eaten by more than a measuring cup would.
 

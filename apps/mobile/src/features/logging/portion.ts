@@ -1,6 +1,8 @@
 import type { Serving, Units } from '@/data/types'
 import {
   convert,
+  type FoodBasis,
+  labelQuantities,
   leadingAmount,
   MEASURES,
   type MeasureUnit,
@@ -68,38 +70,87 @@ export function quantityFor(serving: Pick<Serving, 'label'> | undefined, shown: 
  * Into or out of a UNIT the amount eaten carries over instead. Picking "g" on
  * one 350 g plate is asking what that plate is in grams, and the answer is 350,
  * not one gram. Every factor is relative to the same base serving, so the
- * conversion is two factors and no weights.
+ * conversion is two factors, or, where the dish says what it weighs (`basis`),
+ * the weight itself.
  */
 export function switchedQuantity(
-  from: Pick<Serving, 'label' | 'factor'> | undefined,
+  from: Weighed | undefined,
   quantity: number,
-  to: Pick<Serving, 'label' | 'factor'>,
+  to: Weighed,
+  basis?: FoodBasis,
 ): number {
   const raw = convertedQuantity(from, quantity, to)
   if (raw === null) return quantity
   const toMeasure = measureOf(to.label)
+  const fromMeasure = measureOf(from?.label)
   if (toMeasure) {
+    const family = MEASURES[toMeasure.unit].family
     // Inside one family the answer is arithmetic, not the ratio of two stored
     // factors: each factor is rounded to three places, and 1½ cups came out as
     // 24¼ tablespoons rather than 24.
-    const fromMeasure = measureOf(from?.label)
+    if (fromMeasure && MEASURES[fromMeasure.unit].family === family) {
+      const exact = convert(quantity * fromMeasure.block, fromMeasure.unit, toMeasure.unit)
+      return clampStored(stored(roundedFor(toMeasure.unit, exact) / toMeasure.block))
+    }
+    // From a portion, what it weighs, which is what the "≈ 700 g" under the
+    // stepper reads. Through the factors, two 350 g plates were 699 g: "100 g"
+    // of one is 0.2857, stored as 0.286.
+    const each = from && !fromMeasure ? weighed(from, to, toMeasure, basis) : null
     const exact =
-      fromMeasure && MEASURES[fromMeasure.unit].family === MEASURES[toMeasure.unit].family
-        ? convert(quantity * fromMeasure.block, fromMeasure.unit, toMeasure.unit)
+      each !== null
+        ? convert(each * quantity, family === 'weight' ? 'g' : 'ml', toMeasure.unit)
         : raw * toMeasure.block
-    const shown = roundedFor(toMeasure.unit, exact)
-    return clampStored(stored(shown / toMeasure.block))
+    return clampStored(stored(roundedFor(toMeasure.unit, exact) / toMeasure.block))
   }
 
-  // Back to a count of portions: a quarter when the amount is within 2% of one,
-  // since "1¼ plates" is what somebody means by 440 g of a 350 g plate. The
-  // exact share otherwise, rather than moving what was eaten to fit a step.
-  // 2%, the same rule as `roundedFor`, and inside `canSwitch`'s 2.5%: at 5% a
-  // switch that would snap was also a switch `canSwitch` refused, and the plate
-  // could not be picked back from 420 g at all.
-  const quarter = Math.round(raw * 4) / 4
-  const count = quarter > 0 && Math.abs(quarter - raw) <= raw * 0.02 ? quarter : stored(raw)
+  // Back to a count of portions, by weight on the same terms, so that a plate
+  // switched to grams and back is one plate again.
+  const each = fromMeasure && from ? weighed(to, from, fromMeasure, basis) : null
+  const share =
+    each !== null && fromMeasure
+      ? convert(
+          quantity * fromMeasure.block,
+          fromMeasure.unit,
+          MEASURES[fromMeasure.unit].family === 'weight' ? 'g' : 'ml',
+        ) / each
+      : raw
+  // A quarter when the amount is within 2% of one, since "1¼ plates" is what
+  // somebody means by 440 g of a 350 g plate. The exact share otherwise, rather
+  // than moving what was eaten to fit a step. 2%, the same rule as
+  // `roundedFor`, and inside `canSwitch`'s 2.5%: at 5% a switch that would snap
+  // was also a switch `canSwitch` refused, and the plate could not be picked
+  // back from 420 g at all.
+  const quarter = Math.round(share * 4) / 4
+  const count = quarter > 0 && Math.abs(quarter - share) <= share * 0.02 ? quarter : stored(share)
   return clampStored(count)
+}
+
+/** A portion as the switch reads it: its own weight, when the catalogue gave one. */
+type Weighed = Pick<Serving, 'label' | 'factor'> & { grams?: number }
+
+/**
+ * What one `portion` weighs in grams (or holds in millilitres, for a volume
+ * unit), or null where the factors are the better guide. Only when the unit's
+ * own factor is the dish's weight for it, to the three places it is stored to:
+ * a catalogue's own "100 g" row priced off another weight would otherwise have
+ * the grams say one amount and the calories another.
+ */
+function weighed(
+  portion: Weighed,
+  unitServing: Pick<Serving, 'factor'>,
+  unit: { unit: MeasureUnit; block: number },
+  basis: FoodBasis | undefined,
+): number | null {
+  const weight = MEASURES[unit.unit].family === 'weight'
+  const per = weight ? basis?.grams : basis?.ml
+  if (!per) return null
+  const expected = (unit.block * MEASURES[unit.unit].size) / per
+  if (Math.abs(unitServing.factor - expected) > 0.0005 + 1e-9) return null
+  // A portion that states its own weight ("1 large plate (500 g)") is that
+  // weight, rather than the base's times a factor rounded to three places.
+  const stated = labelQuantities(portion.label)
+  const own = weight ? (portion.grams ?? stated.g) : stated.ml
+  return own && own > 0 ? own : per * portion.factor
 }
 
 /** `food_logs.quantity`'s own check: above zero, at most 100, two decimals. */
@@ -125,9 +176,10 @@ function convertedQuantity(
  * than tapped and quietly cut to a third: nothing on screen would say so.
  */
 export function canSwitch(
-  from: Pick<Serving, 'label' | 'factor'> | undefined,
+  from: Weighed | undefined,
   quantity: number,
-  to: Pick<Serving, 'label' | 'factor'>,
+  to: Weighed,
+  basis?: FoodBasis,
 ): boolean {
   const raw = convertedQuantity(from, quantity, to)
   if (raw === null) return true
@@ -142,7 +194,7 @@ export function canSwitch(
   // counts 4% more than the 2 tbsp it was converted from; a switch that would
   // jump the calories like that is not offered.
   const eaten = (from?.factor ?? 1) * quantity
-  const after = to.factor * switchedQuantity(from, quantity, to)
+  const after = to.factor * switchedQuantity(from, quantity, to, basis)
   return eaten <= 0 || Math.abs(after - eaten) <= eaten * 0.025
 }
 
