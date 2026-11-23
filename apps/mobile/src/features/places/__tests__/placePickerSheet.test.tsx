@@ -71,6 +71,8 @@ afterEach(() => {
   jest.useRealTimers()
 })
 
+// The chip over the pin is drawn only with a native map, which jest has not,
+// so these read what Use this spot saves rather than the chip.
 it('saves a spot no geocoder can name as a pinned location', async () => {
   // The sea, a field, or both lookups down: neither geocoder names the spot.
   mockDescribe.mockResolvedValue(null)
@@ -93,6 +95,28 @@ it('keeps the name a geocoder gives the spot', async () => {
     ...coord,
     category: null,
   }))
-  await openPicker()
-  expect(screen.getByRole('button', { name: 'Use this spot' })).not.toBeDisabled()
+  const onSelect = await openPicker()
+  fireEvent.press(screen.getByRole('button', { name: 'Use this spot' }))
+  expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'Jalan Alor' }), 'current')
+})
+
+// A null is also a lookup that failed this once (a rate limit, a timeout):
+// asked again, a name that comes back replaces "Pinned location".
+it('names a pinned spot when a second lookup can', async () => {
+  mockDescribe
+    .mockResolvedValueOnce(null)
+    .mockImplementation(async (coord: { latitude: number; longitude: number }) => ({
+      id: null,
+      name: 'Jalan Alor',
+      address: '',
+      ...coord,
+      category: null,
+    }))
+  const onSelect = await openPicker()
+  await act(async () => {
+    jest.advanceTimersByTime(2100)
+  })
+  fireEvent.press(screen.getByRole('button', { name: 'Use this spot' }))
+  expect(mockDescribe).toHaveBeenCalledTimes(2)
+  expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ name: 'Jalan Alor' }), 'current')
 })
