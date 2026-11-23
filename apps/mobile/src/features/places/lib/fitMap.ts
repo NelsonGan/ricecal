@@ -1,6 +1,10 @@
 import { Platform } from 'react-native'
 import type { EdgePadding, Region } from 'react-native-maps'
 
+/** The widest region MapKit takes, a little inside its own limits. */
+const MAX_LATITUDE_DELTA = 170
+const MAX_LONGITUDE_DELTA = 359
+
 /** The camera call a fit needs beside `moveTo` (react-native-maps' MapView has it). */
 interface FittableMap {
   fitToCoordinates(
@@ -89,16 +93,27 @@ function paddedRegion(
   const openWidth = Math.max(40, size.width - padding.left - padding.right)
   const openHeight = Math.max(40, size.height - padding.top - padding.bottom)
   // One scale for both axes: whichever of the box's sides needs more room.
-  const perPoint = Math.max((east - west) / openWidth, (north - south) / openHeight, 1e-6)
-  const latitudeDelta = perPoint * size.height
-  const longitudeDelta = perPoint * size.width
+  const perLatitude = (north - south) / openHeight
+  const perPoint = Math.max((east - west) / openWidth, perLatitude, 1e-6)
+  // But never more than the globe. MapKit raises on a span past 180° of
+  // latitude or 360° of longitude, and the raise closed the app: a lunch in
+  // London beside the rest in Kuala Lumpur asked for 184° once the east-west
+  // scale was applied to a tall screen. Past the cap only the latitude the
+  // places need is asked for, and MapKit widens it to the screen, as it does
+  // for any region; a span reaching for a pole is endless on its projection.
+  const scaled = perPoint * size.height
+  const latitudeDelta =
+    scaled <= MAX_LATITUDE_DELTA
+      ? scaled
+      : Math.min(MAX_LATITUDE_DELTA, Math.max(perLatitude * size.height, 1e-6))
+  const longitudeDelta = Math.min(MAX_LONGITUDE_DELTA, perPoint * size.width)
   // The open band's middle is this many points below the view's middle.
   const below = (padding.top - padding.bottom) / 2
   const right = (padding.left - padding.right) / 2
-  return {
-    latitude: (north + south) / 2 + below * perPoint,
-    longitude: (east + west) / 2 - right * perPoint,
-    latitudeDelta,
-    longitudeDelta,
-  }
+  // A middle that keeps the whole span between the poles and on one turn of
+  // the globe, which a world-wide frame shifted for the panel did not.
+  const reach = 90 - latitudeDelta / 2
+  const latitude = Math.max(-reach, Math.min(reach, (north + south) / 2 + below * perPoint))
+  const longitude = (((east + west) / 2 - right * perPoint + 540) % 360) - 180
+  return { latitude, longitude, latitudeDelta, longitudeDelta }
 }

@@ -4684,7 +4684,10 @@ pins with MapKit's `pointForCoordinate`. The camera rather than the region,
 because MapKit reports a region that is not the view's shape and setting it
 back zoomed out a little on every drag. `fitToCoordinates` misbehaves the same
 way there, so on iOS `fitMapToPoints` works the region out itself
-(`paddedRegion`), sized for the band `mapPadding` leaves open. Android's Google
+(`paddedRegion`), sized for the band `mapPadding` leaves open. Its spans stop at
+170° of latitude and 359° of longitude, with the middle kept between the poles:
+MapKit raises on anything wider, and the raise closes the app (places in London
+and Kuala Lumpur asked for 184°). Android's Google
 map keeps its own gestures and marker presses. Delete the layer once a
 react-native-maps release fixes #6052. Inside the picker's modal it needs a
 `GestureHandlerRootView` of its own, as `Sheet` has.
