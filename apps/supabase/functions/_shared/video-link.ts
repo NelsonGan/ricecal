@@ -252,7 +252,10 @@ export async function resolveShortLink(
     const res = await fetcher(current, {
       method: 'GET',
       redirect: 'manual',
-      headers: { 'user-agent': BROWSER_UA, accept: 'text/html' },
+      // Facebook answers a browser's user agent without a browser's
+      // navigation headers with a 400 error page, so every `/share/r/` link
+      // read as private. With them it answers a meta refresh to the reel.
+      headers: { 'user-agent': BROWSER_UA, accept: 'text/html', ...NAVIGATE_HEADERS },
       signal: AbortSignal.timeout(8000),
     })
     // t.co answers a browser with a 200 page that redirects by a meta refresh
@@ -312,3 +315,10 @@ async function readPrefix(body: ReadableStream<Uint8Array> | null, max: number):
 export const BROWSER_UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 ' +
   '(KHTML, like Gecko) Version/18.0 Safari/605.1.15'
+
+/** What a browser sends when someone opens a link, beside `BROWSER_UA`. */
+export const NAVIGATE_HEADERS: Record<string, string> = {
+  'sec-fetch-mode': 'navigate',
+  'sec-fetch-site': 'none',
+  'sec-fetch-dest': 'document',
+}
