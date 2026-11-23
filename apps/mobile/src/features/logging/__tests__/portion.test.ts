@@ -1,3 +1,4 @@
+import { foodBasis } from '@/lib/measures'
 import {
   canSwitch,
   openingPortion,
@@ -45,6 +46,27 @@ describe('switchedQuantity', () => {
   it('keeps the amount eaten when a unit is picked', () => {
     // One 350 g plate at factor 0.286 per hundred grams: 350 g.
     expect(portionControl(grams, switchedQuantity(plate, 1, grams)).shown).toBe(350)
+  })
+
+  // "100 g" of a 350 g plate is 0.2857, stored as 0.286, so two plates came out
+  // as 699 g under a stepper that had just said "≈ 700 g". With the plate's
+  // weight known, the grams are the plate's grams.
+  it('reads plates as the grams the dish says they weigh', () => {
+    const basis = foodBasis({ servings: [plate, large, grams] })
+    const shown = (from: typeof plate, n: number) =>
+      portionControl(grams, switchedQuantity(from, n, grams, basis)).shown
+    expect(shown(plate, 2)).toBe(700)
+    expect(shown(plate, 3)).toBe(1050)
+    expect(shown(plate, 1.5)).toBe(525)
+    expect(shown(large, 2)).toBe(1050)
+    expect(canSwitch(plate, 2, grams, basis)).toBe(true)
+  })
+
+  it('reads a drink in millilitres by its own volume', () => {
+    const glass = { id: 'f:glass', label: '1 glass (250 ml)', factor: 1 }
+    const ml = { id: 'measure:ml', label: '100 ml', factor: 0.4 }
+    const basis = foodBasis({ servings: [glass, ml] })
+    expect(portionControl(ml, switchedQuantity(glass, 3, ml, basis)).shown).toBe(750)
   })
 
   it('keeps the amount eaten on the way back to a portion', () => {

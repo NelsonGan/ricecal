@@ -1,6 +1,7 @@
 import type { Serving, Units } from '@/data/types'
 import {
   convert,
+  type FoodBasis,
   leadingAmount,
   MEASURES,
   type MeasureUnit,
@@ -68,12 +69,14 @@ export function quantityFor(serving: Pick<Serving, 'label'> | undefined, shown: 
  * Into or out of a UNIT the amount eaten carries over instead. Picking "g" on
  * one 350 g plate is asking what that plate is in grams, and the answer is 350,
  * not one gram. Every factor is relative to the same base serving, so the
- * conversion is two factors and no weights.
+ * conversion is two factors, or, where the dish says what it weighs (`basis`),
+ * the weight itself.
  */
 export function switchedQuantity(
   from: Pick<Serving, 'label' | 'factor'> | undefined,
   quantity: number,
   to: Pick<Serving, 'label' | 'factor'>,
+  basis?: FoodBasis,
 ): number {
   const raw = convertedQuantity(from, quantity, to)
   if (raw === null) return quantity
@@ -83,10 +86,17 @@ export function switchedQuantity(
     // factors: each factor is rounded to three places, and 1½ cups came out as
     // 24¼ tablespoons rather than 24.
     const fromMeasure = measureOf(from?.label)
+    const family = MEASURES[toMeasure.unit].family
+    // From a portion, the dish's own weight or volume when it has one, which is
+    // what the "≈ 700 g" under the stepper reads. Through the factors, two
+    // 350 g plates were 699 g: "100 g" of one is 0.2857, stored as 0.286.
+    const per = family === 'weight' ? basis?.grams : basis?.ml
     const exact =
-      fromMeasure && MEASURES[fromMeasure.unit].family === MEASURES[toMeasure.unit].family
+      fromMeasure && MEASURES[fromMeasure.unit].family === family
         ? convert(quantity * fromMeasure.block, fromMeasure.unit, toMeasure.unit)
-        : raw * toMeasure.block
+        : !fromMeasure && per && from
+          ? convert(per * from.factor * quantity, family === 'weight' ? 'g' : 'ml', toMeasure.unit)
+          : raw * toMeasure.block
     const shown = roundedFor(toMeasure.unit, exact)
     return clampStored(stored(shown / toMeasure.block))
   }
@@ -128,6 +138,7 @@ export function canSwitch(
   from: Pick<Serving, 'label' | 'factor'> | undefined,
   quantity: number,
   to: Pick<Serving, 'label' | 'factor'>,
+  basis?: FoodBasis,
 ): boolean {
   const raw = convertedQuantity(from, quantity, to)
   if (raw === null) return true
@@ -142,7 +153,7 @@ export function canSwitch(
   // counts 4% more than the 2 tbsp it was converted from; a switch that would
   // jump the calories like that is not offered.
   const eaten = (from?.factor ?? 1) * quantity
-  const after = to.factor * switchedQuantity(from, quantity, to)
+  const after = to.factor * switchedQuantity(from, quantity, to, basis)
   return eaten <= 0 || Math.abs(after - eaten) <= eaten * 0.025
 }
 
