@@ -15,6 +15,7 @@ import {
   openLocationSettings,
   type PlaceResult,
   PlaceSearchError,
+  pinnedPlace,
   searchPlaces,
 } from '@/lib/places'
 import { ReplayMask } from '@/lib/replay-mask'
@@ -65,6 +66,8 @@ type Props = {
 const SEARCH_DEBOUNCE_MS = 350
 /** The map settles, then its middle is named and its neighbours listed. */
 const SETTLE_MS = 500
+/** A spot left unnamed is asked about once more after this. */
+const RENAME_RETRY_MS = 2000
 const MIN_QUERY = 2
 /** The Worker refuses a longer one. */
 const MAX_QUERY = 120
@@ -206,6 +209,7 @@ export function PlacePickerSheet({
     // The old spot's name is not this one's: until the new one is named the
     // pin is on nothing, and Use this spot waits rather than saving the last.
     setSpot(null)
+    let retry: ReturnType<typeof setTimeout> | undefined
     const timer = setTimeout(() => {
       setNearby((now) => (now.kind === 'done' ? now : { kind: 'loading' }))
       nearbyPlaces({ ...center, language, signal: controller.signal })
@@ -215,12 +219,27 @@ export function PlacePickerSheet({
         .catch((error: unknown) => {
           if (id === settleId.current) setNearby({ kind: 'error', code: errorCode(error) })
         })
-      void describeCoordinate(center, { language, signal: controller.signal }).then((place) => {
-        if (id === settleId.current) setSpot(place)
+      // A spot neither geocoder names (the sea, a field, both lookups down) is
+      // still a spot: it is saved as a pinned location, as the automatic tag
+      // saves one, rather than leaving Use this spot greyed out for good. A
+      // null can also be a lookup that failed this once (a rate limit, a
+      // timeout), so it is asked once more, and a name that comes back then
+      // replaces the generic one.
+      const name = () => describeCoordinate(center, { language, signal: controller.signal })
+      void name().then((place) => {
+        if (id !== settleId.current) return
+        setSpot(place ?? pinnedPlace(center))
+        if (place) return
+        retry = setTimeout(() => {
+          void name().then((again) => {
+            if (again && id === settleId.current) setSpot(again)
+          })
+        }, RENAME_RETRY_MS)
       })
     }, SETTLE_MS)
     return () => {
       clearTimeout(timer)
+      clearTimeout(retry)
       controller.abort()
       settleId.current++
     }
