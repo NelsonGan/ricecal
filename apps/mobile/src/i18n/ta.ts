@@ -966,7 +966,7 @@ export const ta = {
     },
 
     water: {
-      ofGoal: '/{{goal}} ml',
+      goal: 'இலக்கு {{goal}} ml',
       addTitle: 'தண்ணீர் சேர்',
       left: '{{amount}} ml மீதி',
       add: '{{amount}} ml சேர்',

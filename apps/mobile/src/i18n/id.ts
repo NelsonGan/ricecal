@@ -976,7 +976,7 @@ export const id = {
     },
 
     water: {
-      ofGoal: '/{{goal}} ml',
+      goal: 'Target {{goal}} ml',
       addTitle: 'Tambah air',
       left: 'sisa {{amount}} ml',
       add: 'Tambah {{amount}} ml',

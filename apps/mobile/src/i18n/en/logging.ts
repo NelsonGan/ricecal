@@ -567,11 +567,12 @@ export const logging = {
    */
   water: {
     /**
-     * Under the amount on Today's tank: the goal, written as the ring writes its
-     * own ("/2,000 KCAL"), a slash and the figure, so the pair reads as a fraction.
-     * Millilitres like the amount over it, because "0 ml / 2 L" reads as a fault.
+     * Under the amount on Today's tank: the goal, named. A bare "/2,000 ml" on
+     * a line of its own read as a fragment once it no longer sat beside the
+     * amount. Millilitres like the amount over it, because "0 ml" over "Goal 2 L"
+     * reads as a fault.
      */
-    ofGoal: '/{{goal}} ml',
+    goal: 'Goal {{goal}} ml',
     /**
      * The sheet behind Add, and what is left of the goal beside its heading.
      * "left" rather than "to go", and clamped at zero rather than swapped for a

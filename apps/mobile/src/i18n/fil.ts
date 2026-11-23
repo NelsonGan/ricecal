@@ -983,7 +983,7 @@ export const fil = {
     },
 
     water: {
-      ofGoal: '/{{goal}} ml',
+      goal: 'Target {{goal}} ml',
       addTitle: 'Magdagdag ng tubig',
       left: '{{amount}} ml pa',
       add: 'Dagdagan ng {{amount}} ml',

@@ -961,7 +961,7 @@ export const ko = {
     },
 
     water: {
-      ofGoal: '/{{goal}} ml',
+      goal: '목표 {{goal}} ml',
       addTitle: '물 추가',
       left: '{{amount}} ml 남음',
       add: '{{amount}} ml 추가',
