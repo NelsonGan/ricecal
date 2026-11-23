@@ -957,7 +957,7 @@ export const bn = {
     },
 
     water: {
-      ofGoal: '/{{goal}} ml',
+      goal: 'লক্ষ্য {{goal}} ml',
       addTitle: 'পানি যোগ করুন',
       left: '{{amount}} ml বাকি',
       add: '{{amount}} ml যোগ করুন',

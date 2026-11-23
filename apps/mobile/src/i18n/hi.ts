@@ -959,7 +959,7 @@ export const hi = {
     },
 
     water: {
-      ofGoal: '/{{goal}} ml',
+      goal: 'लक्ष्य {{goal}} ml',
       addTitle: 'पानी जोड़ें',
       left: '{{amount}} ml बचा',
       add: '{{amount}} ml जोड़ें',

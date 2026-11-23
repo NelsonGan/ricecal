@@ -47,7 +47,7 @@ export type WaterCardProps = {
 
 /**
  * Water on Today: the card is the tank. It fills edge to edge, with the heading
- * and its Add button across the top and the day's amount at the foot, both
+ * and its Add button across the top and the day's amount right under it, both
  * drawn on the water rather than in a box above it.
  *
  * It was a wide band across the screen with the figure and the button in its
@@ -145,7 +145,7 @@ export function WaterCard({
               })}
             >
               {(onWater) => (
-                <View className="flex-1 justify-between pb-2.5">
+                <View className="flex-1">
                   <View className="flex-row items-center gap-1.5 pt-1 pr-1 pl-3.5">
                     <Icon set="body" name="water-drop" size={18} />
                     <Text
@@ -171,9 +171,11 @@ export function WaterCard({
                       <Icon set="ui" name="plus" size={20} />
                     </IconButton>
                   </View>
-                  {/* The figure at the FOOT of the tank, where the water is on
-                      any day somebody has drunk anything, so it reads as the
-                      level's own number. */}
+                  {/* The figure right under the heading, where the activity
+                      card below puts its steps, so the column reads as two
+                      tiles of one kind. It sat at the foot of the tank, where
+                      an empty day pressed the goal line into the puddle and
+                      left a hole above it. */}
                   <TankAmount ml={ml} goalMl={goalMl} onWater={onWater} />
                 </View>
               )}
@@ -207,17 +209,23 @@ function inkOf(onWater: boolean, isDark: boolean, dry: string) {
   return onWater ? (isDark ? 'text-on-water' : 'text-ink') : dry
 }
 
-/** The day's water on Today's tank: the amount large, the goal small under it. */
+/**
+ * The day's water on Today's tank: the amount large, the goal small under it.
+ *
+ * The goal is a quiet caption in `muted` on the dry ground, so the amount is
+ * the one figure the eye lands on. In the water both take the water's ink.
+ */
 function TankAmount({ ml, goalMl, onWater }: { ml: number; goalMl: number; onWater: boolean }) {
   const { t } = useTranslation(['logging', 'common'])
   const { isDark } = useTheme()
   const ink = inkOf(onWater, isDark, 'text-water-ink')
+  const quiet = inkOf(onWater, isDark, 'text-muted')
   const figure = millilitres(ml)
 
   // Hidden from a screen reader: the tank announces the same pair as a sentence.
   return (
     <View
-      className="px-3.5"
+      className="-mt-1 px-3.5"
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
@@ -226,8 +234,8 @@ function TankAmount({ ml, goalMl, onWater }: { ml: number; goalMl: number; onWat
         figure={figure}
         className={ink}
       />
-      <Text variant="caption" className={ink} numberOfLines={1}>
-        {t('logging:water.ofGoal', { goal: millilitres(goalMl) })}
+      <Text variant="caption" className={quiet} numberOfLines={1}>
+        {t('logging:water.goal', { goal: millilitres(goalMl) })}
       </Text>
     </View>
   )

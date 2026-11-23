@@ -987,7 +987,7 @@ export const ms = {
     },
 
     water: {
-      ofGoal: '/{{goal}} ml',
+      goal: 'Sasaran {{goal}} ml',
       addTitle: 'Tambah air',
       left: 'baki {{amount}} ml',
       add: 'Tambah {{amount}} ml',
