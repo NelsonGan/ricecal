@@ -23,7 +23,7 @@
 // bounded and never followed anywhere a platform did not send it.
 
 import { readBoundedBytes } from './http.ts'
-import { BROWSER_UA, type VideoLink, type VideoPlatform } from './video-link.ts'
+import { BROWSER_UA, NAVIGATE_HEADERS, type VideoLink, type VideoPlatform } from './video-link.ts'
 import type { PostText } from './video-recipe.ts'
 
 export type FetchedPost = PostText & {
@@ -598,16 +598,7 @@ const STRING = '((?:[^"\\\\]|\\\\.)*)'
 async function readFacebook(link: VideoLink, fetcher: Fetcher): Promise<FetchedPost | null> {
   // Asked the way a browser opening the link asks, which is what puts the
   // video's own data in the page; the preview crawler gets only the tags.
-  const got = await page(
-    link.fetchUrl,
-    {
-      'user-agent': BROWSER_UA,
-      'sec-fetch-mode': 'navigate',
-      'sec-fetch-site': 'none',
-      'sec-fetch-dest': 'document',
-    },
-    fetcher,
-  )
+  const got = await page(link.fetchUrl, { 'user-agent': BROWSER_UA, ...NAVIGATE_HEADERS }, fetcher)
   if (!got) return null
   const html = got.text
   const tags = metaTags(html)

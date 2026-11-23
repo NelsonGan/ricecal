@@ -267,6 +267,45 @@ Deno.test('a short link is followed only through hosts this reads', async () => 
   eq(await resolveShortLink(fb, fetcher), null, 'a redirect off the platform goes nowhere')
 })
 
+Deno.test('a Facebook share link is asked for as a browser navigates, or it errors', async () => {
+  // Facebook answers a browser user agent that lacks the navigation headers
+  // with a 400 error page, which read every `/share/r/` link as private.
+  const fetcher = ((_url: string, init?: RequestInit) => {
+    const headers = new Headers(init?.headers)
+    if (headers.get('sec-fetch-mode') !== 'navigate') {
+      return Promise.resolve(new Response('Sorry, something went wrong.', { status: 400 }))
+    }
+    return Promise.resolve(
+      new Response(
+        '<meta http-equiv="refresh" content="0;url=https://www.facebook.com/reel/1416517550411230/?fs=e&amp;mibextid=wwXIfr" />',
+        { status: 200 },
+      ),
+    )
+  }) as unknown as typeof fetch
+
+  const share = parseVideoLink('https://www.facebook.com/share/r/1FgvE8LFE5/?mibextid=wwXIfr')
+  if (!share || !isShortLink(share)) throw new Error('not a short link')
+  const followed = await resolveShortLink(share, fetcher)
+  eq(followed?.platform, 'facebook', 'followed to Facebook')
+  eq(followed?.id, '1416517550411230', 'followed to the reel')
+
+  // The other platforms keep the request they always got.
+  let tiktokMode: string | null = 'unasked'
+  const tiktokFetcher = ((_url: string, init?: RequestInit) => {
+    tiktokMode = new Headers(init?.headers).get('sec-fetch-mode')
+    return Promise.resolve(
+      new Response(null, {
+        status: 302,
+        headers: { location: 'https://www.tiktok.com/@cook/video/7187898389240040750' },
+      }),
+    )
+  }) as unknown as typeof fetch
+  const tiktok = parseVideoLink('https://vm.tiktok.com/ZSabc123/')
+  if (!tiktok || !isShortLink(tiktok)) throw new Error('not a short link')
+  eq((await resolveShortLink(tiktok, tiktokFetcher))?.id, '7187898389240040750', 'TikTok followed')
+  eq(tiktokMode, null, 'TikTok is not sent the navigation headers')
+})
+
 Deno.test('preview tags give the caption without the likes and the date', () => {
   const html =
     '<meta property="og:description" content="3,826 likes, 233 comments - pinchofnom on January 18, 2023: &quot;FAJITA BOMBS &#x1f495; Full recipe in bio&quot;." />' +
