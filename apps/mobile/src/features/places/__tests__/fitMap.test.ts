@@ -65,3 +65,20 @@ it('still frames one city as before', () => {
   expect(region.latitude).toBeGreaterThan(3.1)
   expect(region.latitude).toBeLessThan(3.16)
 })
+
+// Past the cap the middle moved at the east-west scale and slid off the places,
+// so the region kept for the clusters left one of them out: no pin.
+it('keeps every place inside the region it records', () => {
+  const LAGOS = { latitude: 6.5244, longitude: 3.3792 }
+  for (const places of [
+    [KUALA_LUMPUR, LAGOS],
+    [KUALA_LUMPUR, LONDON],
+  ]) {
+    const region = fitted(places)
+    for (const place of places) {
+      expect(Math.abs(place.latitude - region.latitude)).toBeLessThanOrEqual(
+        region.latitudeDelta / 2,
+      )
+    }
+  }
+})

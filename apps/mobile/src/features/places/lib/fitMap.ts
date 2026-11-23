@@ -1,9 +1,6 @@
 import { Platform } from 'react-native'
 import type { EdgePadding, Region } from 'react-native-maps'
-
-/** The widest region MapKit takes, a little inside its own limits. */
-const MAX_LATITUDE_DELTA = 170
-const MAX_LONGITUDE_DELTA = 359
+import { MAX_LATITUDE_DELTA, MAX_LONGITUDE_DELTA, mapKitRegion } from './placeLocation'
 
 /** The camera call a fit needs beside `moveTo` (react-native-maps' MapView has it). */
 interface FittableMap {
@@ -103,17 +100,21 @@ function paddedRegion(
   // for any region; a span reaching for a pole is endless on its projection.
   const scaled = perPoint * size.height
   const latitudeDelta =
-    scaled <= MAX_LATITUDE_DELTA
-      ? scaled
-      : Math.min(MAX_LATITUDE_DELTA, Math.max(perLatitude * size.height, 1e-6))
+    scaled > MAX_LATITUDE_DELTA
+      ? Math.min(MAX_LATITUDE_DELTA, Math.max(perLatitude * size.height, 1e-6))
+      : scaled
   const longitudeDelta = Math.min(MAX_LONGITUDE_DELTA, perPoint * size.width)
-  // The open band's middle is this many points below the view's middle.
+  // The open band's middle is this many points below the view's middle,
+  // moved at the scale each span was asked at: at the east-west scale a
+  // capped frame's middle slid off its own places, and a place outside the
+  // region recorded for the clusters got no pin.
   const below = (padding.top - padding.bottom) / 2
   const right = (padding.left - padding.right) / 2
-  // A middle that keeps the whole span between the poles and on one turn of
-  // the globe, which a world-wide frame shifted for the panel did not.
-  const reach = 90 - latitudeDelta / 2
-  const latitude = Math.max(-reach, Math.min(reach, (north + south) / 2 + below * perPoint))
-  const longitude = (((east + west) / 2 - right * perPoint + 540) % 360) - 180
-  return { latitude, longitude, latitudeDelta, longitudeDelta }
+  const perLatitudePoint = latitudeDelta / size.height
+  return mapKitRegion({
+    latitude: (north + south) / 2 + below * perLatitudePoint,
+    longitude: (east + west) / 2 - right * perPoint,
+    latitudeDelta,
+    longitudeDelta,
+  })
 }
