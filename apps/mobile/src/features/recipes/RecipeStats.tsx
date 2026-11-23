@@ -59,26 +59,28 @@ export function RecipeStats({
 }
 
 /**
- * What a serving costs, said once: the calories large, the three macros as one
- * bar split by the energy each contributes, and their grams on a line under it.
- * It replaced a card of three separate bars beside the figure, which read as
- * three things to compare when the question is one number.
+ * What a serving costs: the calories large, the three macros as one bar split
+ * by the energy each contributes, and under it a legend that leads with the
+ * figures (a colour dot, the grams, the name small beneath). The legend was a
+ * sentence ("Carbs 11.5g · Protein 24.5g · Fat 23g"), which hid the numbers in
+ * prose and made the block read as a paragraph.
  */
 export function RecipeNutrition({ perServing }: { perServing: Recipe['perServing'] }) {
   const { t } = useTranslation(['recipes', 'common'])
   const share = energyShare(perServing)
   const grams = (value: number) => t('common:unit.grams', { value })
-  const legend = [
-    `${t('common:macro.carbs')} ${grams(perServing.carbs)}`,
-    `${t('common:macro.protein')} ${grams(perServing.protein)}`,
-    `${t('common:macro.fat')} ${grams(perServing.fat)}`,
-  ].join(' · ')
+  const macros = [
+    { key: 'carbs', color: 'bg-kaya', value: perServing.carbs },
+    { key: 'protein', color: 'bg-hibiscus', value: perServing.protein },
+    { key: 'fat', color: 'bg-teh', value: perServing.fat },
+  ] as const
+  const spoken = macros.map((m) => `${t(`common:macro.${m.key}`)} ${grams(m.value)}`).join(', ')
 
   return (
     <View
-      className="gap-2"
+      className="gap-3"
       accessible
-      accessibilityLabel={`${perServing.kcal.toLocaleString()} ${t('common:unit.kcal')} ${t('recipes:detail.perServing')}. ${legend}`}
+      accessibilityLabel={`${perServing.kcal.toLocaleString()} ${t('common:unit.kcal')} ${t('recipes:detail.perServing')}. ${spoken}`}
     >
       <View className="flex-row items-baseline gap-1.5">
         <Text variant="displayMd" className="text-pandan-ink">
@@ -89,14 +91,39 @@ export function RecipeNutrition({ perServing }: { perServing: Recipe['perServing
         </Text>
         <Text variant="meta">{t('recipes:detail.perServing')}</Text>
       </View>
-      <View className="h-2.5 flex-row overflow-hidden rounded-full bg-track">
+      <View className="h-3 flex-row overflow-hidden rounded-full bg-track">
         <View className="bg-kaya" style={{ flex: share.carbs }} />
         <View className="bg-hibiscus" style={{ flex: share.protein }} />
         <View className="bg-teh" style={{ flex: share.fat }} />
       </View>
-      <Text variant="meta" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85}>
-        {legend}
-      </Text>
+      <View className="flex-row gap-2">
+        {macros.map((m) => (
+          <View key={m.key} className="min-w-0 flex-1">
+            <View className="flex-row items-center gap-1.5">
+              <View className={`h-3 w-3 rounded-full ${m.color}`} />
+              <Text
+                variant="numeric"
+                className="flex-shrink"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
+                {grams(m.value)}
+              </Text>
+            </View>
+            {/* Indented past the dot, so the name sits under its figure. */}
+            <Text
+              variant="meta"
+              className="pl-[18px]"
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.8}
+            >
+              {t(`common:macro.${m.key}`)}
+            </Text>
+          </View>
+        ))}
+      </View>
     </View>
   )
 }
