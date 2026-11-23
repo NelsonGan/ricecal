@@ -4634,7 +4634,8 @@ over it rather than a marker, so it stays put while the map moves under it.
 The list under the map is the food places around the pin (`/nearby`), nearest
 first, with the last three places tagged as chips; typing searches Apple Maps
 and frames the results. Use this spot saves whatever the pin is on: a listed
-place within 40 m, else the spot itself, named by the geocoders.
+place within 40 m, else the spot itself, named by the geocoders, or
+"Pinned location" where neither names it (the sea, a field, both lookups down).
 
 **Today** leaves the place off its rows, which show the time only; a map
 button beside the calendar toggle opens the food map while Locations is on or

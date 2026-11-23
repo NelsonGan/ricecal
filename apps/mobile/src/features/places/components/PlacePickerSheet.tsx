@@ -15,6 +15,7 @@ import {
   openLocationSettings,
   type PlaceResult,
   PlaceSearchError,
+  pinnedPlace,
   searchPlaces,
 } from '@/lib/places'
 import { ReplayMask } from '@/lib/replay-mask'
@@ -215,8 +216,11 @@ export function PlacePickerSheet({
         .catch((error: unknown) => {
           if (id === settleId.current) setNearby({ kind: 'error', code: errorCode(error) })
         })
+      // A spot neither geocoder names (the sea, a field, both lookups down) is
+      // still a spot: it is saved as a pinned location, as the automatic tag
+      // saves one, rather than leaving Use this spot greyed out for good.
       void describeCoordinate(center, { language, signal: controller.signal }).then((place) => {
-        if (id === settleId.current) setSpot(place)
+        if (id === settleId.current) setSpot(place ?? pinnedPlace(center))
       })
     }, SETTLE_MS)
     return () => {

@@ -44,7 +44,7 @@ let inFlight: {
 } | null = null
 
 /** A spot neither geocoder could name: kept, with a generic name. */
-function pinnedPlace(coordinate: Coordinate): PlaceResult {
+export function pinnedPlace(coordinate: Coordinate): PlaceResult {
   return {
     id: null,
     name: i18n.t('places:pinned'),
