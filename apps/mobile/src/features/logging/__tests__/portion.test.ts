@@ -62,6 +62,31 @@ describe('switchedQuantity', () => {
     expect(canSwitch(plate, 2, grams, basis)).toBe(true)
   })
 
+  // Only where "100 g" was priced off that weight: a catalogue's own row priced
+  // off another would make the grams say one amount and the calories another.
+  it('goes by the factors where the unit was priced off another weight', () => {
+    const bowl = { id: 'f:bowl', label: '1 bowl (300 g)', factor: 1 }
+    const listed = { id: 'f:100g', label: '100 g', factor: 0.375 }
+    const basis = foodBasis({ servings: [bowl, listed] })
+    const next = switchedQuantity(bowl, 1, listed, basis)
+    expect(next).toBe(switchedQuantity(bowl, 1, listed))
+    expect(canSwitch(bowl, 1, listed, basis)).toBe(true)
+  })
+
+  it('comes back to the same count after a round trip', () => {
+    const basis = foodBasis({ servings: [plate, large, grams] })
+    for (const n of [1, 2, 3, 1.5]) {
+      const inGrams = switchedQuantity(plate, n, grams, basis)
+      expect(switchedQuantity(grams, inGrams, plate, basis)).toBe(n)
+    }
+  })
+
+  it('takes a portion at the weight it states', () => {
+    const big = { id: 'f:big', label: '1 large plate (500 g)', factor: 1.429 }
+    const basis = foodBasis({ servings: [plate, big, grams] })
+    expect(portionControl(grams, switchedQuantity(big, 1, grams, basis)).shown).toBe(500)
+  })
+
   it('reads a drink in millilitres by its own volume', () => {
     const glass = { id: 'f:glass', label: '1 glass (250 ml)', factor: 1 }
     const ml = { id: 'measure:ml', label: '100 ml', factor: 0.4 }
