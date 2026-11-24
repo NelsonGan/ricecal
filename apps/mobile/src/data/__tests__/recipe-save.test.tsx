@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook } from '@testing-library/react-native'
 import type { ReactNode } from 'react'
 import {
+  ingredientName,
   isStorableAmount,
   isStorablePerUnit,
   type RecipeInput,
@@ -13,6 +14,7 @@ import {
 // for that table and verb. Enough of the builder for `useSaveRecipe`.
 const mockCalls: string[] = []
 const mockAnswers: Record<string, { data: unknown; error: unknown }> = {}
+const mockRows: Record<string, unknown> = {}
 jest.mock('@/lib/supabase', () => {
   const builder = (table: string, verb: string) => {
     mockCalls.push(`${verb} ${table}`)
@@ -24,7 +26,10 @@ jest.mock('@/lib/supabase', () => {
   return {
     supabase: {
       from: (table: string) => ({
-        insert: () => builder(table, 'insert'),
+        insert: (rows: unknown) => {
+          mockRows[table] = rows
+          return builder(table, 'insert')
+        },
         update: () => builder(table, 'update'),
         delete: () => builder(table, 'delete'),
       }),
@@ -64,6 +69,7 @@ function setup() {
 beforeEach(() => {
   mockCalls.length = 0
   for (const key of Object.keys(mockAnswers)) delete mockAnswers[key]
+  for (const key of Object.keys(mockRows)) delete mockRows[key]
   mockAnswers['insert recipes'] = { data: { id: 'new-recipe', is_public: false }, error: null }
   mockAnswers['update recipes'] = { data: { id: 'old-recipe', is_public: false }, error: null }
 })
@@ -105,6 +111,33 @@ it('keeps a new recipe whose ingredients were written', async () => {
   expect(mockCalls).toEqual(['insert recipes', 'insert recipe_ingredients'])
   await unmount()
   client.clear()
+})
+
+it('sends an ingredient name the column can hold, however long the catalogue name', async () => {
+  // A catalogue dish's name has no limit, and the column refuses one over 120
+  // characters: on main the row went out whole and the save failed.
+  const long = `  ${'Biscuit '.repeat(20)}`
+  const input = recipe()
+  input.ingredients = [{ ...input.ingredients[0], name: long }]
+  const { client, wrapper } = setup()
+  const { result, unmount } = await renderHook(useSaveRecipe, { wrapper })
+  await act(async () => {
+    await result.current.mutateAsync(input)
+  })
+  const [row] = mockRows.recipe_ingredients as Array<{ name: string }>
+  expect(Array.from(row.name.trim()).length).toBeGreaterThan(0)
+  expect(Array.from(row.name.trim()).length).toBeLessThanOrEqual(120)
+  expect(row.name).toBe(row.name.trim())
+  expect(long.trim().startsWith(row.name)).toBe(true)
+  await unmount()
+  client.clear()
+})
+
+it('cuts a long name between characters, not inside one', () => {
+  const name = '🍚'.repeat(130)
+  expect(Array.from(ingredientName(name))).toEqual(Array.from('🍚'.repeat(120)))
+  expect(ingredientName('  Chicken  ')).toBe('Chicken')
+  expect(ingredientName('Chicken')).toBe('Chicken')
 })
 
 it('accepts only an amount the column can hold', () => {

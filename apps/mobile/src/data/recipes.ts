@@ -298,9 +298,27 @@ export type RecipeInput = {
 /** What a save did, beyond writing. */
 export type SaveResult = { id: string }
 
+/** The longest name `recipe_ingredients` holds, in characters, as Postgres counts them. */
+const INGREDIENT_NAME_MAX = 120
+
+/**
+ * The name as the column will take it. A typed name and a drafted one are
+ * already bounded, but a catalogue dish's name is not, and the picker passes it
+ * through whole: one name over the column's limit refused the whole list, so
+ * the recipe could not be saved at all. By code point, which is what
+ * `char_length` counts; slicing the UTF-16 string could cut a character in half.
+ */
+export function ingredientName(name: string): string {
+  const trimmed = name.trim()
+  const points = Array.from(trimmed)
+  return points.length <= INGREDIENT_NAME_MAX
+    ? trimmed
+    : points.slice(0, INGREDIENT_NAME_MAX).join('').trim()
+}
+
 const toIngredientRow = (recipeId: string, input: RecipeIngredientInput, position: number) => ({
   recipe_id: recipeId,
-  name: input.name,
+  name: ingredientName(input.name),
   food_id: input.foodId ?? null,
   amount: input.amount,
   unit: input.unit,
