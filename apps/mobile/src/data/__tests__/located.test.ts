@@ -89,3 +89,15 @@ it('asks once more and stops when a short account runs out', async () => {
     [19, 1018],
   ])
 })
+
+it('counts a meal once when a write shifts the list between pages', async () => {
+  mockRows = tagged(1500)
+  // A page boundary that lands one row early, as when a new tagged meal is
+  // saved after the first page was read: the 1,000th row comes back twice.
+  const first = mockRows.slice(0, 1000)
+  const second = mockRows.slice(999)
+  mockRows = [...first, ...second]
+  const entries = await fetchLocated('me')
+  expect(entries).toHaveLength(1500)
+  expect(new Set(entries.map((e) => e.id)).size).toBe(1500)
+})

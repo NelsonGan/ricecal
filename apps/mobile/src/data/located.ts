@@ -40,7 +40,19 @@ export async function fetchLocated(userId: string): Promise<LocatedEntry[]> {
         .overrideTypes<EntryRow[], { merge: false }>(),
     { limit: LOCATED_LIMIT },
   )
-  return rows.map(toEntry).filter((entry): entry is LocatedEntry => Boolean(entry.location))
+  // The pages are separate reads, so a meal tagged between two of them pushes
+  // the list down by one and the next page starts with a row already read.
+  // Counted twice, it would double that place's meals until the next fetch.
+  const seen = new Set<string>()
+  return rows
+    .filter((row) => {
+      if (!row.id) return true
+      if (seen.has(row.id)) return false
+      seen.add(row.id)
+      return true
+    })
+    .map(toEntry)
+    .filter((entry): entry is LocatedEntry => Boolean(entry.location))
 }
 
 /**
