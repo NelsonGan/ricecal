@@ -107,17 +107,20 @@ const PAGE = 1000
  * Every row of a select, a page at a time, until a page comes back empty.
  * Stopping on a short page instead read the end of the list wherever the
  * server's own row cap sat below the page size, and an installed app cannot
- * see that cap move.
+ * see that cap move. `limit` stops it at that many rows.
  */
 export async function everyRow<T>(
   page: (from: number, to: number) => PromiseLike<PostgrestResponse<T>>,
+  { limit = Number.POSITIVE_INFINITY }: { limit?: number } = {},
 ): Promise<T[]> {
   const rows: T[] = []
-  for (;;) {
-    const next = unwrap(await page(rows.length, rows.length + PAGE - 1))
+  while (rows.length < limit) {
+    const to = Math.min(rows.length + PAGE, limit) - 1
+    const next = unwrap(await page(rows.length, to))
     if (next.length === 0) return rows
     rows.push(...next)
   }
+  return rows.slice(0, limit)
 }
 
 /** What `withDeadline` answers when the time ran out first. */

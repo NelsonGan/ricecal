@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { supabase } from '@/lib/supabase'
-import { unwrap } from './client'
+import { everyRow, unwrap } from './client'
 import { keys } from './keys'
 import { ENTRY_COLUMNS, type EntryRow, toEntry } from './mappers'
 import { useUserId } from './session'
@@ -17,20 +17,42 @@ export type LocatedEntry = Entry & { location: EntryLocation }
  */
 const LOCATED_LIMIT = 2000
 
-async function fetchLocated(userId: string): Promise<LocatedEntry[]> {
-  const rows = unwrap(
-    await supabase
-      .from('food_log_details')
-      .select(ENTRY_COLUMNS)
-      .eq('user_id', userId)
-      // The partial index `food_logs_user_located_idx` serves exactly this.
-      .not('latitude', 'is', null)
-      .order('log_date', { ascending: false })
-      .order('logged_at', { ascending: false })
-      .limit(LOCATED_LIMIT)
-      .overrideTypes<EntryRow[], { merge: false }>(),
+/**
+ * Exported for its test. Asked a page at a time: PostgREST answers at most
+ * `max_rows` (1,000) whatever `limit` says, so one `.limit(2000)` read only the
+ * newest 1,000 and the map's "All time" lost every older place without a word.
+ */
+export async function fetchLocated(userId: string): Promise<LocatedEntry[]> {
+  const rows = await everyRow(
+    (from, to) =>
+      supabase
+        .from('food_log_details')
+        .select(ENTRY_COLUMNS)
+        .eq('user_id', userId)
+        // The partial index `food_logs_user_located_idx` serves exactly this.
+        .not('latitude', 'is', null)
+        .order('log_date', { ascending: false })
+        .order('logged_at', { ascending: false })
+        // A tiebreak, so two meals logged in the same instant cannot swap
+        // places between one page's request and the next's.
+        .order('id', { ascending: false })
+        .range(from, to)
+        .overrideTypes<EntryRow[], { merge: false }>(),
+    { limit: LOCATED_LIMIT },
   )
-  return rows.map(toEntry).filter((entry): entry is LocatedEntry => Boolean(entry.location))
+  // The pages are separate reads, so a meal tagged between two of them pushes
+  // the list down by one and the next page starts with a row already read.
+  // Counted twice, it would double that place's meals until the next fetch.
+  const seen = new Set<string>()
+  return rows
+    .filter((row) => {
+      if (!row.id) return true
+      if (seen.has(row.id)) return false
+      seen.add(row.id)
+      return true
+    })
+    .map(toEntry)
+    .filter((entry): entry is LocatedEntry => Boolean(entry.location))
 }
 
 /**
