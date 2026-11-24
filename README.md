@@ -10231,7 +10231,7 @@ test traffic to PostHog and GA4 as production.
 
 | Path changed | What runs | Where it is described |
 |---|---|---|
-| `apps/mobile`, `apps/supabase`, `packages/` or anything else not listed below | `deploy.yml`: `pnpm check`, then a store build and submit | this section |
+| `apps/mobile`, `apps/supabase`, `packages/` or anything else not listed below | `deploy.yml`: `pnpm check` and a store build side by side, then the submit once both passed | this section |
 | `apps/supabase/**` | the Supabase GitHub integration: migrations, then every edge function | this section |
 | `apps/cloudflare/**` | `cloudflare.yml`: D1 schema, then the Workers | [The food catalogue](#the-food-catalogue) |
 | `apps/web/**` | `web.yml` (**Web**): checks, builds and deploys `ricecal-web`; no store build | [The website, Deployment](#the-website) |
@@ -10283,6 +10283,7 @@ name share whichever of them saved first.
 | jest transforms (`apps/mobile/node_modules/.cache/jest`) | the lockfile | Test |
 | Metro transforms (`apps/mobile/node_modules/.cache/metro`) | the lockfile | Bundle |
 | EAS CLI | its version | the store build |
+| EAS's local build plugin (`~/.npm/_npx`) | the EAS CLI's version | the store build |
 | React Native's prebuilt iOS frameworks | the React Native version | the iOS store build |
 | CocoaPods downloads, Gradle | the lockfile | the store build |
 | Compiled C, C++ and Objective-C (ccache) | the run, falling back to the newest for the lockfile, then for the toolchain | the store build |
@@ -10334,6 +10335,24 @@ once the compiler is a wrapper script, which is what ccache makes it. What the
 Swift pods compile to is most of that cache and changes only with the lockfile;
 the app's own Swift is compiled on every release.
 
+**The store build starts beside Test, not after it.** Test takes about two
+minutes and the build about fifteen, so the build used to start two minutes
+late on every release for a check it only needs before submitting. It now
+starts at once and runs `.github/scripts/wait-for-jobs.sh Test` just before
+`eas submit`, which reads Test's result from the GitHub API and fails the job
+unless it passed. Test has always finished by then. A commit whose Test fails is
+still built, and the binary is thrown away with the runner: it uses up a build
+number and a runner for a quarter of an hour, and reaches neither store.
+
+**Two things EAS did on every build no longer cost time.** `eas build
+--local` starts its build through a second package,
+`eas-cli-local-build-plugin`, with `npx -y`, which installed it and its few
+hundred dependencies every time (19 seconds on Android, 45 on iOS); the
+folder npx keeps it in is now cached. And EAS's `expo doctor` step is off
+(`EAS_BUILD_DISABLE_EXPO_DOCTOR_STEP`): it took 19 to 30 seconds, and whatever
+it finds only becomes a warning on the build, never a failure. Run `npx
+expo-doctor` in `apps/mobile` after a dependency upgrade.
+
 **A store build can be tried without releasing it.** Run **CI / CD** by hand
 with `submit` off (`gh workflow run deploy.yml --ref <branch> -f platform=all
 -f profile=production -f submit=false`): it builds and stops, from any branch.
@@ -10354,7 +10373,7 @@ tests; the jobs Worker's own `turbo.json` lists the edge-function source it
 imports. A new test or import that reaches outside its package needs the same
 line. Test on `main` replays nothing (`TURBO_FORCE`), since it is what stands
 between a merge and the stores, so a pull request that passed on a replay it
-should not have had goes red there before anything is built.
+should not have had goes red there before anything is submitted.
 
 **The app's jest config sets `maxWorkers` itself.** The `jest-expo` preset sets
 it to 1 whenever Turbo is the caller, which here ran every suite in one process

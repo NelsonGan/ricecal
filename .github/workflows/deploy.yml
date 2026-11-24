@@ -172,7 +172,7 @@ jobs:
       # thing between a commit and both stores, so `TURBO_FORCE` runs every
       # task there for real, and still writes the results pull requests replay.
       # A pull request that went green on a replay it should not have had is
-      # then caught here, before anything is built.
+      # then caught here, before anything is submitted.
       - run: pnpm check
         env:
           TURBO_FORCE: ${{ github.event_name != 'pull_request' }}
