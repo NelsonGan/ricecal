@@ -194,10 +194,42 @@ it('shows small gram amounts exactly and does not offer a unit that would round 
     </SafeAreaProvider>,
   )
   expect(screen.getByLabelText('Change how much Sugar, currently 10.5 g')).toBeOnTheScreen()
-  await user.press(screen.getByRole('button', { name: 'Unit for Sugar, g' }))
-  // Not offered at all, rather than offered greyed out.
-  expect(screen.queryByRole('radio', { name: '0.01 kg, 39 kcal' })).toBeNull()
-  await user.press(screen.getByRole('radio', { name: '10.5 g, 41 kcal' }))
+  // Kilograms would round it to 0.01 kg, so it is not offered, and with
+  // nothing else to pick the unit is a word rather than a pill that opens a
+  // list of itself.
+  expect(screen.queryByRole('button', { name: 'Unit for Sugar, g' })).toBeNull()
+  expect(screen.getByText('g')).toBeOnTheScreen()
   expect(onAmountChange).not.toHaveBeenCalled()
   expect(onUnitChange).not.toHaveBeenCalled()
+})
+
+it('keeps the unit pill where another unit still fits', async () => {
+  await render(
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 393, height: 852 },
+        insets: { top: 59, left: 0, right: 0, bottom: 34 },
+      }}
+    >
+      <RecipeIngredientEditor
+        ingredients={[
+          {
+            key: 'chicken',
+            name: 'Chicken thighs',
+            amount: 1000,
+            unit: 'g',
+            perUnit: { kcal: 1.7, carbs: 0, protein: 0.2, fat: 0.1 },
+          },
+        ]}
+        onAmountChange={jest.fn()}
+        onUnitChange={jest.fn()}
+        units="metric"
+        onAdd={jest.fn()}
+        onRemove={jest.fn()}
+        onReplace={jest.fn()}
+      />
+    </SafeAreaProvider>,
+  )
+  await user.press(screen.getByRole('button', { name: 'Unit for Chicken thighs, g' }))
+  expect(screen.getByRole('radio', { name: '1 kg, 1,700 kcal' })).toBeOnTheScreen()
 })

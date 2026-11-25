@@ -75,6 +75,7 @@ import {
   type MeasureChoice,
   MeasureList,
   measureFigure,
+  offeredChoices,
   UnitPill,
   useMeasureText,
 } from '@/features/shared'
@@ -1653,7 +1654,7 @@ function FoodDetail() {
             unitSlot={
               hasPlate ? undefined : (
                 <View className="mt-1 flex-row items-center gap-2">
-                  {measureChoices.length > 1 ? (
+                  {offeredChoices(measureChoices).length > 1 ? (
                     <UnitPill
                       size="sm"
                       label={unitWord}

@@ -12,7 +12,12 @@ import {
   useSettings,
 } from '@/data'
 import { ItemRow } from '@/features/shared'
-import { MeasureList, UnitPill } from '@/features/shared/MeasurePicker'
+import {
+  type MeasureChoice,
+  MeasureList,
+  offeredChoices,
+  UnitPill,
+} from '@/features/shared/MeasurePicker'
 import { useMeasureText } from '@/features/shared/useMeasureText'
 import { amountText, unitsFor } from '@/lib/measures'
 import { useDebouncedValue } from '@/lib/use-debounce'
@@ -267,6 +272,44 @@ function AmountForm({
     }
   }
 
+  // Each unit as the amount it would read as and what that costs. Built here
+  // rather than inside the list, because whether the pill is a control at all
+  // depends on how many of them are offered.
+  const unitChoices: MeasureChoice[] = choices.map((target) => {
+    const converted =
+      target.key === choice.key || !(value > 0) ? value : convertIngredient(value, choice, target)
+    // How much food the converted figure is against the figure in the
+    // field, in base servings: a unit that would round it by more
+    // than 2.5% (10 g as 0.01 kg) is left off the list.
+    const eatenNow = value * choice.servings
+    const eatenThen = converted * target.servings
+    return {
+      key: target.key,
+      disabled:
+        target.key !== choice.key &&
+        eatenNow > 0 &&
+        Math.abs(eatenThen - eatenNow) > eatenNow * 0.025,
+      title:
+        target.key === 'piece'
+          ? `${amountText(converted)} ${unitName('piece', converted)}`
+          : measureText.amount(converted, target.key),
+      detail: t('logging:detail.partKcal', {
+        kcal: ingredientTotal(
+          target.perUnit,
+          storedAmount(storedFrom(converted, target.key)),
+        ).kcal.toLocaleString(),
+      }),
+      selected: target.key === choice.key,
+      onPress: () => {
+        switchTo(target.key)
+        setChoosing(false)
+      },
+    }
+  })
+  // Typing can take the other units out of reach (5 g as kilograms rounds by
+  // a fifth), and then the pill and its list go with them.
+  const canPickUnit = offeredChoices(unitChoices).length > 1
+
   return (
     <>
       <TextField
@@ -283,7 +326,7 @@ function AmountForm({
         selectTextOnFocus
         inputClassName={AMOUNT_TYPE}
         rightSlot={
-          choices.length > 1 ? (
+          canPickUnit ? (
             <UnitPill
               label={unitName(choice.key, value)}
               open={choosing}
@@ -301,43 +344,9 @@ function AmountForm({
       {/* Each unit as the amount it would read as and what that costs, the
           same list the food page and an ingredient row open: picking one
           converts, so the result is shown before it is picked. */}
-      {choosing ? (
+      {choosing && canPickUnit ? (
         <View className="rounded-md border-[3px] border-line bg-surface px-4">
-          <MeasureList
-            choices={choices.map((target) => {
-              const converted =
-                target.key === choice.key || !(value > 0)
-                  ? value
-                  : convertIngredient(value, choice, target)
-              // How much food the converted figure is against the figure in the
-              // field, in base servings: a unit that would round it by more
-              // than 2.5% (10 g as 0.01 kg) is shown but not offered.
-              const eatenNow = value * choice.servings
-              const eatenThen = converted * target.servings
-              return {
-                key: target.key,
-                disabled:
-                  target.key !== choice.key &&
-                  eatenNow > 0 &&
-                  Math.abs(eatenThen - eatenNow) > eatenNow * 0.025,
-                title:
-                  target.key === 'piece'
-                    ? `${amountText(converted)} ${unitName('piece', converted)}`
-                    : measureText.amount(converted, target.key),
-                detail: t('logging:detail.partKcal', {
-                  kcal: ingredientTotal(
-                    target.perUnit,
-                    storedAmount(storedFrom(converted, target.key)),
-                  ).kcal.toLocaleString(),
-                }),
-                selected: target.key === choice.key,
-                onPress: () => {
-                  switchTo(target.key)
-                  setChoosing(false)
-                },
-              }
-            })}
-          />
+          <MeasureList choices={unitChoices} />
         </View>
       ) : null}
 

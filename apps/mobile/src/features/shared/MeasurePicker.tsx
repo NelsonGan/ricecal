@@ -102,9 +102,18 @@ export type MeasureChoice = {
  * units did not fit one segmented row, Japanese unit names truncated in it, and
  * a portion chip beside a unit row was two answers to one question.
  */
+/**
+ * The choices a list actually shows: every one that is not disabled, and the
+ * one in use always, so the list never loses its tick. A unit pill is a control
+ * only when this holds more than one; a pill that opened a list of itself was
+ * the first thing a 10.5 g of sugar showed once disabled lines went.
+ */
+export const offeredChoices = <T extends Pick<MeasureChoice, 'selected' | 'disabled'>>(
+  choices: readonly T[],
+): T[] => choices.filter((choice) => choice.selected || !choice.disabled)
+
 export function MeasureList({ choices }: { choices: readonly MeasureChoice[] }) {
-  // The one in use always stays, so the list never loses its tick.
-  const shown = choices.filter((choice) => choice.selected || !choice.disabled)
+  const shown = offeredChoices(choices)
   return (
     <View accessibilityRole="radiogroup">
       {shown.map((choice, index) => (

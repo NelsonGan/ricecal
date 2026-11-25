@@ -45,45 +45,66 @@ export function perUnitMl(part: Pick<EntryIngredient, 'servingLabel'>): number |
  */
 function weightIsVolume(part: Part): boolean {
   const ml = perUnitMl(part)
-  const grams = perUnitGrams(part)
-  if (ml === null || grams === null) return false
+  if (ml === null || part.grams === null) return false
   if (labelQuantities(part.servingLabel).g !== undefined) return false
-  return Math.abs(grams / ml - 1) < 0.005
+  // On the whole amount and with half a gram of slack, because a part drawn
+  // before the server has answered carries its grams rounded to the gram: a
+  // 330 ml can at a quarter is 82.5 ml and showed 83 "g", which read as a
+  // density and flipped the row to grams until the refetch. The same slack
+  // keeps a "1 tbsp" of soy sauce stored as 15 g (a US spoon is 14.8 ml) from
+  // passing as weighed.
+  const volume = ml * part.quantity
+  return Math.abs(part.grams - volume) <= Math.max(0.5, volume * 0.005)
 }
 
 /**
  * Every unit this part can honestly be read in, in the order the person's unit
- * system lists them. Empty for a part nobody weighed and whose serving names no
- * volume, which keeps its count.
+ * system lists them, whatever the amount. Empty for a part nobody weighed and
+ * whose serving names no volume, which keeps its count.
  */
-export function partUnits(part: Part, units: Units | undefined): MeasureUnit[] {
+function candidateUnits(part: Part, units: Units | undefined): MeasureUnit[] {
   const weighed = perUnitGrams(part) !== null && !weightIsVolume(part)
   const holds = perUnitMl(part) !== null
-  return unitsFor(units, 'diary').filter((unit) => {
-    if (!(MEASURES[unit].family === 'weight' ? weighed : holds)) return false
-    // Not a unit the amount is lost in: two spoons of soy sauce as 0.13 cup
-    // is a figure no measuring set has, and its minus would be dead on
-    // arrival. The unit in use always stays, so a row is never left without
-    // its own choice selected.
-    const { min, max } = stepFor(unit)
-    const amount = amountIn(part, unit)
-    return unit === part.displayUnit || (amount >= min - 1e-9 && amount <= max + 1e-9)
-  })
+  return unitsFor(units, 'diary').filter((unit) =>
+    MEASURES[unit].family === 'weight' ? weighed : holds,
+  )
+}
+
+/** Whether the amount reads sensibly in a unit, inside what its stepper steps. */
+function fits(part: Part, unit: MeasureUnit): boolean {
+  const { min, max } = stepFor(unit)
+  const amount = amountIn(part, unit)
+  return amount >= min - 1e-9 && amount <= max + 1e-9
+}
+
+/**
+ * The units the "Measure in" list offers: the candidates the amount is not lost
+ * in. Two spoons of soy sauce as 0.13 cup is a figure no measuring set has, and
+ * its minus would be dead on arrival. The unit in use always stays, so the list
+ * never loses its tick.
+ */
+export function partUnits(part: Part, units: Units | undefined): MeasureUnit[] {
+  const current = partUnit(part, units)
+  return candidateUnits(part, units).filter((unit) => unit === current || fits(part, unit))
 }
 
 /**
  * The unit a part is shown in: the one the person picked, then the one its
  * serving is itself measured in ("1 tbsp (15 ml)" reads as tablespoons, as the
- * food page opens a measured serving), then grams, then whatever is offered.
+ * food page opens a measured serving), then grams, then the first that fits.
  * Null keeps the count.
+ *
+ * Chosen from every candidate rather than only those that fit, so a row never
+ * jumps to another unit because its amount moved: 2 tbsp typed up to 25 stays
+ * in tablespoons.
  */
 export function partUnit(part: Part, units: Units | undefined): MeasureUnit | null {
-  const options = partUnits(part, units)
+  const options = candidateUnits(part, units)
   if (part.displayUnit && options.includes(part.displayUnit)) return part.displayUnit
   const lead = leadingAmount(part.servingLabel)?.unit
   if (lead && options.includes(lead)) return lead
   if (options.includes('g')) return 'g'
-  return options[0] ?? null
+  return options.find((unit) => fits(part, unit)) ?? options[0] ?? null
 }
 
 /** What one of the part comes to in this unit's base, grams or millilitres. */
@@ -119,13 +140,14 @@ export function quantityIn(part: Part, unit: MeasureUnit, amount: number): numbe
  * than removing the part.
  */
 export function stepIn(part: Part, unit: MeasureUnit, direction: 1 | -1): number | null {
-  const { step, min } = stepFor(unit)
+  const { step, min, max } = stepFor(unit)
   // From the figure on screen, not the exact one: 2½ tbsp stored as a quantity
   // to four places reads back as 2.50003, which has no mark below it but 2½
   // itself, and the minus did nothing.
   const shown = shownIn(part, unit)
   if (direction < 0 && shown <= min + 1e-9) return null
-  const next = Math.max(min, steppedTo(shown, step, direction))
+  if (direction > 0 && shown >= max - 1e-9) return null
+  const next = Math.min(max, Math.max(min, steppedTo(shown, step, direction)))
   const quantity = quantityIn(part, unit, next)
   if (quantity === null) return null
   // Clamped at both ends, so landing back where it started is the edge.

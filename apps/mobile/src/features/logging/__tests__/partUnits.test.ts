@@ -91,3 +91,24 @@ it('stops at a quarter of the part rather than removing it', () => {
   expect(stepIn(floor, 'g', -1)).toBeNull()
   expect(stepIn(rice, 'g', 1)).toBeCloseTo(190 / 180, 4)
 })
+
+it('keeps a row in its unit when the amount leaves the list’s range', () => {
+  // Twenty-five tablespoons is past what a spoon steps to, so tablespoons
+  // would not be offered fresh, but the row reading in them keeps them.
+  const lots = part({ quantity: quantityIn(part(), 'tbsp', 25) ?? 0 })
+  expect(partUnit(lots, 'metric')).toBe('tbsp')
+  expect(partUnits(lots, 'metric')).toContain('tbsp')
+  // And its plus stops there rather than stepping further.
+  expect(stepIn(lots, 'tbsp', 1)).toBeNull()
+})
+
+it('still reads a drink in volumes once its grams are rounded mid-edit', () => {
+  // A 330 ml can staged at a quarter: 82.5 ml, drawn as 83 g before the server
+  // answers. Not a density.
+  const can = part({ servingLabel: 'Can (330 ml)', quantity: 0.25, grams: 83 })
+  expect(partUnits(can, 'metric')).not.toContain('g')
+  expect(partUnit(can, 'metric')).toBe('ml')
+  // A spoon stored at a round 15 g is a spoon, not 15 g of anything.
+  const spoon = part({ servingLabel: '1 tbsp', quantity: 1, grams: 15 })
+  expect(partUnits(spoon, 'metric')).not.toContain('g')
+})
