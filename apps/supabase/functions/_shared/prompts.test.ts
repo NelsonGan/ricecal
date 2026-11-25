@@ -72,7 +72,9 @@ Deno.test('with no key the code copy is sent and PostHog is never asked', async 
       hostedSystem({ name: 'pick-candidate', bundled: 'the code copy' }),
     )
     assertEquals(text, 'the code copy')
-    assertEquals(prompts, [{ name: 'pick-candidate', version: null, source: 'bundled' }])
+    assertEquals(prompts, [
+      { name: 'pick-candidate', version: null, source: 'bundled', fallback: 'no_key' },
+    ])
     assertEquals(asked, [])
   } finally {
     globalThis.fetch = realFetch
@@ -110,13 +112,21 @@ Deno.test(
 )
 
 Deno.test(
-  'an error, an empty prompt or a network failure falls back to the code copy',
+  'an error, an empty prompt or a network failure falls back to the code copy, saying why',
   withKey(async () => {
-    for (const answer of [
-      () => new Response('nope', { status: 404 }),
-      () => hosted('  ', 3),
-      () => Promise.reject(new TypeError('network down')),
-    ]) {
+    const cases: Array<[() => Response | Promise<Response>, string]> = [
+      // A prompt with no `production` label answers 404, which is what every
+      // scan prompt did in November 2026.
+      [() => new Response('nope', { status: 404 }), 'not_found'],
+      [() => new Response('', { status: 403 }), 'refused'],
+      [() => new Response('', { status: 401 }), 'refused'],
+      [() => new Response('', { status: 502 }), 'http_error'],
+      [() => hosted('  ', 3), 'invalid'],
+      [() => new Response('<html>Bad gateway</html>', { status: 200 }), 'invalid'],
+      [() => Promise.reject(new TypeError('network down')), 'network'],
+      [() => Promise.reject(new DOMException('slow', 'TimeoutError')), 'timeout'],
+    ]
+    for (const [answer, why] of cases) {
       clearPromptCache()
       fakePostHog(answer)
       const { text, prompts } = await resolveSystem(
@@ -124,9 +134,53 @@ Deno.test(
       )
       assertEquals(text, 'the code copy')
       assertEquals(prompts[0].source, 'bundled')
+      assertEquals(prompts[0].fallback, why)
     }
   }),
 )
+
+Deno.test(
+  'a fetched prompt carries no fallback, and a miss keeps its reason while it waits',
+  withKey(async () => {
+    fakePostHog(() => new Response('', { status: 404 }))
+    const system = hostedSystem({ name: 'estimate-nutrition', bundled: 'code' })
+    assertEquals((await resolveSystem(system, 0)).prompts[0].fallback, 'not_found')
+    // Not asked again inside the minute, and still says why.
+    assertEquals((await resolveSystem(system, 30_000)).prompts[0].fallback, 'not_found')
+
+    fakePostHog(() => hosted('hosted', 5))
+    const { prompts } = await resolveSystem(system, 61_000)
+    assertEquals(prompts, [{ name: 'estimate-nutrition', version: 5, source: 'posthog' }])
+  }),
+)
+
+Deno.test('a missing key is warned about once per isolate, and only where calls are captured', async () => {
+  const previousUrl = Deno.env.get('SUPABASE_URL')
+  const realWarn = console.warn
+  const warned: string[] = []
+  console.warn = (...args: unknown[]) => void warned.push(args.join(' '))
+  Deno.env.delete('POSTHOG_PROMPTS_API_KEY')
+  try {
+    const system = hostedSystem({ name: 'pick-candidate', bundled: 'code' })
+    Deno.env.set('SUPABASE_URL', 'http://kong:8000')
+    clearPromptCache()
+    await resolveSystem(system, 0)
+    assertEquals(warned, [])
+
+    Deno.env.set('SUPABASE_URL', 'https://example.supabase.co')
+    clearPromptCache()
+    await resolveSystem(system, 0)
+    await resolveSystem(hostedSystem({ name: 'describe-meal', bundled: 'code' }), 0)
+    await resolveSystem(system, 120_000)
+    assertEquals(warned.length, 1)
+    assert(warned[0].includes('POSTHOG_PROMPTS_API_KEY'))
+  } finally {
+    console.warn = realWarn
+    if (previousUrl === undefined) Deno.env.delete('SUPABASE_URL')
+    else Deno.env.set('SUPABASE_URL', previousUrl)
+    clearPromptCache()
+  }
+})
 
 Deno.test(
   'a fetched prompt is cached, and kept through a failed refresh',
@@ -164,16 +218,25 @@ Deno.test('a generation names its prompt and version', () => {
   assertEquals(one.$ai_prompt_version, 3)
   assertEquals(one.prompt_source, 'posthog')
   assertEquals(one.prompt_parts, undefined)
+  assertEquals(one.prompt_fallback, undefined)
 
   const two = generationEvent({ distinctId: 'u', feature: 'scan-meal' }, 't', {
     ...base,
     prompts: [
       { name: 'analyse-photo', version: 3, source: 'posthog' },
-      { name: 'analyse-photo-note', version: null, source: 'bundled' },
+      { name: 'analyse-photo-note', version: null, source: 'bundled', fallback: 'not_found' },
     ],
   }).properties
   assertEquals(two.prompt_source, 'mixed')
   assertEquals(two.prompt_parts, 'analyse-photo@3+analyse-photo-note@bundled')
+  assertEquals(two.prompt_fallback, 'not_found')
+
+  const code = generationEvent({ distinctId: 'u', feature: 'scan-meal' }, 't', {
+    ...base,
+    prompts: [{ name: 'analyse-photo', version: null, source: 'bundled', fallback: 'no_key' }],
+  }).properties
+  assertEquals(code.prompt_source, 'bundled')
+  assertEquals(code.prompt_fallback, 'no_key')
 })
 
 Deno.test(
@@ -272,6 +335,7 @@ Deno.test('chatJSON sends the resolved text, cached or not, and records the vers
     assertEquals(fromCode.role, 'system')
     assert(fromCode.text.startsWith('Code copy.'), fromCode.text)
     assertEquals(fromCode.generation.prompts?.[0].source, 'bundled')
+    assertEquals(fromCode.generation.prompts?.[0].fallback, 'no_key')
 
     const fromPostHog = await sendThroughChat(span, () => hosted('Hosted copy.', 2))
     assert(fromPostHog.text.startsWith('Hosted copy.'), fromPostHog.text)
