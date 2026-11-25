@@ -1,8 +1,14 @@
 import { FREE_RECIPES } from '@ricecal/shared'
 import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { ActivityIndicator, type TextInputInstance, View } from 'react-native'
+import {
+  ActivityIndicator,
+  ScrollView,
+  TextInput,
+  type TextInputInstance,
+  View,
+} from 'react-native'
 
 import type { IconRef, RecipeIngredientInput, RecipeTag, ScannedRecipe } from '@/data'
 import {
@@ -22,6 +28,7 @@ import { announceRefusal, openPaywall } from '@/data/refusals'
 import { IconPicker } from '@/features/logging'
 import {
   clearRecipeRead,
+  FormSection,
   IngredientSheet,
   normaliseSourceUrl,
   type PendingRecipeRead,
@@ -34,21 +41,22 @@ import {
 } from '@/features/recipes'
 import { MealPhoto } from '@/features/shared'
 import { useBack } from '@/lib/navigation'
+import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
   Button,
+  Card,
   Chip,
   ConfirmSheet,
   cn,
-  FormCard,
-  FormRow,
   Icon,
   Screen,
   Skeleton,
-  Stepper,
   Tappable,
+  TEXT_SCALES,
   Text,
   TextField,
+  useNumpadField,
   useToast,
 } from '@/ui'
 
@@ -85,7 +93,7 @@ const DEFAULT_RECIPE_ICON: IconRef = { set: 'food', name: 'cooking-pot' }
  * because the reader on the server fetches the object out of the bucket.
  */
 export default function RecipeFormScreen() {
-  const { t } = useTranslation(['recipes', 'common', 'paywall', 'profile'])
+  const { t } = useTranslation(['recipes', 'common', 'paywall', 'profile', 'logging'])
   const router = useRouter()
   const navigation = useNavigation()
   const goBack = useBack('/recipes')
@@ -518,49 +526,46 @@ export default function RecipeFormScreen() {
         </View>
       ) : (
         <>
-          {/* The picture first, as on the recipe itself: it is the biggest
-              thing there, and the form reads as the page it will become. */}
-          <RecipePicture
-            icon={icon}
-            photoPath={photoPath}
-            localPhoto={localPhoto}
-            attaching={attaching}
-            onPress={() => setPicking(true)}
-          />
-
-          <TextField
-            ref={nameField}
-            label={t('recipes:edit.name')}
-            value={name}
-            onChangeText={(next) => {
-              setName(next)
-              touch()
-            }}
-            placeholder={t('recipes:edit.namePlaceholder')}
-            maxLength={120}
-          />
-
-          {/* Three short answers in one card, the way onboarding asks for a
-              body: how many it feeds, and how long it takes to get there. */}
-          <FormCard>
-            <FormRow label={t('recipes:edit.servingsRow')}>
-              <Stepper
-                value={servings}
-                onChange={(next) => {
-                  setServings(next)
+          {/* What the recipe is, in one card: the picture beside the name, as
+              on the recipe page, and the three short answers under them. It
+              was a 130pt grey box, a field, and a card of rows with three
+              different controls, before a single ingredient. */}
+          <Card contentClassName="gap-4">
+            <View className="flex-row items-center gap-4">
+              <RecipePicture
+                icon={icon}
+                photoPath={photoPath}
+                localPhoto={localPhoto}
+                attaching={attaching}
+                onPress={() => setPicking(true)}
+              />
+              <TextField
+                ref={nameField}
+                label={t('recipes:edit.name')}
+                hideLabel
+                containerClassName="min-w-0 flex-1"
+                value={name}
+                onChangeText={(next) => {
+                  setName(next)
                   touch()
                 }}
-                step={1}
-                min={1}
-                max={100}
-                format={(value) => String(Math.round(value))}
-                decrementLabel={t('common:a11y.decrease')}
-                incrementLabel={t('common:a11y.increase')}
-                className="w-[150px]"
+                placeholder={t('recipes:edit.namePlaceholder')}
+                maxLength={120}
               />
-            </FormRow>
-            <FormRow label={t('recipes:edit.prep')}>
-              <MinutesField
+            </View>
+
+            <View className="flex-row gap-2">
+              <DetailTile label={t('recipes:edit.serves')}>
+                <ServingsControl
+                  value={servings}
+                  onChange={(next) => {
+                    setServings(next)
+                    touch()
+                  }}
+                />
+              </DetailTile>
+              <MinutesTile
+                title={t('recipes:edit.prepShort')}
                 label={t('recipes:edit.prep')}
                 value={prep}
                 onChange={(next) => {
@@ -568,9 +573,8 @@ export default function RecipeFormScreen() {
                   touch()
                 }}
               />
-            </FormRow>
-            <FormRow label={t('recipes:edit.cook')}>
-              <MinutesField
+              <MinutesTile
+                title={t('recipes:edit.cookShort')}
                 label={t('recipes:edit.cook')}
                 value={cook}
                 onChange={(next) => {
@@ -578,43 +582,53 @@ export default function RecipeFormScreen() {
                   touch()
                 }}
               />
-            </FormRow>
-          </FormCard>
-
-          <View className="gap-1.5">
-            <Text variant="label">{t('recipes:edit.meal')}</Text>
-            <View className="flex-row flex-wrap gap-2">
-              {RECIPE_TAGS.map((tag) => {
-                const selected = tags.includes(tag)
-                return (
-                  <Chip
-                    key={tag}
-                    selected={selected}
-                    onPress={() => {
-                      // Kept in the chips' order rather than the order tapped,
-                      // so the recipe's own tags read the same way every time.
-                      setTags((current) =>
-                        RECIPE_TAGS.filter((key) =>
-                          key === tag ? !selected : current.includes(key),
-                        ),
-                      )
-                      touch()
-                    }}
-                  >
-                    {t(`recipes:tag.${tag}`)}
-                  </Chip>
-                )
-              })}
             </View>
-          </View>
+          </Card>
 
-          <View className="gap-1.5">
-            <Text variant="label">
-              {items.length
-                ? t('recipes:edit.ingredientsCount', { count: items.length })
-                : t('recipes:edit.ingredients')}
-            </Text>
+          {/* One row that scrolls rather than two that wrap: six short tags
+              took two lines of the screen and read as two groups. Bled to the
+              screen edge so the clipped last chip says there is more. */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            accessibilityLabel={t('recipes:edit.meal')}
+            className="-mx-gutter grow-0"
+            contentContainerClassName="flex-row gap-2 px-gutter"
+          >
+            {RECIPE_TAGS.map((tag) => {
+              const selected = tags.includes(tag)
+              return (
+                <Chip
+                  key={tag}
+                  selected={selected}
+                  onPress={() => {
+                    // Kept in the chips' order rather than the order tapped,
+                    // so the recipe's own tags read the same way every time.
+                    setTags((current) =>
+                      RECIPE_TAGS.filter((key) =>
+                        key === tag ? !selected : current.includes(key),
+                      ),
+                    )
+                    touch()
+                  }}
+                >
+                  {t(`recipes:tag.${tag}`)}
+                </Chip>
+              )
+            })}
+          </ScrollView>
 
+          <FormSection
+            title={t('recipes:edit.ingredients')}
+            meta={items.length ? String(items.length) : undefined}
+            action={
+              items.length ? (
+                <Text variant="bodyStrong">
+                  {t('logging:detail.partKcal', { kcal: totals.total.kcal.toLocaleString() })}
+                </Text>
+              ) : undefined
+            }
+          >
             <RecipeIngredientEditor
               ingredients={items}
               onAmountChange={(key, amount) => {
@@ -637,7 +651,7 @@ export default function RecipeFormScreen() {
               }}
               onReplace={(ingredient) => setPickingIngredient({ replacingKey: ingredient.key })}
             />
-          </View>
+          </FormSection>
 
           <StepsField
             value={steps}
@@ -649,21 +663,24 @@ export default function RecipeFormScreen() {
 
           {/* Where it came from: a reel, a post, a blog. Shown back to the
               cook alone, so it is a bookmark rather than a credit line. */}
-          <TextField
-            label={t('recipes:edit.source')}
-            value={source}
-            onChangeText={(next) => {
-              setSource(next)
-              setSourceError(undefined)
-              touch()
-            }}
-            placeholder={t('recipes:edit.sourcePlaceholder')}
-            error={sourceError}
-            keyboardType="url"
-            autoCapitalize="none"
-            autoCorrect={false}
-            leftSlot={<Icon set="ui" name="link" size={20} />}
-          />
+          <FormSection title={t('recipes:edit.source')}>
+            <TextField
+              label={t('recipes:edit.source')}
+              hideLabel
+              value={source}
+              onChangeText={(next) => {
+                setSource(next)
+                setSourceError(undefined)
+                touch()
+              }}
+              placeholder={t('recipes:edit.sourcePlaceholder')}
+              error={sourceError}
+              keyboardType="url"
+              autoCapitalize="none"
+              autoCorrect={false}
+              leftSlot={<Icon set="ui" name="link" size={20} />}
+            />
+          </FormSection>
 
           <IconPicker
             visible={picking}
@@ -760,6 +777,9 @@ export default function RecipeFormScreen() {
  * The picture, in whichever state it is in: a local file still uploading, a key
  * in the bucket, or a drawing. No empty state and no "add a picture" prompt,
  * because the form opens with `DEFAULT_RECIPE_ICON` in it.
+ *
+ * A square beside the name, photo or drawing alike. The recipe page gives a
+ * photograph the full width; here it only has to say which picture is chosen.
  */
 function RecipePicture({
   icon,
@@ -777,88 +797,175 @@ function RecipePicture({
   const { t } = useTranslation('recipes')
   const { data: photoUrl, isLoading: resolvingPhoto } = useMealPhotoUrl(photoPath ?? undefined)
   const photo = storedImageSource(photoPath ?? undefined, photoUrl, localPhoto ?? undefined)
-  /**
-   * The box is tall when a photograph is in it, and the test has to agree with
-   * what the body draws: the photo wins there, so it wins here.
-   *
-   * Asking `&& !icon` as well is what the logged-entry screen does and is wrong
-   * here: this form clears one when the other is chosen, but a recipe saved
-   * before it existed can carry both, and that row drew its photograph inside the
-   * short box.
-   *
-   * `resolvingPhoto` counts as having one: the recipe has a photograph and we are
-   * waiting on a URL. Left out, the box opens short and grows by 130pt.
-   */
-  const tall = Boolean(photo || resolvingPhoto || attaching)
 
   return (
     <Tappable
-      className={cn(
-        'items-center justify-center overflow-hidden rounded-card border-[3px] border-line bg-track',
-        tall ? 'h-[260px]' : 'h-[130px]',
-      )}
       onPress={onPress}
       disabled={attaching}
       accessibilityRole="button"
       accessibilityLabel={t('edit.changePicture')}
     >
-      {attaching ? (
-        // The upload resizes and encodes a 3-6MB frame before it sends it, so
-        // this is a second or two on a real photo — long enough that a tile
-        // which did not change would read as the camera having done nothing.
-        <ActivityIndicator />
-      ) : photo ? (
-        <MealPhoto source={photo} />
-      ) : resolvingPhoto ? (
-        /* This recipe HAS a photograph and it is still being signed for.
-           Without this the box drew the drawing first and then replaced it
-           with the photograph — the largest thing on the screen changing into
-           something else while being looked at. */
-        <Skeleton width="100%" height={260} rounded={false} className="bg-line" />
-      ) : icon ? (
-        <Icon {...icon} size={100} />
-      ) : (
-        <Icon set="food" name="cooking-pot" size={100} />
-      )}
-      {/* Says the box is a control: a grey box with a drawing in it reads as a
-          picture, not as a place to change one. */}
+      <View className="h-[84px] w-[84px] items-center justify-center overflow-hidden rounded-md bg-track">
+        {attaching ? (
+          // The upload resizes and encodes a 3-6MB frame before it sends it, so
+          // this is a second or two on a real photo — long enough that a tile
+          // which did not change would read as the camera having done nothing.
+          <ActivityIndicator />
+        ) : photo ? (
+          <MealPhoto source={photo} />
+        ) : resolvingPhoto ? (
+          /* This recipe HAS a photograph and it is still being signed for.
+             Without this the tile drew the drawing first and then replaced it
+             with the photograph while being looked at. */
+          <Skeleton width="100%" height={84} rounded={false} className="bg-line" />
+        ) : (
+          <Icon {...(icon ?? DEFAULT_RECIPE_ICON)} size={60} />
+        )}
+      </View>
+      {/* Says the tile is a control: a drawing in a box reads as a picture,
+          not as a place to change one. */}
       {attaching ? null : (
-        <View className="absolute bottom-2 right-2 flex-row items-center gap-1.5 rounded-full bg-inverse/90 px-3 py-1">
-          <Icon set="ui" name="edit" size={14} />
-          <Text variant="caption" className="text-on-inverse">
-            {t('edit.change')}
-          </Text>
+        <View className="absolute -right-1.5 -bottom-1.5 h-[28px] w-[28px] items-center justify-center rounded-full border-[3px] border-surface bg-pandan-soft">
+          <Icon set="ui" name="edit" size={13} />
         </View>
       )}
     </Tappable>
   )
 }
 
+/** One of the three short answers under the name: a quiet label over a figure. */
+function DetailTile({
+  label,
+  onPress,
+  active = false,
+  children,
+}: {
+  label: string
+  /** The whole tile focuses its field, rather than only the figure's width. */
+  onPress?: () => void
+  /** Its field is being typed into: the only sign which tile the pad is filling. */
+  active?: boolean
+  children: ReactNode
+}) {
+  const body = (
+    <>
+      <Text variant="meta" numberOfLines={1}>
+        {label}
+      </Text>
+      {/* One height for the figure in every tile, so the servings buttons do
+          not push "Serves" above "Prep" and "Cook". */}
+      <View className="min-h-[30px] justify-center">{children}</View>
+    </>
+  )
+  const className = cn(
+    'min-h-[72px] flex-1 items-center gap-1 rounded-md border-2 bg-track px-1.5 py-2',
+    active ? 'border-pandan' : 'border-transparent',
+  )
+  return onPress ? (
+    <Tappable className={className} onPress={onPress} accessible={false}>
+      {body}
+    </Tappable>
+  ) : (
+    <View className={className}>{body}</View>
+  )
+}
+
 /**
- * Minutes, typed. Digits only and at most four of them: the column takes two
- * days at most, and `parseMinutes` clamps whatever gets past this.
+ * How many the pot feeds, with a small minus and plus either side. The app's
+ * Stepper is sized for a portion on its own row, and beside two minute fields
+ * its 56pt green button was the loudest thing on the form.
  */
-function MinutesField({
+function ServingsControl({ value, onChange }: { value: number; onChange: (next: number) => void }) {
+  const { t } = useTranslation(['recipes', 'common'])
+  const colors = useThemeColors()
+  const button = (direction: -1 | 1) => {
+    const next = value + direction
+    const disabled = next < MIN_SERVINGS || next > MAX_SERVINGS
+    return (
+      <Tappable
+        onPress={() => onChange(next)}
+        disabled={disabled}
+        hitSlop={8}
+        accessibilityRole="button"
+        accessibilityLabel={t(direction < 0 ? 'common:a11y.decrease' : 'common:a11y.increase')}
+        accessibilityState={{ disabled }}
+        className={cn(
+          'h-[28px] w-[28px] items-center justify-center rounded-full bg-surface',
+          disabled && 'opacity-40',
+        )}
+      >
+        <Icon set="ui" name={direction < 0 ? 'minus' : 'plus'} size={12} tintColor={colors.ink} />
+      </Tappable>
+    )
+  }
+  return (
+    <View className="flex-row items-center gap-2">
+      {button(-1)}
+      <Text
+        variant="numeric"
+        className="min-w-[24px] text-center"
+        accessibilityLabel={`${t('recipes:edit.servingsRow')}, ${value}`}
+      >
+        {value}
+      </Text>
+      {button(1)}
+    </View>
+  )
+}
+
+const MIN_SERVINGS = 1
+const MAX_SERVINGS = 100
+
+/**
+ * Minutes, typed into the tile. Digits only and at most four of them: the
+ * column takes two days at most, and `parseMinutes` clamps whatever gets past
+ * this. Empty stays empty, drawn as a dash, rather than turning into a 0.
+ */
+function MinutesTile({
+  title,
   label,
   value,
   onChange,
 }: {
+  /** Drawn on the tile: "Prep". */
+  title: string
+  /** For the pad's header and a screen reader: "Prep time". */
   label: string
   value: string
   onChange: (next: string) => void
 }) {
   const { t } = useTranslation('recipes')
+  const colors = useThemeColors()
+  const [focused, setFocused] = useState(false)
+  const numpad = useNumpadField({
+    value,
+    onChangeText: (next) => onChange(next.replace(/[^0-9]/g, '')),
+    decimal: false,
+    maxLength: 4,
+    label,
+    onFocus: () => setFocused(true),
+    onBlur: () => setFocused(false),
+  })
   return (
-    <TextField
-      size="sm"
-      hideLabel
-      label={label}
-      containerClassName="w-[124px]"
-      keyboardType="number-pad"
-      maxLength={4}
-      value={value}
-      onChangeText={(next) => onChange(next.replace(/[^0-9]/g, ''))}
-      rightSlot={<Text variant="caption">{t('edit.minutes')}</Text>}
-    />
+    <DetailTile label={title} active={focused} onPress={() => numpad.ref.current?.focus()}>
+      <View className="flex-row items-baseline gap-1">
+        <TextInput
+          allowFontScaling={TEXT_SCALES}
+          value={value}
+          onChangeText={(next) => onChange(next.replace(/[^0-9]/g, ''))}
+          keyboardType="number-pad"
+          maxLength={4}
+          // A lone dash for a time nobody gave, as the recipe page leaves it out.
+          placeholder="—"
+          placeholderTextColor={colors.faint}
+          accessibilityLabel={label}
+          className="min-w-[24px] p-0 text-center font-display text-[22px] text-heading"
+          cursorColor={colors.pandan}
+          selectionColor={colors.pandan}
+          {...numpad}
+        />
+        <Text variant="meta">{t('edit.minutes')}</Text>
+      </View>
+    </DetailTile>
   )
 }

@@ -190,7 +190,7 @@ export const recipes = {
 
   edit: {
     title: 'Edit recipe',
-    name: 'NAME',
+    name: 'Name',
     namePlaceholder: 'What do you call it?',
     changePicture: 'Change the picture',
     change: 'Change',
@@ -201,24 +201,33 @@ export const recipes = {
     replacePhotoTitle: 'Use a drawing instead?',
     replacePhotoBody: 'The photo of this recipe will be removed.',
     replacePhotoConfirm: 'Use the drawing',
-    /** The details card: three short rows under the picture. */
+    /**
+     * The three short tiles under the name. The long names are what the number
+     * pad and a screen reader say; the short ones are drawn.
+     */
     servingsRow: 'Servings',
+    serves: 'Serves',
     prep: 'Prep time',
     cook: 'Cook time',
+    prepShort: 'Prep',
+    cookShort: 'Cook',
     /** Beside the minutes field. */
     minutes: 'min',
-    meal: 'MEAL',
-    source: 'SOURCE',
+    meal: 'Meal',
+    source: 'Source',
     sourcePlaceholder: 'Link to the reel or post',
     sourceInvalid: 'That link does not look right',
     /** Over the save button. */
     perServing: '{{kcal}} kcal per serving, serves {{count}}',
-    ingredients: 'INGREDIENTS',
-    ingredientsCount: 'INGREDIENTS · {{count}}',
+    ingredients: 'Ingredients',
     addIngredient: 'Add an ingredient',
-    steps: 'HOW YOU COOK IT',
+    steps: 'Steps',
     stepsSheetTitle: 'How you cook it',
-    stepsEditAction: 'Edit the steps',
+    /** Beside the Steps heading, and under the first three steps for the rest. */
+    stepsCount_one: '{{count}} step',
+    stepsCount_other: '{{count}} steps',
+    stepsMore_one: '{{count}} more step',
+    stepsMore_other: '{{count}} more steps',
     /** Read out in place of the list itself, which a screen reader would spell. */
     stepsEdit_one: 'Edit the steps, {{count}} step',
     stepsEdit_other: 'Edit the steps, {{count}} steps',

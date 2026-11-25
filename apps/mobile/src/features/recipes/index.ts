@@ -28,6 +28,7 @@ export {
 } from './cooking'
 export { forgetCookSession, useCookStep, useTickedIngredients } from './cookSession'
 export { DescribeRecipePanel, type DescribeRecipePanelProps } from './DescribeRecipePanel'
+export { FormSection } from './FormSection'
 export { ImportVideoPanel, type ImportVideoPanelProps } from './ImportVideoPanel'
 export { IngredientChecklist, type IngredientChecklistProps } from './IngredientChecklist'
 export {
