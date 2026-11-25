@@ -14,6 +14,7 @@
 // is added. It is filled in one pass, so a `{{…}}` inside it stays text.
 
 import { ICON_INSTRUCTION } from './icons.ts'
+import { capturing } from './posthog.ts'
 
 /** One name per prompt. The note rules are appended to the photo prompt. */
 export const PROMPT_NAMES = [
@@ -39,11 +40,35 @@ export type PromptPart = { name: PromptName; bundled: string }
 /** A system prompt still to be resolved, made of one part or more. */
 export type HostedSystem = { hostedSystem: PromptPart[] }
 
+/**
+ * Why a part went out as the code's copy. Recorded on the generation as
+ * `prompt_fallback`, because every miss used to look the same from PostHog:
+ * production served the code copy to every call for a month (no key was ever
+ * set, and most prompts had no `production` label) and nothing said so.
+ */
+export type PromptFallback =
+  /** `POSTHOG_PROMPTS_API_KEY` is not set. */
+  | 'no_key'
+  /** 404: no such prompt, or no version carries the `production` label. */
+  | 'not_found'
+  /** 401 or 403: the key is wrong, expired or lacks `llm_prompt:read`. */
+  | 'refused'
+  /** Any other status. */
+  | 'http_error'
+  /** No answer within `FETCH_TIMEOUT_MS`. */
+  | 'timeout'
+  /** The request never got an answer. */
+  | 'network'
+  /** An answer with no prompt text or no version. */
+  | 'invalid'
+
 export type ResolvedPrompt = {
   name: PromptName
   /** The PostHog version, or null for the code's copy. */
   version: number | null
   source: 'posthog' | 'bundled'
+  /** Set exactly when `source` is `bundled`. */
+  fallback?: PromptFallback
 }
 
 /** The system message content for these parts, resolved when the call is made. */
@@ -92,19 +117,35 @@ const FETCH_TIMEOUT_MS = 3000
 type Cached = { template: string; version: number; fetchedAt: number; retryAt: number }
 const cache = new Map<PromptName, Cached>()
 /**
- * When a prompt with nothing cached last failed, and so when to ask again.
+ * When a prompt with nothing cached last failed, why, and so when to ask again.
  * Without it, an unlabelled prompt or a PostHog outage made every call wait
  * for its own failed fetch, up to the timeout, before sending the code's copy.
  */
-const missedUntil = new Map<PromptName, number>()
-/** A fetch already on its way, shared by calls that start while it is out. */
-const inFlight = new Map<PromptName, Promise<{ template: string; version: number } | null>>()
+const missedUntil = new Map<PromptName, { until: number; reason: PromptFallback }>()
 
-async function fetchPrompt(
-  name: PromptName,
-): Promise<{ template: string; version: number } | null> {
+type Fetched = { template: string; version: number } | { miss: PromptFallback }
+/** A fetch already on its way, shared by calls that start while it is out. */
+const inFlight = new Map<PromptName, Promise<Fetched>>()
+
+/**
+ * Said once per isolate, and only where generations are captured: a missing
+ * key is a setting, not an outage, so it would otherwise never be logged.
+ */
+let warnedNoKey = false
+function warnNoKey() {
+  if (warnedNoKey || !capturing()) return
+  warnedNoKey = true
+  console.warn(
+    '[prompts] POSTHOG_PROMPTS_API_KEY is not set, so every call sends the code copy of its prompt',
+  )
+}
+
+async function fetchPrompt(name: PromptName): Promise<Fetched> {
   const key = Deno.env.get('POSTHOG_PROMPTS_API_KEY')?.trim()
-  if (!key) return null
+  if (!key) {
+    warnNoKey()
+    return { miss: 'no_key' }
+  }
   try {
     const res = await fetch(
       `${APP_HOST}/api/projects/${PROJECT_ID}/llm_prompts/name/${encodeURIComponent(name)}/?label=${LABEL}`,
@@ -116,18 +157,26 @@ async function fetchPrompt(
     if (!res.ok) {
       await res.body?.cancel()
       console.error(`[prompts] ${name}: PostHog answered ${res.status}, using the bundled copy`)
-      return null
+      return {
+        miss:
+          res.status === 404
+            ? 'not_found'
+            : res.status === 401 || res.status === 403
+              ? 'refused'
+              : 'http_error',
+      }
     }
     const body = (await res.json()) as { prompt?: unknown; version?: unknown }
     // An answer with no version is not used: every generation it served would
     // name a version nobody can open.
-    if (typeof body.prompt !== 'string' || !body.prompt.trim()) return null
-    if (typeof body.version !== 'number') return null
+    if (typeof body.prompt !== 'string' || !body.prompt.trim()) return { miss: 'invalid' }
+    if (typeof body.version !== 'number') return { miss: 'invalid' }
     return { template: body.prompt, version: body.version }
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error)
     console.error(`[prompts] ${name}: ${reason}, using the bundled copy`)
-    return null
+    // `AbortSignal.timeout` rejects with a DOMException named TimeoutError.
+    return { miss: (error as { name?: string })?.name === 'TimeoutError' ? 'timeout' : 'network' }
   }
 }
 
@@ -154,16 +203,17 @@ async function resolvePart(
     text: render(c.template),
     prompt: { name: part.name, version: c.version, source: 'posthog' as const },
   })
-  const bundled = {
+  const bundled = (fallback: PromptFallback) => ({
     text: part.bundled,
-    prompt: { name: part.name, version: null, source: 'bundled' as const },
-  }
+    prompt: { name: part.name, version: null, source: 'bundled' as const, fallback },
+  })
   if (cached && (now - cached.fetchedAt < CACHE_TTL_MS || now < cached.retryAt)) {
     return fromCache(cached)
   }
-  if (!cached && now < (missedUntil.get(part.name) ?? 0)) return bundled
+  const missed = missedUntil.get(part.name)
+  if (!cached && missed && now < missed.until) return bundled(missed.reason)
   const fetched = await fetchShared(part.name)
-  if (fetched) {
+  if ('template' in fetched) {
     const fresh = { ...fetched, fetchedAt: now, retryAt: 0 }
     cache.set(part.name, fresh)
     missedUntil.delete(part.name)
@@ -173,8 +223,8 @@ async function resolvePart(
     cached.retryAt = now + RETRY_AFTER_FAILURE_MS
     return fromCache(cached)
   }
-  missedUntil.set(part.name, now + RETRY_AFTER_FAILURE_MS)
-  return bundled
+  missedUntil.set(part.name, { until: now + RETRY_AFTER_FAILURE_MS, reason: fetched.miss })
+  return bundled(fetched.miss)
 }
 
 /** The system prompt as text, and which version of each part it was. */
@@ -191,4 +241,5 @@ export function clearPromptCache(): void {
   cache.clear()
   missedUntil.clear()
   inFlight.clear()
+  warnedNoKey = false
 }

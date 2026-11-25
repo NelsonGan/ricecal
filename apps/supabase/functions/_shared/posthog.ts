@@ -102,9 +102,10 @@ export function readSessionId(req: Request): string | null {
 
 /**
  * Off on a local stack, where a real OpenRouter key would otherwise file
- * development scans in the production project.
+ * development scans in the production project. Exported so the prompt loader
+ * warns about a missing key only where it matters.
  */
-function enabled(): boolean {
+export function capturing(): boolean {
   const url = Deno.env.get('SUPABASE_URL') ?? ''
   return url.startsWith('https://') && !/localhost|127\.0\.0\.1|kong/.test(url)
 }
@@ -172,6 +173,10 @@ export function generationEvent(context: AiContext, traceId: string, generation:
     if (prompt.version !== null) properties.$ai_prompt_version = prompt.version
     const sources = new Set(generation.prompts?.map((p) => p.source))
     properties.prompt_source = sources.size > 1 ? 'mixed' : prompt.source
+    // Why the code's copy went out, from the first part that fell back. Without
+    // it a missing key, a missing label and an outage were one `bundled`.
+    const fallback = generation.prompts?.find((p) => p.fallback)?.fallback
+    if (fallback) properties.prompt_fallback = fallback
     // The photo prompt with a note is two prompts; both versions, in order.
     if (more.length) {
       properties.prompt_parts = (generation.prompts ?? [])
@@ -196,7 +201,7 @@ function inBackground(work: Promise<unknown>) {
 
 /** Send one generation. Never throws and never delays the caller. */
 export function captureGeneration(context: AiContext, traceId: string, generation: Generation) {
-  if (!enabled()) return
+  if (!capturing()) return
   const event = generationEvent(context, traceId, generation)
   inBackground(
     fetch(CAPTURE_URL, {

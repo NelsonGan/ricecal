@@ -275,7 +275,12 @@ arrive within an hour of the last of their kind 82 to 100% of the time; the
 recipe calls and moderation come once a day or less, so they are left uncached
 rather than pay a write nobody reads, and the catalogue pick and nutrition
 estimate are under Haiku's 512-token minimum. A photo scan's input cost halved
-in testing, and a typed meal fell from about $0.0007 to $0.0002. Two things keep
+in testing, and a typed meal fell from about $0.0007 to $0.0002. Over the 30
+days to 25 November 2026, 99.3% of photo calls, 83.5% of typed meals and 80% of
+corrections read the cache, and the whole model bill was $7.05 for 27,847 calls,
+about $0.0003 a photo. What is left of a photo's cost is its answer (56%, a
+dense JSON object of about 350 tokens) and the image (32%, about 1,050 tokens at
+the app's 1,024 px edge); the cached prompt is the other 12%. Two things keep
 it working: a cached system prompt must stay byte-for-byte fixed (per-request
 text belongs in the user message, after the cached block), and the cache is per
 Anthropic workspace, which every call shares through the one BYOK key. A photo
@@ -744,7 +749,8 @@ One reads the hosted model prompts: `POSTHOG_PROMPTS_API_KEY`, a PostHog
 personal API key scoped to `llm_prompt:read` and nothing else, read by
 `functions/_shared/prompts.ts` (see [Hosted prompts](#hosted-prompts)). Unset,
 every call sends the copy of its prompt that is in the code, which is what the
-local stack does. A copy for scripts lives in `.secrets/posthog-prompts.key`.
+local stack does; in production each generation then says `prompt_fallback:
+no_key`. A copy for scripts lives in `.secrets/posthog-prompts.key`.
 
 A fifth R2 value is optional and local only: `R2_ENDPOINT` overrides the
 Cloudflare host, so you can point the same signing code at any S3, including the
@@ -8493,7 +8499,7 @@ scan's vision call, catalogue pick and nutrition estimate read as one trace.
 | `byok` | `usage.is_byok`: `true` when our Anthropic key paid. An `anthropic/` event with `false` means OpenRouter credits were spent on it, which the routing forbids |
 | `$ai_latency`, `$ai_http_status`, `$ai_is_error`, `$ai_error`, `finish_reason` | Seconds, status and a short error; a JSON parse failure is recorded as `model answer was not valid JSON` so the answer is never quoted |
 | `feature`, `attempt`, `is_backup_model`, `$ai_max_tokens`, `$ai_temperature` | The edge function, which request this was (0 is the first, Haiku unless it is switched off, then the fallback and its one retry), whether Qwen is answering because Haiku failed in the same call (`false` when Haiku was never asked), and the call's settings. Haiku takes no temperature, so its events carry none |
-| `$ai_prompt_name`, `$ai_prompt_version`, `prompt_source`, `prompt_parts` | Which hosted prompt the system message was and which PostHog version (see [Hosted prompts](#hosted-prompts)). `prompt_source` is `posthog`, `bundled` (the code's copy: no key, or PostHog did not answer; no version is sent) or `mixed`. A photo with a note is two prompts, so it also carries `prompt_parts`, e.g. `analyse-photo@2+analyse-photo-note@1` |
+| `$ai_prompt_name`, `$ai_prompt_version`, `prompt_source`, `prompt_parts`, `prompt_fallback` | Which hosted prompt the system message was and which PostHog version (see [Hosted prompts](#hosted-prompts)). `prompt_source` is `posthog`, `bundled` (the code's copy: no key, or PostHog did not answer; no version is sent) or `mixed`. A photo with a note is two prompts, so it also carries `prompt_parts`, e.g. `analyse-photo@2+analyse-photo-note@1`. `prompt_fallback` is sent only when a part went out as the code's copy, and says why, from the first such part: `no_key` (`POSTHOG_PROMPTS_API_KEY` unset), `not_found` (404: no such prompt, or no version labelled `production`), `refused` (401 or 403), `http_error`, `timeout`, `network` or `invalid` (no text or no version). Events from before December 2026 have no `prompt_fallback` |
 | `$geoip_disable` | Always `true`: the request comes from Supabase's servers, whose location would otherwise overwrite the person's |
 | `distinct_id`, `$session_id`, `$ai_session_id` | The Supabase uuid the app identifies PostHog with, and the app's session from the `X-POSTHOG-SESSION-ID` header the SDK adds to Supabase requests (`addTracingHeaders`). Moderation runs as `ricecal-moderation` and creates no person |
 
@@ -8535,6 +8541,7 @@ without a deploy.
   answer within 3 seconds, an error, an empty prompt or an answer without a
   version, the call sends the cached version if there is one and the code's
   copy if not, and PostHog is not asked about that prompt again for a minute.
+  The generation records why in `prompt_fallback`.
   PostHog being down costs one wait a minute per prompt and degrades a scan to
   the prompt this deploy shipped with, never to a failure. Calls that start
   together share one fetch.
@@ -8547,6 +8554,18 @@ without a deploy.
   hosted text by `requestBody`, as before, and stays in the code.
 - Each call names its prompt where it is made (`hostedSystem(...)`), so a
   prompt is never matched by its text.
+
+**Checking it is live.** Hosted prompts only take effect with the key set as a
+function secret and a `production` label on every prompt, and neither failure
+breaks anything, so both are easy to miss: from the feature's launch on 27
+October 2026 to 25 November, every one of 27,201 calls in production sent the
+code's copy, because the secret was never set and only `translate-recipe` had a
+label. Filter `$ai_generation` by `prompt_source = bundled` and break it down by
+`prompt_fallback`: `no_key` is the secret, `not_found` is a missing label or a
+prompt never uploaded, `refused` is a bad key. With no key, a deployed function
+also logs `POSTHOG_PROMPTS_API_KEY is not set` once per isolate. Before setting
+the key, run `pnpm prompts:check`: once it is set, whatever `production` points
+at is what every call sends.
 
 **Changing a prompt.** Make the change in the code copy first, since that is
 what the eval (`pnpm eval:prompts`, `pnpm eval:scan`), the tests and an outage
