@@ -2586,6 +2586,7 @@ export const fil = {
     startGroup: 'Gumawa ng grupo',
     seeAll: 'Tingnan lahat ({{total}})',
     openBoard: 'Buksan ang board',
+    portionTitle: 'DAMI',
     settings: 'Settings ng grupo',
     column: {
       breakfast: 'Almusal',

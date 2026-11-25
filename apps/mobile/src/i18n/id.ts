@@ -2563,6 +2563,7 @@ export const id = {
     startGroup: 'Buat grup',
     seeAll: 'Lihat semua ({{total}})',
     openBoard: 'Buka papan',
+    portionTitle: 'PORSI',
     settings: 'Pengaturan grup',
     column: {
       breakfast: 'Sarapan',

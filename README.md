@@ -3673,6 +3673,15 @@ such a profile (`social_profiles_name_present`), and joining it from the
 `food_logs` trigger refused every meal it tried to save. A workout can also be shared by hand from its page, which opens the composer
 with the workout's preview, or edited there once posted.
 
+A tap on a workout post opens it as its own page draws it
+(`app/social/workout.tsx`): every exercise and set, the muscles worked and the
+record count the card shows, through `social_workout_post_detail` under
+`social_can_view_post`. A post can reach strangers, so it hands back less than
+a group reads: no notes, no heart rate, and no burn, which is worked out from
+the owner's weight. The tap waits out a double tap, which still likes it as on
+a meal (a quarter second rather than the default half), and the card dims
+under the finger at once so the wait does not read as a dead tap.
+
 A profile is one grid, meals and workouts together and newest first. A whole
 workout card does not fit a half-width tile, so a workout there is the first
 exercise's drawing with its name and length (`WorkoutTile`), and opens its post
@@ -4150,6 +4159,17 @@ meal share a tile and swipe sideways inside it.
   back; your own card draws the same two pills, disabled, with what friends said.
   `private.group_food_reactions` appends the entry id and that group's counts
   to the card, which an app that does not know them ignores.
+  A tap on the card opens the food as a page (`app/group/food.tsx`), as a
+  workout card opens its workout: the plate across the top, the portion eaten,
+  the total with every nutrient, and each part on the plate in the units its
+  owner reads it in, under the same Macros switch as the owner's ingredient
+  card. It reads through `group_entry_detail`, with the reach of
+  `group_workout_detail` below: the owner shares the group, neither has blocked
+  the other, and the entry is within the board's sixty days or its post was
+  shared into that group's chat. Never the note, the place or the scan. Your
+  own card opens your own entry on its day instead (`log_date`, appended to the
+  card). Like a workout card, the tap answers at once, so a food card's heart is
+  in the long-press bar rather than on a double tap.
   The + beside the field lists the viewer's last five food posts to send by hand,
   and that is pushed like any message. **Posting a food to the feed shares it
   into every group chat its author is in, as an update** (`98_group_chat_shares.sql`):
@@ -4178,7 +4198,7 @@ meal share a tile and swipe sideways inside it.
   finger like a button; a workout card has no double-tap heart, so the tap need
   not wait to rule one out, and its reactions are in the long-press bar. A
   thumb on a food card is a gesture-handler tap rather than a Pressable, so it
-  takes the touch from the bubble's double tap instead of hearting it too.
+  takes the touch from the bubble's tap instead of opening the food too.
 - **A food of one's own in the chat.** The + offers three tiles, Food, Workouts
   and My Food, and under the one chosen a two-column grid of the viewer's recent
   ones. My Food is their own written foods (recipes); sharing one

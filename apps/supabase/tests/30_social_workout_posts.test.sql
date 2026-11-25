@@ -111,6 +111,10 @@ set local role authenticated;
 select throws_ok(format('select public.create_social_workout_post(%L, %L, null)', :'unshared', ''),
   '22023', null, 'a workout shared by hand says who sees it, rather than going public');
 reset role;
+-- Which post shares which workout, for the readers below, who cannot see the table.
+create temp table workout_post as select source_workout_id as workout_id, id from public.social_posts
+  where kind = 'workout';
+grant select on workout_post to authenticated;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'stranger', 'role', 'authenticated')::text, true);
 set local role authenticated;
@@ -129,6 +133,21 @@ select is((select count(*)::int from public.social_post(:'old'::uuid)), 0,
   'one post is food-only by default too');
 select is(public.social_workout_count(:'owner'), 1,
   'a stranger counts only the workouts they can see');
+-- A tap on the card opens the workout as its own page draws it.
+create temp table page as select public.social_workout_post_detail(
+  (select id from workout_post where workout_id = :'fresh')) as d;
+select is((select d->'summary'->>'name' || '|' || (d->'summary'->>'set_count') || '|'
+    || jsonb_array_length(d->'exercises') || '|' || jsonb_array_length(d->'sets') from page),
+  'Push day, edited|3|2|3', 'a public workout post opens with every exercise and set');
+select ok((select d::text not like '%Knee felt off%' from page), 'but never its notes');
+select ok((select d->'summary'->'kcal' = 'null'::jsonb and not d ? 'heart' from page),
+  'nor what it burned or the heart rate, which strangers should not read');
+select is((select d->'owner'->>'id' from page), :'owner'::text, 'headed by whose it is');
+select ok((select not (d->'sets'->0 ? 'load_kg') from page),
+  'and no set carries its load, which for a bodyweight exercise is the owner''s weight');
+select throws_ok(format('select public.social_workout_post_detail(%L)',
+    (select id from workout_post where workout_id = :'old')), '42501', null,
+  'a followers-only workout stays closed to a stranger');
 reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'reader', 'role', 'authenticated')::text, true);
@@ -136,6 +155,9 @@ set local role authenticated;
 select is((select count(*)::int from public.social_profile_posts(:'owner', p_kinds => '{workout}')), 2,
   'a follower sees the public and the followers-only workout');
 select is(public.social_workout_count(:'owner'), 2, 'and counts both');
+select is(public.social_workout_post_detail(
+    (select id from workout_post where workout_id = :'old'))->'summary'->>'name', 'Last month',
+  'and opens the followers-only one');
 select is((select count(*)::int from public.social_profile_posts(:'owner')), 0,
   'a profile''s posts are meals only unless workouts are asked for');
 reset role;
@@ -205,6 +227,9 @@ select ok(not has_function_privilege('anon', 'public.create_social_workout_post(
   'anonymous callers cannot share a workout');
 select ok(not has_function_privilege('anon', 'private.social_insert_workout_post(uuid,integer,text,public.social_audience,boolean)', 'EXECUTE'),
   'anonymous callers cannot reach the posting function');
+
+select ok(not has_function_privilege('anon', 'public.social_workout_post_detail(uuid)', 'EXECUTE'),
+  'anonymous callers cannot open a workout post');
 
 select * from finish();
 rollback;

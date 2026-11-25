@@ -236,8 +236,9 @@ it("draws a workout post as the workout, in the reader's own unit", async () => 
       }}
     />,
   )
-  // Read aloud with its figures, as a meal is read with its calories.
-  expect(screen.getByRole('image', { name: 'Push day, 1 h 5 min, 2,205 lb, 2 PRs' })).toBeTruthy()
+  // Read aloud with its figures, as a meal is read with its calories, and a
+  // button, since a tap opens every exercise and set.
+  expect(screen.getByRole('button', { name: 'Push day, 1 h 5 min, 2,205 lb, 2 PRs' })).toBeTruthy()
   expect(screen.getByText('Push day')).toBeTruthy()
   expect(screen.getByText('4 × Bench Press (Barbell)')).toBeTruthy()
   expect(screen.getByText('3 × My own press')).toBeTruthy()
@@ -273,6 +274,48 @@ it('likes once on image double tap and keeps an existing like', async () => {
     fireGestureHandler(getByGestureTestId('post-double-tap-post'), [{ state: State.END }])
   })
   expect(mockMutate).not.toHaveBeenCalled()
+})
+
+it("opens a workout post's full workout on a tap, and still likes it on a double tap", async () => {
+  const workoutPost: SocialPost = {
+    ...post,
+    kind: 'workout',
+    food_name: null,
+    kcal: null,
+    workout_name: 'Push day',
+    workout_started_at: '2026-10-15T10:00:00.000Z',
+    workout_duration_s: 3900,
+    workout_sets: 13,
+    workout_volume_kg: 1000,
+    workout_exercises: [],
+    workout_records: 0,
+  }
+  await render(<PostCard post={workoutPost} />)
+  await act(async () => {
+    fireGestureHandler(getByGestureTestId('post-tap-post'), [
+      { state: State.BEGAN },
+      { state: State.END },
+    ])
+  })
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/social/workout', params: { post: 'post' } })
+
+  mockPush.mockClear()
+  await act(async () => {
+    fireGestureHandler(getByGestureTestId('post-double-tap-post'), [{ state: State.END }])
+  })
+  expect(mockMutate).toHaveBeenCalledWith({ action: 'like', id: 'post', liked: true })
+  expect(mockPush).not.toHaveBeenCalled()
+})
+
+it('opens nothing on a single tap on a meal', async () => {
+  await render(<PostCard post={post} />)
+  await act(async () => {
+    fireGestureHandler(getByGestureTestId('post-tap-post'), [
+      { state: State.BEGAN },
+      { state: State.END },
+    ])
+  })
+  expect(mockPush).not.toHaveBeenCalled()
 })
 
 it('accepts pinch gestures on a feed photograph', async () => {

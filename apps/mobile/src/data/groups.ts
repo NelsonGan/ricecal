@@ -8,10 +8,12 @@ import {
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Database, Tables } from '@/lib/database.types'
 import { onGroupChatPush } from '@/lib/groupChatPushes'
+import { isMeasureUnit } from '@/lib/measures'
 import { listen } from '@/lib/realtime'
 import { supabase } from '@/lib/supabase'
 import { type ActivitySession, toSession } from './activity'
 import { keys } from './keys'
+import type { EntryIngredient } from './scan'
 import { useUserId } from './session'
 import type { ReportReason } from './types'
 import { type WorkoutDetail, workoutDetailFrom } from './workouts'
@@ -164,6 +166,10 @@ export type ChatFood = {
   carbs_g: number
   protein_g: number
   fat_g: number
+  /** The diary day, so your own card opens your entry on it. Missing from an older server. */
+  log_date?: string
+  /** The catalogue row it was logged from, null for an estimate. Missing from an older server. */
+  food_id?: string | null
   /**
    * The diary entry its thumbs are cast on, with this group's likes and
    * dislikes and the viewer's own, as the board counts them. Missing from an
@@ -1119,6 +1125,103 @@ export function useGroupWorkout(groupId: string, source: 'workout' | 'activity',
           sets: answer.sets ?? [],
           heart: answer.heart ?? null,
         }),
+      }
+    },
+    ...SHORT,
+  })
+}
+
+/** A fellow member's food, as its page draws it. */
+export type GroupFoodView = {
+  owner: GroupPerson
+  entry: {
+    id: string
+    name: string
+    brand: string | null
+    photo_path: string | null
+    icon_set: string | null
+    icon_name: string | null
+    logged_at: string
+    log_date: string
+    serving_label: string | null
+    /** Servings of the label, before the plate's share. */
+    quantity: number
+    /** How much of the plate was eaten; 1 with no parts. */
+    plate_quantity: number
+    /** What the portion eaten weighs, when known. */
+    grams: number | null
+    kcal: number
+    carbs_g: number
+    protein_g: number
+    fat_g: number
+    fibre_g: number | null
+    sugar_g: number | null
+    sodium_mg: number | null
+  }
+  parts: EntryIngredient[]
+}
+
+/**
+ * Someone's food opened from its card in the chat: the portion, every
+ * nutrient and every part on the plate, through `group_entry_detail`, which
+ * checks the two share the group. Never the owner's note or place.
+ */
+export function useGroupFood(groupId: string, entryId: string) {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: keys.groupsRead(userId, 'group_entry_detail', { groupId, entryId }),
+    queryFn: async ({ signal }): Promise<GroupFoodView> => {
+      const answer = (await rpc(
+        'group_entry_detail',
+        { p_group_id: groupId, p_entry_id: entryId },
+        signal,
+      )) as unknown as {
+        owner: GroupPerson
+        entry: Record<string, unknown> | null
+        parts: Record<string, unknown>[]
+      } | null
+      if (!answer?.entry) throw new Error('Food unavailable')
+      const entry = answer.entry
+      const num = (value: unknown) => Number(value ?? 0)
+      const maybe = (value: unknown) =>
+        value === null || value === undefined ? null : Number(value)
+      return {
+        owner: answer.owner,
+        entry: {
+          id: String(entry.id),
+          name: String(entry.name ?? ''),
+          brand: (entry.brand as string | null) ?? null,
+          photo_path: (entry.photo_path as string | null) ?? null,
+          icon_set: (entry.icon_set as string | null) ?? null,
+          icon_name: (entry.icon_name as string | null) ?? null,
+          logged_at: String(entry.logged_at),
+          log_date: String(entry.log_date),
+          serving_label: (entry.serving_label as string | null) ?? null,
+          quantity: num(entry.quantity ?? 1),
+          plate_quantity: num(entry.plate_quantity ?? 1),
+          grams: maybe(entry.grams),
+          kcal: num(entry.kcal),
+          carbs_g: num(entry.carbs_g),
+          protein_g: num(entry.protein_g),
+          fat_g: num(entry.fat_g),
+          fibre_g: maybe(entry.fibre_g),
+          sugar_g: maybe(entry.sugar_g),
+          sodium_mg: maybe(entry.sodium_mg),
+        },
+        // The owner's own ingredient rows, in the shape their page reads.
+        parts: (answer.parts ?? []).map((row) => ({
+          id: String(row.id ?? ''),
+          name: String(row.name ?? ''),
+          quantity: Number(row.quantity ?? 1),
+          servingLabel: String(row.serving_label ?? ''),
+          kcal: num(row.kcal),
+          grams: maybe(row.grams),
+          carbs: num(row.carbs_g),
+          protein: num(row.protein_g),
+          fat: num(row.fat_g),
+          position: num(row.position),
+          displayUnit: isMeasureUnit(row.display_unit) ? row.display_unit : null,
+        })),
       }
     },
     ...SHORT,

@@ -1,13 +1,14 @@
 import { format } from 'date-fns/format'
 import { parseISO } from 'date-fns/parseISO'
 import * as Haptics from 'expo-haptics'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
 import Animated, {
   Easing,
   LinearTransition,
+  type SharedValue,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
@@ -227,6 +228,13 @@ function EntryRow({
 }
 
 /**
+ * When a pill inside a chat bubble last took a touch, which the bubble reads
+ * before its own tap opens the food: two taps in nested gesture detectors are
+ * not ordered against each other, so a vote could open the page as well.
+ */
+export const PillTouch = createContext<SharedValue<number> | null>(null)
+
+/**
  * A food's like and dislike. A friend's takes either, and a second tap on the
  * same one takes it back; your own cannot be reacted to, so there it is what
  * friends said instead. The board's meal sheet and a chat food card both draw it.
@@ -371,6 +379,7 @@ function Reaction({
   disabled?: boolean
 }) {
   const reduceMotion = useReducedMotion()
+  const pillTouch = useContext(PillTouch)
   const scale = useSharedValue(1)
   const tilt = useSharedValue(0)
   const hand = useAnimatedStyle(() => ({
@@ -430,6 +439,9 @@ function Reaction({
       // 36pt drawn, 44pt to a finger.
       .hitSlop(4)
       .runOnJS(true)
+      .onBegin(() => {
+        if (pillTouch) pillTouch.value = Date.now()
+      })
       // Felt when the tap lands rather than when the finger does, so a scroll
       // that starts on a pill does not buzz.
       .onEnd((_event, success) => {

@@ -2546,6 +2546,7 @@ export const bn = {
     startGroup: 'গ্রুপ খুলুন',
     seeAll: 'সবাইকে দেখুন ({{total}})',
     openBoard: 'বোর্ড খুলুন',
+    portionTitle: 'পরিমাণ',
     settings: 'গ্রুপ সেটিংস',
     column: {
       breakfast: 'সকাল',

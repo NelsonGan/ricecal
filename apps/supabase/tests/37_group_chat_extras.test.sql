@@ -42,7 +42,7 @@ select ok(not exists (
   where n.nspname in ('public', 'private')
     and p.proname in ('send_group_message', 'set_group_message_reaction', 'group_invite_suggestions',
       'group_post_food', 'group_food_label', 'group_reactions_changed', 'group_share_posted_food',
-      'group_food_reactions')
+      'group_food_reactions', 'group_entry_detail')
     and (p.proacl is null or exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0))
 ), 'none of the new functions is executable by PUBLIC');
 select ok(not has_function_privilege('authenticated', 'private.group_post_food(uuid)', 'EXECUTE'),
@@ -224,6 +224,50 @@ select is((select pushed_at from public.group_messages where request_id = 'a3730
   null, 'a food sent by hand is pushed like any message');
 select is((select automatic from public.group_messages where request_id = 'a3730000-0000-4000-8000-000000000006'),
   false, 'and is not an update');
+
+-- A tap on the card opens the meal as a page: the portion, every nutrient and
+-- the parts on the plate, never the owner's note.
+reset role;
+update public.food_logs set note = 'Ate it in the car', plate_quantity = 1.5 where id = :'meal';
+insert into public.food_log_ingredients (food_log_id, item_name, base_kcal, base_carbs_g, base_protein_g,
+  base_fat_g, serving_label, serving_factor, grams, position)
+values (:'meal', 'Coconut rice', 360, 60, 6, 10, '1 serving', 1, 200, 0),
+       (:'meal', 'Sambal', 60, 6, 1, 4, '1 serving', 1, 30, 1);
+select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is(public.group_entry_detail((select id from g), :'meal')->'entry'->>'name', 'Nasi lemak',
+  'a member reads a fellow member''s shared food');
+select is((public.group_entry_detail((select id from g), :'meal')->'entry'->>'kcal')::int, 630,
+  'with its total as the diary works it out, the plate''s share included');
+select is((public.group_entry_detail((select id from g), :'meal')->'entry'->>'plate_quantity')::numeric, 1.5,
+  'and how much of the plate was eaten');
+select is(jsonb_path_query_array(public.group_entry_detail((select id from g), :'meal'), '$.parts[*].name'),
+  '["Coconut rice", "Sambal"]'::jsonb, 'and every part on the plate, in order');
+select ok(public.group_entry_detail((select id from g), :'meal')::text not like '%in the car%',
+  'but never the owner''s note');
+reset role;
+update public.food_logs set log_date = public.local_today(:'ana') - 90 where id = :'meal';
+set local role authenticated;
+select is(public.group_entry_detail((select id from g), :'meal')->'entry'->>'name', 'Nasi lemak',
+  'a food shared into the chat stays readable past the board''s sixty days');
+reset role;
+-- Hidden by moderation, the share no longer counts; restored after, so the
+-- cascade below still has messages to take.
+update public.group_messages set quarantined = true where post_id = (select id from post) and group_id = (select id from g);
+set local role authenticated;
+select throws_ok(format('select public.group_entry_detail(%L, %L)', (select id from g), :'meal'), '42501', null,
+  'an old food not shared in this group stays private');
+reset role;
+update public.food_logs set log_date = public.local_today(:'ana') + 7 where id = :'meal';
+set local role authenticated;
+select throws_ok(format('select public.group_entry_detail(%L, %L)', (select id from g), :'meal'), '42501', null,
+  'and so does a meal planned for a day the board does not reach');
+select set_config('request.jwt.claims', json_build_object('sub', :'cai', 'role', 'authenticated')::text, true);
+select throws_ok(format('select public.group_entry_detail(%L, %L)', (select id from g), :'meal'), '42501', null,
+  'a non-member reads nothing');
+reset role;
+update public.group_messages set quarantined = false where post_id = (select id from post) and group_id = (select id from g);
+update public.food_logs set log_date = public.local_today(:'ana') where id = :'meal';
 
 -- Deleting the meal takes the post, and so the food messages, with it.
 delete from public.food_logs where id = :'meal';

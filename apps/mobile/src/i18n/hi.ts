@@ -2541,6 +2541,7 @@ export const hi = {
     startGroup: 'समूह बनाएँ',
     seeAll: 'सभी देखें ({{total}})',
     openBoard: 'बोर्ड खोलें',
+    portionTitle: 'मात्रा',
     settings: 'समूह सेटिंग',
     column: {
       breakfast: 'नाश्ता',

@@ -2537,6 +2537,7 @@ export const th = {
     startGroup: 'สร้างกลุ่ม',
     seeAll: 'ดูทั้งหมด ({{total}})',
     openBoard: 'เปิดบอร์ด',
+    portionTitle: 'ปริมาณ',
     settings: 'ตั้งค่ากลุ่ม',
     column: {
       breakfast: 'เช้า',

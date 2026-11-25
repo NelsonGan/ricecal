@@ -328,7 +328,10 @@ begin
     'photo_path', d.photo_path,
     'serving_label', d.serving_label, 'quantity', round(d.quantity * d.plate_quantity, 2),
     'logged_at', d.logged_at,
-    'kcal', d.kcal, 'carbs_g', d.carbs_g, 'protein_g', d.protein_g, 'fat_g', d.fat_g)
+    'kcal', d.kcal, 'carbs_g', d.carbs_g, 'protein_g', d.protein_g, 'fat_g', d.fat_g,
+    -- The diary day and the catalogue row, so the owner's own card opens their
+    -- entry on its day with the dish's other portions.
+    'log_date', d.log_date, 'food_id', d.food_id)
   into v_food
   from public.food_log_details d
   where d.id = v_entry and d.user_id = v_author;
@@ -493,6 +496,49 @@ begin
         'min_bpm', h.min_bpm, 'active_kcal', h.active_kcal)
       from public.workout_heart_rates h where h.workout_id = p_id)
   );
+end;
+$$;
+
+-- One food of a fellow member's, as a page draws it: a tap on its card in the
+-- chat. The card has the name, calories and macros; this adds what the owner's
+-- own entry page shows of the meal itself, the portion eaten, the other
+-- nutrients and every part on the plate. The same reach as the board and as
+-- group_workout_detail: the owner is in this group with the caller, neither
+-- has blocked the other, and the entry is on a day the board reaches or a
+-- post of it was shared into this group's chat. Never its note, place or scan,
+-- which are the owner's own.
+create or replace function public.group_entry_detail(p_group_id uuid, p_entry_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare v_user uuid := private.group_require_member(p_group_id); v_owner uuid; v_day date; v_shared boolean;
+begin
+  select f.user_id, f.log_date into v_owner, v_day from public.food_logs f where f.id = p_entry_id;
+  v_shared := exists (select 1 from public.group_messages m
+    join public.social_posts p on p.id = m.post_id
+    where m.group_id = p_group_id and p.source_entry_id = p_entry_id and not m.quarantined
+      and p.review_status = 'approved' and not p.quarantined);
+  if v_owner is null or not private.group_is_member(p_group_id, v_owner)
+     or (v_owner <> v_user and private.social_pair_blocked(v_owner))
+     or not (v_shared or v_day between public.local_today(v_user) - 60 and public.local_today(v_user) + 1) then
+    raise exception 'Food unavailable' using errcode = '42501', hint = 'food_gone';
+  end if;
+  return (select jsonb_build_object(
+    'owner', private.group_person(v_owner),
+    'entry', jsonb_build_object(
+      'id', d.id, 'name', left(d.food_name, 160), 'brand', d.food_brand,
+      'photo_path', d.photo_path, 'icon_set', d.icon_set, 'icon_name', d.icon_name,
+      'logged_at', d.logged_at, 'log_date', d.log_date,
+      'serving_label', d.serving_label, 'quantity', d.quantity, 'plate_quantity', d.plate_quantity,
+      'grams', d.grams,
+      'kcal', d.kcal, 'carbs_g', d.carbs_g, 'protein_g', d.protein_g, 'fat_g', d.fat_g,
+      'fibre_g', d.fibre_g, 'sugar_g', d.sugar_g, 'sodium_mg', d.sodium_mg),
+    'parts', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', i.id, 'name', i.name, 'quantity', i.quantity, 'serving_label', i.serving_label,
+        'kcal', i.kcal, 'carbs_g', i.carbs_g, 'protein_g', i.protein_g, 'fat_g', i.fat_g,
+        'grams', i.grams, 'position', i.position, 'display_unit', i.display_unit
+      ) order by i.position, i.id)
+      from public.food_log_ingredient_details i where i.food_log_id = d.id), '[]'::jsonb))
+    from public.food_log_details d where d.id = p_entry_id and d.user_id = v_owner);
 end;
 $$;
 
@@ -748,8 +794,8 @@ grant execute on function private.group_photo_claims, private.group_person to au
 revoke execute on function public.my_groups, public.my_group_invites, public.group_invite_count,
   public.public_groups, public.group_board, public.group_messages, public.group_chat_summary,
   public.group_details, public.group_invite_suggestions, public.group_workout_detail,
-  public.group_message_reactors from public, anon;
+  public.group_entry_detail, public.group_message_reactors from public, anon;
 grant execute on function public.my_groups, public.my_group_invites, public.group_invite_count,
   public.public_groups, public.group_board, public.group_messages, public.group_chat_summary,
   public.group_details, public.group_invite_suggestions, public.group_workout_detail,
-  public.group_message_reactors to authenticated, service_role;
+  public.group_entry_detail, public.group_message_reactors to authenticated, service_role;
