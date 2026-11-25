@@ -2,9 +2,10 @@ import { useRouter } from 'expo-router'
 import { useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { storedImageSource, useMealPhotoUrl, useUserId } from '@/data'
+import { ENTRY_FOOD_ID, storedImageSource, useMealPhotoUrl, useUserId } from '@/data'
 import {
   type BoardEntry,
+  type ChatFood,
   type GroupMeal,
   type GroupPerson,
   groupError,
@@ -141,6 +142,36 @@ export function useOpenGroupWorkout(groupId: string) {
       router.push({
         pathname: '/group/workout',
         params: { group: groupId, source: workout.source, id: workout.id },
+      })
+    },
+    [router, groupId, viewer],
+  )
+}
+
+/**
+ * Opens a group member's shared food with its full stats (serving, nutrients
+ * and ingredients). The viewer's own opens their diary detail page instead when
+ * its entry id and day are known, matching `useOpenGroupWorkout`.
+ */
+export function useOpenGroupFood(groupId: string) {
+  const router = useRouter()
+  const viewer = useUserId()
+  return useCallback(
+    (food: Pick<ChatFood, 'post_id' | 'entry_id' | 'log_date' | 'food_id'>, ownerId: string) => {
+      if (ownerId === viewer && food.entry_id && food.log_date) {
+        router.push({
+          pathname: '/log/food/[id]',
+          params: {
+            id: food.food_id ?? ENTRY_FOOD_ID,
+            entryId: food.entry_id,
+            date: food.log_date,
+          },
+        })
+        return
+      }
+      router.push({
+        pathname: '/group/food',
+        params: { group: groupId, post: food.post_id },
       })
     },
     [router, groupId, viewer],

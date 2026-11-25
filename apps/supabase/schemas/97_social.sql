@@ -174,6 +174,85 @@ returns setof public.social_post_details language sql stable security invoker se
   select * from public.social_post_details where id = p_id and kind = any(p_kinds);
 $$;
 
+-- One workout post's full workout, as its detail page draws it: figures, heart
+-- rate trace, muscles worked and every exercise set by set. A definer function
+-- because `workouts` and its children are owner-only; visibility is enforced by
+-- `private.social_can_view_post`, the exact rule that governs the feed itself.
+-- Never returns the workout's notes or any exercise's notes, which stay the
+-- author's own. Carries the post's recorded PR count (`workout_records`) rather
+-- than rescoring the author's whole history per reader.
+create or replace function public.social_post_workout_detail(p_post_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_user uuid := (select auth.uid());
+  v_workout_id uuid;
+  v_author uuid;
+  v_records integer;
+  v_summary jsonb;
+begin
+  if v_user is null then
+    raise exception 'Sign in to continue' using errcode = '42501';
+  end if;
+
+  select p.source_workout_id, p.author_id, p.workout_records
+    into v_workout_id, v_author, v_records
+  from public.social_posts p
+  where p.id = p_post_id and p.kind = 'workout' and private.social_can_view_post(p.id);
+
+  if v_workout_id is null or v_author is null then
+    raise exception 'Workout unavailable' using errcode = '42501', hint = 'workout_gone';
+  end if;
+
+  select jsonb_build_object(
+    'id', w.id, 'user_id', w.user_id, 'name', w.name, 'notes', null,
+    'started_at', w.started_at, 'ended_at', w.ended_at, 'duration_s', w.duration_s,
+    'log_date', w.log_date, 'routine_id', null, 'kcal', w.kcal, 'health_workout_id', null,
+    'set_count', (select count(*) from public.workout_set_values v where v.workout_id = w.id),
+    'volume_kg', coalesce((select sum(v.volume_kg) from public.workout_set_values v where v.workout_id = w.id), 0),
+    'pr_count', coalesce(v_records, 0),
+    'exercises', '[]'::jsonb
+  )
+  into v_summary
+  from public.workouts w
+  where w.id = v_workout_id and w.user_id = v_author;
+
+  if v_summary is null then
+    raise exception 'Workout unavailable' using errcode = '42501', hint = 'workout_gone';
+  end if;
+
+  return jsonb_build_object(
+    'owner', (
+      select jsonb_build_object(
+        'id', p.id,
+        'name', coalesce(nullif(btrim(p.display_name), ''), p.handle),
+        'handle', p.handle,
+        'avatar_path', case
+          when p.review_status = 'approved' and not p.quarantined
+            and p.avatar_path like 'avatars/' || p.id::text || '/%'
+          then p.avatar_path
+        end,
+        'is_pro', private.social_is_pro(p.id)
+      )
+      from public.profiles p where p.id = v_author
+    ),
+    'summary', v_summary,
+    'exercises', coalesce((
+      select jsonb_agg(to_jsonb(e) - 'notes' || jsonb_build_object('notes', null) order by e.position)
+      from public.workout_exercises e where e.workout_id = v_workout_id), '[]'::jsonb),
+    'sets', coalesce((
+      select jsonb_agg(to_jsonb(v) order by v.exercise_position, v.position)
+      from public.workout_set_values v where v.workout_id = v_workout_id), '[]'::jsonb),
+    'heart', (
+      select jsonb_build_object(
+        'workout_id', h.workout_id, 'started_at', h.started_at,
+        'interval_s', h.interval_s, 'bpm', h.bpm, 'avg_bpm', h.avg_bpm,
+        'max_bpm', h.max_bpm, 'min_bpm', h.min_bpm, 'active_kcal', h.active_kcal
+      )
+      from public.workout_heart_rates h where h.workout_id = v_workout_id)
+  );
+end;
+$$;
+
 -- The workout's own post, for its page to offer Share or Edit post.
 create or replace function public.social_workout_post(p_workout_id uuid)
 returns uuid language sql stable security definer set search_path = '' as $$
@@ -620,15 +699,15 @@ $$;
 revoke execute on function public.record_social_photo_etags from public, anon, authenticated;
 grant execute on function public.record_social_photo_etags to service_role;
 
-revoke execute on function public.social_profile, public.social_post, public.social_entry_post,
-  public.social_workout_post, public.social_workout_count,
+revoke execute on function public.social_profile, public.social_post, public.social_post_workout_detail,
+  public.social_entry_post, public.social_workout_post, public.social_workout_count,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
   public.social_notifications, public.social_unread_notification_count,
   public.mark_social_notifications_read, public.mark_social_notifications_seen,
   public.social_photo_claims from public, anon;
-grant execute on function public.social_profile, public.social_post, public.social_entry_post,
-  public.social_workout_post, public.social_workout_count,
+grant execute on function public.social_profile, public.social_post, public.social_post_workout_detail,
+  public.social_entry_post, public.social_workout_post, public.social_workout_count,
   public.social_feed, public.social_profile_posts, public.social_comments, public.social_connections,
   public.social_search_profiles, public.social_suggestions, public.social_blocked_profiles,
   public.social_notifications, public.social_unread_notification_count,

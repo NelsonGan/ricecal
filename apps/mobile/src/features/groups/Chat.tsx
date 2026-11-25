@@ -104,6 +104,7 @@ import {
   PersonAvatar,
   PersonAvatarLink,
   useGroupTask,
+  useOpenGroupFood,
   useOpenGroupWorkout,
   useOpenProfile,
 } from './parts'
@@ -1042,6 +1043,7 @@ const MessageRow = memo(function MessageRow({
   const { t } = useTranslation(['groups', 'common'])
   const colors = useThemeColors()
   const openProfile = useOpenProfile()
+  const openFood = useOpenGroupFood(groupId)
   const openWorkout = useOpenGroupWorkout(groupId)
   const router = useRouter()
   const shared = message.workout
@@ -1105,15 +1107,17 @@ const MessageRow = memo(function MessageRow({
       onOpen={
         shared
           ? () => openWorkout(shared, message.author.id)
-          : recipe
-            ? // Your own by its id; anyone else's by its link, which is what
-              // lets a member read a food that is not public.
-              () =>
-                router.push({
-                  pathname: '/recipe/[id]',
-                  params: { id: message.mine ? recipe.id : recipe.share_slug },
-                })
-            : undefined
+          : food
+            ? () => openFood(food, message.author.id)
+            : recipe
+              ? // Your own by its id; anyone else's by its link, which is what
+                // lets a member read a food that is not public.
+                () =>
+                  router.push({
+                    pathname: '/recipe/[id]',
+                    params: { id: message.mine ? recipe.id : recipe.share_slug },
+                  })
+              : undefined
       }
       onVote={
         food?.entry_id && !message.mine
@@ -1468,6 +1472,7 @@ function WorkoutCard({ workout }: { workout: ChatWorkout }) {
  */
 function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mine: boolean }) {
   const { t } = useTranslation(['groups', 'common'])
+  const colors = useThemeColors()
   const { width } = useWindowDimensions()
   // Most of a phone's width, as the mockup's card is, and no wider on a tablet.
   const cardWidth = Math.min(280, Math.round(width * 0.7))
@@ -1499,9 +1504,9 @@ function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mi
         ) : null}
       </View>
       {/* Two lines under the photo: the name with its calories on the right,
-          then the macros. */}
+          then the macros. A chevron signals that a tap opens full stats. */}
       <View className="gap-2 p-3">
-        <View className="flex-row items-baseline gap-2">
+        <View className="flex-row items-center gap-1.5">
           <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
             {food.name}
           </Text>
@@ -1509,6 +1514,7 @@ function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mi
             {Math.round(food.kcal).toLocaleString()}{' '}
             <Text variant="caption">{t('common:unit.kcal')}</Text>
           </Text>
+          <Icon set="ui" name="chevron-right" size={14} tintColor={colors.muted} />
         </View>
         <MacroChips food={food} compact />
       </View>

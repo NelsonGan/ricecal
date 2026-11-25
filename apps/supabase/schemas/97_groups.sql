@@ -327,7 +327,8 @@ begin
     'post_id', p_post_id, 'name', left(d.food_name, 160), 'icon_set', d.icon_set, 'icon_name', d.icon_name,
     'photo_path', d.photo_path,
     'serving_label', d.serving_label, 'quantity', round(d.quantity * d.plate_quantity, 2),
-    'logged_at', d.logged_at,
+    'logged_at', d.logged_at, 'log_date', d.log_date,
+    'food_id', case when v_author = (select auth.uid()) then d.food_id end,
     'kcal', d.kcal, 'carbs_g', d.carbs_g, 'protein_g', d.protein_g, 'fat_g', d.fat_g)
   into v_food
   from public.food_log_details d
@@ -492,6 +493,98 @@ begin
         'interval_s', h.interval_s, 'bpm', h.bpm, 'avg_bpm', h.avg_bpm, 'max_bpm', h.max_bpm,
         'min_bpm', h.min_bpm, 'active_kcal', h.active_kcal)
       from public.workout_heart_rates h where h.workout_id = p_id)
+  );
+end;
+$$;
+
+-- One food shared into a group's chat, with its serving, nutrients and
+-- ingredient breakdown, as its detail screen draws it. A definer function, as
+-- `group_workout_detail` is, since `food_logs` and `food_log_ingredients` are
+-- owner-only. The caller and the owner must both be in this group, neither
+-- blocked by the other, the post approved and unquarantined, and the food
+-- shared into this group's chat by a message the caller can read. Never returns
+-- the owner's diary notes or meal location.
+create or replace function public.group_food_detail(p_group_id uuid, p_post_id uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_user uuid := private.group_require_member(p_group_id);
+  v_entry uuid;
+  v_owner uuid;
+  v_shared boolean;
+  v_food jsonb;
+begin
+  select p.source_entry_id, p.author_id into v_entry, v_owner
+  from public.social_posts p
+  where p.id = p_post_id and p.kind = 'food'
+    and p.review_status = 'approved' and not p.quarantined;
+
+  v_shared := v_entry is not null and exists (
+    select 1 from public.group_messages m
+    where m.group_id = p_group_id and m.post_id = p_post_id
+      and not m.quarantined
+      and not exists (
+        select 1 from public.group_message_reports r
+        where r.message_id = m.id and r.reporter_id = v_user
+      )
+  );
+
+  if v_entry is null or v_owner is null or not v_shared
+     or not private.group_is_member(p_group_id, v_owner)
+     or (v_owner <> v_user and private.social_pair_blocked(v_owner)) then
+    raise exception 'Food unavailable' using errcode = '42501', hint = 'food_gone';
+  end if;
+
+  select jsonb_build_object(
+    'id', d.id,
+    'post_id', p_post_id,
+    'name', left(d.food_name, 160),
+    'brand', d.food_brand,
+    'icon_set', d.icon_set,
+    'icon_name', d.icon_name,
+    'photo_path', d.photo_path,
+    'log_date', d.log_date,
+    'logged_at', d.logged_at,
+    'serving_label', d.serving_label,
+    'quantity', d.quantity,
+    'plate_quantity', d.plate_quantity,
+    'eaten', round(d.quantity * d.plate_quantity, 2),
+    'grams', d.grams,
+    'kcal', d.kcal,
+    'carbs_g', d.carbs_g,
+    'protein_g', d.protein_g,
+    'fat_g', d.fat_g,
+    'fibre_g', d.fibre_g,
+    'sugar_g', d.sugar_g,
+    'sodium_mg', d.sodium_mg
+  ) || coalesce(private.group_food_reactions(p_post_id, p_group_id, v_user), '{}'::jsonb)
+  into v_food
+  from public.food_log_details d
+  where d.id = v_entry and d.user_id = v_owner;
+
+  if v_food is null then
+    raise exception 'Food unavailable' using errcode = '42501', hint = 'food_gone';
+  end if;
+
+  return jsonb_build_object(
+    'owner', private.group_person(v_owner),
+    'food', v_food,
+    'ingredients', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', i.id,
+        'name', i.name,
+        'quantity', i.quantity,
+        'serving_label', i.serving_label,
+        'kcal', i.kcal,
+        'carbs_g', i.carbs_g,
+        'protein_g', i.protein_g,
+        'fat_g', i.fat_g,
+        'grams', i.grams,
+        'display_unit', i.display_unit,
+        'position', i.position
+      ) order by i.position, i.id)
+      from public.food_log_ingredient_details i
+      where i.food_log_id = v_entry
+    ), '[]'::jsonb)
   );
 end;
 $$;
@@ -748,8 +841,8 @@ grant execute on function private.group_photo_claims, private.group_person to au
 revoke execute on function public.my_groups, public.my_group_invites, public.group_invite_count,
   public.public_groups, public.group_board, public.group_messages, public.group_chat_summary,
   public.group_details, public.group_invite_suggestions, public.group_workout_detail,
-  public.group_message_reactors from public, anon;
+  public.group_food_detail, public.group_message_reactors from public, anon;
 grant execute on function public.my_groups, public.my_group_invites, public.group_invite_count,
   public.public_groups, public.group_board, public.group_messages, public.group_chat_summary,
   public.group_details, public.group_invite_suggestions, public.group_workout_detail,
-  public.group_message_reactors to authenticated, service_role;
+  public.group_food_detail, public.group_message_reactors to authenticated, service_role;

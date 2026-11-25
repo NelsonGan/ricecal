@@ -136,6 +136,7 @@ export type Database = {
           external_id: string
           kind: string
           provider: Database['public']['Enums']['health_provider']
+          source_name: string | null
           started_at: string
           user_id: string
         }
@@ -144,6 +145,7 @@ export type Database = {
           external_id: string
           kind: string
           provider: Database['public']['Enums']['health_provider']
+          source_name?: string | null
           started_at: string
           user_id: string
         }
@@ -152,6 +154,7 @@ export type Database = {
           external_id?: string
           kind?: string
           provider?: Database['public']['Enums']['health_provider']
+          source_name?: string | null
           started_at?: string
           user_id?: string
         }
@@ -4007,6 +4010,10 @@ export type Database = {
       }
       group_chat_summary: { Args: { p_group_id: string }; Returns: Json }
       group_details: { Args: { p_group_id: string }; Returns: Json }
+      group_food_detail: {
+        Args: { p_group_id: string; p_post_id: string }
+        Returns: Json
+      }
       group_invite_count: { Args: never; Returns: number }
       group_invite_suggestions: {
         Args: { p_group_id: string; p_limit?: number }
@@ -4714,6 +4721,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      social_post_workout_detail: { Args: { p_post_id: string }; Returns: Json }
       social_profile: {
         Args: { p_user_id: string }
         Returns: {

@@ -42,7 +42,7 @@ select ok(not exists (
   where n.nspname in ('public', 'private')
     and p.proname in ('send_group_message', 'set_group_message_reaction', 'group_invite_suggestions',
       'group_post_food', 'group_food_label', 'group_reactions_changed', 'group_share_posted_food',
-      'group_food_reactions')
+      'group_food_reactions', 'group_food_detail')
     and (p.proacl is null or exists (select 1 from aclexplode(p.proacl) a where a.grantee = 0))
 ), 'none of the new functions is executable by PUBLIC');
 select ok(not has_function_privilege('authenticated', 'private.group_post_food(uuid)', 'EXECUTE'),
@@ -154,9 +154,16 @@ select is((select used from public.social_rate_limits where user_id = :'ana' and
 
 -- Ana posts a meal: it goes to both her groups' chats as an update.
 insert into public.food_logs (id, user_id, log_date, logged_at, item_name, item_icon_set, item_icon_name,
-  base_kcal, base_carbs_g, base_protein_g, base_fat_g, serving_label, serving_factor, photo_path)
+  base_kcal, base_carbs_g, base_protein_g, base_fat_g, base_fibre_g, base_sugar_g, base_sodium_mg,
+  serving_label, serving_factor, serving_grams, photo_path, note, latitude, longitude, location_name)
 values (:'meal', :'ana', public.local_today(:'ana'), now(), 'Nasi lemak', 'dishes', 'nasi-lemak',
-  640.4, 70, 20, 30, '1 plate', 1, 'meals/' || :'ana' || '/extras.jpg');
+  640.4, 70, 20, 30, 5.2, 8.5, 920, '1 plate', 1, 420, 'meals/' || :'ana' || '/extras.jpg',
+  'Private diary note', 3.139, 101.6869, 'Village Park');
+insert into public.food_log_ingredients (food_log_id, item_name, display_label, base_kcal, base_carbs_g,
+  base_protein_g, base_fat_g, serving_label, serving_factor, quantity, grams, position)
+values
+  (:'meal', 'Coconut rice', 'Coconut rice', 340, 58, 6, 9, '1 bowl', 1, 1, 200, 0),
+  (:'meal', 'Fried chicken', 'Fried chicken', 300, 12, 14, 21, '1 piece', 1, 1, 150, 1);
 select set_config('request.jwt.claims', json_build_object('sub', :'ana', 'role', 'authenticated')::text, true);
 set local role authenticated;
 create temp table post as select public.create_social_post(:'meal', '', 'followers') as id;
@@ -198,10 +205,41 @@ select is((select (e->'food'->>'mine')::int
 select public.set_group_reaction(:'meal', 0::smallint);
 select is((select count(*)::int from public.social_photo_claims(array['meals/' || :'ana' || '/extras.jpg'])), 1,
   'and may sign its photo');
+-- Full food stats from group chat: servings, nutrients and ingredients, never notes or location.
+select is(public.group_food_detail((select id from g), (select id from post))->'food'->>'name', 'Nasi lemak',
+  'a member reads full stats for a food shared in the group chat');
+select is(public.group_food_detail((select id from g), (select id from post))->'food'->>'serving_label', '1 plate',
+  'with its serving label');
+select is((public.group_food_detail((select id from g), (select id from post))->'food'->>'fibre_g')::numeric, 5.2,
+  'with its extra nutrients');
+select is(jsonb_array_length(public.group_food_detail((select id from g), (select id from post))->'ingredients'), 2,
+  'and its ingredient breakdown');
+select ok(not (public.group_food_detail((select id from g), (select id from post))->'food' ? 'note')
+    and not (public.group_food_detail((select id from g), (select id from post))->'food' ? 'location_name')
+    and not (public.group_food_detail((select id from g), (select id from post))->'food' ? 'latitude'),
+  'and never diary notes or meal location');
+select set_config('request.jwt.claims', json_build_object('sub', :'cai', 'role', 'authenticated')::text, true);
+select throws_ok(format('select public.group_food_detail(%L, %L)', (select id from g), (select id from post)),
+  '42501', null, 'a non-member cannot read group food details');
+select set_config('request.jwt.claims', json_build_object('sub', :'ben', 'role', 'authenticated')::text, true);
 select throws_ok(format('select public.send_group_message(%L, null, %L, null, %L)', (select id from g),
   'a3730000-0000-4000-8000-000000000005', (select id from post)), '42501', null,
   'nobody can share someone else''s post');
 reset role;
+-- Quarantined post is refused by group_food_detail too.
+update public.social_posts set quarantined = true where id = (select id from post);
+set local role authenticated;
+select throws_ok(format('select public.group_food_detail(%L, %L)', (select id from g), (select id from post)),
+  '42501', null, 'a quarantined food post is refused by group_food_detail');
+reset role;
+update public.social_posts set quarantined = false where id = (select id from post);
+-- Blocked author is refused by group_food_detail.
+insert into public.blocked_authors(user_id, author_id) values (:'ben', :'ana');
+set local role authenticated;
+select throws_ok(format('select public.group_food_detail(%L, %L)', (select id from g), (select id from post)),
+  '42501', null, 'a blocked member''s food details are refused');
+reset role;
+delete from public.blocked_authors where user_id = :'ben' and author_id = :'ana';
 -- The meal falls outside the board's sixty days: only the chat keeps its photo.
 update public.food_logs set log_date = public.local_today(:'ana') - 90 where id = :'meal';
 set local role authenticated;

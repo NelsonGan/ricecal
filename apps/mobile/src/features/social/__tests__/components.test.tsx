@@ -236,8 +236,9 @@ it("draws a workout post as the workout, in the reader's own unit", async () => 
       }}
     />,
   )
-  // Read aloud with its figures, as a meal is read with its calories.
-  expect(screen.getByRole('image', { name: 'Push day, 1 h 5 min, 2,205 lb, 2 PRs' })).toBeTruthy()
+  // Read aloud with its figures, and tapping it opens the full workout stats.
+  const button = screen.getByRole('button', { name: 'Push day, 1 h 5 min, 2,205 lb, 2 PRs' })
+  expect(button).toBeTruthy()
   expect(screen.getByText('Push day')).toBeTruthy()
   expect(screen.getByText('4 × Bench Press (Barbell)')).toBeTruthy()
   expect(screen.getByText('3 × My own press')).toBeTruthy()
@@ -246,6 +247,12 @@ it("draws a workout post as the workout, in the reader's own unit", async () => 
   expect(screen.getByText('2')).toBeTruthy()
   // Nothing of a meal post's figures.
   expect(screen.queryByText('Carbs')).toBeNull()
+
+  await userEvent.setup().press(button)
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/social/workout/[id]',
+    params: { id: 'post' },
+  })
 })
 
 it('opens comments from the comment button, not the food image', async () => {

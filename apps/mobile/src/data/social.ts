@@ -10,11 +10,12 @@ import {
   useQueryClient,
 } from '@tanstack/react-query'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import type { Database } from '@/lib/database.types'
+import type { Database, Tables } from '@/lib/database.types'
 import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
 import { useUserId } from './session'
 import type { IconRef, ReportReason } from './types'
+import { type WorkoutDetail, workoutDetailFrom } from './workouts'
 
 export type SocialReview = 'pending' | 'approved' | 'rejected' | 'quarantined'
 export type SocialAudience = 'public' | 'followers'
@@ -322,6 +323,55 @@ export function useSocialPost(id: string) {
         | SocialPost
         | undefined) ?? null,
     enabled: Boolean(id),
+    ...MEMORY_OPTIONS,
+  })
+}
+
+/** A feed workout post's owner and full workout, as its detail page draws it. */
+export type SocialWorkoutView = {
+  owner: {
+    id: string
+    name: string
+    handle: string
+    avatar_path: string | null
+    is_pro?: boolean
+  }
+  workout: WorkoutDetail
+}
+
+/**
+ * Full workout stats opened from a workout post on the feed: the workout's
+ * figures, heart rate trace, exercises and sets (never notes), read through
+ * `social_post_workout_detail`, which enforces the feed's visibility rules.
+ */
+export function useSocialPostWorkout(postId: string) {
+  const viewer = useUserId()
+  return useQuery({
+    queryKey: keys.socialRead(viewer, 'social_post_workout_detail', { postId }),
+    queryFn: async ({ signal }): Promise<SocialWorkoutView> => {
+      const answer = (await rpc(
+        'social_post_workout_detail',
+        { p_post_id: postId },
+        signal,
+      )) as unknown as {
+        owner: SocialWorkoutView['owner']
+        summary?: Parameters<typeof workoutDetailFrom>[0]['summary']
+        exercises?: Tables<'workout_exercises'>[]
+        sets?: Parameters<typeof workoutDetailFrom>[0]['sets']
+        heart?: Parameters<typeof workoutDetailFrom>[0]['heart']
+      }
+      if (!answer?.summary) throw new Error('Workout unavailable')
+      return {
+        owner: answer.owner,
+        workout: workoutDetailFrom({
+          summary: answer.summary,
+          exercises: answer.exercises ?? [],
+          sets: answer.sets ?? [],
+          heart: answer.heart ?? null,
+        }),
+      }
+    },
+    enabled: Boolean(postId),
     ...MEMORY_OPTIONS,
   })
 }

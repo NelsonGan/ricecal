@@ -315,7 +315,8 @@ export function workoutDetailFrom(rows: {
   return {
     ...toSummary({
       ...rows.summary,
-      pr_count: rows.sets.filter((set) => recordsOf(set).length > 0).length,
+      pr_count:
+        rows.summary.pr_count ?? rows.sets.filter((set) => recordsOf(set).length > 0).length,
     }),
     heartRate: toHeartRate(rows.heart),
     entries: rows.exercises.map((entry) => ({

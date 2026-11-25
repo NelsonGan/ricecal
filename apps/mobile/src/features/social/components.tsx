@@ -1027,6 +1027,8 @@ export const PostCard = memo(function PostCard({
   const ownPhoto = useMealPhotoUrl(privatePhoto)
   const ownAvatar = useAvatarUrl(mine ? (post.avatar_path ?? undefined) : undefined)
   const open = () => router.push({ pathname: '/social/post/[id]', params: { id: post.id } })
+  const openWorkout = () =>
+    router.push({ pathname: '/social/workout/[id]', params: { id: post.id } })
   const time = useSocialTime(post.published_at ?? post.created_at)
   const postLabel = usePostLabel()
   const zoom = useSharedValue(1)
@@ -1089,7 +1091,7 @@ export const PostCard = memo(function PostCard({
   const mediaGesture = Gesture.Simultaneous(doubleTap, pinch)
   const preview =
     post.kind === 'workout' ? (
-      <WorkoutPostPreview post={post} />
+      <WorkoutPostPreview post={post} chevron />
     ) : (
       <FoodPreview
         name={post.food_name ?? ''}
@@ -1168,27 +1170,38 @@ export const PostCard = memo(function PostCard({
           />
         )}
       </View>
-      <GestureDetector gesture={mediaGesture}>
-        <View
-          accessible
-          accessibilityRole="image"
+      {post.kind === 'workout' ? (
+        <Tappable
+          onPress={openWorkout}
+          accessibilityRole="button"
           accessibilityLabel={postLabel(post)}
-          onLayout={(event) => {
-            mediaSize.value = event.nativeEvent.layout.width
-          }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
         >
           {preview}
-          <Animated.View
-            pointerEvents="none"
-            className="absolute inset-0 items-center justify-center"
-            style={heartStyle}
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
+        </Tappable>
+      ) : (
+        <GestureDetector gesture={mediaGesture}>
+          <View
+            accessible
+            accessibilityRole="image"
+            accessibilityLabel={postLabel(post)}
+            onLayout={(event) => {
+              mediaSize.value = event.nativeEvent.layout.width
+            }}
           >
-            <Icon set="system" name="heart-filled" size={96} tintColor={colors.hibiscus} />
-          </Animated.View>
-        </View>
-      </GestureDetector>
+            {preview}
+            <Animated.View
+              pointerEvents="none"
+              className="absolute inset-0 items-center justify-center"
+              style={heartStyle}
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              <Icon set="system" name="heart-filled" size={96} tintColor={colors.hibiscus} />
+            </Animated.View>
+          </View>
+        </GestureDetector>
+      )}
       <View className="gap-2 px-5 pb-4 pt-2">
         <View className="flex-row items-center gap-5">
           <Tappable
@@ -1329,7 +1342,13 @@ export const PostCard = memo(function PostCard({
 })
 
 /** A workout post's workout, in the viewer's own weight unit. */
-export function WorkoutPostPreview({ post }: { post: SocialPost }) {
+export function WorkoutPostPreview({
+  post,
+  chevron = false,
+}: {
+  post: SocialPost
+  chevron?: boolean
+}) {
   const { data: settings } = useSettings()
   return (
     <WorkoutPreview
@@ -1345,6 +1364,7 @@ export function WorkoutPostPreview({ post }: { post: SocialPost }) {
         sets: exercise.sets,
       }))}
       unit={unitFor(settings?.units)}
+      chevron={chevron}
     />
   )
 }

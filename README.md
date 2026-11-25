@@ -3648,7 +3648,12 @@ start, duration, sets, volume and the exercise list, never the notes. Records ar
 counted once, when it is posted (`workout_records`), because scoring them per
 reader would rescore the author's whole history; the count is taken inside
 `save_workout` or `create_social_workout_post`, which run as the user, since the
-owner-run posting function would score every account's sets. Likes, comments,
+owner-run posting function would score every account's sets. Tapping a workout
+post on the feed or on its post page opens `/social/workout/[id]`
+(`public.social_post_workout_detail`, gated by `social_can_view_post`), which
+draws the same read-only full workout page (`SharedWorkoutView`) as a group
+workout: duration, volume, heart rate trace, muscles worked and every set,
+never the notes. Likes, comments,
 reports, counters and notifications are the same rows for both kinds.
 
 **Every read that returns posts is food-only unless asked.** `social_feed`,
@@ -4149,7 +4154,15 @@ meal share a tile and swipe sideways inside it.
   `group_reactions` row, so a thumb given in the chat shows on the board and
   back; your own card draws the same two pills, disabled, with what friends said.
   `private.group_food_reactions` appends the entry id and that group's counts
-  to the card, which an app that does not know them ignores.
+  to the card, which an app that does not know them ignores. Tapping a friend's
+  food card opens `/group/food` (`public.group_food_detail`, checked against
+  group membership, post approval, unquarantined share and blocks), showing
+  the full read-only breakdown (serving size, weight, macros, extra nutrients
+  and plate ingredients, never private notes or location) with the same group
+  thumbs; tapping your own opens your diary entry page when its entry id and
+  day are present, matching group workouts. Like workout cards, a tap opens
+  straight away with no double-tap delay, and emoji reactions stay in the
+  long-press bar.
   The + beside the field lists the viewer's last five food posts to send by hand,
   and that is pushed like any message. **Posting a food to the feed shares it
   into every group chat its author is in, as an update** (`98_group_chat_shares.sql`):

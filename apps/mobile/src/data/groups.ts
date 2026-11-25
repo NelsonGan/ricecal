@@ -160,6 +160,9 @@ export type ChatFood = {
   /** As on a board entry: missing from an older server. */
   quantity?: number
   logged_at: string
+  /** The diary day and catalogue food id (owner only), for opening your own entry page. */
+  log_date?: string
+  food_id?: string | null
   kcal: number
   carbs_g: number
   protein_g: number
@@ -1125,6 +1128,105 @@ export function useGroupWorkout(groupId: string, source: 'workout' | 'activity',
   })
 }
 
+/** One ingredient of a group member's shared food, as `group_food_detail` returns it. */
+export type GroupFoodIngredient = {
+  id: string
+  name: string
+  quantity: number
+  serving_label: string | null
+  kcal: number
+  carbs_g: number
+  protein_g: number
+  fat_g: number
+  grams: number | null
+  display_unit: string | null
+  position: number
+}
+
+/** A group member's shared food with its full serving, nutrient and reaction details. */
+export type GroupFood = {
+  id: string
+  post_id: string
+  name: string
+  brand: string | null
+  icon_set: string | null
+  icon_name: string | null
+  photo_path: string | null
+  log_date: string
+  logged_at: string
+  serving_label: string | null
+  quantity: number
+  plate_quantity: number
+  eaten: number
+  grams: number | null
+  kcal: number
+  carbs_g: number
+  protein_g: number
+  fat_g: number
+  fibre_g: number | null
+  sugar_g: number | null
+  sodium_mg: number | null
+  entry_id?: string
+  likes?: number
+  dislikes?: number
+  mine?: -1 | 0 | 1
+}
+
+/** A fellow member's shared food, as its full detail page draws it. */
+export type GroupFoodView = {
+  owner: GroupPerson
+  food: GroupFood
+  ingredients: GroupFoodIngredient[]
+}
+
+/**
+ * Someone's food opened from a chat card: serving, macros, extra nutrients and
+ * ingredients through `group_food_detail`, which checks the two share the group
+ * and never returns notes or location.
+ */
+export function useGroupFood(groupId: string, postId: string) {
+  const userId = useUserId()
+  return useQuery({
+    queryKey: keys.groupsRead(userId, 'group_food_detail', { groupId, postId }),
+    queryFn: async ({ signal }): Promise<GroupFoodView> => {
+      const answer = (await rpc(
+        'group_food_detail',
+        { p_group_id: groupId, p_post_id: postId },
+        signal,
+      )) as unknown as GroupFoodView
+      if (!answer?.food) throw new Error('Food unavailable')
+      return {
+        owner: answer.owner,
+        food: {
+          ...answer.food,
+          quantity: Number(answer.food.quantity ?? 1),
+          plate_quantity: Number(answer.food.plate_quantity ?? 1),
+          eaten: Number(answer.food.eaten ?? answer.food.quantity ?? 1),
+          grams: answer.food.grams === null ? null : Number(answer.food.grams),
+          kcal: Number(answer.food.kcal ?? 0),
+          carbs_g: Number(answer.food.carbs_g ?? 0),
+          protein_g: Number(answer.food.protein_g ?? 0),
+          fat_g: Number(answer.food.fat_g ?? 0),
+          fibre_g: answer.food.fibre_g === null ? null : Number(answer.food.fibre_g),
+          sugar_g: answer.food.sugar_g === null ? null : Number(answer.food.sugar_g),
+          sodium_mg: answer.food.sodium_mg === null ? null : Number(answer.food.sodium_mg),
+        },
+        ingredients: (answer.ingredients ?? []).map((item) => ({
+          ...item,
+          quantity: Number(item.quantity ?? 1),
+          kcal: Number(item.kcal ?? 0),
+          carbs_g: Number(item.carbs_g ?? 0),
+          protein_g: Number(item.protein_g ?? 0),
+          fat_g: Number(item.fat_g ?? 0),
+          grams: item.grams === null ? null : Number(item.grams),
+        })),
+      }
+    },
+    enabled: Boolean(groupId && postId),
+    ...SHORT,
+  })
+}
+
 /** A food post of the viewer's own, as the chat's food picker lists it. */
 export type RecentFoodPost = {
   id: string
@@ -1493,6 +1595,33 @@ function findFoodCard(client: QueryClient, userId: string, entryId: string): Cha
   return undefined
 }
 
+/** Every cached food detail screen of one entry, patched in place alongside boards and chat cards. */
+function patchFoodDetails(
+  client: QueryClient,
+  userId: string,
+  entryId: string,
+  patch: (food: GroupFood) => GroupFood,
+) {
+  client.setQueriesData<GroupFoodView>(
+    { queryKey: keys.groups(userId), predicate: named('group_food_detail') },
+    (view) => (view?.food.id === entryId ? { ...view, food: patch(view.food) } : view),
+  )
+}
+
+function findFoodDetail(
+  client: QueryClient,
+  userId: string,
+  entryId: string,
+): GroupFood | undefined {
+  for (const [, view] of client.getQueriesData<GroupFoodView>({
+    queryKey: keys.groups(userId),
+    predicate: named('group_food_detail'),
+  })) {
+    if (view?.food.id === entryId) return view.food
+  }
+  return undefined
+}
+
 /**
  * The viewer's own vote moved from one answer to another. Each board and each
  * chat counts only its own group's members, so the counts differ by group and
@@ -1570,6 +1699,8 @@ export function useGroupAction() {
           // back, not whole boards.
           const holds = (query: Query) =>
             named('group_board')(query) ||
+            (named('group_food_detail')(query) &&
+              (query.state.data as GroupFoodView | undefined)?.food.id === input.entryId) ||
             (named('group_messages')(query) &&
               Boolean(
                 (query.state.data as GroupThread | undefined)?.messages.some(
@@ -1579,15 +1710,22 @@ export function useGroupAction() {
           await client.cancelQueries({ queryKey: root, predicate: holds })
           const onBoard = findEntry(client, userId, input.entryId)?.mine
           const onCard = findFoodCard(client, userId, input.entryId)?.mine
-          if (onBoard === undefined && onCard === undefined) return undefined
+          const onDetail = findFoodDetail(client, userId, input.entryId)?.mine
+          if (onBoard === undefined && onCard === undefined && onDetail === undefined) {
+            return undefined
+          }
           patchEntry(client, userId, input.entryId, (entry) => shiftVote(entry, input.value))
           patchFoodCards(client, userId, input.entryId, (food) => shiftVote(food, input.value))
+          patchFoodDetails(client, userId, input.entryId, (food) => shiftVote(food, input.value))
           return () => {
             if (onBoard !== undefined) {
               patchEntry(client, userId, input.entryId, (entry) => shiftVote(entry, onBoard))
             }
             if (onCard !== undefined) {
               patchFoodCards(client, userId, input.entryId, (food) => shiftVote(food, onCard))
+            }
+            if (onDetail !== undefined) {
+              patchFoodDetails(client, userId, input.entryId, (food) => shiftVote(food, onDetail))
             }
           }
         }
@@ -1689,7 +1827,8 @@ export function useGroupAction() {
           }
           void client.invalidateQueries({
             queryKey: root,
-            predicate: named('group_messages'),
+            predicate: (query) =>
+              named('group_messages')(query) || named('group_food_detail')(query),
             refetchType: 'none',
           })
           // Only catch up open chats once no other rapid vote is still in flight

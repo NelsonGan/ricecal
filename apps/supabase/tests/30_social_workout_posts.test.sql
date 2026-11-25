@@ -102,6 +102,8 @@ select isnt(public.create_social_workout_post(:'old', 'Throwback', 'followers'),
 select is(public.create_social_workout_post(:'old', 'Again', 'public')::text,
   public.social_workout_post(:'old')::text, 'sharing it again returns the same post');
 reset role;
+select id as fresh_post from public.social_posts where source_workout_id = :'fresh' \gset
+select id as old_post from public.social_posts where source_workout_id = :'old' \gset
 select is((select audience::text from public.social_posts where source_workout_id = :'old'), 'followers',
   'the audience chosen when it was shared stands');
 select is(private.social_count(:'owner', 'posts'), 0::bigint,
@@ -129,12 +131,25 @@ select is((select count(*)::int from public.social_post(:'old'::uuid)), 0,
   'one post is food-only by default too');
 select is(public.social_workout_count(:'owner'), 1,
   'a stranger counts only the workouts they can see');
+-- Full workout stats from a feed post: summary, exercises, sets and PR count, never notes.
+select is(public.social_post_workout_detail(:'fresh_post'::uuid)->'summary'->>'name',
+  'Push day, edited', 'a stranger reads full workout stats for a public workout post');
+select is(public.social_post_workout_detail(:'fresh_post'::uuid)->'summary'->'notes',
+  'null'::jsonb, 'without workout notes');
+select is(jsonb_array_length(public.social_post_workout_detail(:'fresh_post'::uuid)->'exercises'),
+  2, 'with every exercise');
+select is(jsonb_array_length(public.social_post_workout_detail(:'fresh_post'::uuid)->'sets'),
+  3, 'and every set');
+select throws_ok(format('select public.social_post_workout_detail(%L)', :'old_post'),
+  '42501', null, 'a stranger cannot read a followers-only workout post detail');
 reset role;
 
 select set_config('request.jwt.claims', json_build_object('sub', :'reader', 'role', 'authenticated')::text, true);
 set local role authenticated;
 select is((select count(*)::int from public.social_profile_posts(:'owner', p_kinds => '{workout}')), 2,
   'a follower sees the public and the followers-only workout');
+select is(public.social_post_workout_detail(:'old_post'::uuid)->'summary'->>'name',
+  'Last month', 'a follower reads full workout stats for a followers-only workout post');
 select is(public.social_workout_count(:'owner'), 2, 'and counts both');
 select is((select count(*)::int from public.social_profile_posts(:'owner')), 0,
   'a profile''s posts are meals only unless workouts are asked for');
@@ -203,6 +218,8 @@ select throws_ok(format(
 
 select ok(not has_function_privilege('anon', 'public.create_social_workout_post(uuid,text,public.social_audience)', 'EXECUTE'),
   'anonymous callers cannot share a workout');
+select ok(not has_function_privilege('anon', 'public.social_post_workout_detail(uuid)', 'EXECUTE'),
+  'anonymous callers cannot read workout post details');
 select ok(not has_function_privilege('anon', 'private.social_insert_workout_post(uuid,integer,text,public.social_audience,boolean)', 'EXECUTE'),
   'anonymous callers cannot reach the posting function');
 

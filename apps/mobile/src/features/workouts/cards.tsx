@@ -285,6 +285,7 @@ export function WorkoutPreview({
   records,
   exercises,
   unit,
+  chevron = false,
 }: {
   name: string
   startedAt: string
@@ -294,6 +295,8 @@ export function WorkoutPreview({
   records: number
   exercises: readonly { exerciseId: string; name: string; sets: number }[]
   unit: WeightUnit
+  /** Shows a right chevron in the heading when tapping the preview opens full stats. */
+  chevron?: boolean
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const colors = useThemeColors()
@@ -306,12 +309,9 @@ export function WorkoutPreview({
 
   return (
     <View className="gap-4 bg-surface-alt px-5 py-5">
-      <WorkoutHeading
-        large
-        exerciseId={exercises[0]?.exerciseId}
-        name={name}
-        startedAt={startedAt}
-      />
+      <WorkoutHeading large exerciseId={exercises[0]?.exerciseId} name={name} startedAt={startedAt}>
+        {chevron ? <RowChevron /> : undefined}
+      </WorkoutHeading>
 
       <StatStrip>
         <Stat label={t('workouts:logger.duration')} value={durationText(t, durationS)} />
