@@ -46,30 +46,36 @@ import {
   FixSheet,
   IconPicker,
   instantOn,
+  MacrosToggle,
   MealShareCard,
   NO_FIGURES,
   NutritionSheet,
   openingPortion,
   PartLine,
+  partUnit,
   portionChips,
   portionControl,
   quantityFor,
   rememberedPortion,
   ScannedPacket,
   sameClock,
+  shownIn,
   switchedQuantity,
   type TypedFigures,
   useMealShare,
+  usePartMacros,
 } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import { LocationCard, PlacePickerSheet, type PlaceSource } from '@/features/places'
 import {
   formatTime,
   MacroBars,
+  MacroFigures,
   MealPhoto,
   type MeasureChoice,
   MeasureList,
   measureFigure,
+  offeredChoices,
   UnitPill,
   useMeasureText,
 } from '@/features/shared'
@@ -335,6 +341,7 @@ function FoodDetail() {
   const settings = useSettings()
   const units = settings.data?.units
   const measureText = useMeasureText()
+  const [showMacros] = usePartMacros()
 
   /**
    * Where a NEW log of a dish opens, decided once, when the food arrives. Not an
@@ -1647,7 +1654,7 @@ function FoodDetail() {
             unitSlot={
               hasPlate ? undefined : (
                 <View className="mt-1 flex-row items-center gap-2">
-                  {measureChoices.length > 1 ? (
+                  {offeredChoices(measureChoices).length > 1 ? (
                     <UnitPill
                       size="sm"
                       label={unitWord}
@@ -1789,59 +1796,69 @@ function FoodDetail() {
                  sheet cannot host a second sheet without one of them having to
                  close, which is what dropped the user two panels back when they
                  dismissed the search. See `log/ingredients`. */
-                <CardEdit
-                  label={t('logging:detail.editPlate')}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/log/ingredients',
-                      params: { entryId: existing.id, logDate: existing.logDate },
-                    })
-                  }
-                />
+                <View className="flex-row items-center gap-4">
+                  {/* Whether each part shows its macros. Off by default, and the
+                      same preference as the ingredients page's. */}
+                  {parts.length ? <MacrosToggle /> : null}
+                  <CardEdit
+                    label={t('logging:detail.editPlate')}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/log/ingredients',
+                        params: { entryId: existing.id, logDate: existing.logDate },
+                      })
+                    }
+                  />
+                </View>
               }
             >
-              {parts.map((ingredient) => (
-                <View key={ingredient.id} className="flex-row items-start justify-between gap-3">
-                  {/* HOW MANY, THEN WHAT, THEN WHAT IT WEIGHS — a cart line, of
-                    which `PartLine` is the first two thirds.
+              {parts.map((ingredient) => {
+                const unit = partUnit(ingredient, units)
+                // Kept in one piece when the line wraps: "(30" and "g)" on two
+                // lines was how the old bracket broke.
+                const amount = unit
+                  ? measureText.amount(shownIn(ingredient, unit), unit).replace(/ /g, '\u00A0')
+                  : undefined
+                return (
+                  <View key={ingredient.id} className="flex-row items-start justify-between gap-3">
+                    {/* HOW MANY, WHAT AND HOW MUCH, one line, which is all most
+                      people open this card for. With Macros on, the amount
+                      moves to a second line and leads the part's carbs, protein
+                      and fat, in the colours of the bars directly above, which
+                      is what lets them go without names.
 
-                    The weight used to sit on a second line behind a multiplier —
-                    "× 0.75 · 165 g" — which led with the number nobody can act
-                    on: the multiplier is how the row STORES an amount, and 165 g
-                    is the amount. So the weight moved into a bracket after the
-                    name, and the count came back in front of it.
+                      The two numbers answer different questions and the row
+                      needs both. 480 g is what to check against the plate in
+                      front of you; "1 ×" is what to check against yourself. The
+                      amount is in the part's own unit, the one picked for it on
+                      the ingredients page, so soy sauce reads in spoons and a
+                      drink in millilitres.
 
-                    The two numbers answer different questions and the row needs
-                    both. 480 g is what to check against the plate in front of
-                    you; "1 ×" is what to check against yourself. The count is
-                    rounded to a quarter and the weight is not, which is why the
-                    two can disagree and why a "~" appears when they do.
-
-                    NO `numberOfLines`. A part's name is what this card exists to
-                    show — the model's own account of what was on the plate — and
-                    truncated to one line "Stir fried pork belly with green
-                    peppers" came out as three words and an ellipsis on the one
-                    screen somebody opens to check exactly that. The bracket wraps
-                    with it, being part of the same run of text. */}
-                  <PartLine
-                    quantity={ingredient.quantity}
-                    name={ingredient.name}
-                    className="min-w-0 flex-1"
-                  >
-                    {ingredient.grams ? (
-                      <Text variant="meta">
-                        {` ${t('logging:detail.grams', {
-                          grams: Math.round(ingredient.grams).toLocaleString(),
-                        })}`}
-                      </Text>
-                    ) : null}
-                  </PartLine>
-                  <View className="flex-row items-baseline gap-1">
-                    <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
-                    <Text variant="caption">{t('common:unit.kcal')}</Text>
+                      NO `numberOfLines`. A part's name is what this card exists
+                      to show, the model's own account of what was on the plate,
+                      and truncated to one line "Stir fried pork belly with green
+                      peppers" came out as three words and an ellipsis on the one
+                      screen somebody opens to check exactly that. */}
+                    <View className="min-w-0 flex-1 gap-0.5">
+                      <PartLine quantity={ingredient.quantity} name={ingredient.name}>
+                        {amount && !showMacros ? <Text variant="meta">{` ${amount}`}</Text> : null}
+                      </PartLine>
+                      {showMacros ? (
+                        <MacroFigures
+                          carbs={ingredient.carbs}
+                          protein={ingredient.protein}
+                          fat={ingredient.fat}
+                          lead={amount}
+                        />
+                      ) : null}
+                    </View>
+                    <View className="flex-row items-baseline gap-1">
+                      <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
+                      <Text variant="caption">{t('common:unit.kcal')}</Text>
+                    </View>
                   </View>
-                </View>
-              ))}
+                )
+              })}
               {/* One line and the plus above it, for an entry nothing has broken
                 down. Said rather than left blank, because an INGREDIENTS card
                 with nothing under it reads as a plate whose parts went missing

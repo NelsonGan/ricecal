@@ -2455,7 +2455,10 @@ converts nothing, keeps one segmented row per family), and each ingredient row
 is one joined pill (minus, "2 tbsp ▾", plus) with its calories on the name line.
 Picking a line lands the row on that line's figure, never more than 2% from the
 exact one, and a line that would move the calories by more than that (an eighth
-of a cup stored as 0.13) is greyed out.
+of a cup stored as 0.13) is left off the list. It was greyed out, and a real
+350 ml latte showed "20 tsp · 72 kcal" in grey: a figure that was not true,
+offered and then refused. `MeasureList` drops a disabled line unless it is the
+one in use.
 
 **Only what the food can honestly be measured in is offered.** Weight and volume
 are two families, and crossing between them needs the food: a cup of cooked rice
@@ -2513,8 +2516,8 @@ portions back. Without one (a scan, a typed meal), the base serving is offered a
 **A unit the column cannot price is not offered.** A factor is three decimals,
 so a teaspoon of a 2 L bottle (0.00246) would be stored as 0.002 and log 19%
 light. `measurePortions` drops any unit its factor would round by more than 2%;
-the bottle keeps millilitres and cups. A unit chip that cannot hold what was
-eaten (1½ cups is 24 tablespoons) is disabled rather than tapped and quietly cut
+the bottle keeps millilitres and cups. A unit that cannot hold what was eaten
+(1½ cups is 24 tablespoons) is not listed, rather than tapped and quietly cut
 short.
 
 **No quantity goes past 20**, though the column takes 100. Every build already in
@@ -2637,17 +2640,54 @@ total the user typed over — `override_kcal` sits above the parts — and one
 logged at more than twenty servings, which is past what a part's portion may be
 set to.
 
-**A part is edited by weight and read as a count.** The card reads "1 × Fried
-Rice (90 g)", and both halves earn their place: the grams are the only thing
-about a part somebody can check against the plate in front of them, and the
-count is the only thing they can check against themselves. `PartLine` renders
-the pair in both places that show it, and the sheet puts the same line in its
-row heading, which is the one spot with room for a long name.
+**A part is edited in a kitchen unit and read as a count.** The card reads "1 ×
+Fried Rice" over "90 g", and both halves earn their place: the amount is the
+only thing about a part somebody can check against the plate in front of them,
+and the count is the only thing they can check against themselves. `PartLine`
+renders the count and the name in both places that show it.
 
-Editing moves the weight. `quantityForGrams` is the seam:
+**The unit is grams wherever the part was weighed, and the person can pick
+another**: ounces, and millilitres, spoons and cups when the part's serving
+label states a volume ("1 tbsp (15 ml)", "Regular (350 ml)"). The page's row is
+the recipe editor's joined pill (minus, "2 tbsp ▾", plus), and the pill opens
+the same "Measure in" list. `features/logging/partUnits.ts` is the arithmetic. A
+weight goes through `grams` (per unit), a volume through the label's
+millilitres, and nothing crosses between the two, for the reason *Measuring in
+kitchen units* gives. A drink whose grams equal the millilitres its label states
+is offered volumes only, the `foodBasis` rule again. A unit the amount would be
+lost in (two spoons as 0.13 cup, 350 ml as 71 teaspoons) is left off the list.
+With nothing picked, a serving that is itself a measure reads in it, so soy
+sauce scanned as "1 tbsp (15 ml)" opens in tablespoons.
+
+**The pick is `food_log_ingredients.display_unit`, written by
+`set_ingredient_unit`**, and it is display only, like a recipe ingredient's
+`display_unit`: the row is still `quantity` of its serving, so the pick moves no
+amount and no total, and a build that has never heard of the column reads and
+edits the row exactly as before. Its own function rather than an argument to
+`set_ingredient_quantity`, which builds in the stores call by its two names.
+
+Editing moves the amount. `quantityIn` is the seam, over `quantityForGrams`:
 `set_ingredient_quantity` takes a quantity, `food_log_ingredients.quantity` is
-`numeric(8, 4)`, so a typed weight reads back at the gram that was asked for.
-A part nobody weighed keeps its multiplier and cannot be typed into.
+`numeric(8, 4)`, so a typed amount reads back at the gram or spoon that was asked
+for. The buttons step on the unit's own marks (`stepFor`: grams by ten, spoons by
+a half, cups by a quarter) from the figure on screen, not the exact one: 2½ tbsp
+stored to four places reads back as 2.50003, whose next mark down was 2½ itself.
+A part with no unit keeps its multiplier and cannot be typed into.
+
+**A part's macros are behind a "Macros" switch, off by default**, at the top
+right of the dish's INGREDIENTS card and of the ingredients page. It is one
+setting for both screens and for the account, `user_settings.show_part_macros`
+(`usePartMacros`), so it is the same answer on every phone the person signs in
+on. Off, a part is one line: "1 × Steamed Chicken 200 g", then its calories. On,
+the amount moves to a second line, followed by carbs, protein and fat as three
+bare figures in one small grey capsule with hairlines between them, each in its
+macro bar's colour (`MacroFigures`); the page's total spells the names out once.
+It shipped first as three dots with grams under every part, always on, and a
+five-part plate read as a table when what most people open it for is the
+calories; a run of "0 · 40 · 18" after that read as unrelated numbers, which is
+what the capsule groups. The amount on the one-line row is joined with no-break
+spaces, so "30 g" never splits across a wrap the way the old "(30 g)" bracket
+did.
 
 **The count is rounded to a quarter and the weight is not**, so the row can read
 "1¼ × Fried Rice (110 g)". Rounding the stored amount instead would cost the

@@ -34,6 +34,7 @@ const part = (over: Partial<EntryIngredient> = {}): EntryIngredient => ({
   carbs: 44,
   protein: 4.2,
   fat: 0.4,
+  displayUnit: null,
   ...over,
 })
 

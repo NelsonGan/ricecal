@@ -172,8 +172,8 @@ function convertedQuantity(
 
 /**
  * Whether switching to `to` can hold what was eaten. Six kilograms is 400
- * tablespoons and the control stops at 20, so that chip is disabled rather
- * than tapped and quietly cut to a third: nothing on screen would say so.
+ * tablespoons and the control stops at 20, so that unit is left off the list
+ * rather than tapped and quietly cut to a third: nothing on screen would say so.
  */
 export function canSwitch(
   from: Weighed | undefined,

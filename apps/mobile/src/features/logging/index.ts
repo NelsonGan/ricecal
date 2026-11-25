@@ -12,6 +12,7 @@ export {
 } from './FoodSearchPanel'
 export { IconPicker, type IconPickerProps } from './IconPicker'
 export { type CaptureMode, InlineCamera, type InlineCameraProps } from './InlineCamera'
+export { MacrosToggle, usePartMacros } from './MacrosToggle'
 export {
   MealShareCard,
   type MealShareCardProps,
@@ -30,6 +31,7 @@ export { PartLine } from './PartLine'
 export { PhotoNotePanel, type PhotoNotePanelProps } from './PhotoNotePanel'
 export { PlateEditor, type PlateEditorProps } from './PlateEditor'
 export { type PartEdits, partChanges, stagedParts } from './parts'
+export { partUnit, shownIn } from './partUnits'
 export {
   canSwitch,
   openingPortion,

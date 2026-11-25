@@ -898,10 +898,7 @@ export const id = {
       plateEmptied:
         'Tidak ada yang tersisa di piring. Catatannya kembali dihitung sebagai satu porsi.',
       times: '× {{amount}}',
-      grams: '({{grams}} g)',
       partKcal: '{{kcal}} kkal',
-      gramsShort: '{{grams}} g',
-      gramsField: 'Berat dalam gram',
       lessOf: 'Kurangi {{name}}',
       moreOf: 'Tambah {{name}}',
       removeOf: 'Hapus {{name}}',

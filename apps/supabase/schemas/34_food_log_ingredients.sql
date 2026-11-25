@@ -62,6 +62,16 @@ create table public.food_log_ingredients (
   -- zero, because "0 g" is a claim and "we did not weigh it" is not.
   grams        numeric(7, 1) check (grams > 0 and grams <= 20000),
 
+  -- The unit the person reads this part in: 2 tbsp of soy sauce rather than
+  -- 36 g. Display only, like `recipe_ingredients.display_unit`: the amount is
+  -- still `quantity` of the serving, and the app converts through `grams` for a
+  -- weight or through the millilitres the serving label states for a volume.
+  -- Null is the app's own choice (grams wherever the part was weighed), which is
+  -- every row a build before this one wrote and all it will ever write.
+  display_unit text check (
+    display_unit in ('g', 'kg', 'oz', 'lb', 'ml', 'l', 'tsp', 'tbsp', 'cup', 'floz')
+  ),
+
   -- Plate order, as the model listed them.
   position     smallint not null default 0,
 
@@ -149,6 +159,50 @@ comment on function public.set_ingredient_quantity is
 
 revoke execute on function public.set_ingredient_quantity from public, anon;
 grant execute on function public.set_ingredient_quantity to authenticated, service_role;
+
+
+-- ---------------------------------------------------------------------------
+-- Which unit a part is read in.
+--
+-- Its own function rather than a third argument to `set_ingredient_quantity`,
+-- because a build already in a store calls that one by its two names, and
+-- because picking a unit moves no amount: nothing here can change a total.
+-- Null hands the choice back to the app. An unknown unit fails the column's
+-- check.
+-- ---------------------------------------------------------------------------
+create or replace function public.set_ingredient_unit(
+  p_ingredient_id uuid,
+  p_unit          text
+)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id uuid;
+begin
+  select e.user_id into v_user_id
+  from public.food_log_ingredients i
+  join public.food_logs e on e.id = i.food_log_id
+  where i.id = p_ingredient_id;
+
+  if v_user_id is null or v_user_id is distinct from auth.uid() then
+    raise exception 'ingredient not found';
+  end if;
+
+  update public.food_log_ingredients
+  set display_unit = p_unit
+  where id = p_ingredient_id;
+end;
+$$;
+
+comment on function public.set_ingredient_unit is
+  'Set the unit one ingredient is shown in. Display only: no amount or total '
+  'moves. Owner-checked.';
+
+revoke execute on function public.set_ingredient_unit from public, anon;
+grant execute on function public.set_ingredient_unit to authenticated, service_role;
 
 
 -- ---------------------------------------------------------------------------

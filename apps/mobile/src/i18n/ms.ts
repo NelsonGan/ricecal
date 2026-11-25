@@ -909,10 +909,7 @@ export const ms = {
       plateEmptied:
         'Tiada apa-apa tinggal pada pinggan. Rekod itu kembali dikira sebagai satu bahagian.',
       times: '× {{amount}}',
-      grams: '({{grams}} g)',
       partKcal: '{{kcal}} kcal',
-      gramsShort: '{{grams}} g',
-      gramsField: 'Berat dalam gram',
       lessOf: 'Kurangkan {{name}}',
       moreOf: 'Tambahkan {{name}}',
       removeOf: 'Buang {{name}}',

@@ -366,13 +366,8 @@ export const logging = {
      * reads as a badge on the busy rows rather than the amount every row has.
      */
     times: '× {{amount}}',
-    /** What a part weighs, in brackets after its name. */
-    grams: '({{grams}} g)',
-    /** What a part costs, on the row in the sheet where its weight is edited. */
+    /** What a part costs, on its row in the ingredients editor. */
     partKcal: '{{kcal}} kcal',
-    /** The weight in the sheet's own field, and what the number pad calls it. */
-    gramsShort: '{{grams}} g',
-    gramsField: 'Weight in grams',
     /**
      * The per-ingredient portion steppers, and the two buttons a row uncovers
      * when it is swiped.

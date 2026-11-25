@@ -86,6 +86,12 @@ export type MeasureChoice = {
   /** What it costs, so a choice that rounds says so before it is made. */
   detail?: string
   selected: boolean
+  /**
+   * A choice that cannot hold the amount, or would move it by more than a
+   * measuring cup does. Left off the list rather than greyed out: a grey "20
+   * tsp · 72 kcal" for a 350 ml drink is a figure that is not true, offered
+   * and then refused.
+   */
   disabled?: boolean
   onPress: () => void
 }
@@ -96,10 +102,21 @@ export type MeasureChoice = {
  * units did not fit one segmented row, Japanese unit names truncated in it, and
  * a portion chip beside a unit row was two answers to one question.
  */
+/**
+ * The choices a list actually shows: every one that is not disabled, and the
+ * one in use always, so the list never loses its tick. A unit pill is a control
+ * only when this holds more than one; a pill that opened a list of itself was
+ * the first thing a 10.5 g of sugar showed once disabled lines went.
+ */
+export const offeredChoices = <T extends Pick<MeasureChoice, 'selected' | 'disabled'>>(
+  choices: readonly T[],
+): T[] => choices.filter((choice) => choice.selected || !choice.disabled)
+
 export function MeasureList({ choices }: { choices: readonly MeasureChoice[] }) {
+  const shown = offeredChoices(choices)
   return (
     <View accessibilityRole="radiogroup">
-      {choices.map((choice, index) => (
+      {shown.map((choice, index) => (
         <View key={choice.key}>
           {index > 0 ? <Divider /> : null}
           <Tappable

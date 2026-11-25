@@ -905,10 +905,7 @@ export const fil = {
       plateEmptied:
         'Wala nang natira sa plato. Babalik ang entry sa pagbibilang bilang isang serving.',
       times: '× {{amount}}',
-      grams: '({{grams}} g)',
       partKcal: '{{kcal}} kcal',
-      gramsShort: '{{grams}} g',
-      gramsField: 'Timbang sa gramo',
       lessOf: 'Bawasan ang {{name}}',
       moreOf: 'Dagdagan ang {{name}}',
       removeOf: 'Alisin ang {{name}}',

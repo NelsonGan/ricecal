@@ -3,7 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
 import type { RecipeIngredientInput, Units } from '@/data'
-import { MeasureList, UnitPill } from '@/features/shared/MeasurePicker'
+import {
+  type MeasureChoice,
+  MeasureList,
+  offeredChoices,
+  UnitPill,
+} from '@/features/shared/MeasurePicker'
 import { PartRow } from '@/features/shared/PartRow'
 import { measureFigure, useMeasureText } from '@/features/shared/useMeasureText'
 import { type MeasureUnit, roundedFor, stepFor, steppedTo } from '@/lib/measures'
@@ -160,6 +165,59 @@ export function RecipeIngredientEditor({
 
   const unitName = useUnitName()
 
+  /**
+   * The units a row can be read in, each as the amount it would read as and
+   * what it would cost. One function for the sheet and for whether the row's
+   * pill is a control at all, so the pill never opens a list of itself.
+   */
+  const unitChoices = (row: EditableRecipeIngredient): MeasureChoice[] =>
+    sameFamily(keyOf(row.unit, row.displayUnit), units).map((key) => {
+      const current = key === keyOf(row.unit, row.displayUnit)
+      // The current line shows the amount exactly as it stands; every
+      // other line shows it rounded to what that unit is worth showing.
+      const amount =
+        key === 'piece' || current
+          ? shownAmount(row.amount, key)
+          : roundedFor(key, shownAmount(row.amount, key))
+      const stored = key === 'piece' ? row.amount : roundedAmount(storedFrom(amount, key))
+      return {
+        key,
+        title:
+          key === 'piece'
+            ? `${formatPortion(amount)} ${unitName(key, amount)}`
+            : measureText.amount(amount, key),
+        // What the row would cost once rounded to that line, so the
+        // calorie or so a spoon rounds by is seen before it happens.
+        detail: t('logging:detail.partKcal', {
+          kcal: ingredientTotal(row.perUnit, stored).kcal.toLocaleString(),
+        }),
+        selected: current,
+        // A unit whose nearest figure would move the row by more than a
+        // measuring spoon's worth is not offered: 10.5 g as kilograms
+        // is 0.01 kg, 5% less sugar.
+        disabled: !current && Math.abs(stored - row.amount) > row.amount * 0.025,
+        onPress: () => {
+          // The unit in use, picked again, is no change: rounding it
+          // to itself would still move 10.5 g to 11.
+          if (current) {
+            setChoosing(null)
+            return
+          }
+          // The line said "6½ tbsp", so that is what the row reads
+          // afterwards. Rounding only ever lands within 2%, where a
+          // label-only switch left 6.56 under the finger.
+          if (key !== 'piece' && stored !== row.amount && amount > 0) {
+            onAmountChange(row.key, stored)
+          }
+          // The stored unit itself is "no display unit", so a row
+          // moved back to grams is a row exactly as an old build wrote
+          // it.
+          onUnitChange?.(row.key, displayUnitFor(key))
+          setChoosing(null)
+        },
+      }
+    })
+
   return (
     <Card flush contentClassName="gap-0">
       {ingredients.map((ingredient, index) => {
@@ -172,7 +230,8 @@ export function RecipeIngredientEditor({
         const measure = ingredientMeasure(ingredient)
         const less = stepAmount(ingredient.amount, unitKey, -1)
         const more = stepAmount(ingredient.amount, unitKey, 1)
-        const switchable = Boolean(onUnitChange) && sameFamily(unitKey, units).length > 1
+        const switchable =
+          Boolean(onUnitChange) && offeredChoices(unitChoices(ingredient)).length > 1
 
         return (
           <View key={ingredient.key}>
@@ -234,55 +293,7 @@ export function RecipeIngredientEditor({
           // A list rather than chips: each line names the unit and what this
           // row would read as in it, so the choice shows its result before it
           // is made. As chips the five amounts wrapped and read as figures.
-          <MeasureList
-            choices={sameFamily(keyOf(choosing.unit, choosing.displayUnit), units).map((key) => {
-              const current = key === keyOf(choosing.unit, choosing.displayUnit)
-              // The current line shows the amount exactly as it stands; every
-              // other line shows it rounded to what that unit is worth showing.
-              const amount =
-                key === 'piece' || current
-                  ? shownAmount(choosing.amount, key)
-                  : roundedFor(key, shownAmount(choosing.amount, key))
-              const stored =
-                key === 'piece' ? choosing.amount : roundedAmount(storedFrom(amount, key))
-              return {
-                key,
-                title:
-                  key === 'piece'
-                    ? `${formatPortion(amount)} ${unitName(key, amount)}`
-                    : measureText.amount(amount, key),
-                // What the row would cost once rounded to that line, so the
-                // calorie or so a spoon rounds by is seen before it happens.
-                detail: t('logging:detail.partKcal', {
-                  kcal: ingredientTotal(choosing.perUnit, stored).kcal.toLocaleString(),
-                }),
-                selected: current,
-                // A unit whose nearest figure would move the row by more than a
-                // measuring spoon's worth is not offered: 10.5 g as kilograms
-                // is 0.01 kg, 5% less sugar.
-                disabled: !current && Math.abs(stored - choosing.amount) > choosing.amount * 0.025,
-                onPress: () => {
-                  // The unit in use, picked again, is no change: rounding it
-                  // to itself would still move 10.5 g to 11.
-                  if (current) {
-                    setChoosing(null)
-                    return
-                  }
-                  // The line said "6½ tbsp", so that is what the row reads
-                  // afterwards. Rounding only ever lands within 2%, where a
-                  // label-only switch left 6.56 under the finger.
-                  if (key !== 'piece' && stored !== choosing.amount && amount > 0) {
-                    onAmountChange(choosing.key, stored)
-                  }
-                  // The stored unit itself is "no display unit", so a row
-                  // moved back to grams is a row exactly as an old build wrote
-                  // it.
-                  onUnitChange?.(choosing.key, displayUnitFor(key))
-                  setChoosing(null)
-                },
-              }
-            })}
-          />
+          <MeasureList choices={unitChoices(choosing)} />
         ) : null}
       </Sheet>
       <Tappable

@@ -10,9 +10,17 @@ import {
   useDayLog,
   useEntryIngredients,
   useRemoveIngredient,
+  useSetIngredientUnit,
+  useSettings,
   useUpdateIngredient,
 } from '@/data'
-import { AddPartSheet, type PartEdits, PlateEditor, partChanges } from '@/features/logging'
+import {
+  AddPartSheet,
+  MacrosToggle,
+  type PartEdits,
+  PlateEditor,
+  partChanges,
+} from '@/features/logging'
 import { useBack } from '@/lib/navigation'
 import { SessionGate } from '@/lib/SessionGate'
 import { AppBar, Screen, useToast } from '@/ui'
@@ -66,6 +74,8 @@ function IngredientsScreen() {
   const updateIngredient = useUpdateIngredient()
   const removeIngredient = useRemoveIngredient()
   const addIngredient = useAddIngredient()
+  const setIngredientUnit = useSetIngredientUnit()
+  const { data: settings } = useSettings()
 
   /**
    * The catalogue search, and what it is being opened for.
@@ -212,6 +222,9 @@ function IngredientsScreen() {
           title={t('logging:detail.plateHeading')}
           onBack={() => goBack()}
           backLabel={t('common:a11y.back')}
+          // The same switch as the dish's ingredient card, and the same
+          // preference: whether each part shows its macros.
+          action={ingredients.length ? <MacrosToggle /> : undefined}
         />
       }
     >
@@ -233,6 +246,12 @@ function IngredientsScreen() {
           onAdd={() => setPicking({ replacing: null })}
           onRemove={removePart}
           onReplace={(ingredient) => setPicking({ replacing: ingredient })}
+          onUnitChange={(ingredient, unit) =>
+            setIngredientUnit
+              .mutateAsync({ ingredientId: ingredient.id, unit, entryId })
+              .catch(saveFailed)
+          }
+          units={settings?.units}
         />
       ) : null}
 

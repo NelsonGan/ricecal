@@ -19,6 +19,7 @@ const rice: EntryIngredient = {
   protein: 6,
   fat: 9,
   position: 0,
+  displayUnit: null,
 }
 
 it('moves the weight with the calories and macros', () => {
