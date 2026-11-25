@@ -1164,23 +1164,27 @@ export type GroupFoodView = {
 /**
  * Someone's food opened from its card in the chat: the portion, every
  * nutrient and every part on the plate, through `group_entry_detail`, which
- * checks the two share the group. Never the owner's note or place.
+ * checks the two share the group. Never the owner's note or place. `null` when
+ * it is gone or out of reach (`food_gone`): an answer, not a failure to retry.
  */
 export function useGroupFood(groupId: string, entryId: string) {
   const userId = useUserId()
   return useQuery({
     queryKey: keys.groupsRead(userId, 'group_entry_detail', { groupId, entryId }),
-    queryFn: async ({ signal }): Promise<GroupFoodView> => {
+    queryFn: async ({ signal }): Promise<GroupFoodView | null> => {
       const answer = (await rpc(
         'group_entry_detail',
         { p_group_id: groupId, p_entry_id: entryId },
         signal,
-      )) as unknown as {
+      ).catch((error: unknown) => {
+        if (groupError(error) === 'food_gone') return null
+        throw error
+      })) as unknown as {
         owner: GroupPerson
         entry: Record<string, unknown> | null
         parts: Record<string, unknown>[]
       } | null
-      if (!answer?.entry) throw new Error('Food unavailable')
+      if (!answer?.entry) return null
       const entry = answer.entry
       const num = (value: unknown) => Number(value ?? 0)
       const maybe = (value: unknown) =>

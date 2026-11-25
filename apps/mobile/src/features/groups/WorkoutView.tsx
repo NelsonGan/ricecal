@@ -106,7 +106,8 @@ function OwnedWorkoutPage({
 }: {
   title: string
   owner: GroupPerson | undefined
-  query: { isError: boolean; fetchStatus: string; refetch: () => unknown }
+  /** `data` null is an answer: gone, or no longer shown to this reader. */
+  query: { data?: unknown; isError: boolean; fetchStatus: string; refetch: () => unknown }
   children: ReactNode
 }) {
   const { t } = useTranslation(['groups', 'common'])
@@ -147,10 +148,11 @@ function OwnedWorkoutPage({
     >
       {owner ? (
         children
-      ) : query.isError || query.fetchStatus === 'paused' ? (
+      ) : query.isError || query.fetchStatus === 'paused' || query.data === null ? (
         <QueryNotice
           error={query.isError}
           paused={query.fetchStatus === 'paused'}
+          unavailable
           retry={() => query.refetch()}
         />
       ) : (

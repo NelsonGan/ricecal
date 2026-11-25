@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { dateKey, useSelectedDate, useSettings } from '@/data'
+import { useSelectedDate, useSettings } from '@/data'
 import { type GroupFoodView, useGroupFood } from '@/data/groups'
 import {
   dayLabel,
@@ -66,10 +66,11 @@ export function GroupFoodScreen({ groupId, entryId }: { groupId: string; entryId
     >
       {!view ? (
         <View className="gap-stack px-gutter" style={{ paddingTop: insets.top + PINNED_BAR }}>
-          {query.isError || query.fetchStatus === 'paused' ? (
+          {query.isError || query.fetchStatus === 'paused' || view === null ? (
             <QueryNotice
               error={query.isError}
               paused={query.fetchStatus === 'paused'}
+              unavailable
               retry={() => query.refetch()}
             />
           ) : (
@@ -171,10 +172,9 @@ export function FoodBody({ view, heroHeight }: { view: GroupFoodView; heroHeight
           </Tappable>
           <Text variant="meta">
             {t('logging:detail.whenValue', {
-              // Day and time both from when it was logged, in the reader's
-              // clock: the owner's diary day is their own zone's, and beside a
-              // time in this one it could name the wrong day.
-              day: dayLabel(dateKey(new Date(entry.logged_at)), todayKey, {
+              // The owner's diary day, as their own page says it: supper at
+              // 00:30 belongs to the day they put it on (README, `log_date`).
+              day: dayLabel(entry.log_date, todayKey, {
                 today: t('common:date.today'),
                 yesterday: t('common:date.yesterday'),
               }),

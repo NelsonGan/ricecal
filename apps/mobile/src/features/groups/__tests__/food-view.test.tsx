@@ -3,7 +3,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { render, screen } from '@/test-utils'
 import '@/i18n'
 import type { GroupFoodView } from '@/data/groups'
-import { FoodBody } from '../FoodView'
+import { FoodBody, GroupFoodScreen } from '../FoodView'
 import { useOpenGroupFood } from '../parts'
 
 const METRICS = {
@@ -20,13 +20,17 @@ beforeEach(() => {
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
 jest.mock('@/data', () => ({
   ENTRY_FOOD_ID: '_entry',
-  dateKey: jest.requireActual('@/data/client').dateKey,
   useUserId: () => 'me',
   useSelectedDate: () => ({ todayKey: '2026-11-25' }),
   useSettings: () => ({ data: { units: mockUnits, show_part_macros: false } }),
   useUpdateSettings: () => ({ mutate: jest.fn() }),
   storedImageSource: () => undefined,
   useMealPhotoUrl: () => ({ data: undefined }),
+}))
+jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))
+jest.mock('@/data/groups', () => ({
+  ...jest.requireActual('@/data/groups'),
+  useGroupFood: () => ({ data: null, isError: false, fetchStatus: 'idle', refetch: jest.fn() }),
 }))
 jest.mock('../parts', () => ({
   ...jest.requireActual('../parts'),
@@ -146,17 +150,42 @@ it("says what a portion weighs, in the reader's own units, unless it is a weight
         />
       </SafeAreaProvider>,
     )
-  await draw({ grams: 420, plate_quantity: 1 })
+  const metric = await draw({ grams: 420, plate_quantity: 1 })
   expect(screen.getByText(/^1 plate · ≈ 420\sg$/)).toBeTruthy()
-  screen.unmount()
+  await metric.unmount()
 
   mockUnits = 'imperial'
-  await draw({ grams: 420, plate_quantity: 1 })
+  const imperial = await draw({ grams: 420, plate_quantity: 1 })
   expect(screen.getByText(/^1 plate · ≈ 14.+oz$/)).toBeTruthy()
-  screen.unmount()
+  await imperial.unmount()
 
   // A portion that is already a weight does not say it twice.
   mockUnits = 'metric'
   await draw({ grams: 150, serving_label: '100 g', quantity: 1.5, plate_quantity: 1 })
   expect(screen.queryByText(/≈/)).toBeNull()
+})
+
+it('names the day the owner put it on, not the day its instant falls on', async () => {
+  // Supper at half past midnight, logged onto the day before: their diary says
+  // today, whatever the clock read.
+  await render(
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <FoodBody
+        view={{ ...view, entry: { ...view.entry, logged_at: '2026-11-26T16:30:00Z' } }}
+        heroHeight={300}
+      />
+    </SafeAreaProvider>,
+  )
+  // Its instant is a day or two later in any zone, so only the diary day says today.
+  expect(screen.getByText(/Today at/)).toBeTruthy()
+})
+
+it('says a food that is gone or out of reach is gone, with nothing to retry', async () => {
+  await render(
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <GroupFoodScreen groupId="group" entryId="gone" />
+    </SafeAreaProvider>,
+  )
+  expect(screen.getByText('This is no longer available')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
 })

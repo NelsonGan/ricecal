@@ -5,9 +5,11 @@ import { PostWorkoutScreen } from '../WorkoutView'
 
 const mockReplace = jest.fn()
 let mockOwner = 'mina'
+let mockGone = false
 beforeEach(() => {
   mockReplace.mockClear()
   mockOwner = 'mina'
+  mockGone = false
 })
 const METRICS = {
   frame: { x: 0, y: 0, width: 393, height: 852 },
@@ -30,10 +32,12 @@ jest.mock('@/data', () => ({
 }))
 jest.mock('@/data/social', () => ({
   useSocialPostWorkout: () => ({
-    data: {
-      owner: { id: mockOwner, name: 'Mina Tan', handle: 'mina', avatar_path: null },
-      workout: { id: 'workout', name: 'Push day' },
-    },
+    data: mockGone
+      ? null
+      : {
+          owner: { id: mockOwner, name: 'Mina Tan', handle: 'mina', avatar_path: null },
+          workout: { id: 'workout', name: 'Push day' },
+        },
     isError: false,
     fetchStatus: 'idle',
     refetch: jest.fn(),
@@ -61,4 +65,11 @@ it('hands your own post over to your own workout page', async () => {
   expect(mockReplace).toHaveBeenCalledWith({ pathname: '/workout/[id]', params: { id: 'workout' } })
   // Not the reduced page a stranger reads, even for a frame.
   expect(screen.queryByRole('button', { name: /Mina Tan/ })).toBeNull()
+})
+
+it('says a deleted or hidden post is gone, with nothing to retry', async () => {
+  mockGone = true
+  await draw()
+  expect(screen.getByText('This is no longer available')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
 })

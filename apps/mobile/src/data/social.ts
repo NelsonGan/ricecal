@@ -345,14 +345,23 @@ export function useSocialPostWorkout(postId: string) {
   const viewer = useUserId()
   return useQuery({
     queryKey: keys.socialRead(viewer, 'social_workout_post_detail', { postId }),
-    queryFn: async ({ signal }): Promise<{ owner: PostWorkoutOwner; workout: WorkoutDetail }> => {
-      const answer = (await rpc('social_workout_post_detail', { p_post_id: postId }, signal)) as {
+    queryFn: async ({
+      signal,
+    }): Promise<{ owner: PostWorkoutOwner; workout: WorkoutDetail } | null> => {
+      const answer = (await rpc('social_workout_post_detail', { p_post_id: postId }, signal).catch(
+        (error: unknown) => {
+          // Deleted, or no longer shown to this reader: an answer, not a failure.
+          if ((error as { hint?: unknown } | null)?.hint === 'post_gone') return null
+          throw error
+        },
+      )) as {
         owner: PostWorkoutOwner
         records?: number
         summary: Parameters<typeof workoutDetailFrom>[0]['summary']
         exercises?: Parameters<typeof workoutDetailFrom>[0]['exercises']
         sets?: Parameters<typeof workoutDetailFrom>[0]['sets']
-      }
+      } | null
+      if (!answer?.summary) return null
       const workout = workoutDetailFrom({
         summary: answer.summary,
         exercises: answer.exercises ?? [],
