@@ -1067,11 +1067,34 @@ export const PostCard = memo(function PostCard({
     heartOpacity.value = withDelay(550, withTiming(0, { duration: 260 }))
     if (!post.is_liked) toggleLike()
   }
+  const isWorkout = post.kind === 'workout'
+  const openWorkout = () => router.push({ pathname: '/social/workout', params: { post: post.id } })
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
+    // A workout's single tap waits this long for a second one, so it is kept
+    // to the chat's quarter second rather than the default half.
+    .maxDelay(isWorkout ? 250 : 500)
     .runOnJS(true)
     .onEnd(doubleLike)
     .withTestId(`post-double-tap-${post.id}`)
+  // A tap on a workout opens it, every exercise and set, as a tap on one in a
+  // group's chat does. It dims under the finger at once; the page itself
+  // waits out the double tap, which still likes it, as on a meal.
+  const pressed = useSharedValue(0)
+  const pressedStyle = useAnimatedStyle(() => ({ opacity: 1 - pressed.value * 0.3 }))
+  const singleTap = Gesture.Tap()
+    .enabled(isWorkout)
+    .onBegin(() => {
+      pressed.value = withTiming(1, { duration: 80 })
+    })
+    .onFinalize(() => {
+      pressed.value = withTiming(0, { duration: 160 })
+    })
+    .runOnJS(true)
+    .onEnd((_event, success) => {
+      if (success) openWorkout()
+    })
+    .withTestId(`post-tap-${post.id}`)
   const pinch = Gesture.Pinch()
     .enabled(Boolean(post.photo_path))
     .onUpdate((event) => {
@@ -1086,10 +1109,10 @@ export const PostCard = memo(function PostCard({
       zoomY.value = withSpring(0)
     })
     .withTestId(`post-pinch-${post.id}`)
-  const mediaGesture = Gesture.Simultaneous(doubleTap, pinch)
+  const mediaGesture = Gesture.Simultaneous(Gesture.Exclusive(doubleTap, singleTap), pinch)
   const preview =
     post.kind === 'workout' ? (
-      <WorkoutPostPreview post={post} />
+      <WorkoutPostPreview post={post} opens />
     ) : (
       <FoodPreview
         name={post.food_name ?? ''}
@@ -1169,10 +1192,13 @@ export const PostCard = memo(function PostCard({
         )}
       </View>
       <GestureDetector gesture={mediaGesture}>
-        <View
+        <Animated.View
+          style={isWorkout ? pressedStyle : undefined}
           accessible
-          accessibilityRole="image"
+          accessibilityRole={isWorkout ? 'button' : 'image'}
           accessibilityLabel={postLabel(post)}
+          accessibilityActions={isWorkout ? [{ name: 'activate' }] : undefined}
+          onAccessibilityAction={isWorkout ? openWorkout : undefined}
           onLayout={(event) => {
             mediaSize.value = event.nativeEvent.layout.width
           }}
@@ -1187,7 +1213,7 @@ export const PostCard = memo(function PostCard({
           >
             <Icon set="system" name="heart-filled" size={96} tintColor={colors.hibiscus} />
           </Animated.View>
-        </View>
+        </Animated.View>
       </GestureDetector>
       <View className="gap-2 px-5 pb-4 pt-2">
         <View className="flex-row items-center gap-5">
@@ -1328,8 +1354,11 @@ export const PostCard = memo(function PostCard({
   )
 })
 
-/** A workout post's workout, in the viewer's own weight unit. */
-export function WorkoutPostPreview({ post }: { post: SocialPost }) {
+/**
+ * A workout post's workout, in the viewer's own weight unit. On the feed it
+ * `opens` the whole workout; in the composer it is only a preview.
+ */
+export function WorkoutPostPreview({ post, opens = false }: { post: SocialPost; opens?: boolean }) {
   const { data: settings } = useSettings()
   return (
     <WorkoutPreview
@@ -1345,6 +1374,7 @@ export function WorkoutPostPreview({ post }: { post: SocialPost }) {
         sets: exercise.sets,
       }))}
       unit={unitFor(settings?.units)}
+      opens={opens}
     />
   )
 }

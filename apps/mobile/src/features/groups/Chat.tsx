@@ -98,12 +98,13 @@ import {
   TEXT_SCALES,
   Text,
 } from '@/ui'
-import { MacroChips, Thumbs, useVote } from './MealSheet'
+import { MacroChips, PillTouch, Thumbs, useVote } from './MealSheet'
 import {
   EntryPicture,
   PersonAvatar,
   PersonAvatarLink,
   useGroupTask,
+  useOpenGroupFood,
   useOpenGroupWorkout,
   useOpenProfile,
 } from './parts'
@@ -1043,6 +1044,7 @@ const MessageRow = memo(function MessageRow({
   const colors = useThemeColors()
   const openProfile = useOpenProfile()
   const openWorkout = useOpenGroupWorkout(groupId)
+  const openFood = useOpenGroupFood(groupId)
   const router = useRouter()
   const shared = message.workout
   const food = message.food
@@ -1105,15 +1107,17 @@ const MessageRow = memo(function MessageRow({
       onOpen={
         shared
           ? () => openWorkout(shared, message.author.id)
-          : recipe
-            ? // Your own by its id; anyone else's by its link, which is what
-              // lets a member read a food that is not public.
-              () =>
-                router.push({
-                  pathname: '/recipe/[id]',
-                  params: { id: message.mine ? recipe.id : recipe.share_slug },
-                })
-            : undefined
+          : food?.entry_id
+            ? () => openFood({ ...food, entry_id: food.entry_id as string }, message.author.id)
+            : recipe
+              ? // Your own by its id; anyone else's by its link, which is what
+                // lets a member read a food that is not public.
+                () =>
+                  router.push({
+                    pathname: '/recipe/[id]',
+                    params: { id: message.mine ? recipe.id : recipe.share_slug },
+                  })
+              : undefined
       }
       onVote={
         food?.entry_id && !message.mine
@@ -1468,6 +1472,7 @@ function WorkoutCard({ workout }: { workout: ChatWorkout }) {
  */
 function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mine: boolean }) {
   const { t } = useTranslation(['groups', 'common'])
+  const colors = useThemeColors()
   const { width } = useWindowDimensions()
   // Most of a phone's width, as the mockup's card is, and no wider on a tablet.
   const cardWidth = Math.min(280, Math.round(width * 0.7))
@@ -1499,9 +1504,10 @@ function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mi
         ) : null}
       </View>
       {/* Two lines under the photo: the name with its calories on the right,
-          then the macros. */}
+          then the macros. A card that opens wears the workout card's chevron;
+          one from an older answer, with no entry to open, does not. */}
       <View className="gap-2 p-3">
-        <View className="flex-row items-baseline gap-2">
+        <View className="flex-row items-center gap-2">
           <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
             {food.name}
           </Text>
@@ -1509,6 +1515,9 @@ function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mi
             {Math.round(food.kcal).toLocaleString()}{' '}
             <Text variant="caption">{t('common:unit.kcal')}</Text>
           </Text>
+          {food.entry_id ? (
+            <Icon set="ui" name="chevron-right" size={16} tintColor={colors.muted} />
+          ) : null}
         </View>
         <MacroChips food={food} compact />
       </View>
@@ -1724,7 +1733,7 @@ function MessageGestures({
   onMenu: () => void
   onReply: (message: GroupMessage) => void
   onHeart: (message: GroupMessage) => void
-  /** What a single tap opens: a workout card's workout. Most messages open nothing. */
+  /** What a single tap opens: a workout card's workout, a food card's food. Text opens nothing. */
   onOpen?: () => void
   /** A friend's food card's like and dislike, as screen-reader actions. */
   onVote?: (value: -1 | 1) => void
@@ -1784,10 +1793,17 @@ function MessageGestures({
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {})
       onMenu()
     })
-  // A card that opens something (a workout) answers a plain tap at once, dimmed
-  // under the finger like any button, so it reads as one. Waiting out a double
-  // tap made it feel dead; its heart is in the emoji bar instead.
+  // A card that opens something (a workout, a food) answers a plain tap at
+  // once, dimmed under the finger like any button, so it reads as one. Waiting
+  // out a double tap made it feel dead; its heart is in the emoji bar instead.
   const pressed = useSharedValue(0)
+  // A tap that landed on a food card's like or dislike is the vote's alone.
+  const pillTouch = useRef(0)
+  const openUnlessVoted = () => {
+    if (!onOpen || Date.now() - pillTouch.current < 1000) return
+    tick()
+    onOpen()
+  }
   const singleTap = Gesture.Tap()
     .enabled(Boolean(onOpen))
     .onBegin(() => {
@@ -1797,10 +1813,8 @@ function MessageGestures({
       pressed.value = withTiming(0, { duration: 160 })
     })
     .onEnd((_event, success) => {
-      if (success && onOpen) {
-        runOnJS(tick)()
-        runOnJS(onOpen)()
-      }
+      // Decided on the JS thread, after the pill's own stamp (see PillTouch).
+      if (success && onOpen) runOnJS(openUnlessVoted)()
     })
   const gesture = Gesture.Race(
     pan,
@@ -1837,7 +1851,7 @@ function MessageGestures({
           else onMenu()
         }}
       >
-        {children}
+        <PillTouch.Provider value={pillTouch}>{children}</PillTouch.Provider>
       </Animated.View>
     </GestureDetector>
   )

@@ -1,7 +1,7 @@
 import { format } from 'date-fns/format'
 import { parseISO } from 'date-fns/parseISO'
 import * as Haptics from 'expo-haptics'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler'
@@ -227,6 +227,16 @@ function EntryRow({
 }
 
 /**
+ * When a pill inside a chat bubble last took a touch, which the bubble reads
+ * before its own tap opens the food: two taps in nested gesture detectors are
+ * not ordered against each other, so a vote could open the page as well.
+ * Both sides run on the JS thread, whose queue keeps the pill's stamp (sent
+ * when the finger lands) ahead of the bubble's check (sent when it lifts); a
+ * shared value read on the UI thread could still be 0 under a busy JS thread.
+ */
+export const PillTouch = createContext<{ current: number } | null>(null)
+
+/**
  * A food's like and dislike. A friend's takes either, and a second tap on the
  * same one takes it back; your own cannot be reacted to, so there it is what
  * friends said instead. The board's meal sheet and a chat food card both draw it.
@@ -371,6 +381,7 @@ function Reaction({
   disabled?: boolean
 }) {
   const reduceMotion = useReducedMotion()
+  const pillTouch = useContext(PillTouch)
   const scale = useSharedValue(1)
   const tilt = useSharedValue(0)
   const hand = useAnimatedStyle(() => ({
@@ -430,6 +441,14 @@ function Reaction({
       // 36pt drawn, 44pt to a finger.
       .hitSlop(4)
       .runOnJS(true)
+      .onBegin(() => {
+        if (pillTouch) pillTouch.current = Date.now()
+      })
+      // A touch that became a scroll was never a vote, so it does not hold
+      // back the next tap on the card.
+      .onFinalize((_event, success) => {
+        if (pillTouch && !success) pillTouch.current = 0
+      })
       // Felt when the tap lands rather than when the finger does, so a scroll
       // that starts on a pill does not buzz.
       .onEnd((_event, success) => {

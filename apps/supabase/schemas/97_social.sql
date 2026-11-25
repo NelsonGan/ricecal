@@ -58,8 +58,16 @@ begin
     coalesce(stats.set_count, 0), coalesce(stats.volume_kg, 0),
     coalesce(list.exercises, '[]'::jsonb)
   from public.workouts w
+  -- The volume counts only what was lifted: a barbell set's volume and what
+  -- was added to a bodyweight one, never the body. The post's page lists
+  -- every set's reps, and with those a total carrying the body weight would
+  -- give the owner's weigh-in away. social_workout_post_detail sums the same.
   left join lateral (
-    select count(*)::integer as set_count, sum(v.volume_kg) as volume_kg
+    select count(*)::integer as set_count,
+      sum(case
+        when v.tracking = 'weight_reps' then v.volume_kg
+        when v.tracking = 'weighted_reps' and v.reps > 0 and v.weight_kg > 0 then v.weight_kg * v.reps
+      end) as volume_kg
     from public.workout_set_values v where v.workout_id = w.id
   ) stats on true
   left join lateral (

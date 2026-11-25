@@ -4007,6 +4007,10 @@ export type Database = {
       }
       group_chat_summary: { Args: { p_group_id: string }; Returns: Json }
       group_details: { Args: { p_group_id: string }; Returns: Json }
+      group_entry_detail: {
+        Args: { p_entry_id: string; p_group_id: string }
+        Returns: Json
+      }
       group_invite_count: { Args: never; Returns: number }
       group_invite_suggestions: {
         Args: { p_group_id: string; p_limit?: number }
@@ -4849,6 +4853,7 @@ export type Database = {
       social_unread_notification_count: { Args: never; Returns: number }
       social_workout_count: { Args: { p_user_id: string }; Returns: number }
       social_workout_post: { Args: { p_workout_id: string }; Returns: string }
+      social_workout_post_detail: { Args: { p_post_id: string }; Returns: Json }
       store_recipe_import_translation: {
         Args: {
           p_import: string

@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router'
 import { useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { storedImageSource, useMealPhotoUrl, useUserId } from '@/data'
+import { ENTRY_FOOD_ID, storedImageSource, useMealPhotoUrl, useUserId } from '@/data'
 import {
   type BoardEntry,
   type GroupMeal,
@@ -142,6 +142,35 @@ export function useOpenGroupWorkout(groupId: string) {
         pathname: '/group/workout',
         params: { group: groupId, source: workout.source, id: workout.id },
       })
+    },
+    [router, groupId, viewer],
+  )
+}
+
+/**
+ * Opens a food shared into a group's chat as a page: the portion, every
+ * nutrient and the parts on the plate. The viewer's own opens their own entry,
+ * on its day, where they can change it; without its day (an older answer) the
+ * page reads it like anyone else's, since the entry screen looks for it on the
+ * diary's selected day.
+ */
+export function useOpenGroupFood(groupId: string) {
+  const router = useRouter()
+  const viewer = useUserId()
+  return useCallback(
+    (food: { entry_id: string; log_date?: string; food_id?: string | null }, ownerId: string) => {
+      if (ownerId === viewer && food.log_date) {
+        router.push({
+          pathname: '/log/food/[id]',
+          params: {
+            id: food.food_id ?? ENTRY_FOOD_ID,
+            entryId: food.entry_id,
+            date: food.log_date,
+          },
+        })
+        return
+      }
+      router.push({ pathname: '/group/food', params: { group: groupId, entry: food.entry_id } })
     },
     [router, groupId, viewer],
   )

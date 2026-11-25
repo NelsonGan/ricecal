@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase'
 import { keys } from './keys'
 import { useUserId } from './session'
 import type { IconRef, ReportReason } from './types'
+import { type WorkoutDetail, workoutDetailFrom } from './workouts'
 
 export type SocialReview = 'pending' | 'approved' | 'rejected' | 'quarantined'
 export type SocialAudience = 'public' | 'followers'
@@ -322,6 +323,55 @@ export function useSocialPost(id: string) {
         | SocialPost
         | undefined) ?? null,
     enabled: Boolean(id),
+    ...MEMORY_OPTIONS,
+  })
+}
+/** Whose workout a post shares, as its full page heads it. */
+export type PostWorkoutOwner = {
+  id: string
+  name: string
+  handle: string
+  avatar_path: string | null
+  is_pro?: boolean
+}
+
+/**
+ * A workout post's workout as its own page draws it, for a tap on the card:
+ * every exercise and set through `social_workout_post_detail`, under the
+ * post's visibility. Less than a group reads, since a post can reach strangers:
+ * no notes, heart rate or burn. Its records are the count the card shows.
+ */
+export function useSocialPostWorkout(postId: string) {
+  const viewer = useUserId()
+  return useQuery({
+    queryKey: keys.socialRead(viewer, 'social_workout_post_detail', { postId }),
+    queryFn: async ({
+      signal,
+    }): Promise<{ owner: PostWorkoutOwner; workout: WorkoutDetail } | null> => {
+      const answer = (await rpc('social_workout_post_detail', { p_post_id: postId }, signal).catch(
+        (error: unknown) => {
+          // Deleted, or no longer shown to this reader: an answer, not a failure.
+          if ((error as { hint?: unknown } | null)?.hint === 'post_gone') return null
+          throw error
+        },
+      )) as {
+        owner: PostWorkoutOwner
+        records?: number
+        summary: Parameters<typeof workoutDetailFrom>[0]['summary']
+        exercises?: Parameters<typeof workoutDetailFrom>[0]['exercises']
+        sets?: Parameters<typeof workoutDetailFrom>[0]['sets']
+      } | null
+      if (!answer?.summary) return null
+      const workout = workoutDetailFrom({
+        summary: answer.summary,
+        exercises: answer.exercises ?? [],
+        sets: answer.sets ?? [],
+        heart: null,
+      })
+      // Its sets carry no record flags, so the count comes from the post.
+      return { owner: answer.owner, workout: { ...workout, prCount: answer.records ?? 0 } }
+    },
+    enabled: Boolean(postId),
     ...MEMORY_OPTIONS,
   })
 }

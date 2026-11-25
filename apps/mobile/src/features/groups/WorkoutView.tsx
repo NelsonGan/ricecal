@@ -1,7 +1,10 @@
+import { useRouter } from 'expo-router'
+import { type ReactNode, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useSettings } from '@/data'
-import { useGroupWorkout } from '@/data/groups'
+import { useSettings, useUserId } from '@/data'
+import { type GroupPerson, useGroupWorkout } from '@/data/groups'
+import { useSocialPostWorkout } from '@/data/social'
 import { WorkoutDetails } from '@/features/activity'
 import { workoutKindKey } from '@/features/activity/workoutKind'
 import { QueryNotice } from '@/features/social/components'
@@ -29,17 +32,88 @@ export function GroupWorkoutScreen({
   id: string
 }) {
   const { t } = useTranslation(['groups', 'activity', 'workouts', 'common'])
-  const back = useBack('/social')
   const query = useGroupWorkout(groupId, source, id)
   const unit = unitFor(useSettings().data?.units)
   const view = query.data
-  const openProfile = useOpenProfile()
-  const colors = useThemeColors()
   const title = view?.workout
     ? view.workout.name
     : view?.session
       ? view.session.kindLabel?.trim() || t(workoutKindKey(view.session.kind))
       : t('workouts:detail.title')
+  return (
+    <OwnedWorkoutPage title={title} owner={view?.owner} query={query}>
+      {!view ? null : view.workout ? (
+        <>
+          <SessionFigures workout={view.workout} unit={unit} owner={false} />
+          <Aside>
+            <SessionExercises workout={view.workout} unit={unit} />
+          </Aside>
+        </>
+      ) : (
+        <WorkoutDetails session={view.session} />
+      )}
+    </OwnedWorkoutPage>
+  )
+}
+
+/**
+ * A workout shared to the feed, opened from its card: the logger's figures and
+ * every set, as the owner's page draws them, headed by whose it is. Less than
+ * a group reads, since a post can reach strangers: no notes, heart rate or burn.
+ */
+export function PostWorkoutScreen({ postId }: { postId: string }) {
+  const { t } = useTranslation(['workouts'])
+  const query = useSocialPostWorkout(postId)
+  const unit = unitFor(useSettings().data?.units)
+  const router = useRouter()
+  const viewer = useUserId()
+  const view = query.data
+  // Your own post opens your own workout, with its notes, burn and records,
+  // as your own food card in a group opens your entry. Only the post knows
+  // which workout it shares, so this page reads it first and hands over.
+  const own = Boolean(view && viewer && view.owner.id === viewer)
+  const ownId = own ? view?.workout.id : undefined
+  useEffect(() => {
+    if (ownId) router.replace({ pathname: '/workout/[id]', params: { id: ownId } })
+  }, [ownId, router])
+  return (
+    <OwnedWorkoutPage
+      title={view?.workout.name ?? t('workouts:detail.title')}
+      owner={own ? undefined : view?.owner}
+      query={query}
+    >
+      {view && !own ? (
+        <>
+          <SessionFigures workout={view.workout} unit={unit} owner={false} />
+          <Aside>
+            <SessionExercises workout={view.workout} unit={unit} />
+          </Aside>
+        </>
+      ) : null}
+    </OwnedWorkoutPage>
+  )
+}
+
+/**
+ * Someone else's workout page: its name with the owner's face under it, as a
+ * pill that opens their feed, then the body once it has loaded.
+ */
+function OwnedWorkoutPage({
+  title,
+  owner,
+  query,
+  children,
+}: {
+  title: string
+  owner: GroupPerson | undefined
+  /** `data` null is an answer: gone, or no longer shown to this reader. */
+  query: { data?: unknown; isError: boolean; fetchStatus: string; refetch: () => unknown }
+  children: ReactNode
+}) {
+  const { t } = useTranslation(['groups', 'common'])
+  const back = useBack('/social')
+  const openProfile = useOpenProfile()
+  const colors = useThemeColors()
   return (
     <Screen
       header={
@@ -53,16 +127,16 @@ export function GroupWorkoutScreen({
               <Text variant="subtitle" className="text-center" numberOfLines={2}>
                 {title}
               </Text>
-              {view ? (
+              {owner ? (
                 <Tappable
-                  onPress={() => openProfile(view.owner.id)}
+                  onPress={() => openProfile(owner.id)}
                   className="flex-row items-center gap-1.5 rounded-full bg-surface-alt py-1 pl-1 pr-2.5"
                   accessibilityRole="button"
-                  accessibilityLabel={t('groups:openProfile', { name: view.owner.name })}
+                  accessibilityLabel={t('groups:openProfile', { name: owner.name })}
                 >
-                  <PersonAvatar person={view.owner} size="xs" />
+                  <PersonAvatar person={owner} size="xs" />
                   <Text variant="caption" numberOfLines={1} className="text-ink">
-                    {view.owner.name}
+                    {owner.name}
                   </Text>
                   <Icon set="ui" name="chevron-right" size={12} tintColor={colors.muted} />
                 </Tappable>
@@ -72,30 +146,22 @@ export function GroupWorkoutScreen({
         />
       }
     >
-      {!view ? (
-        query.isError || query.fetchStatus === 'paused' ? (
-          <QueryNotice
-            error={query.isError}
-            paused={query.fetchStatus === 'paused'}
-            retry={() => query.refetch()}
-          />
-        ) : (
-          <>
-            <Skeleton className="h-[220px] w-full rounded-card" />
-            <Card>
-              <Skeleton className="h-[160px] w-full" />
-            </Card>
-          </>
-        )
-      ) : view.workout ? (
-        <>
-          <SessionFigures workout={view.workout} unit={unit} owner={false} />
-          <Aside>
-            <SessionExercises workout={view.workout} unit={unit} />
-          </Aside>
-        </>
+      {owner ? (
+        children
+      ) : query.isError || query.fetchStatus === 'paused' || query.data === null ? (
+        <QueryNotice
+          error={query.isError}
+          paused={query.fetchStatus === 'paused'}
+          unavailable
+          retry={() => query.refetch()}
+        />
       ) : (
-        <WorkoutDetails session={view.session} />
+        <>
+          <Skeleton className="h-[220px] w-full rounded-card" />
+          <Card>
+            <Skeleton className="h-[160px] w-full" />
+          </Card>
+        </>
       )}
     </Screen>
   )
