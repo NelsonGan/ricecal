@@ -122,6 +122,7 @@ Deno.test(
       [() => new Response('', { status: 401 }), 'refused'],
       [() => new Response('', { status: 502 }), 'http_error'],
       [() => hosted('  ', 3), 'invalid'],
+      [() => new Response('<html>Bad gateway</html>', { status: 200 }), 'invalid'],
       [() => Promise.reject(new TypeError('network down')), 'network'],
       [() => Promise.reject(new DOMException('slow', 'TimeoutError')), 'timeout'],
     ]

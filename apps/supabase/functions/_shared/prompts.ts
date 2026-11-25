@@ -59,7 +59,7 @@ export type PromptFallback =
   | 'timeout'
   /** The request never got an answer. */
   | 'network'
-  /** An answer with no prompt text or no version. */
+  /** An answer that is not JSON, or has no prompt text or no version. */
   | 'invalid'
 
 export type ResolvedPrompt = {
@@ -166,7 +166,13 @@ async function fetchPrompt(name: PromptName): Promise<Fetched> {
               : 'http_error',
       }
     }
-    const body = (await res.json()) as { prompt?: unknown; version?: unknown }
+    // A 200 that is not JSON (an error page from a proxy) is a bad answer, not
+    // a lost connection, so it is told apart from the catch below.
+    const body = (await res.json().catch(() => null)) as {
+      prompt?: unknown
+      version?: unknown
+    } | null
+    if (!body) return { miss: 'invalid' }
     // An answer with no version is not used: every generation it served would
     // name a version nobody can open.
     if (typeof body.prompt !== 'string' || !body.prompt.trim()) return { miss: 'invalid' }

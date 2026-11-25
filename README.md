@@ -8499,7 +8499,7 @@ scan's vision call, catalogue pick and nutrition estimate read as one trace.
 | `byok` | `usage.is_byok`: `true` when our Anthropic key paid. An `anthropic/` event with `false` means OpenRouter credits were spent on it, which the routing forbids |
 | `$ai_latency`, `$ai_http_status`, `$ai_is_error`, `$ai_error`, `finish_reason` | Seconds, status and a short error; a JSON parse failure is recorded as `model answer was not valid JSON` so the answer is never quoted |
 | `feature`, `attempt`, `is_backup_model`, `$ai_max_tokens`, `$ai_temperature` | The edge function, which request this was (0 is the first, Haiku unless it is switched off, then the fallback and its one retry), whether Qwen is answering because Haiku failed in the same call (`false` when Haiku was never asked), and the call's settings. Haiku takes no temperature, so its events carry none |
-| `$ai_prompt_name`, `$ai_prompt_version`, `prompt_source`, `prompt_parts`, `prompt_fallback` | Which hosted prompt the system message was and which PostHog version (see [Hosted prompts](#hosted-prompts)). `prompt_source` is `posthog`, `bundled` (the code's copy: no key, or PostHog did not answer; no version is sent) or `mixed`. A photo with a note is two prompts, so it also carries `prompt_parts`, e.g. `analyse-photo@2+analyse-photo-note@1`. `prompt_fallback` is sent only when a part went out as the code's copy, and says why, from the first such part: `no_key` (`POSTHOG_PROMPTS_API_KEY` unset), `not_found` (404: no such prompt, or no version labelled `production`), `refused` (401 or 403), `http_error`, `timeout`, `network` or `invalid` (no text or no version). Events from before December 2026 have no `prompt_fallback` |
+| `$ai_prompt_name`, `$ai_prompt_version`, `prompt_source`, `prompt_parts`, `prompt_fallback` | Which hosted prompt the system message was and which PostHog version (see [Hosted prompts](#hosted-prompts)). `prompt_source` is `posthog`, `bundled` (the code's copy: no key, or PostHog did not answer; no version is sent) or `mixed`. A photo with a note is two prompts, so it also carries `prompt_parts`, e.g. `analyse-photo@2+analyse-photo-note@1`. `prompt_fallback` is sent only when a part went out as the code's copy, and says why, from the first such part: `no_key` (`POSTHOG_PROMPTS_API_KEY` unset), `not_found` (404: no such prompt, or no version labelled `production`), `refused` (401 or 403), `http_error`, `timeout`, `network` or `invalid` (not JSON, no text or no version). Events sent before ricecal#357 deployed (25 November 2026) have no `prompt_fallback` |
 | `$geoip_disable` | Always `true`: the request comes from Supabase's servers, whose location would otherwise overwrite the person's |
 | `distinct_id`, `$session_id`, `$ai_session_id` | The Supabase uuid the app identifies PostHog with, and the app's session from the `X-POSTHOG-SESSION-ID` header the SDK adds to Supabase requests (`addTracingHeaders`). Moderation runs as `ricecal-moderation` and creates no person |
 
@@ -8560,9 +8560,11 @@ function secret and a `production` label on every prompt, and neither failure
 breaks anything, so both are easy to miss: from the feature's launch on 27
 October 2026 to 25 November, every one of 27,201 calls in production sent the
 code's copy, because the secret was never set and only `translate-recipe` had a
-label. Filter `$ai_generation` by `prompt_source = bundled` and break it down by
-`prompt_fallback`: `no_key` is the secret, `not_found` is a missing label or a
-prompt never uploaded, `refused` is a bad key. With no key, a deployed function
+label (both fixed that day). Filter `$ai_generation` to events where
+`prompt_fallback` is set, which covers `bundled` and `mixed` (a photo whose note
+part fell back), and break it down by `prompt_fallback`: `no_key` is the secret,
+`not_found` is a missing label or a prompt never uploaded, `refused` is a bad
+key. With no key, a deployed function
 also logs `POSTHOG_PROMPTS_API_KEY is not set` once per isolate. Before setting
 the key, run `pnpm prompts:check`: once it is set, whatever `production` points
 at is what every call sends.
