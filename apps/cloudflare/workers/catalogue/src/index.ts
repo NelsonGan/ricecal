@@ -24,6 +24,7 @@
  */
 
 import { verifyUser } from './auth.ts'
+import { errorText } from './log.ts'
 import { asTyped, ftsQuery, gtin14, normalize, quote, trigrams } from './text.ts'
 
 export interface Env {
@@ -282,7 +283,11 @@ async function search(env: Env, q: string, limit: number): Promise<unknown[]> {
     results = await env.DB.batch(statements(true))
   } catch (error) {
     if (!String(error).includes('food_trgm_vocab')) throw error
-    console.error('catalogue worker: food_trgm_vocab missing, apply schema.sql', error)
+    console.error(
+      'catalogue worker: food_trgm_vocab missing, apply schema.sql',
+      errorText(error),
+      error,
+    )
     results = await env.DB.batch(statements(false))
   }
 
@@ -461,7 +466,7 @@ async function tryIncrementSearchCount(env: Env): Promise<number | null> {
   try {
     return await incrementSearchCount(env)
   } catch (error) {
-    console.error('catalogue worker search count increment', error)
+    console.error('catalogue worker search count increment', errorText(error), error)
     return null
   }
 }
@@ -481,7 +486,7 @@ async function publicSearchCount(request: Request, env: Env): Promise<Response> 
       },
     })
   } catch (error) {
-    console.error('catalogue worker search count read', error)
+    console.error('catalogue worker search count read', errorText(error), error)
     return new Response(JSON.stringify({ ok: false, error: 'query failed' }), {
       status: 503,
       headers: {
@@ -601,7 +606,7 @@ async function publicSearch(
     // Caught here rather than by the handler's own catch, so that the 500 keeps
     // its CORS header and the page sees a failed search instead of a browser
     // console message about a cross-origin refusal.
-    console.error('catalogue worker public', error)
+    console.error('catalogue worker public', errorText(error), error)
     return reply({ ok: false, error: 'query failed' }, 500)
   }
 }
@@ -687,7 +692,7 @@ async function publicFood(
       },
     })
   } catch (error) {
-    console.error('catalogue worker public food', error)
+    console.error('catalogue worker public food', errorText(error), error)
     return reply({ ok: false, error: 'query failed' }, 500)
   }
 }
@@ -896,7 +901,7 @@ export default {
           return json({ ok: false, error: 'unknown path' }, 404)
       }
     } catch (error) {
-      console.error('catalogue worker', error)
+      console.error('catalogue worker', errorText(error), error)
       return json({ ok: false, error: 'query failed' }, 500)
     }
   },
