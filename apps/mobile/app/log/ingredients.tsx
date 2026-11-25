@@ -14,7 +14,13 @@ import {
   useSettings,
   useUpdateIngredient,
 } from '@/data'
-import { AddPartSheet, type PartEdits, PlateEditor, partChanges } from '@/features/logging'
+import {
+  AddPartSheet,
+  MacrosToggle,
+  type PartEdits,
+  PlateEditor,
+  partChanges,
+} from '@/features/logging'
 import { useBack } from '@/lib/navigation'
 import { SessionGate } from '@/lib/SessionGate'
 import { AppBar, Screen, useToast } from '@/ui'
@@ -216,6 +222,9 @@ function IngredientsScreen() {
           title={t('logging:detail.plateHeading')}
           onBack={() => goBack()}
           backLabel={t('common:a11y.back')}
+          // The same switch as the dish's ingredient card, and the same
+          // preference: whether each part shows its macros.
+          action={ingredients.length ? <MacrosToggle /> : undefined}
         />
       }
     >

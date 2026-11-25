@@ -46,6 +46,7 @@ import {
   FixSheet,
   IconPicker,
   instantOn,
+  MacrosToggle,
   MealShareCard,
   NO_FIGURES,
   NutritionSheet,
@@ -62,13 +63,14 @@ import {
   switchedQuantity,
   type TypedFigures,
   useMealShare,
+  usePartMacros,
 } from '@/features/logging'
 import { useRequirePro } from '@/features/paywall'
 import { LocationCard, PlacePickerSheet, type PlaceSource } from '@/features/places'
 import {
   formatTime,
   MacroBars,
-  MacroDots,
+  MacroFigures,
   MealPhoto,
   type MeasureChoice,
   MeasureList,
@@ -338,6 +340,7 @@ function FoodDetail() {
   const settings = useSettings()
   const units = settings.data?.units
   const measureText = useMeasureText()
+  const [showMacros] = usePartMacros()
 
   /**
    * Where a NEW log of a dish opens, decided once, when the food arrives. Not an
@@ -1792,33 +1795,43 @@ function FoodDetail() {
                  sheet cannot host a second sheet without one of them having to
                  close, which is what dropped the user two panels back when they
                  dismissed the search. See `log/ingredients`. */
-                <CardEdit
-                  label={t('logging:detail.editPlate')}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/log/ingredients',
-                      params: { entryId: existing.id, logDate: existing.logDate },
-                    })
-                  }
-                />
+                <View className="flex-row items-center gap-4">
+                  {/* Whether each part shows its macros. Off by default, and the
+                      same preference as the ingredients page's. */}
+                  {parts.length ? <MacrosToggle /> : null}
+                  <CardEdit
+                    label={t('logging:detail.editPlate')}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/log/ingredients',
+                        params: { entryId: existing.id, logDate: existing.logDate },
+                      })
+                    }
+                  />
+                </View>
               }
             >
               {parts.map((ingredient) => {
                 const unit = partUnit(ingredient, units)
+                // Kept in one piece when the line wraps: "(30" and "g)" on two
+                // lines was how the old bracket broke.
+                const amount = unit
+                  ? measureText.amount(shownIn(ingredient, unit), unit).replace(/ /g, '\u00A0')
+                  : undefined
                 return (
                   <View key={ingredient.id} className="flex-row items-start justify-between gap-3">
-                    {/* HOW MANY AND WHAT, then under it HOW MUCH AND WHAT IT
-                      BRINGS: a cart line with its nutrition label folded into
-                      one quiet row.
+                    {/* HOW MANY, WHAT AND HOW MUCH, one line, which is all most
+                      people open this card for. With Macros on, the amount
+                      moves to a second line and leads the part's carbs, protein
+                      and fat, in the colours of the bars directly above, which
+                      is what lets them go without names.
 
                       The two numbers answer different questions and the row
                       needs both. 480 g is what to check against the plate in
                       front of you; "1 ×" is what to check against yourself. The
                       amount is in the part's own unit, the one picked for it on
                       the ingredients page, so soy sauce reads in spoons and a
-                      drink in millilitres. The dots are the macro bars' own
-                      colours, directly above, which is what lets them go
-                      without names.
+                      drink in millilitres.
 
                       NO `numberOfLines`. A part's name is what this card exists
                       to show, the model's own account of what was on the plate,
@@ -1826,19 +1839,17 @@ function FoodDetail() {
                       peppers" came out as three words and an ellipsis on the one
                       screen somebody opens to check exactly that. */}
                     <View className="min-w-0 flex-1 gap-0.5">
-                      <PartLine quantity={ingredient.quantity} name={ingredient.name} />
-                      <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
-                        {unit ? (
-                          <Text variant="meta">
-                            {`${measureText.amount(shownIn(ingredient, unit), unit)} ·`}
-                          </Text>
-                        ) : null}
-                        <MacroDots
+                      <PartLine quantity={ingredient.quantity} name={ingredient.name}>
+                        {amount && !showMacros ? <Text variant="meta">{` ${amount}`}</Text> : null}
+                      </PartLine>
+                      {showMacros ? (
+                        <MacroFigures
                           carbs={ingredient.carbs}
                           protein={ingredient.protein}
                           fat={ingredient.fat}
+                          lead={amount}
                         />
-                      </View>
+                      ) : null}
                     </View>
                     <View className="flex-row items-baseline gap-1">
                       <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>

@@ -26,7 +26,7 @@ export {
 } from './ItemRow'
 export { LanguageAiNote, LanguageHelpButton } from './LanguageHelp'
 export { MacroBars, type MacroBarsProps } from './MacroBars'
-export { MacroDots } from './MacroDots'
+export { MacroFigures } from './MacroFigures'
 export { MealPhoto, type MealPhotoProps } from './MealPhoto'
 export { type MeasureChoice, MeasureList, UnitPill } from './MeasurePicker'
 export { PartRow, type PartRowProps } from './PartRow'

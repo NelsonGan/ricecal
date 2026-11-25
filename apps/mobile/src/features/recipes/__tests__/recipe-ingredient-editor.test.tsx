@@ -195,7 +195,8 @@ it('shows small gram amounts exactly and does not offer a unit that would round 
   )
   expect(screen.getByLabelText('Change how much Sugar, currently 10.5 g')).toBeOnTheScreen()
   await user.press(screen.getByRole('button', { name: 'Unit for Sugar, g' }))
-  expect(screen.getByRole('radio', { name: '0.01 kg, 39 kcal' })).toBeDisabled()
+  // Not offered at all, rather than offered greyed out.
+  expect(screen.queryByRole('radio', { name: '0.01 kg, 39 kcal' })).toBeNull()
   await user.press(screen.getByRole('radio', { name: '10.5 g, 41 kcal' }))
   expect(onAmountChange).not.toHaveBeenCalled()
   expect(onUnitChange).not.toHaveBeenCalled()

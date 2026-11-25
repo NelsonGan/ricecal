@@ -12,6 +12,7 @@ export {
 } from './FoodSearchPanel'
 export { IconPicker, type IconPickerProps } from './IconPicker'
 export { type CaptureMode, InlineCamera, type InlineCameraProps } from './InlineCamera'
+export { MacrosToggle, usePartMacros } from './MacrosToggle'
 export {
   MealShareCard,
   type MealShareCardProps,

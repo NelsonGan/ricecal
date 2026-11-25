@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
 import type { EntryIngredient, Units } from '@/data'
-import { MacroDots } from '@/features/shared/MacroDots'
+import { MacroFigures } from '@/features/shared/MacroFigures'
 import { MeasureList, UnitPill } from '@/features/shared/MeasurePicker'
 import { PartRow } from '@/features/shared/PartRow'
 import { measureFigure, useMeasureText } from '@/features/shared/useMeasureText'
@@ -12,6 +12,7 @@ import { roundHalfUp } from '@/lib/nutrition'
 import { formatPortion, titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, Card, cn, Divider, Sheet, TEXT_SCALES, Text, useNumpadField } from '@/ui'
+import { usePartMacros } from './MacrosToggle'
 import { PartLine } from './PartLine'
 import { type PartEdits, stagedParts, stepPart } from './parts'
 import { partUnit, partUnits, quantityIn, shownIn, stepIn } from './partUnits'
@@ -186,6 +187,7 @@ export function PlateEditor({
 }: PlateEditorProps) {
   const { t } = useTranslation(['logging', 'recipes', 'common'])
   const measureText = useMeasureText()
+  const [showMacros] = usePartMacros()
   /** The part whose unit list is open. */
   const [choosing, setChoosing] = useState<EntryIngredient | null>(null)
 
@@ -363,15 +365,19 @@ export function PlateEditor({
               onLess={atFloor ? null : () => step(ingredient, -1)}
               onMore={atCeiling ? null : () => step(ingredient, 1)}
               joined
-              // What the part brings, under the calories it adds up to. Dots
-              // rather than words on every row: the total names them once.
+              // What the part brings, under the calories it adds up to, when
+              // the header's Macros switch asks for it. Coloured figures rather
+              // than words on every row: the total names them once.
               detail={
-                <MacroDots
-                  carbs={ingredient.carbs}
-                  protein={ingredient.protein}
-                  fat={ingredient.fat}
-                  className="-mt-1"
-                />
+                showMacros ? (
+                  <View className="-mt-1">
+                    <MacroFigures
+                      carbs={ingredient.carbs}
+                      protein={ingredient.protein}
+                      fat={ingredient.fat}
+                    />
+                  </View>
+                ) : undefined
               }
             >
               {/* THE AMOUNT, IN THE PART'S UNIT, AND IT IS A FIELD.
@@ -438,13 +444,15 @@ export function PlateEditor({
             <Text variant="caption">{t('common:unit.kcal')}</Text>
           </View>
         </View>
-        {/* The plate's macros, with their names: the key to the dots above. */}
-        <MacroDots
-          carbs={plateMacros.carbs}
-          protein={plateMacros.protein}
-          fat={plateMacros.fat}
-          named
-        />
+        {/* The plate's macros, with their names: the key to the colours above. */}
+        {showMacros ? (
+          <MacroFigures
+            carbs={plateMacros.carbs}
+            protein={plateMacros.protein}
+            fat={plateMacros.fat}
+            named
+          />
+        ) : null}
       </View>
       {/* And what counts of it, when not all of it was eaten. The same line the
           entry's own ingredient card draws, for the same reason: every figure

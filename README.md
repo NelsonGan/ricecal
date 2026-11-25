@@ -2455,7 +2455,10 @@ converts nothing, keeps one segmented row per family), and each ingredient row
 is one joined pill (minus, "2 tbsp ▾", plus) with its calories on the name line.
 Picking a line lands the row on that line's figure, never more than 2% from the
 exact one, and a line that would move the calories by more than that (an eighth
-of a cup stored as 0.13) is greyed out.
+of a cup stored as 0.13) is left off the list. It was greyed out, and a real
+350 ml latte showed "20 tsp · 72 kcal" in grey: a figure that was not true,
+offered and then refused. `MeasureList` drops a disabled line unless it is the
+one in use.
 
 **Only what the food can honestly be measured in is offered.** Weight and volume
 are two families, and crossing between them needs the food: a cup of cooked rice
@@ -2513,8 +2516,8 @@ portions back. Without one (a scan, a typed meal), the base serving is offered a
 **A unit the column cannot price is not offered.** A factor is three decimals,
 so a teaspoon of a 2 L bottle (0.00246) would be stored as 0.002 and log 19%
 light. `measurePortions` drops any unit its factor would round by more than 2%;
-the bottle keeps millilitres and cups. A unit chip that cannot hold what was
-eaten (1½ cups is 24 tablespoons) is disabled rather than tapped and quietly cut
+the bottle keeps millilitres and cups. A unit that cannot hold what was eaten
+(1½ cups is 24 tablespoons) is not listed, rather than tapped and quietly cut
 short.
 
 **No quantity goes past 20**, though the column takes 100. Every build already in
@@ -2671,11 +2674,17 @@ a half, cups by a quarter) from the figure on screen, not the exact one: 2½ tbs
 stored to four places reads back as 2.50003, whose next mark down was 2½ itself.
 A part with no unit keeps its multiplier and cannot be typed into.
 
-**Each part shows what it brings: carbs, protein and fat as three coloured dots
-with their grams** (`MacroDots`), on one quiet line under the name, beside the
-calories they explain. No names on the rows. On the dish's card the macro bars
-directly above use the same colours; on the page the total names them once,
-under the plate's own sum.
+**A part's macros are behind a "Macros" switch, off by default**, at the top
+right of the dish's INGREDIENTS card and of the ingredients page. It is one
+preference for both screens, kept on the phone (`usePartMacros`). Off, a part is
+one line: "1 × Steamed Chicken 200 g", then its calories. On, the amount moves to
+a second line and leads carbs, protein and fat as three bare figures in the
+macro bars' colours ("200 g · 0 · 40 · 18", `MacroFigures`), and the page's
+total spells the names out once. It shipped first as three dots with grams under
+every part, always on, and a five-part plate read as a table when what most
+people open it for is the calories. The amount on the one-line row is joined
+with no-break spaces, so "30 g" never splits across a wrap the way the old
+"(30 g)" bracket did.
 
 **The count is rounded to a quarter and the weight is not**, so the row can read
 "1¼ × Fried Rice (110 g)". Rounding the stored amount instead would cost the
