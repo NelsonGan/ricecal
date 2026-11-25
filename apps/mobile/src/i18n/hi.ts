@@ -1682,7 +1682,6 @@ export const hi = {
       name: 'नाम',
       namePlaceholder: 'आप इसे क्या कहते हैं?',
       changePicture: 'तस्वीर बदलें',
-      change: 'बदलें',
       replacePhotoTitle: 'इसकी जगह चित्र लगाएं?',
       replacePhotoBody: 'इस रेसिपी की फ़ोटो हटा दी जाएगी।',
       replacePhotoConfirm: 'चित्र लगाएं',

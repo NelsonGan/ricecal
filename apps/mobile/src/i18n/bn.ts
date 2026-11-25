@@ -1678,7 +1678,6 @@ export const bn = {
       name: 'নাম',
       namePlaceholder: 'একে আপনি কী বলেন?',
       changePicture: 'ছবি বদলান',
-      change: 'বদলান',
       replacePhotoTitle: 'বরং একটি আঁকা ছবি দেবেন?',
       replacePhotoBody: 'এই রেসিপির তোলা ছবিটি সরিয়ে ফেলা হবে।',
       replacePhotoConfirm: 'আঁকা ছবি দিন',

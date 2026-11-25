@@ -1694,7 +1694,6 @@ export const vi = {
       name: 'Tên',
       namePlaceholder: 'Bạn gọi nó là gì?',
       changePicture: 'Đổi hình',
-      change: 'Đổi',
       replacePhotoTitle: 'Dùng hình vẽ thay thế?',
       replacePhotoBody: 'Ảnh chụp của công thức này sẽ bị xoá.',
       replacePhotoConfirm: 'Dùng hình vẽ',

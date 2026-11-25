@@ -1719,7 +1719,6 @@ export const fil = {
       name: 'Pangalan',
       namePlaceholder: 'Ano ang tawag mo dito?',
       changePicture: 'Palitan ang larawan',
-      change: 'Palitan',
       replacePhotoTitle: 'Gumamit na lang ng drawing?',
       replacePhotoBody: 'Aalisin ang litrato ng recipe na ito.',
       replacePhotoConfirm: 'Gamitin ang drawing',

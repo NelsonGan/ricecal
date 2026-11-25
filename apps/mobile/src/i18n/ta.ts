@@ -1690,7 +1690,6 @@ export const ta = {
       name: 'பெயர்',
       namePlaceholder: 'இதை என்ன அழைக்கிறீர்கள்?',
       changePicture: 'படத்தை மாற்று',
-      change: 'மாற்று',
       replacePhotoTitle: 'அதற்குப் பதில் ஓவியம் வேண்டுமா?',
       replacePhotoBody: 'இந்தச் செய்முறையின் புகைப்படம் நீக்கப்படும்.',
       replacePhotoConfirm: 'ஓவியத்தைப் பயன்படுத்து',

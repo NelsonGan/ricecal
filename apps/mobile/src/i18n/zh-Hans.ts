@@ -1681,7 +1681,6 @@ export const zhHans = {
       name: '名称',
       namePlaceholder: '你管它叫什么？',
       changePicture: '换一张图',
-      change: '更换',
       replacePhotoTitle: '改用一张插图？',
       replacePhotoBody: '这个食谱的照片会被删掉。',
       replacePhotoConfirm: '用插图',

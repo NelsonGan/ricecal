@@ -1716,7 +1716,6 @@ export const ms = {
       name: 'Nama',
       namePlaceholder: 'Apa anda panggil ia?',
       changePicture: 'Tukar gambar',
-      change: 'Tukar',
       replacePhotoTitle: 'Guna lukisan sebaliknya?',
       replacePhotoBody: 'Foto resipi ini akan dibuang.',
       replacePhotoConfirm: 'Guna lukisan',

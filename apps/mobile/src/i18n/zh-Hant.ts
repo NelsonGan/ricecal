@@ -1681,7 +1681,6 @@ export const zhHant = {
       name: '名稱',
       namePlaceholder: '你都叫它什麼？',
       changePicture: '換一張圖',
-      change: '更換',
       replacePhotoTitle: '改用一張插圖？',
       replacePhotoBody: '這個食譜的照片會被刪掉。',
       replacePhotoConfirm: '用插圖',

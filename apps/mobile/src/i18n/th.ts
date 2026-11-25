@@ -1680,7 +1680,6 @@ export const th = {
       name: 'ชื่อ',
       namePlaceholder: 'คุณเรียกมันว่าอะไร',
       changePicture: 'เปลี่ยนรูป',
-      change: 'เปลี่ยน',
       replacePhotoTitle: 'ใช้ภาพวาดแทนไหม',
       replacePhotoBody: 'รูปถ่ายของสูตรอาหารนี้จะถูกลบ',
       replacePhotoConfirm: 'ใช้ภาพวาด',

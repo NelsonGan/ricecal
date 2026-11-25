@@ -193,7 +193,6 @@ export const recipes = {
     name: 'Name',
     namePlaceholder: 'What do you call it?',
     changePicture: 'Change the picture',
-    change: 'Change',
     /**
      * The one choice in this form that throws something away: a drawing over a
      * photograph of the real pot.

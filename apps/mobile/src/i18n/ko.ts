@@ -1684,7 +1684,6 @@ export const ko = {
       name: '이름',
       namePlaceholder: '이 요리를 뭐라고 부르시나요?',
       changePicture: '그림 바꾸기',
-      change: '변경',
       replacePhotoTitle: '대신 그림을 쓸까요?',
       replacePhotoBody: '이 레시피의 사진은 지워집니다.',
       replacePhotoConfirm: '그림 사용',

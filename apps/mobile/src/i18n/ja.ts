@@ -1690,7 +1690,6 @@ export const ja = {
       name: '名前',
       namePlaceholder: 'なんと呼んでいますか',
       changePicture: '画像を変更',
-      change: '変更',
       replacePhotoTitle: '代わりにイラストを使いますか',
       replacePhotoBody: 'このレシピの写真は削除されます。',
       replacePhotoConfirm: 'イラストを使う',

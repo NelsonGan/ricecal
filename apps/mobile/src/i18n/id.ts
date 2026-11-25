@@ -1701,7 +1701,6 @@ export const id = {
       name: 'Nama',
       namePlaceholder: 'Kamu menyebutnya apa?',
       changePicture: 'Ganti gambar',
-      change: 'Ganti',
       replacePhotoTitle: 'Pakai ilustrasi saja?',
       replacePhotoBody: 'Foto resep ini akan dihapus.',
       replacePhotoConfirm: 'Pakai ilustrasi',
