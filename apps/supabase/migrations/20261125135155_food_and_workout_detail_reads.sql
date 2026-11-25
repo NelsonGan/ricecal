@@ -35,6 +35,59 @@ begin
 end;
 $function$;
 
+CREATE OR REPLACE FUNCTION private.social_post_workout (
+  p_post_id uuid
+)
+  RETURNS TABLE (
+    workout_name       text,
+    workout_started_at timestamp with time zone,
+    workout_duration_s integer,
+    workout_sets       integer,
+    workout_volume_kg  numeric,
+    workout_exercises  jsonb
+  )
+  LANGUAGE plpgsql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+declare
+  v_workout_id uuid;
+  v_author_id uuid;
+begin
+  select p.source_workout_id, p.author_id into v_workout_id, v_author_id
+  from public.social_posts p
+  where p.id = p_post_id and p.kind = 'workout' and private.social_can_view_post(p.id);
+  if not found then return; end if;
+
+  return query select w.name, w.started_at, w.duration_s,
+    coalesce(stats.set_count, 0), coalesce(stats.volume_kg, 0),
+    coalesce(list.exercises, '[]'::jsonb)
+  from public.workouts w
+  -- The volume counts only what was lifted: a barbell set's volume and what
+  -- was added to a bodyweight one, never the body. The post's page lists
+  -- every set's reps, and with those a total carrying the body weight would
+  -- give the owner's weigh-in away. social_workout_post_detail sums the same.
+  left join lateral (
+    select count(*)::integer as set_count,
+      sum(case
+        when v.tracking = 'weight_reps' then v.volume_kg
+        when v.tracking = 'weighted_reps' and v.reps > 0 and v.weight_kg > 0 then v.weight_kg * v.reps
+      end) as volume_kg
+    from public.workout_set_values v where v.workout_id = w.id
+  ) stats on true
+  left join lateral (
+    select jsonb_agg(jsonb_build_object(
+      'exercise_id', e.exercise_id,
+      'exercise_name', e.exercise_name,
+      'sets', (select count(*) from public.workout_sets s where s.workout_exercise_id = e.id)
+    ) order by e.position) as exercises
+    from public.workout_exercises e where e.workout_id = w.id
+  ) list on true
+  where w.id = v_workout_id and w.user_id = v_author_id;
+end;
+$function$;
+
 CREATE FUNCTION public.group_entry_detail (
   p_group_id uuid,
   p_entry_id uuid
@@ -112,20 +165,28 @@ begin
         'started_at', w.started_at, 'ended_at', w.ended_at, 'duration_s', w.duration_s,
         'log_date', w.log_date, 'routine_id', null, 'kcal', null, 'health_workout_id', null,
         'set_count', (select count(*) from public.workout_set_values v where v.workout_id = w.id),
-        'volume_kg', coalesce((select sum(v.volume_kg) from public.workout_set_values v where v.workout_id = w.id), 0),
+        'volume_kg', coalesce((select sum(case
+            when v.tracking = 'weight_reps' then v.volume_kg
+            when v.tracking = 'weighted_reps' and v.reps > 0 and v.weight_kg > 0 then v.weight_kg * v.reps
+          end) from public.workout_set_values v where v.workout_id = w.id), 0),
         'exercises', '[]'::jsonb)
       from public.workouts w where w.id = v_workout),
     'exercises', coalesce((
       select jsonb_agg(to_jsonb(e) - 'notes' || jsonb_build_object('notes', null) order by e.position)
       from public.workout_exercises e where e.workout_id = v_workout), '[]'::jsonb),
     -- Field by field rather than the whole row: a bodyweight exercise's load is
-    -- the owner's own weigh-in, so neither it nor the volume made from it goes.
+    -- the owner's own weigh-in, so it never goes, and its volume is only what
+    -- was added (weight_kg here is what the owner typed: the added weight or
+    -- the help, never the body).
     'sets', coalesce((
       select jsonb_agg(jsonb_build_object('id', v.id, 'workout_exercise_id', v.workout_exercise_id,
           'exercise_id', v.exercise_id, 'exercise_position', v.exercise_position, 'position', v.position,
           'kind', v.kind, 'weight_kg', v.weight_kg, 'reps', v.reps, 'duration_s', v.duration_s,
           'distance_m', v.distance_m, 'rpe', v.rpe,
-          'volume_kg', case when v.tracking = 'weight_reps' then v.volume_kg end,
+          'volume_kg', case
+            when v.tracking = 'weight_reps' then v.volume_kg
+            when v.tracking = 'weighted_reps' and v.reps > 0 and v.weight_kg > 0 then v.weight_kg * v.reps
+          end,
           'e1rm_kg', v.e1rm_kg) order by v.exercise_position, v.position)
       from public.workout_set_values v where v.workout_id = v_workout), '[]'::jsonb)
   );
@@ -135,6 +196,7 @@ $function$;
 GRANT ALL ON FUNCTION public.social_workout_post_detail(uuid) TO authenticated;
 
 GRANT ALL ON FUNCTION public.social_workout_post_detail(uuid) TO service_role;
+
 -- Not captured by the diff (see Traps in the README): a new function is
 -- executable by PUBLIC until it is revoked.
 REVOKE EXECUTE ON FUNCTION public.group_entry_detail(uuid, uuid) FROM public, anon;

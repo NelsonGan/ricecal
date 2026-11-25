@@ -2558,7 +2558,6 @@ export const vi = {
     startGroup: 'Lập nhóm',
     seeAll: 'Xem tất cả ({{total}})',
     openBoard: 'Mở bảng',
-    portionTitle: 'KHẨU PHẦN',
     settings: 'Cài đặt nhóm',
     column: {
       breakfast: 'Sáng',

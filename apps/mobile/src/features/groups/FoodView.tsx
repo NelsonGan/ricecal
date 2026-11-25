@@ -15,6 +15,7 @@ import {
 } from '@/features/logging'
 import { formatTime, MacroFigures, useMeasureText, usePortionWords } from '@/features/shared'
 import { QueryNotice } from '@/features/social/components'
+import { convert, MEASURES, type MeasureUnit, roundedFor } from '@/lib/measures'
 import { useBack } from '@/lib/navigation'
 import { roundHalfUp } from '@/lib/nutrition'
 import { formatPortion, portionLabel } from '@/lib/portions'
@@ -30,9 +31,9 @@ const CONTENT_LIFT = 22
 
 /** Carbs, protein and fat, in the colours every chart in the app uses. */
 const MACROS = [
-  { key: 'carbs_g', label: 'macro.carbs', tile: 'bg-kaya-soft' },
-  { key: 'protein_g', label: 'macro.protein', tile: 'bg-hibiscus-soft' },
-  { key: 'fat_g', label: 'macro.fat', tile: 'bg-pandan-soft' },
+  { key: 'carbs_g', label: 'macro.carbs', tile: 'bg-kaya-soft', ink: 'text-kaya-ink' },
+  { key: 'protein_g', label: 'macro.protein', tile: 'bg-hibiscus-soft', ink: 'text-hibiscus-ink' },
+  { key: 'fat_g', label: 'macro.fat', tile: 'bg-teh-soft', ink: 'text-teh-ink' },
 ] as const
 
 /**
@@ -104,12 +105,28 @@ export function FoodBody({ view, heroHeight }: { view: GroupFoodView; heroHeight
   // parts counts the plate; anything else counts its serving.
   const plate = parts.length > 0 ? entry.plate_quantity : 1
   const eaten = roundHalfUp(entry.quantity * plate, 2)
-  const portion = portionLabel(eaten, entry.serving_label, words) ?? words.servings(eaten)
-  // What that weighs, beside a portion that is not itself a weight.
-  const weighs =
-    entry.grams && !/\d\s*(g|kg|ml|l)\b/i.test(portion)
-      ? measureText.amount(Math.round(entry.grams), 'g')
-      : null
+  // Which unit the portion was measured in, if any, so a weight is not said
+  // twice ("150 g · ≈ 150 g") in any language.
+  const measured: { unit: MeasureUnit | null } = { unit: null }
+  const portion =
+    portionLabel(eaten, entry.serving_label, {
+      ...words,
+      measured: (amount, unit) => {
+        measured.unit = unit
+        return words.measured(amount, unit)
+      },
+    }) ?? words.servings(eaten)
+  // What that weighs, in the viewer's own units, beside a portion that is not
+  // itself a weight or a volume.
+  const weighs = (() => {
+    if (!entry.grams || entry.grams <= 0) return null
+    const unit = measured.unit
+    if (unit && (MEASURES[unit].family === 'weight' || unit === 'ml')) return null
+    const shown = units === 'imperial' ? 'oz' : 'g'
+    const amount = roundedFor(shown, convert(entry.grams, 'g', shown))
+    return amount > 0 ? measureText.amount(amount, shown) : null
+  })()
+  const portionText = weighs ? `${portion} · ≈ ${weighs}` : portion
 
   const extras = [
     { key: 'fibre', label: t('logging:detail.fibre'), value: entry.fibre_g, unit: 'g' },
@@ -163,24 +180,39 @@ export function FoodBody({ view, heroHeight }: { view: GroupFoodView; heroHeight
           </Text>
         </View>
 
-        <Card title={t('groups:portionTitle')}>
-          <View className="flex-row flex-wrap items-baseline gap-x-3 gap-y-1">
-            <Text variant="numeric">{portion}</Text>
-            {weighs ? <Text variant="meta">≈ {weighs}</Text> : null}
+        {/* The portion rides on the total's title line, as a pill, rather
+            than taking a card of its own for one line. */}
+        <Card
+          title={t('logging:detail.total')}
+          action={
+            <View className="max-w-[62%] rounded-full bg-pandan-soft px-3 py-1">
+              <Text
+                variant="caption"
+                className="text-pandan-ink"
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
+              >
+                {portionText}
+              </Text>
+            </View>
+          }
+        >
+          <View className="flex-row items-baseline gap-1.5">
+            <Text variant="displayMd">{Math.round(entry.kcal).toLocaleString()}</Text>
+            <Text variant="label" className="text-muted">
+              {t('common:unit.kcal')}
+            </Text>
           </View>
-        </Card>
-
-        <Card title={t('logging:detail.total')}>
-          <Text variant="displayMd">{Math.round(entry.kcal).toLocaleString()}</Text>
           {/* Three tiles rather than bars: a bar measures against a target,
-                  and the viewer's targets say nothing about someone else's meal. */}
+              and the viewer's targets say nothing about someone else's meal. */}
           <View className="flex-row gap-2">
             {MACROS.map((macro) => (
               <View
                 key={macro.key}
                 className={cn('min-w-0 flex-1 gap-0.5 rounded-tile px-3 py-2.5', macro.tile)}
               >
-                <Text variant="caption" numberOfLines={1} className="text-ink">
+                <Text variant="caption" numberOfLines={1} className={macro.ink}>
                   {t(`common:${macro.label}`)}
                 </Text>
                 <Text variant="numeric" numberOfLines={1} adjustsFontSizeToFit>

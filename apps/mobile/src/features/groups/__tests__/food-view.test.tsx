@@ -12,13 +12,17 @@ const METRICS = {
 }
 
 const mockPush = jest.fn()
-beforeEach(() => mockPush.mockClear())
+let mockUnits = 'metric'
+beforeEach(() => {
+  mockPush.mockClear()
+  mockUnits = 'metric'
+})
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
 jest.mock('@/data', () => ({
   ENTRY_FOOD_ID: '_entry',
   useUserId: () => 'me',
   useSelectedDate: () => ({ todayKey: '2026-11-25' }),
-  useSettings: () => ({ data: { units: 'metric', show_part_macros: false } }),
+  useSettings: () => ({ data: { units: mockUnits, show_part_macros: false } }),
   useUpdateSettings: () => ({ mutate: jest.fn() }),
   storedImageSource: () => undefined,
   useMealPhotoUrl: () => ({ data: undefined }),
@@ -90,8 +94,9 @@ it("draws a friend's food with its portion, totals and every part", async () => 
   )
   expect(screen.getByText('Nasi lemak')).toBeTruthy()
   expect(screen.getByRole('button', { name: /Mina Tan/ })).toBeTruthy()
-  // Half as much again of the plate.
+  // Half as much again of the plate, on the total's title line.
   expect(screen.getByText('1½ plates')).toBeTruthy()
+  expect(screen.getByText('KCAL TOTAL')).toBeTruthy()
   // The total, and again under the plate as the share of it eaten.
   expect(screen.getAllByText('630')).toHaveLength(2)
   expect(screen.getByText('99g')).toBeTruthy()
@@ -128,4 +133,29 @@ it("opens a friend's food as a page and your own as your entry", async () => {
     pathname: '/group/food',
     params: { group: 'group', entry: 'mine' },
   })
+})
+
+it("says what a portion weighs, in the reader's own units, unless it is a weight", async () => {
+  const draw = async (entry: Partial<GroupFoodView['entry']>) =>
+    render(
+      <SafeAreaProvider initialMetrics={METRICS}>
+        <FoodBody
+          view={{ ...view, parts: [], entry: { ...view.entry, ...entry } }}
+          heroHeight={300}
+        />
+      </SafeAreaProvider>,
+    )
+  await draw({ grams: 420, plate_quantity: 1 })
+  expect(screen.getByText(/^1 plate · ≈ 420\sg$/)).toBeTruthy()
+  screen.unmount()
+
+  mockUnits = 'imperial'
+  await draw({ grams: 420, plate_quantity: 1 })
+  expect(screen.getByText(/^1 plate · ≈ 14.+oz$/)).toBeTruthy()
+  screen.unmount()
+
+  // A portion that is already a weight does not say it twice.
+  mockUnits = 'metric'
+  await draw({ grams: 150, serving_label: '100 g', quantity: 1.5, plate_quantity: 1 })
+  expect(screen.queryByText(/≈/)).toBeNull()
 })

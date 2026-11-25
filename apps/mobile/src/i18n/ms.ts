@@ -2581,7 +2581,6 @@ export const ms = {
     startGroup: 'Mulakan kumpulan',
     seeAll: 'Lihat semua ({{total}})',
     openBoard: 'Buka papan',
-    portionTitle: 'HIDANGAN',
     settings: 'Tetapan kumpulan',
     column: {
       breakfast: 'Sarapan',

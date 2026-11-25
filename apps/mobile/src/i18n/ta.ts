@@ -2563,7 +2563,6 @@ export const ta = {
     startGroup: 'குழு தொடங்கு',
     seeAll: 'அனைவரையும் காண் ({{total}})',
     openBoard: 'பலகையைத் திற',
-    portionTitle: 'அளவு',
     settings: 'குழு அமைப்புகள்',
     column: {
       breakfast: 'காலை',

@@ -106,7 +106,9 @@ grant execute on function public.create_social_workout_post to authenticated, se
 -- group, under the post's own visibility rather than a group's. A post can
 -- reach strangers, so this is less than a group reads: never the notes, the
 -- heart rate, nor the burn or a bodyweight set's load, which are worked out
--- from the owner's weight (the total volume is the card's own figure). The
+-- from the owner's weight. Its volume, a set's and the total (the card's own
+-- figure, from social_post_workout), counts only what was lifted: with every
+-- set's reps on the page, a total carrying the body would give it away. The
 -- records are the count taken when it was posted, as the card draws them,
 -- since scoring them here would read the owner's whole history.
 create or replace function public.social_workout_post_detail(p_post_id uuid)
@@ -132,20 +134,28 @@ begin
         'started_at', w.started_at, 'ended_at', w.ended_at, 'duration_s', w.duration_s,
         'log_date', w.log_date, 'routine_id', null, 'kcal', null, 'health_workout_id', null,
         'set_count', (select count(*) from public.workout_set_values v where v.workout_id = w.id),
-        'volume_kg', coalesce((select sum(v.volume_kg) from public.workout_set_values v where v.workout_id = w.id), 0),
+        'volume_kg', coalesce((select sum(case
+            when v.tracking = 'weight_reps' then v.volume_kg
+            when v.tracking = 'weighted_reps' and v.reps > 0 and v.weight_kg > 0 then v.weight_kg * v.reps
+          end) from public.workout_set_values v where v.workout_id = w.id), 0),
         'exercises', '[]'::jsonb)
       from public.workouts w where w.id = v_workout),
     'exercises', coalesce((
       select jsonb_agg(to_jsonb(e) - 'notes' || jsonb_build_object('notes', null) order by e.position)
       from public.workout_exercises e where e.workout_id = v_workout), '[]'::jsonb),
     -- Field by field rather than the whole row: a bodyweight exercise's load is
-    -- the owner's own weigh-in, so neither it nor the volume made from it goes.
+    -- the owner's own weigh-in, so it never goes, and its volume is only what
+    -- was added (weight_kg here is what the owner typed: the added weight or
+    -- the help, never the body).
     'sets', coalesce((
       select jsonb_agg(jsonb_build_object('id', v.id, 'workout_exercise_id', v.workout_exercise_id,
           'exercise_id', v.exercise_id, 'exercise_position', v.exercise_position, 'position', v.position,
           'kind', v.kind, 'weight_kg', v.weight_kg, 'reps', v.reps, 'duration_s', v.duration_s,
           'distance_m', v.distance_m, 'rpe', v.rpe,
-          'volume_kg', case when v.tracking = 'weight_reps' then v.volume_kg end,
+          'volume_kg', case
+            when v.tracking = 'weight_reps' then v.volume_kg
+            when v.tracking = 'weighted_reps' and v.reps > 0 and v.weight_kg > 0 then v.weight_kg * v.reps
+          end,
           'e1rm_kg', v.e1rm_kg) order by v.exercise_position, v.position)
       from public.workout_set_values v where v.workout_id = v_workout), '[]'::jsonb)
   );

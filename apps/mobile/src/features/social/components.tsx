@@ -1112,7 +1112,7 @@ export const PostCard = memo(function PostCard({
   const mediaGesture = Gesture.Simultaneous(Gesture.Exclusive(doubleTap, singleTap), pinch)
   const preview =
     post.kind === 'workout' ? (
-      <WorkoutPostPreview post={post} />
+      <WorkoutPostPreview post={post} opens />
     ) : (
       <FoodPreview
         name={post.food_name ?? ''}
@@ -1354,8 +1354,11 @@ export const PostCard = memo(function PostCard({
   )
 })
 
-/** A workout post's workout, in the viewer's own weight unit. */
-export function WorkoutPostPreview({ post }: { post: SocialPost }) {
+/**
+ * A workout post's workout, in the viewer's own weight unit. On the feed it
+ * `opens` the whole workout; in the composer it is only a preview.
+ */
+export function WorkoutPostPreview({ post, opens = false }: { post: SocialPost; opens?: boolean }) {
   const { data: settings } = useSettings()
   return (
     <WorkoutPreview
@@ -1371,6 +1374,7 @@ export function WorkoutPostPreview({ post }: { post: SocialPost }) {
         sets: exercise.sets,
       }))}
       unit={unitFor(settings?.units)}
+      opens={opens}
     />
   )
 }

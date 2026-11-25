@@ -2541,7 +2541,6 @@ export const ko = {
     startGroup: '그룹 만들기',
     seeAll: '모두 보기 ({{total}})',
     openBoard: '보드 열기',
-    portionTitle: '섭취량',
     settings: '그룹 설정',
     column: {
       breakfast: '아침',

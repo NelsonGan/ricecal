@@ -3677,10 +3677,14 @@ A tap on a workout post opens it as its own page draws it
 (`app/social/workout.tsx`): every exercise and set, the muscles worked and the
 record count the card shows, through `social_workout_post_detail` under
 `social_can_view_post`. A post can reach strangers, so it hands back less than
-a group reads: no notes, no heart rate, and no burn, which is worked out from
-the owner's weight. The tap waits out a double tap, which still likes it as on
-a meal (a quarter second rather than the default half), and the card dims
-under the finger at once so the wait does not read as a dead tap.
+a group reads: no notes, no heart rate, no burn, and no bodyweight set's load,
+all of which give away the owner's weight; for the same reason its volume, a
+set's and the total, is only what was lifted (see *A body weight movement lifts
+the body*). The tap waits out a double tap, which still likes it as on a meal (a
+quarter second rather than the default half), and the card dims under the
+finger at once so the wait does not read as a dead tap. On the feed the card
+wears a chevron, and past four exercises it counts the rest rather than
+unfolding them, since the tap lists them all.
 
 A profile is one grid, meals and workouts together and newest first. A whole
 workout card does not fit a half-width tile, so a workout there is the first
@@ -4168,8 +4172,9 @@ meal share a tile and swipe sideways inside it.
   the other, and the entry is within the board's sixty days or its post was
   shared into that group's chat. Never the note, the place or the scan. Your
   own card opens your own entry on its day instead (`log_date`, appended to the
-  card). Like a workout card, the tap answers at once, so a food card's heart is
-  in the long-press bar rather than on a double tap.
+  card). Like a workout card, the tap answers at once and the card wears the
+  same chevron, so a food card's heart is in the long-press bar rather than on
+  a double tap.
   The + beside the field lists the viewer's last five food posts to send by hand,
   and that is pushed like any message. **Posting a food to the feed shares it
   into every group chat its author is in, as an update** (`98_group_chat_shares.sql`):
@@ -4198,7 +4203,10 @@ meal share a tile and swipe sideways inside it.
   finger like a button; a workout card has no double-tap heart, so the tap need
   not wait to rule one out, and its reactions are in the long-press bar. A
   thumb on a food card is a gesture-handler tap rather than a Pressable, so it
-  takes the touch from the bubble's tap instead of opening the food too.
+  takes the touch from the bubble's double tap. The bubble's own single tap is
+  not ordered against it (two taps in nested detectors both end), so a thumb
+  stamps `PillTouch` as it begins and the bubble ignores its tap for a second
+  after one: a vote never opens the food too.
 - **A food of one's own in the chat.** The + offers three tiles, Food, Workouts
   and My Food, and under the one chosen a two-column grid of the viewer's recent
   ones. My Food is their own written foods (recipes); sharing one
@@ -5962,9 +5970,12 @@ the same flag on every one of 5,000 sets as before.
   synthetic three-year history (15,000 sets, three fifths of them pull-ups and
   dips) the history page went from about 120 to 145 ms. A weigh-in, typed or
   deleted, refetches the workout figures, since it can reprice a past day. A
-  workout post's volume on the feed now carries the author's body weight in
-  it; the feed shows no reps or sets' figures beside it, so the weight cannot
-  be worked back out of it.
+  workout post's volume on the feed does **not** carry the body: there it
+  counts a barbell set's volume and only what was added to a bodyweight one
+  (`private.social_post_workout`, and the same sum in
+  `social_workout_post_detail`). A post's page lists every set's reps, and
+  with those a total that carried the body weight would give the owner's
+  weigh-in to anyone the post reaches.
 - **The muscle split** spreads working sets over muscles by each exercise's
   split. The counting is in the database (`workout_exercise_totals`); the split
   is in the app, with the catalogue it belongs to. It is shown as each body

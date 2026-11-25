@@ -1472,6 +1472,7 @@ function WorkoutCard({ workout }: { workout: ChatWorkout }) {
  */
 function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mine: boolean }) {
   const { t } = useTranslation(['groups', 'common'])
+  const colors = useThemeColors()
   const { width } = useWindowDimensions()
   // Most of a phone's width, as the mockup's card is, and no wider on a tablet.
   const cardWidth = Math.min(280, Math.round(width * 0.7))
@@ -1503,9 +1504,10 @@ function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mi
         ) : null}
       </View>
       {/* Two lines under the photo: the name with its calories on the right,
-          then the macros. */}
+          then the macros. A card that opens wears the workout card's chevron;
+          one from an older answer, with no entry to open, does not. */}
       <View className="gap-2 p-3">
-        <View className="flex-row items-baseline gap-2">
+        <View className="flex-row items-center gap-2">
           <Text variant="label" numberOfLines={1} className="min-w-0 flex-1">
             {food.name}
           </Text>
@@ -1513,6 +1515,9 @@ function FoodCard({ food, ownerId, mine }: { food: ChatFood; ownerId: string; mi
             {Math.round(food.kcal).toLocaleString()}{' '}
             <Text variant="caption">{t('common:unit.kcal')}</Text>
           </Text>
+          {food.entry_id ? (
+            <Icon set="ui" name="chevron-right" size={16} tintColor={colors.muted} />
+          ) : null}
         </View>
         <MacroChips food={food} compact />
       </View>

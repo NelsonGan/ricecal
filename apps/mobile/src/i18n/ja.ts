@@ -2555,7 +2555,6 @@ export const ja = {
     startGroup: 'グループを作る',
     seeAll: 'すべて見る（{{total}}）',
     openBoard: 'ボードを開く',
-    portionTitle: '分量',
     settings: 'グループ設定',
     column: {
       breakfast: '朝食',

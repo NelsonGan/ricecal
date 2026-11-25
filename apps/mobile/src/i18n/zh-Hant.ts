@@ -2537,7 +2537,6 @@ export const zhHant = {
     startGroup: '建立小組',
     seeAll: '查看全部（{{total}}）',
     openBoard: '打開小組看板',
-    portionTitle: '份量',
     settings: '小組設定',
     column: {
       breakfast: '早餐',

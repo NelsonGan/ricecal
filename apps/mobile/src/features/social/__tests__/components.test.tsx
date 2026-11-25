@@ -307,6 +307,31 @@ it("opens a workout post's full workout on a tap, and still likes it on a double
   expect(mockPush).not.toHaveBeenCalled()
 })
 
+it('counts the exercises past four on the feed, where a tap lists them all', async () => {
+  const workoutPost: SocialPost = {
+    ...post,
+    kind: 'workout',
+    food_name: null,
+    kcal: null,
+    workout_name: 'Push day',
+    workout_started_at: '2026-10-15T10:00:00.000Z',
+    workout_duration_s: 3900,
+    workout_sets: 18,
+    workout_volume_kg: 1000,
+    workout_exercises: ['a', 'b', 'c', 'd', 'e', 'f'].map((id) => ({
+      exercise_id: `custom-${id}`,
+      exercise_name: `Lift ${id}`,
+      sets: 3,
+    })),
+    workout_records: 0,
+  }
+  await render(<PostCard post={workoutPost} />)
+  // Text, not a second button inside the card's own tap.
+  expect(screen.getByText('and 2 more')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: /and 2 more/ })).toBeNull()
+  expect(screen.queryByText('Lift e')).toBeNull()
+})
+
 it('opens nothing on a single tap on a meal', async () => {
   await render(<PostCard post={post} />)
   await act(async () => {

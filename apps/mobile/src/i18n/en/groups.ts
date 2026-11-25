@@ -44,7 +44,6 @@ export const groups = {
   /** The card's header, read by a screen reader. */
   openBoard: 'Open board',
   /** The portion card's title on a friend's food page, beside KCAL TOTAL. */
-  portionTitle: 'PORTION',
   settings: 'Group settings',
   /** The board's column headings: short, since a column is a tile wide. */
   column: {

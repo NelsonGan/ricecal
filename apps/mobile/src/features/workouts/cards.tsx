@@ -285,6 +285,7 @@ export function WorkoutPreview({
   records,
   exercises,
   unit,
+  opens = false,
 }: {
   name: string
   startedAt: string
@@ -294,6 +295,12 @@ export function WorkoutPreview({
   records: number
   exercises: readonly { exerciseId: string; name: string; sets: number }[]
   unit: WeightUnit
+  /**
+   * The card opens the whole workout (the feed): a chevron says so, and the
+   * exercises past the fourth are counted rather than unfolded, since a tap
+   * anywhere on the card lists them all.
+   */
+  opens?: boolean
 }) {
   const { t } = useTranslation(['workouts', 'common'])
   const colors = useThemeColors()
@@ -306,12 +313,9 @@ export function WorkoutPreview({
 
   return (
     <View className="gap-4 bg-surface-alt px-5 py-5">
-      <WorkoutHeading
-        large
-        exerciseId={exercises[0]?.exerciseId}
-        name={name}
-        startedAt={startedAt}
-      />
+      <WorkoutHeading large exerciseId={exercises[0]?.exerciseId} name={name} startedAt={startedAt}>
+        {opens ? <Icon set="ui" name="chevron-right" size={18} tintColor={colors.muted} /> : null}
+      </WorkoutHeading>
 
       <StatStrip>
         <Stat label={t('workouts:logger.duration')} value={durationText(t, durationS)} />
@@ -344,7 +348,11 @@ export function WorkoutPreview({
               </Text>
             </View>
           ))}
-          {hidden > 0 ? (
+          {hidden > 0 && opens ? (
+            <Text variant="meta" className="mt-1">
+              {t('workouts:history.moreExercises', { count: hidden })}
+            </Text>
+          ) : hidden > 0 ? (
             // A pill with a chevron, so it reads as something to open rather
             // than a footnote.
             <Tappable

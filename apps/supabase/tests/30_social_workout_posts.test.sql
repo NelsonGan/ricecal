@@ -14,6 +14,7 @@ select no_plan();
 \set lurking 'a8910000-0000-4000-8000-000000000006'
 \set budget 'a8910000-0000-4000-8000-000000000007'
 \set held 'a8910000-0000-4000-8000-000000000008'
+\set pulls 'a8910000-0000-4000-8000-000000000009'
 
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data)
 select id, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated',
@@ -222,6 +223,39 @@ select throws_ok(format(
   'insert into public.social_posts (author_id, kind, source_workout_id, review_status) values (%L, %L, %L, %L)',
   :'stranger', 'workout', :'unshared', 'approved'), '23503', null,
   'a post can only point at its author''s own workout');
+
+-- A bodyweight workout on the feed: the page lists every set's reps, so the
+-- volume a stranger reads, on the card or the page, counts only what was
+-- lifted. Carrying the body, it would give the owner's 82 kg away.
+insert into public.weight_logs (user_id, measured_on, weight_kg) values (:'owner', current_date - 1, 82);
+select set_config('request.jwt.claims', json_build_object('sub', :'owner', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.save_workout(jsonb_build_object(
+  'id', :'pulls', 'name', 'Pull day', 'started_at', now() - interval '1 hour', 'ended_at', now(),
+  'log_date', current_date,
+  'exercises', jsonb_build_array(
+    jsonb_build_object('exercise_id', 'pull-up', 'exercise_name', 'Pull Up',
+      'tracking', 'weighted_reps', 'sets', jsonb_build_array(
+        jsonb_build_object('kind', 'normal', 'reps', 10),
+        jsonb_build_object('kind', 'normal', 'weight_kg', 10, 'reps', 6))),
+    jsonb_build_object('exercise_id', 'barbell-row', 'exercise_name', 'Bent Over Row (Barbell)',
+      'tracking', 'weight_reps', 'sets', jsonb_build_array(
+        jsonb_build_object('kind', 'normal', 'weight_kg', 60, 'reps', 8))))));
+reset role;
+select set_config('request.jwt.claims', json_build_object('sub', :'stranger', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select is((select workout_volume_kg::numeric from public.social_feed(p_mode => 'discover', p_kinds => '{workout}')
+    where workout_name = 'Pull day'), 540::numeric,
+  'a bodyweight workout''s card counts what was lifted, not the body');
+create temp table pull_page as select public.social_workout_post_detail(
+  (select id from public.social_feed(p_mode => 'discover', p_kinds => '{workout}') where workout_name = 'Pull day')) as d;
+select is((select (d->'summary'->>'volume_kg')::numeric from pull_page), 540::numeric,
+  'and its page totals the same');
+select is((select jsonb_agg(d->'sets'->i->'volume_kg' order by i) from pull_page, generate_series(0, 2) i),
+  '[null, 60, 480]'::jsonb, 'a set''s volume is only the weight that was added to the body');
+reset role;
+select is((select sum(volume_kg)::numeric from public.workout_set_values where workout_id = :'pulls'),
+  1852::numeric, 'while the owner''s own figures still carry the body weight');
 
 select ok(not has_function_privilege('anon', 'public.create_social_workout_post(uuid,text,public.social_audience)', 'EXECUTE'),
   'anonymous callers cannot share a workout');
