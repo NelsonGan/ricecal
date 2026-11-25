@@ -116,6 +116,23 @@ Keep both copies in sync when changing a workflow.
 | `animate-expo` | animation and gestures in the app |
 | `image-generation` | generating raster art with whichever image model is installed (Codex, Antigravity), and where each app keeps it |
 | `ui-mockups` | a generated mockup before any visible UI change, the build checked against it, and design and user reviews |
+| `drive-the-app` | running, deep linking, screenshotting and offline-testing the app on a pool simulator or emulator |
+| `drive-the-watch` | building, installing and driving the Apple Watch app on a paired watch simulator |
+| `hosted-supabase` | SQL against the hosted project, and a session on it with no mailbox |
+| `catalogue-data` | changing what is in the D1 catalogue, and the food sources it is built from |
+| `payments-consoles` | RevenueCat, App Store Connect and Play products, and a failing purchase |
+| `grade-scans` | `pnpm eval:scan`, before and after a scan prompt or routing change |
+
+**Agent instructions cost tokens.** `AGENTS.md` (through `CLAUDE.md`) is read
+into every request an agent makes in this checkout, every turn of every
+session. In the 30 days to 2026-11-25, Claude Code made about 21,000 requests
+here, each carrying 288k tokens of context on average, and `AGENTS.md` was
+16,500 of a fresh session's 66,500 (measured with `claude -p` with the file in
+place and emptied). A skill costs only its one-line description until a task
+loads it. So `AGENTS.md` holds what every task needs: the rules, the traps that
+fail silently, where the credentials are. Notes for one kind of task (a device,
+the watch, the hosted database, the catalogue, payments, the scan eval) go in a
+skill.
 
 Useful commands:
 
@@ -6373,7 +6390,7 @@ resting energy comes through), so a simulator build feeds the session a made-up
 pulse and a steady burn of about 5 kcal a minute (`simulatePulse` in
 `WorkoutRecorder.swift`, compiled out of device builds). Everything after the
 sensor (the reading on the wrist, the logger and its burn, the trace, the
-chart) can then be tried there. "Driving the Apple Watch app" in `AGENTS.md`
+chart) can then be tried there. The `drive-the-watch` skill
 has the rest.
 
 **Releasing it.** Additive: one migration (`20261016130531_workout_heart_rates.sql`)
@@ -6789,7 +6806,7 @@ fails with `usage_limit_reached` and a `resets_at` in
 **Imports make big histories.** A five-year Strong export is around 20,000 to
 25,000 sets, a few megabytes in `workout_sets` with its indexes, so a hundred
 such imports is a real share of the free plan's 500 MB, past which the whole
-database goes read-only (see the workbench notes in `AGENTS.md`). Watch
+database goes read-only (see the `hosted-supabase` skill). Watch
 `pg_database_size` after launch. Speed holds up: against a synthetic 1,500
 workouts and 36,000 sets (about 9 MB with indexes), a page of the history list
 takes 70 ms locally (160 ms 1,400 workouts in), the import's overlap read 17 ms,
@@ -7573,7 +7590,7 @@ turned it off in an earlier build: both are false, and both are switched on.
 It grows the database. Over the 30 days to 2026-10-16 the hosted project logged
 about 27,400 meals and held 361 posts in 400 kB, so a post for every meal is
 roughly 15 to 30 MB a month on a 115 MB database with a 500 MB ceiling (see
-"Running SQL against the hosted database" in `AGENTS.md`). Check
+the `hosted-supabase` skill). Check
 `pg_database_size` after the release reaches most accounts.
 
 ## Periodic jobs
