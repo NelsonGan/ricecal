@@ -291,19 +291,22 @@ async function persist(
     // Connect does, on later syncs) takes over its old row instead of adding a
     // copy, and leftover copies go. An upsert alone only ever adds: one run
     // showed four times on Today. A failure costs only that tidying, so it is
-    // reported and the upsert still goes ahead.
+    // reported and the upsert still goes ahead. Status 0 is a request that never
+    // arrived: the client's fetch already reports a host that cannot be reached
+    // (lib/network.ts), and one dropped connection is not news.
     let reconciled = 0
     if (reading.workouts.length > 0) {
       const span = workoutWindow(window.from, window.to)
-      const { data, error } = await supabase.rpc('reconcile_activity_sessions', {
+      const { data, error, status } = await supabase.rpc('reconcile_activity_sessions', {
         p_provider: provider,
         p_from: span.from,
         p_to: span.to,
         p_sessions: workoutIdentities(reading.workouts),
         p_user_id: userId,
       })
-      if (error) reportError(error, { scope: 'health_reconcile', provider })
-      else if (typeof data === 'number') reconciled = data
+      if (error) {
+        if (status !== 0) reportError(error, { scope: 'health_reconcile', provider })
+      } else if (typeof data === 'number') reconciled = data
     }
 
     // One request per row shape. See `sessionBatches` for why there can be more

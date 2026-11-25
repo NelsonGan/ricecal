@@ -149,3 +149,42 @@ it('the window is local midnight to the midnight after the last day', () => {
   expect(new Date(window.from)).toEqual(new Date(2026, 10, 14))
   expect(new Date(window.to)).toEqual(new Date(2026, 10, 21))
 })
+
+describe('a reconcile that fails', () => {
+  const errors = require('@/lib/errors') as typeof import('@/lib/errors')
+  let reporter: jest.Mock
+
+  beforeEach(() => {
+    reporter = jest.fn()
+    errors.registerErrorReporter(reporter)
+  })
+  afterEach(() => errors.registerErrorReporter(null))
+
+  const failWith = (answer: { error: { message: string; code: string }; status: number }) =>
+    supabase.rpc.mockImplementation(async (name: string) =>
+      name === 'reconcile_activity_sessions'
+        ? { data: null, ...answer }
+        : { data: 0, error: null, status: 200 },
+    )
+
+  // supabase-js answers a request that never arrived with status 0, and the
+  // client's fetch already reports a host that cannot be reached. Filing each
+  // dropped connection here too made one PostHog issue of ordinary bad signal.
+  it('on a dropped connection is not reported', async () => {
+    failWith({
+      error: { message: 'Error: fetch failed: The network connection was lost.', code: '' },
+      status: 0,
+    })
+    await sync([run()])
+    expect(reporter).not.toHaveBeenCalled()
+  })
+
+  it('with an answer from the server is still reported', async () => {
+    failWith({ error: { message: 'permission denied', code: '42501' }, status: 403 })
+    await sync([run()])
+    expect(reporter).toHaveBeenCalledWith(
+      expect.objectContaining({ code: '42501' }),
+      expect.objectContaining({ scope: 'health_reconcile' }),
+    )
+  })
+})
