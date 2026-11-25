@@ -189,3 +189,46 @@ it('says a food that is gone or out of reach is gone, with nothing to retry', as
   expect(screen.getByText('This is no longer available')).toBeTruthy()
   expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
 })
+
+it('gives the share eaten as the figure the diary holds, not the rounded parts times it', async () => {
+  // The view rounds each part to the calorie but rounds the plate once from the
+  // unrounded parts, so 787 × 1½ is 1,181 here while the diary holds 1,180.
+  const part = (id: string, kcal: number, position: number) => ({
+    ...view.parts[0],
+    id,
+    name: id,
+    kcal,
+    position,
+  })
+  const plate: GroupFoodView = {
+    ...view,
+    entry: { ...view.entry, kcal: 1180 },
+    parts: [
+      part('chicken', 330, 0),
+      part('rice', 290, 1),
+      part('sauce', 25, 2),
+      part('soy', 20, 3),
+      part('tea', 122, 4),
+    ],
+  }
+  await render(
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <FoodBody view={plate} heroHeight={300} />
+    </SafeAreaProvider>,
+  )
+  expect(screen.getByText('787')).toBeTruthy()
+  expect(screen.getAllByText('1,180')).toHaveLength(2)
+  expect(screen.queryByText('1,181')).toBeNull()
+})
+
+it('keeps the parts times the share when the total was typed over', async () => {
+  // Further off than rounding can explain, the owner set the total by hand, and
+  // the line under the plate still says what the parts come to.
+  await render(
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <FoodBody view={{ ...view, entry: { ...view.entry, kcal: 500 } }} heroHeight={300} />
+    </SafeAreaProvider>,
+  )
+  expect(screen.getByText('500')).toBeTruthy()
+  expect(screen.getByText('630')).toBeTruthy()
+})
