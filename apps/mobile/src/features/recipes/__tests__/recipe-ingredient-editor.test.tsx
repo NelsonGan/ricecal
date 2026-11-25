@@ -2,7 +2,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import '@/i18n'
 import type { ReactNode } from 'react'
-import { render, screen, userEvent } from '@/test-utils'
+import { fireEvent, render, screen, userEvent } from '@/test-utils'
 import { type EditableRecipeIngredient, RecipeIngredientEditor } from '../RecipeIngredientEditor'
 
 jest.mock('@/features/shared/SwipeRow', () => {
@@ -61,7 +61,7 @@ it('leaves an empty list with only its add action', async () => {
   expect(onAdd).toHaveBeenCalledTimes(1)
 })
 
-it('edits the amount in place and exposes replace and delete swipe actions', async () => {
+it('shows the amount in place and exposes replace and delete swipe actions', async () => {
   const onAmountChange = jest.fn()
 
   await render(
@@ -78,13 +78,13 @@ it('edits the amount in place and exposes replace and delete swipe actions', asy
   expect(screen.getByLabelText('Change how much Rice, currently 200 g')).toBeOnTheScreen()
   expect(screen.getByLabelText('Replace Rice')).toBeOnTheScreen()
   expect(screen.getByLabelText('Remove, Rice')).toBeOnTheScreen()
-
-  await user.press(screen.getByRole('button', { name: 'More Rice' }))
-  expect(onAmountChange).toHaveBeenCalledWith('rice', 210)
+  // Typed rather than nudged: a recipe row has no minus and plus.
+  expect(screen.queryByRole('button', { name: 'More Rice' })).toBeNull()
+  expect(onAmountChange).not.toHaveBeenCalled()
 })
 
 // Two tablespoons of soy sauce are stored as 29.57 ml and read as spoons: the
-// number, the nudge and the typed amount are all in tablespoons.
+// number and the typed amount are both in tablespoons.
 const KICAP: EditableRecipeIngredient = {
   key: 'kicap',
   name: 'Kicap',
@@ -94,7 +94,7 @@ const KICAP: EditableRecipeIngredient = {
   perUnit: { kcal: 0.6, carbs: 0.1, protein: 0.05, fat: 0 },
 }
 
-it('shows and steps a spoon row in spoons, and stores millilitres', async () => {
+it('shows a spoon row in spoons, and stores millilitres', async () => {
   const onAmountChange = jest.fn()
   const onUnitChange = jest.fn()
 
@@ -117,11 +117,13 @@ it('shows and steps a spoon row in spoons, and stores millilitres', async () => 
     </SafeAreaProvider>,
   )
 
-  expect(screen.getByLabelText('Change how much Kicap, currently 2 tbsp')).toBeOnTheScreen()
-
-  // Half a spoon more is 2.5 tbsp, which is 36.97 ml.
-  await user.press(screen.getByRole('button', { name: 'More Kicap' }))
-  expect(onAmountChange).toHaveBeenCalledWith('kicap', 36.97)
+  // Three typed beside "tbsp" is three tablespoons, stored as 44.36 ml.
+  const field = screen.getByLabelText('Change how much Kicap, currently 2 tbsp')
+  await fireEvent(field, 'focus')
+  await fireEvent.changeText(field, '3')
+  await fireEvent(field, 'submitEditing')
+  expect(onAmountChange).toHaveBeenCalledWith('kicap', 44.36)
+  onAmountChange.mockClear()
 
   // Teaspoons are the same family, so the row can be read in them without
   // being repriced. Back to ml clears the display unit entirely.
@@ -129,9 +131,8 @@ it('shows and steps a spoon row in spoons, and stores millilitres', async () => 
   // Each choice says what the row will read as: two tablespoons are six teaspoons.
   await user.press(screen.getByText('6 tsp'))
   expect(onUnitChange).toHaveBeenCalledWith('kicap', 'tsp')
-  // 29.57 ml already reads as 6 tsp, so the amount is left alone: the one call
-  // is the half-spoon above.
-  expect(onAmountChange).toHaveBeenCalledTimes(1)
+  // 29.57 ml already reads as 6 tsp, so the amount is left alone.
+  expect(onAmountChange).not.toHaveBeenCalled()
 })
 
 // A line that rounds ("6½ tbsp" for 97 ml) is what the row reads afterwards.

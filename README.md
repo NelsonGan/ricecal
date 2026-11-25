@@ -2452,7 +2452,9 @@ took it apart: two answers to one question, seven imperial units in one row,
 truncated Japanese spoon names. The same pill and list are used for a recipe:
 the ingredient sheet's amount carries the pill (its custom-ingredient form, which
 converts nothing, keeps one segmented row per family), and each ingredient row
-is one joined pill (minus, "2 tbsp ▾", plus) with its calories on the name line.
+is one line: the name over its calories, and the typed amount with its "tbsp ▾"
+in a pill on the right, with no minus and plus (see *The form* under *The
+Recipes tab*).
 Picking a line lands the row on that line's figure, never more than 2% from the
 exact one, and a line that would move the calories by more than that (an eighth
 of a cup stored as 0.13) is left off the list. It was greyed out, and a real
@@ -2649,7 +2651,7 @@ renders the count and the name in both places that show it.
 **The unit is grams wherever the part was weighed, and the person can pick
 another**: ounces, and millilitres, spoons and cups when the part's serving
 label states a volume ("1 tbsp (15 ml)", "Regular (350 ml)"). The page's row is
-the recipe editor's joined pill (minus, "2 tbsp ▾", plus), and the pill opens
+one joined pill (minus, "2 tbsp ▾", plus), and the pill opens
 the same "Measure in" list. `features/logging/partUnits.ts` is the arithmetic. A
 weight goes through `grams` (per unit), a volume through the label's
 millilitres, and nothing crosses between the two, for the reason *Measuring in
@@ -3030,6 +3032,20 @@ same question three ways at once. Your own has an edit button, a heart
 ingredient" in place of logging. Somebody else's has a bookmark in the bar that
 saves a copy, and the report menu. With no photograph the drawing sits beside the name
 rather than in a box above it, so the ingredients start above the fold.
+
+**The form**, `/recipe/edit`, new or existing. One card says what the recipe is:
+the picture as a square beside the name (photo or drawing alike), and three
+tiles under them for servings, prep and cook. The meal tags are one row that
+scrolls. Ingredients, Steps and Source each sit under a sentence-case heading,
+the ingredients with the pot's calories opposite. An ingredient is one line:
+its name over its calories, and the amount typed into a pill with its unit.
+Recipe rows have no minus and plus, unlike a plate's parts (`PartRow` `inline`),
+because a recipe's amounts are measured, not nudged by eye. Replace and Delete
+are still behind the swipe. The steps show as a preview (the first three, one
+line each, then "2 more steps"), and tapping it opens the steps sheet. It was
+a grey picture box, all-caps labels, a 56pt stepper beside two text boxes, two
+rows of tags and two lines per ingredient, which put seven ingredients across
+three screens.
 
 **Cook mode**, `/recipe/cook?id=&servings=&date=`, pages the method one step at
 a time in large type with the screen kept awake (`useKeepAwake`). Tapping the

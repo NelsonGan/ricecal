@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { type TextInputInstance, View } from 'react-native'
 
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, cn, Icon, Sheet, Tappable, Text, TextField } from '@/ui'
-import { RecipeSteps, splitSteps } from './RecipeSteps'
+import { Button, Card, cn, Icon, Sheet, Tappable, Text, TextField } from '@/ui'
+import { FormSection } from './FormSection'
+import { splitSteps } from './RecipeSteps'
 
 export type StepsFieldProps = {
   value: string
@@ -21,6 +22,8 @@ const joinedSteps = (steps: readonly DraftStep[]) =>
     .filter(Boolean)
     .join('\n')
 const oneLine = (text: string) => text.replace(/\s*[\r\n]+\s*/g, ' ')
+/** How many steps the form shows before "2 more steps". */
+const PREVIEW_STEPS = 3
 
 /**
  * The method: a numbered list at rest, numbered fields while it is being written.
@@ -129,18 +132,39 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
   }
 
   const steps = splitSteps(value)
+  const shown = steps.slice(0, PREVIEW_STEPS)
+  const hidden = steps.length - shown.length
 
   return (
-    <View className="gap-1.5">
-      <Text variant="label">{t('recipes:edit.steps')}</Text>
-
-      <Tappable
-        className={cn(
-          steps.length
-            ? 'gap-3 rounded-card border-[3px] border-line bg-surface p-4'
-            : // The same white card as the empty ingredient list above it, so
-              // the two parts of the form read as the same kind of thing.
-              'flex-row items-center gap-2.5 rounded-card border-[3px] border-line bg-surface px-card py-md',
+    <FormSection
+      title={t('recipes:edit.steps')}
+      meta={steps.length ? t('recipes:edit.stepsCount', { count: steps.length }) : undefined}
+      action={
+        steps.length ? (
+          // The card under it opens the same sheet and is the one a screen
+          // reader is given, so this shortcut is hidden from it.
+          <Tappable
+            className="min-h-[36px] flex-row items-center gap-1.5 px-1"
+            hitSlop={6}
+            onPress={open}
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            <Icon set="ui" name="edit" size={14} />
+            <Text variant="label" className="text-pandan-ink">
+              {t('common:action.edit')}
+            </Text>
+          </Tappable>
+        ) : undefined
+      }
+    >
+      {/* The same card as the ingredients above it, so the two parts of the
+          recipe read as the same kind of thing. */}
+      <Card
+        flush
+        contentClassName={cn(
+          'gap-0',
+          steps.length ? 'px-card py-1' : 'flex-row items-center gap-2.5 px-card py-md',
         )}
         onPress={open}
         accessibilityRole="button"
@@ -152,16 +176,32 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
       >
         {steps.length ? (
           <>
-            <RecipeSteps steps={value} />
-            {/* The affordance, because a numbered list looks like a finished
-                thing rather than a control. A pencil and a word are what say
-                the list is still a field. */}
-            <View className="flex-row items-center gap-2">
-              <Icon set="ui" name="edit" size={16} />
-              <Text variant="label" className="text-pandan-ink">
-                {t('recipes:edit.stepsEditAction')}
+            {/* A preview, not the method: the recipe page and cook mode are
+                where it is read. In full it pushed Source a screen down. */}
+            {shown.map((step, index) => (
+              <View
+                // biome-ignore lint/suspicious/noArrayIndexKey: a read-only preview that never reorders
+                key={index}
+                className={cn(
+                  'flex-row items-start gap-3 py-2.5',
+                  index > 0 && 'border-line border-t-2',
+                )}
+              >
+                <View className="h-[24px] w-[24px] items-center justify-center rounded-full bg-pandan-soft">
+                  <Text variant="caption" className="text-pandan-ink">
+                    {index + 1}
+                  </Text>
+                </View>
+                <Text numberOfLines={1} className="min-w-0 flex-1 font-body text-[15px] text-body">
+                  {step}
+                </Text>
+              </View>
+            ))}
+            {hidden > 0 ? (
+              <Text variant="meta" className="border-line border-t-2 py-2.5 pl-9">
+                {t('recipes:edit.stepsMore', { count: hidden })}
               </Text>
-            </View>
+            ) : null}
           </>
         ) : (
           <>
@@ -173,7 +213,7 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
             </Text>
           </>
         )}
-      </Tappable>
+      </Card>
 
       {/* Full height because it contains fields, and scrollable because a real
           method can grow past the keyboard. Done stays in the body rather than
@@ -257,6 +297,6 @@ export function StepsField({ value, onChange }: StepsFieldProps) {
           </Button>
         </View>
       </Sheet>
-    </View>
+    </FormSection>
   )
 }

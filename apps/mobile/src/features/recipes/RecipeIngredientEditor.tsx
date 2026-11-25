@@ -11,7 +11,7 @@ import {
 } from '@/features/shared/MeasurePicker'
 import { PartRow } from '@/features/shared/PartRow'
 import { measureFigure, useMeasureText } from '@/features/shared/useMeasureText'
-import { type MeasureUnit, roundedFor, stepFor, steppedTo } from '@/lib/measures'
+import { type MeasureUnit, roundedFor } from '@/lib/measures'
 import { formatPortion } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, cn, Divider, Icon, Sheet, Tappable, TEXT_SCALES, Text, useNumpadField } from '@/ui'
@@ -52,27 +52,7 @@ const MAX_AMOUNT = 100_000
 
 const roundedAmount = (value: number) => Math.round(value * 100) / 100
 
-/**
- * Where one nudge lands, in the unit the row is SHOWN in, handed back in the unit
- * it is stored in. Grams and millilitres move by ten, as a plate's measured
- * ingredients do; spoons by a half and cups by a quarter, as a measuring set
- * does; countable things by one. A small amount still gets one useful last step
- * down to a practical floor.
- */
-function stepAmount(amount: number, key: IngredientKey, direction: 1 | -1) {
-  const { step, min: floor } = key === 'piece' ? { step: 1, min: 0.25 } : stepFor(key)
-  const shown = shownAmount(amount, key)
-  // On the unit's own marks: 0.41 cup steps to 0.5, not 0.66.
-  const next = roundedAmount(steppedTo(shown, step, direction))
-  if (direction < 0) {
-    if (shown <= floor) return null
-    return storedFrom(Math.max(floor, next), key)
-  }
-  const stored = storedFrom(next, key)
-  return stored > MAX_AMOUNT ? null : stored
-}
-
-/** The amount, typed where it is read, using the same compact row as a plate part. */
+/** The amount, typed where it is read. */
 function AmountField({
   ingredient,
   unitKey,
@@ -145,8 +125,10 @@ function AmountField({
 }
 
 /**
- * The pot's ingredients, using the same row grammar as the diary plate editor:
- * amount controls in place, and Replace/Delete behind a deliberate swipe.
+ * The pot's ingredients, one line each: the amount typed in place and its unit
+ * beside it, and Replace/Delete behind the same deliberate swipe as a plate's
+ * parts. No minus and plus: a recipe's amounts are measured, and a kilo of
+ * chicken nudged ten grams at a time was two big buttons doing nothing useful.
  */
 export function RecipeIngredientEditor({
   ingredients,
@@ -228,8 +210,6 @@ export function RecipeIngredientEditor({
         const figure = unitKey === 'piece' ? formatPortion(shown) : measureFigure(unitKey, shown)
         const name = unitName(unitKey, shown)
         const measure = ingredientMeasure(ingredient)
-        const less = stepAmount(ingredient.amount, unitKey, -1)
-        const more = stepAmount(ingredient.amount, unitKey, 1)
         const switchable =
           Boolean(onUnitChange) && offeredChoices(unitChoices(ingredient)).length > 1
 
@@ -243,39 +223,43 @@ export function RecipeIngredientEditor({
               removeLabel={`${t('recipes:ingredient.remove')}, ${ingredient.name}`}
               onReplace={() => onReplace(ingredient)}
               onRemove={() => onRemove(ingredient)}
-              onLess={less === null ? null : () => onAmountChange(ingredient.key, less)}
-              onMore={more === null ? null : () => onAmountChange(ingredient.key, more)}
-              joined
+              inline
             >
-              <AmountField
-                // Replacing preserves the row key so the swipe row stays put. The
-                // field also needs the ingredient identity or a half-typed amount
-                // can survive into the replacement, and the unit, or a number
-                // half-typed in grams survives into ounces.
-                key={`${ingredient.key}:${ingredient.foodId ?? ingredient.name}:${unitKey}`}
-                ingredient={ingredient}
-                unitKey={unitKey}
-                figure={figure}
-                measure={measure}
-                onChange={(amount) => onAmountChange(ingredient.key, amount)}
-              />
-              {/* The unit beside the number, and a way to change it when the
-                  row's family has others: "30 ml" read as 2 tbsp. */}
-              {switchable ? (
-                <UnitPill
-                  size="sm"
-                  label={name}
-                  onPress={() => setChoosing(ingredient)}
-                  accessibilityLabel={t('recipes:ingredient.changeUnit', {
-                    name: ingredient.name,
-                    unit: name,
-                  })}
+              {/* The figure and its unit as one soft pill, so the rows' amounts
+                  line up down the right edge whatever unit each is in. */}
+              <View className="min-h-[40px] flex-row items-center gap-1 rounded-full bg-pandan-soft pr-1 pl-3">
+                <AmountField
+                  // Replacing preserves the row key so the swipe row stays put. The
+                  // field also needs the ingredient identity or a half-typed amount
+                  // can survive into the replacement, and the unit, or a number
+                  // half-typed in grams survives into ounces.
+                  key={`${ingredient.key}:${ingredient.foodId ?? ingredient.name}:${unitKey}`}
+                  ingredient={ingredient}
+                  unitKey={unitKey}
+                  figure={figure}
+                  measure={measure}
+                  onChange={(amount) => onAmountChange(ingredient.key, amount)}
                 />
-              ) : (
-                // Not a control when there is nothing to change it to, so not
-                // in the action colour either.
-                <Text className="font-display text-[15px] leading-[24px] text-muted">{name}</Text>
-              )}
+                {/* The unit beside the number, and a way to change it when the
+                  row's family has others: "30 ml" read as 2 tbsp. */}
+                {switchable ? (
+                  <UnitPill
+                    size="sm"
+                    label={name}
+                    onPress={() => setChoosing(ingredient)}
+                    accessibilityLabel={t('recipes:ingredient.changeUnit', {
+                      name: ingredient.name,
+                      unit: name,
+                    })}
+                  />
+                ) : (
+                  // Not a control when there is nothing to change it to, so not
+                  // in the action colour either.
+                  <Text className="pr-2 font-display text-[15px] leading-[24px] text-muted">
+                    {name}
+                  </Text>
+                )}
+              </View>
             </PartRow>
           </View>
         )

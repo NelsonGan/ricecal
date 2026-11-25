@@ -60,6 +60,7 @@ jest.mock('@/features/recipes', () => {
   return {
     ...pendingRead,
     IngredientSheet: () => null,
+    FormSection: jest.requireActual('@/features/recipes/FormSection').FormSection,
     normaliseSourceUrl: jest.requireActual('@/features/recipes/cooking').normaliseSourceUrl,
     parseMinutes: jest.requireActual('@/features/recipes/cooking').parseMinutes,
     potTotals: () => ({
@@ -143,13 +144,6 @@ jest.mock('@/ui', () => {
         <Text>{children}</Text>
       </Pressable>
     ),
-    FormCard: ({ children }: { children: import('react').ReactNode }) => <View>{children}</View>,
-    FormRow: ({ label, children }: { label: string; children?: import('react').ReactNode }) => (
-      <View>
-        <Text>{label}</Text>
-        {children}
-      </View>
-    ),
     cn: (...values: unknown[]) => values.filter(Boolean).join(' '),
     ConfirmSheet: ({
       visible,
@@ -196,7 +190,7 @@ jest.mock('@/ui', () => {
       </View>
     ),
     Skeleton: () => null,
-    Stepper: ({ value }: { value: number }) => <Text>{value}</Text>,
+    TEXT_SCALES: true,
     Tappable: ({
       children,
       onPress,
@@ -239,9 +233,12 @@ jest.mock('@/ui', () => {
         {error ? <Text>{error}</Text> : null}
       </View>
     ),
+    useNumpadField: () => ({ ref: { current: null } }),
     useToast: () => ({ show: jest.fn(), dismiss: jest.fn() }),
   }
 })
+
+jest.mock('@/theme/useTheme', () => ({ useThemeColors: () => ({}) }))
 
 const DRAFT: ScannedRecipe = {
   name: 'Chicken curry',
