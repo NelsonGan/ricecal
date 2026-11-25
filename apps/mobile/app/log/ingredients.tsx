@@ -10,6 +10,8 @@ import {
   useDayLog,
   useEntryIngredients,
   useRemoveIngredient,
+  useSetIngredientUnit,
+  useSettings,
   useUpdateIngredient,
 } from '@/data'
 import { AddPartSheet, type PartEdits, PlateEditor, partChanges } from '@/features/logging'
@@ -66,6 +68,8 @@ function IngredientsScreen() {
   const updateIngredient = useUpdateIngredient()
   const removeIngredient = useRemoveIngredient()
   const addIngredient = useAddIngredient()
+  const setIngredientUnit = useSetIngredientUnit()
+  const { data: settings } = useSettings()
 
   /**
    * The catalogue search, and what it is being opened for.
@@ -233,6 +237,12 @@ function IngredientsScreen() {
           onAdd={() => setPicking({ replacing: null })}
           onRemove={removePart}
           onReplace={(ingredient) => setPicking({ replacing: ingredient })}
+          onUnitChange={(ingredient, unit) =>
+            setIngredientUnit
+              .mutateAsync({ ingredientId: ingredient.id, unit, entryId })
+              .catch(saveFailed)
+          }
+          units={settings?.units}
         />
       ) : null}
 

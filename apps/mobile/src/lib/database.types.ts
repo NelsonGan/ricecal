@@ -396,6 +396,7 @@ export type Database = {
           base_protein_g: number
           created_at: string
           display_label: string | null
+          display_unit: string | null
           food_id: string | null
           food_log_id: string
           grams: number | null
@@ -414,6 +415,7 @@ export type Database = {
           base_protein_g: number
           created_at?: string
           display_label?: string | null
+          display_unit?: string | null
           food_id?: string | null
           food_log_id: string
           grams?: number | null
@@ -432,6 +434,7 @@ export type Database = {
           base_protein_g?: number
           created_at?: string
           display_label?: string | null
+          display_unit?: string | null
           food_id?: string | null
           food_log_id?: string
           grams?: number | null
@@ -3042,6 +3045,7 @@ export type Database = {
       food_log_ingredient_details: {
         Row: {
           carbs_g: number | null
+          display_unit: string | null
           fat_g: number | null
           food_id: string | null
           food_log_id: string | null
@@ -3056,6 +3060,7 @@ export type Database = {
         }
         Insert: {
           carbs_g?: never
+          display_unit?: string | null
           fat_g?: never
           food_id?: string | null
           food_log_id?: string | null
@@ -3070,6 +3075,7 @@ export type Database = {
         }
         Update: {
           carbs_g?: never
+          display_unit?: string | null
           fat_g?: never
           food_id?: string | null
           food_log_id?: string | null
@@ -4472,6 +4478,10 @@ export type Database = {
       }
       set_ingredient_quantity: {
         Args: { p_ingredient_id: string; p_quantity: number }
+        Returns: undefined
+      }
+      set_ingredient_unit: {
+        Args: { p_ingredient_id: string; p_unit: string }
         Returns: undefined
       }
       set_recipe_public: {

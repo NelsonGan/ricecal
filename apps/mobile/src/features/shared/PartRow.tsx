@@ -28,6 +28,12 @@ export type PartRowProps = {
    * with different units did not line up.
    */
   joined?: boolean
+  /**
+   * A line under the name, beside the calories it explains: what the part
+   * brings, on the plate editor. Above the pill rather than beside it, where it
+   * fitted some rows and wrapped on others. A joined row only.
+   */
+  detail?: ReactNode
 }
 
 /**
@@ -52,6 +58,7 @@ export function PartRow({
   onMore,
   children,
   joined = false,
+  detail,
 }: PartRowProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
@@ -93,6 +100,8 @@ export function PartRow({
         ) : (
           title
         )}
+
+        {joined ? detail : null}
 
         {joined ? (
           <View className="flex-row">

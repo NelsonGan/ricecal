@@ -62,7 +62,9 @@ select
   -- deliberately absent: the weight describes the ingredient row itself, and
   -- nothing in the app lets an ingredient change the serving it was written
   -- against.
-  round(i.grams * i.quantity, 1)::numeric                             as grams
+  round(i.grams * i.quantity, 1)::numeric                             as grams,
+  -- Last, so the view can be replaced in place. See the column.
+  i.display_unit
 from public.food_log_ingredients i;
 
 grant select on public.food_log_ingredient_details to authenticated, service_role;

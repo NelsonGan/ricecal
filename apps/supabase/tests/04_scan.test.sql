@@ -23,7 +23,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(61);
+select plan(66);
 
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
@@ -247,6 +247,44 @@ select is(
   1.00,
   'and the entry portion is left alone'
 );
+
+-- The unit a part is read in. Display only, so it moves no number.
+select lives_ok(
+  format('select public.set_ingredient_unit(%L::uuid, %L)', :'ing_id', 'tbsp'),
+  'the owner can pick the unit an ingredient is shown in'
+);
+
+select is(
+  (select display_unit from public.food_log_ingredient_details where id = :'ing_id'),
+  'tbsp',
+  'the ingredient view carries the unit'
+);
+
+select is(
+  (select kcal from public.food_log_details where user_id = :'user_a'),
+  (:fixture_kcal / 2),
+  'and picking it leaves the total where it was'
+);
+
+select throws_ok(
+  format('select public.set_ingredient_unit(%L::uuid, %L)', :'ing_id', 'bowl'),
+  '23514',
+  null,
+  'a unit the app does not know is refused'
+);
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'user_b', 'role', 'authenticated')::text, true);
+
+select throws_ok(
+  format('select public.set_ingredient_unit(%L::uuid, %L)', :'ing_id', 'g'),
+  'P0001',
+  'ingredient not found',
+  'nobody else can pick the unit of someone''s ingredient'
+);
+
+select set_config('request.jwt.claims',
+  json_build_object('sub', :'user_a', 'role', 'authenticated')::text, true);
 
 -- A typed figure still wins over the parts.
 --

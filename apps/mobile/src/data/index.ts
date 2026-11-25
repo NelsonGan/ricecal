@@ -142,6 +142,7 @@ export {
   useEntryIngredients,
   useRefineEntry,
   useRemoveIngredient,
+  useSetIngredientUnit,
   useUpdateIngredient,
 } from './scan'
 export { SelectedDateProvider, useSelectedDate } from './selected-date'

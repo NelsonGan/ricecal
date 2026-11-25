@@ -30,6 +30,7 @@ export { PartLine } from './PartLine'
 export { PhotoNotePanel, type PhotoNotePanelProps } from './PhotoNotePanel'
 export { PlateEditor, type PlateEditorProps } from './PlateEditor'
 export { type PartEdits, partChanges, stagedParts } from './parts'
+export { partUnit, shownIn } from './partUnits'
 export {
   canSwitch,
   openingPortion,

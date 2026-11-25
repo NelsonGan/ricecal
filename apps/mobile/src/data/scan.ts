@@ -2,6 +2,7 @@ import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tansta
 import { useCallback } from 'react'
 
 import { track } from '@/lib/analytics'
+import { isMeasureUnit, type MeasureUnit } from '@/lib/measures'
 import { supabase } from '@/lib/supabase'
 import { useToast } from '@/ui'
 import { invalidateEatenTotals, invalidateEntryPosts, keys } from './keys'
@@ -38,6 +39,12 @@ export type EntryIngredient = {
    * without it the swap leaves the row and reappears at the bottom.
    */
   position: number
+  /**
+   * The unit the person picked to read this part in, or null for the app's own
+   * choice. Display only: the amount is `quantity` either way. See
+   * `features/logging/partUnits`.
+   */
+  displayUnit: MeasureUnit | null
 }
 
 export function useEntryIngredients(entryId: string | undefined) {
@@ -48,7 +55,7 @@ export function useEntryIngredients(entryId: string | undefined) {
       const { data, error } = await supabase
         .from('food_log_ingredient_details')
         .select(
-          'id, name, quantity, serving_label, kcal, carbs_g, protein_g, fat_g, grams, position',
+          'id, name, quantity, serving_label, kcal, carbs_g, protein_g, fat_g, grams, position, display_unit',
         )
         .eq('food_log_id', entryId as string)
         .order('position')
@@ -66,6 +73,8 @@ export function useEntryIngredients(entryId: string | undefined) {
         protein: Number(row.protein_g ?? 0),
         fat: Number(row.fat_g ?? 0),
         position: row.position ?? 0,
+        // A unit this build has never heard of reads as no choice at all.
+        displayUnit: isMeasureUnit(row.display_unit) ? row.display_unit : null,
       }))
     },
   })
@@ -142,6 +151,33 @@ export function useUpdateIngredient() {
       ),
     onError: (_error, input, context) => restoreParts(queryClient, input.entryId, context),
     onSettled: (_data, _error, input) => afterPlateWrite(queryClient, userId, input),
+  })
+}
+
+/**
+ * The unit one part is read in. Moves no amount and no total, so only the part
+ * itself is patched and refetched: the day and the feed card cannot change.
+ */
+export function useSetIngredientUnit() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (input: { ingredientId: string; unit: MeasureUnit; entryId: string }) => {
+      const { error } = await supabase.rpc('set_ingredient_unit', {
+        p_ingredient_id: input.ingredientId,
+        p_unit: input.unit,
+      })
+      if (error) throw error
+    },
+    onMutate: (input) =>
+      patchParts(queryClient, input.entryId, (parts) =>
+        parts.map((part) =>
+          part.id === input.ingredientId ? { ...part, displayUnit: input.unit } : part,
+        ),
+      ),
+    onError: (_error, input, context) => restoreParts(queryClient, input.entryId, context),
+    onSettled: (_data, _error, input) =>
+      queryClient.invalidateQueries({ queryKey: keys.entryIngredients(input.entryId) }),
   })
 }
 

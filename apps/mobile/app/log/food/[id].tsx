@@ -51,12 +51,14 @@ import {
   NutritionSheet,
   openingPortion,
   PartLine,
+  partUnit,
   portionChips,
   portionControl,
   quantityFor,
   rememberedPortion,
   ScannedPacket,
   sameClock,
+  shownIn,
   switchedQuantity,
   type TypedFigures,
   useMealShare,
@@ -66,6 +68,7 @@ import { LocationCard, PlacePickerSheet, type PlaceSource } from '@/features/pla
 import {
   formatTime,
   MacroBars,
+  MacroDots,
   MealPhoto,
   type MeasureChoice,
   MeasureList,
@@ -1800,48 +1803,50 @@ function FoodDetail() {
                 />
               }
             >
-              {parts.map((ingredient) => (
-                <View key={ingredient.id} className="flex-row items-start justify-between gap-3">
-                  {/* HOW MANY, THEN WHAT, THEN WHAT IT WEIGHS — a cart line, of
-                    which `PartLine` is the first two thirds.
+              {parts.map((ingredient) => {
+                const unit = partUnit(ingredient, units)
+                return (
+                  <View key={ingredient.id} className="flex-row items-start justify-between gap-3">
+                    {/* HOW MANY AND WHAT, then under it HOW MUCH AND WHAT IT
+                      BRINGS: a cart line with its nutrition label folded into
+                      one quiet row.
 
-                    The weight used to sit on a second line behind a multiplier —
-                    "× 0.75 · 165 g" — which led with the number nobody can act
-                    on: the multiplier is how the row STORES an amount, and 165 g
-                    is the amount. So the weight moved into a bracket after the
-                    name, and the count came back in front of it.
+                      The two numbers answer different questions and the row
+                      needs both. 480 g is what to check against the plate in
+                      front of you; "1 ×" is what to check against yourself. The
+                      amount is in the part's own unit, the one picked for it on
+                      the ingredients page, so soy sauce reads in spoons and a
+                      drink in millilitres. The dots are the macro bars' own
+                      colours, directly above, which is what lets them go
+                      without names.
 
-                    The two numbers answer different questions and the row needs
-                    both. 480 g is what to check against the plate in front of
-                    you; "1 ×" is what to check against yourself. The count is
-                    rounded to a quarter and the weight is not, which is why the
-                    two can disagree and why a "~" appears when they do.
-
-                    NO `numberOfLines`. A part's name is what this card exists to
-                    show — the model's own account of what was on the plate — and
-                    truncated to one line "Stir fried pork belly with green
-                    peppers" came out as three words and an ellipsis on the one
-                    screen somebody opens to check exactly that. The bracket wraps
-                    with it, being part of the same run of text. */}
-                  <PartLine
-                    quantity={ingredient.quantity}
-                    name={ingredient.name}
-                    className="min-w-0 flex-1"
-                  >
-                    {ingredient.grams ? (
-                      <Text variant="meta">
-                        {` ${t('logging:detail.grams', {
-                          grams: Math.round(ingredient.grams).toLocaleString(),
-                        })}`}
-                      </Text>
-                    ) : null}
-                  </PartLine>
-                  <View className="flex-row items-baseline gap-1">
-                    <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
-                    <Text variant="caption">{t('common:unit.kcal')}</Text>
+                      NO `numberOfLines`. A part's name is what this card exists
+                      to show, the model's own account of what was on the plate,
+                      and truncated to one line "Stir fried pork belly with green
+                      peppers" came out as three words and an ellipsis on the one
+                      screen somebody opens to check exactly that. */}
+                    <View className="min-w-0 flex-1 gap-0.5">
+                      <PartLine quantity={ingredient.quantity} name={ingredient.name} />
+                      <View className="flex-row flex-wrap items-center gap-x-2 gap-y-1">
+                        {unit ? (
+                          <Text variant="meta">
+                            {`${measureText.amount(shownIn(ingredient, unit), unit)} ·`}
+                          </Text>
+                        ) : null}
+                        <MacroDots
+                          carbs={ingredient.carbs}
+                          protein={ingredient.protein}
+                          fat={ingredient.fat}
+                        />
+                      </View>
+                    </View>
+                    <View className="flex-row items-baseline gap-1">
+                      <Text variant="numeric">{ingredient.kcal.toLocaleString()}</Text>
+                      <Text variant="caption">{t('common:unit.kcal')}</Text>
+                    </View>
                   </View>
-                </View>
-              ))}
+                )
+              })}
               {/* One line and the plus above it, for an entry nothing has broken
                 down. Said rather than left blank, because an INGREDIENTS card
                 with nothing under it reads as a plate whose parts went missing

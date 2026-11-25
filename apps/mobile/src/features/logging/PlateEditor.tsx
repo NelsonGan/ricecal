@@ -2,47 +2,47 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { TextInput, View } from 'react-native'
 
-import type { EntryIngredient } from '@/data'
+import type { EntryIngredient, Units } from '@/data'
+import { MacroDots } from '@/features/shared/MacroDots'
+import { MeasureList, UnitPill } from '@/features/shared/MeasurePicker'
 import { PartRow } from '@/features/shared/PartRow'
+import { measureFigure, useMeasureText } from '@/features/shared/useMeasureText'
+import type { MeasureUnit } from '@/lib/measures'
 import { roundHalfUp } from '@/lib/nutrition'
 import { formatPortion, titleCase } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Card, cn, Divider, TEXT_SCALES, Text, useNumpadField } from '@/ui'
+import { Button, Card, cn, Divider, Sheet, TEXT_SCALES, Text, useNumpadField } from '@/ui'
 import { PartLine } from './PartLine'
-import {
-  type PartEdits,
-  perUnitGrams,
-  quantityForGrams,
-  stagedParts,
-  stepGrams,
-  stepPart,
-} from './parts'
+import { type PartEdits, stagedParts, stepPart } from './parts'
+import { partUnit, partUnits, quantityIn, shownIn, stepIn } from './partUnits'
 
 /**
- * One part's weight, typed where it is read.
+ * One part's amount, typed where it is read, in the unit the row is shown in.
  *
- * A bare `TextInput` rather than a `TextField`, because this sits between two
- * 44pt buttons in a list row: the bordered box, the label above it and the hint
- * below would make every ingredient three times as tall. The dashed rule under
- * the number is what says it can be typed into, the same thing `Stepper` does
- * with its own figure.
+ * A bare `TextInput` rather than a `TextField`, because this sits inside the
+ * row's pill: the bordered box, the label above it and the hint below would make
+ * every ingredient three times as tall. The dashed rule under the number is what
+ * says it can be typed into, the same thing `Stepper` does with its own figure.
  *
  * The value is committed on BLUR rather than per keystroke. Each key would
  * otherwise be a quantity written into the staged overlay and a whole plate
- * re-priced under the finger — and "20" passes through "2" on its way, which for
+ * re-priced under the finger, and "20" passes through "2" on its way, which for
  * a moment is a different meal.
  */
-function GramsField({
-  grams,
+function AmountField({
+  figure,
   label,
+  whole,
   onChange,
 }: {
-  grams: number
+  /** The amount alone, as the row prints it: "200", "1½". */
+  figure: string
   label: string
+  /** Grams and millilitres are typed whole; spoons and cups take a decimal. */
+  whole: boolean
   onChange: (next: number) => void
 }) {
   const colors = useThemeColors()
-  const { t } = useTranslation('logging')
   /** What is in the field while it is being typed, and `null` when it is not. */
   const [typed, setTyped] = useState<string | null>(null)
 
@@ -50,9 +50,9 @@ function GramsField({
     const raw = (typed ?? '').replace(',', '.').trim()
     const parsed = Number(raw)
     setTyped(null)
-    // An empty or unreadable field keeps the weight it had. `Number('')` is 0,
-    // so the empty case has to be caught by hand — and a part weighing nothing
-    // is a part that should have been removed rather than resized.
+    // An empty or unreadable field keeps the amount it had. `Number('')` is 0,
+    // so the empty case has to be caught by hand, and a part of nothing is a
+    // part that should have been removed rather than resized.
     if (!raw || !Number.isFinite(parsed) || parsed <= 0) return
     onChange(parsed)
   }
@@ -60,12 +60,10 @@ function GramsField({
   const numpad = useNumpadField({
     value: typed ?? '',
     onChangeText: setTyped,
-    // Whole grams. A tenth of a gram of rice is a precision nobody has about a
-    // plate, and the row cannot store it anyway.
-    decimal: false,
+    decimal: !whole,
     maxLength: 5,
-    label: `${label} · ${t('detail.gramsField')}`,
-    // Focus empties the box and the old weight becomes its placeholder, for the
+    label,
+    // Focus empties the box and the old amount becomes its placeholder, for the
     // reason `Stepper` gives: where a programmatic selection lands on the frame
     // it is focused is the platform's business, and typing over the whole number
     // is what somebody reaching for this wants anyway.
@@ -77,19 +75,21 @@ function GramsField({
   return (
     <TextInput
       allowFontScaling={TEXT_SCALES}
-      value={typed ?? t('detail.gramsShort', { grams: grams.toLocaleString() })}
+      value={typed ?? figure}
       onChangeText={setTyped}
       onSubmitEditing={commit}
-      placeholder={typed === '' ? String(grams) : undefined}
+      placeholder={typed === '' ? figure : undefined}
       placeholderTextColor={colors.faint}
       // Does nothing while the app's own pad is up, and is the fallback if a
       // platform ever declines to suppress the keyboard.
-      keyboardType="number-pad"
+      keyboardType={whole ? 'number-pad' : 'decimal-pad'}
       underlineColorAndroid="transparent"
       accessibilityLabel={label}
       className={cn(
-        'w-[70px] border-b-2 pb-0.5 text-center font-body-black text-[15px] text-ink',
-        typed === null ? 'border-line border-dashed' : 'border-pandan',
+        'min-w-[36px] max-w-[72px] border-b-2 pb-0.5 text-center font-body-black text-[17px] text-ink',
+        // Pandan, dashed: a line in the old grey disappeared against the pill's
+        // mint, and the rule is the only sign the number is typable.
+        typed === null ? 'border-pandan border-dashed' : 'border-pandan',
       )}
       style={{ paddingVertical: 0 }}
       cursorColor={colors.pandan}
@@ -147,6 +147,13 @@ export type PlateEditorProps = {
   onRemove: (ingredient: EntryIngredient) => void
   /** Swap a part for a different food. The host owns the catalogue search. */
   onReplace: (ingredient: EntryIngredient) => void
+  /**
+   * Read a part in another unit: 36 g of soy sauce as 2 tbsp. Moves no amount,
+   * so it is written at once rather than staged.
+   */
+  onUnitChange: (ingredient: EntryIngredient, unit: MeasureUnit) => void
+  /** The person's unit system, which decides whether ounces are on offer. */
+  units?: Units
 }
 
 /**
@@ -174,8 +181,13 @@ export function PlateEditor({
   onAdd,
   onRemove,
   onReplace,
+  onUnitChange,
+  units,
 }: PlateEditorProps) {
-  const { t } = useTranslation(['logging', 'common'])
+  const { t } = useTranslation(['logging', 'recipes', 'common'])
+  const measureText = useMeasureText()
+  /** The part whose unit list is open. */
+  const [choosing, setChoosing] = useState<EntryIngredient | null>(null)
 
   /**
    * The staging, between one edit and the write that follows it.
@@ -247,40 +259,32 @@ export function PlateEditor({
 
   const parts = stagedParts(ingredients, draft)
   const plateKcal = parts.reduce((sum, item) => sum + item.kcal, 0)
+  const plateMacros = parts.reduce(
+    (sum, item) => ({
+      carbs: sum.carbs + item.carbs,
+      protein: sum.protein + item.protein,
+      fat: sum.fat + item.fat,
+    }),
+    { carbs: 0, protein: 0, fat: 0 },
+  )
 
   /**
-   * A tap on the plus or the minus, IN GRAMS wherever grams are known.
-   *
-   * The overlay is still a quantity, because that is what the row stores and what
-   * `set_ingredient_quantity` takes — the grams are a face on it. See
-   * `quantityForGrams` for what that costs at the edges.
-   *
-   * A part nobody weighed keeps the multiplier: there is no weight to move, and
-   * "× 2" is the only thing that can be said about how much of it there was.
-   */
-  /**
-   * Where a tap on the plus or the minus would land this part, IN GRAMS wherever
-   * grams are known, and `null` where there is nowhere left to go.
+   * Where a tap on the plus or the minus would land this part, in the unit it
+   * is read in, and `null` where there is nowhere left to go.
    *
    * Read twice: once to move the part, and once to decide whether the button
    * that moves it should be live at all. Working it out in two places is what
-   * left a minus looking pressable that did nothing — the button asked whether
-   * the QUANTITY was at its quarter while the arithmetic under it was stopping a
-   * ten gram step short of the same floor, and between those two answers there
-   * is a part at "¼ × / 14 g" with an enabled button and no effect.
+   * once left a minus looking pressable that did nothing.
+   *
+   * The overlay is still a quantity, because that is what the row stores and
+   * what `set_ingredient_quantity` takes: the unit is a face on it. A part with
+   * no unit keeps the multiplier, since "× 2" is the only thing that can be
+   * said about how much of it there was.
    */
   const stepTarget = (ingredient: EntryIngredient, direction: 1 | -1): number | null => {
-    const perUnit = perUnitGrams(ingredient)
-    const next =
-      perUnit === null || ingredient.grams === null
-        ? stepPart(ingredient.quantity, direction)
-        : (() => {
-            const grams = stepGrams(ingredient.grams, perUnit, direction)
-            return grams === null ? null : quantityForGrams(grams, perUnit)
-          })()
-    // A step that lands back where it started is not a step. The grams path
-    // CLAMPS at both ends rather than refusing, so this is what tells the
-    // ceiling from a move.
+    const unit = partUnit(ingredient, units)
+    if (unit) return stepIn(ingredient, unit, direction)
+    const next = stepPart(ingredient.quantity, direction)
     return next === null || next === ingredient.quantity ? null : next
   }
 
@@ -295,13 +299,12 @@ export function PlateEditor({
   }
 
   /**
-   * A weight typed in by hand, which is the precise way to answer "it was more
-   * like 200 g". The buttons are the nudge.
+   * An amount typed in by hand, which is the precise way to answer "it was
+   * more like 200 g". The buttons are the nudge.
    */
-  const setGrams = (ingredient: EntryIngredient, grams: number) => {
-    const perUnit = perUnitGrams(ingredient)
-    if (perUnit === null) return
-    stage(ingredient.id, quantityForGrams(grams, perUnit))
+  const setAmount = (ingredient: EntryIngredient, unit: MeasureUnit, amount: number) => {
+    const next = quantityIn(ingredient, unit, amount)
+    if (next !== null) stage(ingredient.id, next)
   }
 
   /**
@@ -317,14 +320,14 @@ export function PlateEditor({
   const plate = (
     <Card flush contentClassName="gap-0">
       {parts.map((ingredient, index) => {
-        const perUnit = perUnitGrams(ingredient)
-        const weighed = perUnit !== null && ingredient.grams !== null
+        const unit = partUnit(ingredient, units)
+        const switchable = partUnits(ingredient, units).length > 1
+        const amount = unit ? shownIn(ingredient, unit) : 0
+        const unitName = unit ? measureText.unit(unit, amount) : ''
         // The minus STOPS at the smallest amount rather than removing the row,
-        // which it used to do. Under a Save button that was the only way to say
-        // "there wasn't any"; with the plate writing itself it is a part deleted
-        // by a tap that looks like the twenty before it. Swiping the row is where
-        // removal went. The floor is a quarter of one unit either way, said in
-        // whichever unit the row is in.
+        // which it used to do. With the plate writing itself, that is a part
+        // deleted by a tap that looks like the twenty before it. Swiping the row
+        // is where removal went.
         const atFloor = stepTarget(ingredient, -1) === null
         const atCeiling = stepTarget(ingredient, 1) === null
 
@@ -341,8 +344,8 @@ export function PlateEditor({
             <PartRow
               name={ingredient.name}
               // THE COUNT LEADS IT, the same cart line the ingredient card shows.
-              // It moves as the weight does: the buttons and the field set grams,
-              // and this is those grams read back as a number of the thing.
+              // It moves as the amount does: the pill sets grams or spoons, and
+              // this is that amount read back as a number of the thing.
               title={
                 <PartLine
                   quantity={ingredient.quantity}
@@ -359,27 +362,62 @@ export function PlateEditor({
               }}
               onLess={atFloor ? null : () => step(ingredient, -1)}
               onMore={atCeiling ? null : () => step(ingredient, 1)}
+              joined
+              // What the part brings, under the calories it adds up to. Dots
+              // rather than words on every row: the total names them once.
+              detail={
+                <MacroDots
+                  carbs={ingredient.carbs}
+                  protein={ingredient.protein}
+                  fat={ingredient.fat}
+                  className="-mt-1"
+                />
+              }
             >
-              {/* THE AMOUNT, IN GRAMS, AND IT IS A FIELD.
+              {/* THE AMOUNT, IN THE PART'S UNIT, AND IT IS A FIELD.
                   A weight is the one thing about a part somebody can check
-                  against the plate in front of them, and "it was more like 200"
-                  is a sentence the buttons answer ten grams at a time. A part
-                  nobody weighed keeps its multiplier, read-only: there is no
-                  weight to type, and a count is what the buttons move.
+                  against the plate in front of them, and a spoon is how a sauce
+                  was actually measured. A part with no unit keeps its
+                  multiplier, read-only: a count is what the buttons move.
 
                   Exact, and the count that reads it back is in the heading.
-                  Snapping the weight to the quarter instead would make the two
-                  always agree and this field useless: the buttons move 10 g at
-                  a time and every tap would round straight back. */}
-              {weighed ? (
-                <GramsField
-                  grams={Math.round(ingredient.grams ?? 0)}
-                  label={titleCase(ingredient.name)}
-                  onChange={(grams) => setGrams(ingredient, grams)}
-                />
+                  Snapping the amount to the quarter instead would make the two
+                  always agree and this field useless. */}
+              {unit ? (
+                <>
+                  <AmountField
+                    // Keyed on the unit, or a number half-typed in grams
+                    // survives into tablespoons.
+                    key={unit}
+                    figure={measureFigure(unit, amount)}
+                    whole={unit === 'g' || unit === 'ml'}
+                    label={t('recipes:ingredient.change', {
+                      name: titleCase(ingredient.name),
+                      measure: measureText.amount(amount, unit),
+                    })}
+                    onChange={(typed) => setAmount(ingredient, unit, typed)}
+                  />
+                  {switchable ? (
+                    <UnitPill
+                      size="sm"
+                      label={unitName}
+                      onPress={() => setChoosing(ingredient)}
+                      accessibilityLabel={t('recipes:ingredient.changeUnit', {
+                        name: titleCase(ingredient.name),
+                        unit: unitName,
+                      })}
+                    />
+                  ) : (
+                    // Not a control when there is nothing to change it to, so
+                    // not in the action colour either.
+                    <Text className="font-display text-[15px] text-muted leading-[24px]">
+                      {unitName}
+                    </Text>
+                  )}
+                </>
               ) : (
-                <Text variant="label" className="w-[70px] text-center">
-                  {t('logging:detail.times', { amount: ingredient.quantity })}
+                <Text variant="label">
+                  {t('logging:detail.times', { amount: formatPortion(ingredient.quantity) })}
                 </Text>
               )}
             </PartRow>
@@ -392,12 +430,21 @@ export function PlateEditor({
           would paint square white corners over the slab; this one is
           transparent and takes the card's own corners. */}
       <Divider className="mx-card" />
-      <View className="flex-row items-baseline justify-between gap-3 px-card py-md">
-        <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
-        <View className="flex-row items-baseline gap-1">
-          <Text variant="numeric">{plateKcal.toLocaleString()}</Text>
-          <Text variant="caption">{t('common:unit.kcal')}</Text>
+      <View className="gap-1.5 px-card py-md">
+        <View className="flex-row items-baseline justify-between gap-3">
+          <Text variant="bodyStrong">{t('logging:detail.plateTotal')}</Text>
+          <View className="flex-row items-baseline gap-1">
+            <Text variant="numeric">{plateKcal.toLocaleString()}</Text>
+            <Text variant="caption">{t('common:unit.kcal')}</Text>
+          </View>
         </View>
+        {/* The plate's macros, with their names: the key to the dots above. */}
+        <MacroDots
+          carbs={plateMacros.carbs}
+          protein={plateMacros.protein}
+          fat={plateMacros.fat}
+          named
+        />
       </View>
       {/* And what counts of it, when not all of it was eaten. The same line the
           entry's own ingredient card draws, for the same reason: every figure
@@ -414,6 +461,33 @@ export function PlateEditor({
           </View>
         </View>
       )}
+
+      <Sheet
+        visible={choosing !== null}
+        onClose={() => setChoosing(null)}
+        title={t('recipes:ingredient.unitTitle')}
+        closeLabel={t('common:action.close')}
+      >
+        {choosing ? (
+          // Each line says what this part reads as in that unit, so the choice
+          // shows its result before it is made. No calories beside them: a
+          // unit here moves no amount, so every line would cost the same.
+          <MeasureList
+            choices={partUnits(choosing, units).map((option) => {
+              const current = option === partUnit(choosing, units)
+              return {
+                key: option,
+                title: measureText.amount(shownIn(choosing, option), option),
+                selected: current,
+                onPress: () => {
+                  if (!current) onUnitChange(choosing, option)
+                  setChoosing(null)
+                },
+              }
+            })}
+          />
+        ) : null}
+      </Sheet>
     </Card>
   )
 
