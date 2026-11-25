@@ -5607,8 +5607,10 @@ nothing: a second phone on the same provider has its own store, a new phone's
 Health may still be downloading, Health Connect hides what is older than 30 days
 before the grant, and Garmin's delete can land a pass before its re-save. So a
 workout deleted in Health lingers here until it is deleted on its own page. A
-failed reconcile is reported (`health_reconcile`) and does not stop the upsert,
-and any rows it changed count as a change to the workouts.
+failed reconcile does not stop the upsert, and any rows it changed count as a
+change to the workouts. It is reported (`health_reconcile`) unless the request
+never arrived (status 0 with Expo's "fetch failed"): the client's fetch already
+reports a host that stays unreachable, and one dropped connection is not news.
 
 Weigh-ins have a second witness: `sync_weight_readings` answers with how many
 readings changed a row, and any at all counts as changed. The same reading can

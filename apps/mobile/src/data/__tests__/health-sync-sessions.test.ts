@@ -179,6 +179,15 @@ describe('a reconcile that fails', () => {
     expect(reporter).not.toHaveBeenCalled()
   })
 
+  it('with a client-side throw that is not the transport is still reported', async () => {
+    failWith({ error: { message: 'TypeError: undefined is not a function', code: '' }, status: 0 })
+    await sync([run()])
+    expect(reporter).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'TypeError: undefined is not a function' }),
+      expect.objectContaining({ scope: 'health_reconcile' }),
+    )
+  })
+
   it('with an answer from the server is still reported', async () => {
     failWith({ error: { message: 'permission denied', code: '42501' }, status: 403 })
     await sync([run()])

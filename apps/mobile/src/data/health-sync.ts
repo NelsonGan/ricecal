@@ -266,6 +266,16 @@ export function workoutIdentities(workouts: readonly WorkoutReading[]) {
 }
 
 /**
+ * A request that failed on its way, before any answer. supabase-js turns
+ * anything thrown on the client into status 0, and Expo's fetch words its own
+ * transport failures "fetch failed: <the platform's reason>". Both are needed:
+ * status 0 alone would also hide a client-side bug.
+ */
+function neverArrived(status: number, error: { message?: string }): boolean {
+  return status === 0 && (error.message ?? '').includes('fetch failed')
+}
+
+/**
  * Writes one reading. Every statement is an upsert onto a key the provider
  * cannot collide with, so calling this twice with the same reading is
  * indistinguishable from calling it once.
@@ -291,8 +301,8 @@ async function persist(
     // Connect does, on later syncs) takes over its old row instead of adding a
     // copy, and leftover copies go. An upsert alone only ever adds: one run
     // showed four times on Today. A failure costs only that tidying, so it is
-    // reported and the upsert still goes ahead. Status 0 is a request that never
-    // arrived: the client's fetch already reports a host that cannot be reached
+    // reported and the upsert still goes ahead, unless the request never
+    // arrived: the client's fetch already reports a host that stays unreachable
     // (lib/network.ts), and one dropped connection is not news.
     let reconciled = 0
     if (reading.workouts.length > 0) {
@@ -305,7 +315,8 @@ async function persist(
         p_user_id: userId,
       })
       if (error) {
-        if (status !== 0) reportError(error, { scope: 'health_reconcile', provider })
+        if (!neverArrived(status, error))
+          reportError(error, { scope: 'health_reconcile', provider })
       } else if (typeof data === 'number') reconciled = data
     }
 
