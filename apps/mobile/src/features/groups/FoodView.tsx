@@ -135,6 +135,20 @@ export function FoodBody({ view, heroHeight }: { view: GroupFoodView; heroHeight
     { key: 'sodium', label: t('logging:detail.sodium'), value: entry.sodium_mg, unit: 'mg' },
   ].filter((row) => row.value !== null)
   const plateKcal = parts.reduce((sum, part) => sum + part.kcal, 0)
+  // The share of the plate eaten. Each part arrives rounded to the calorie, but
+  // the diary rounds the plate once from the unrounded parts, so the parts times
+  // the share can sit a calorie or two off the total above (787 × 1½ read 1,181
+  // under a total of 1,180). Within that rounding the line is the diary's own
+  // figure; further off, the owner typed the total, and the line keeps what the
+  // parts come to.
+  const scaledKcal = plateKcal * plate
+  // The epsilon keeps a gap exactly at the bound inside it whatever the
+  // floating point makes of a share such as 0.33.
+  const roundingSlack = (parts.length / 2) * plate + 0.5 + 1e-6
+  const eatenKcal =
+    Math.abs(entry.kcal - scaledKcal) <= roundingSlack
+      ? Math.round(entry.kcal)
+      : roundHalfUp(scaledKcal)
 
   return (
     <>
@@ -302,7 +316,7 @@ export function FoodBody({ view, heroHeight }: { view: GroupFoodView; heroHeight
                   {t('logging:detail.times', { amount: formatPortion(plate) })}
                 </Text>
                 <View className="flex-row items-baseline gap-1">
-                  <Text variant="numeric">{roundHalfUp(plateKcal * plate).toLocaleString()}</Text>
+                  <Text variant="numeric">{eatenKcal.toLocaleString()}</Text>
                   <Text variant="caption">{t('common:unit.kcal')}</Text>
                 </View>
               </View>
