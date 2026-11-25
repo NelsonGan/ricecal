@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import worker from './index.ts'
+import { errorText } from './log.ts'
 
 /**
  * A D1 error as Workers Logs printed it: its stack is only the frames, so a log
@@ -38,4 +39,15 @@ test('a failed query logs what D1 said, not only where', async (t) => {
     .filter((part) => typeof part === 'string')
     .join(' ')
   assert.match(text, /D1_ERROR: no such table: food: SQLITE_ERROR/)
+})
+
+test('a cause is written out only when it adds something', () => {
+  const repeated = new Error('D1_ERROR: no such table: product: SQLITE_ERROR', {
+    cause: new Error('no such table: product: SQLITE_ERROR'),
+  })
+  assert.equal(errorText(repeated), 'Error: D1_ERROR: no such table: product: SQLITE_ERROR')
+
+  const adds = new Error('query failed', { cause: new Error('SQLITE_BUSY') })
+  assert.equal(errorText(adds), 'Error: query failed (cause: SQLITE_BUSY)')
+  assert.equal(errorText('plain'), 'plain')
 })

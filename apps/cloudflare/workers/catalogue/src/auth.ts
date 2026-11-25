@@ -19,6 +19,8 @@
  * round trip removed, and why only the read routes accept one.
  */
 
+import { errorText } from './log.ts'
+
 /** The claims worth reading off a verified token. */
 export type User = { id: string }
 
@@ -88,7 +90,7 @@ async function keys(supabaseUrl: string, force: boolean): Promise<Jwk[]> {
     cache = { keys: body.keys ?? [], at: Date.now() }
     return cache.keys
   } catch (error) {
-    console.error('jwks', error)
+    console.error('jwks', errorText(error), error)
     // The cached set, even if stale. A blip at Supabase Auth must not sign
     // every user out of search.
     return cache?.keys ?? []
@@ -147,7 +149,7 @@ export async function verifyUser(token: string, supabaseUrl: string): Promise<Us
       new TextEncoder().encode(`${rawHeader}.${rawPayload}`),
     )
   } catch (error) {
-    console.error('verify', error)
+    console.error('verify', errorText(error), error)
     return null
   }
   if (!ok) return null

@@ -9,6 +9,9 @@
  */
 export function errorText(error: unknown): string {
   if (!(error instanceof Error)) return String(error)
-  const cause = error.cause instanceof Error ? ` (cause: ${error.cause.message})` : ''
+  // D1's cause usually repeats the message ("no such table: …"), so only a
+  // cause that adds something is written out.
+  const said = error.cause instanceof Error ? error.cause.message : ''
+  const cause = said && !error.message.includes(said) ? ` (cause: ${said})` : ''
   return `${error.name}: ${error.message}${cause}`
 }
