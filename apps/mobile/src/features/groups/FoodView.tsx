@@ -142,7 +142,9 @@ export function FoodBody({ view, heroHeight }: { view: GroupFoodView; heroHeight
   // figure; further off, the owner typed the total, and the line keeps what the
   // parts come to.
   const scaledKcal = plateKcal * plate
-  const roundingSlack = (parts.length / 2) * plate + 0.5
+  // The epsilon keeps a gap exactly at the bound inside it whatever the
+  // floating point makes of a share such as 0.33.
+  const roundingSlack = (parts.length / 2) * plate + 0.5 + 1e-6
   const eatenKcal =
     Math.abs(entry.kcal - scaledKcal) <= roundingSlack
       ? Math.round(entry.kcal)
