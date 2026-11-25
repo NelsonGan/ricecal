@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
+import { useRouter } from 'expo-router'
+import { type ReactNode, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useSettings } from '@/data'
+import { useSettings, useUserId } from '@/data'
 import { type GroupPerson, useGroupWorkout } from '@/data/groups'
 import { useSocialPostWorkout } from '@/data/social'
 import { WorkoutDetails } from '@/features/activity'
@@ -64,14 +65,24 @@ export function PostWorkoutScreen({ postId }: { postId: string }) {
   const { t } = useTranslation(['workouts'])
   const query = useSocialPostWorkout(postId)
   const unit = unitFor(useSettings().data?.units)
+  const router = useRouter()
+  const viewer = useUserId()
   const view = query.data
+  // Your own post opens your own workout, with its notes, burn and records,
+  // as your own food card in a group opens your entry. Only the post knows
+  // which workout it shares, so this page reads it first and hands over.
+  const own = Boolean(view && viewer && view.owner.id === viewer)
+  const ownId = own ? view?.workout.id : undefined
+  useEffect(() => {
+    if (ownId) router.replace({ pathname: '/workout/[id]', params: { id: ownId } })
+  }, [ownId, router])
   return (
     <OwnedWorkoutPage
       title={view?.workout.name ?? t('workouts:detail.title')}
-      owner={view?.owner}
+      owner={own ? undefined : view?.owner}
       query={query}
     >
-      {view ? (
+      {view && !own ? (
         <>
           <SessionFigures workout={view.workout} unit={unit} owner={false} />
           <Aside>

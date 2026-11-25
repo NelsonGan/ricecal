@@ -20,6 +20,7 @@ beforeEach(() => {
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush }) }))
 jest.mock('@/data', () => ({
   ENTRY_FOOD_ID: '_entry',
+  dateKey: jest.requireActual('@/data/client').dateKey,
   useUserId: () => 'me',
   useSelectedDate: () => ({ todayKey: '2026-11-25' }),
   useSettings: () => ({ data: { units: mockUnits, show_part_macros: false } }),

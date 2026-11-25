@@ -1224,6 +1224,8 @@ export function useGroupFood(groupId: string, entryId: string) {
         })),
       }
     },
+    // A route restored without its params asks for nothing.
+    enabled: Boolean(groupId && entryId),
     ...SHORT,
   })
 }

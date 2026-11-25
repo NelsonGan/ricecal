@@ -3682,7 +3682,9 @@ all of which give away the owner's weight; for the same reason its volume, a
 set's and the total, is only what was lifted (see *A body weight movement lifts
 the body*). The tap waits out a double tap, which still likes it as on a meal (a
 quarter second rather than the default half), and the card dims under the
-finger at once so the wait does not read as a dead tap. On the feed the card
+finger at once so the wait does not read as a dead tap. Your own post hands over
+to your own workout page, with everything the reduced one leaves out, since
+only the post knows which workout it shares. On the feed the card
 wears a chevron, and past four exercises it counts the rest rather than
 unfolding them, since the tap lists them all.
 
@@ -4206,7 +4208,10 @@ meal share a tile and swipe sideways inside it.
   takes the touch from the bubble's double tap. The bubble's own single tap is
   not ordered against it (two taps in nested detectors both end), so a thumb
   stamps `PillTouch` as it begins and the bubble ignores its tap for a second
-  after one: a vote never opens the food too.
+  after one: a vote never opens the food too. Both sides run on the JS thread,
+  whose queue keeps the stamp ahead of the check; read on the UI thread, the
+  stamp could still be unwritten under a busy JS thread. A touch on a thumb
+  that becomes a scroll clears the stamp, so it does not deaden the next tap.
 - **A food of one's own in the chat.** The + offers three tiles, Food, Workouts
   and My Food, and under the one chosen a two-column grid of the viewer's recent
   ones. My Food is their own written foods (recipes); sharing one

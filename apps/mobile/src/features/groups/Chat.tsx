@@ -1798,7 +1798,12 @@ function MessageGestures({
   // out a double tap made it feel dead; its heart is in the emoji bar instead.
   const pressed = useSharedValue(0)
   // A tap that landed on a food card's like or dislike is the vote's alone.
-  const pillTouch = useSharedValue(0)
+  const pillTouch = useRef(0)
+  const openUnlessVoted = () => {
+    if (!onOpen || Date.now() - pillTouch.current < 1000) return
+    tick()
+    onOpen()
+  }
   const singleTap = Gesture.Tap()
     .enabled(Boolean(onOpen))
     .onBegin(() => {
@@ -1808,10 +1813,8 @@ function MessageGestures({
       pressed.value = withTiming(0, { duration: 160 })
     })
     .onEnd((_event, success) => {
-      if (success && onOpen && Date.now() - pillTouch.value > 1000) {
-        runOnJS(tick)()
-        runOnJS(onOpen)()
-      }
+      // Decided on the JS thread, after the pill's own stamp (see PillTouch).
+      if (success && onOpen) runOnJS(openUnlessVoted)()
     })
   const gesture = Gesture.Race(
     pan,

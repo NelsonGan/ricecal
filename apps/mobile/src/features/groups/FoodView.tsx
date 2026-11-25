@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useSharedValue } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { useSelectedDate, useSettings } from '@/data'
+import { dateKey, useSelectedDate, useSettings } from '@/data'
 import { type GroupFoodView, useGroupFood } from '@/data/groups'
 import {
   dayLabel,
@@ -171,7 +171,10 @@ export function FoodBody({ view, heroHeight }: { view: GroupFoodView; heroHeight
           </Tappable>
           <Text variant="meta">
             {t('logging:detail.whenValue', {
-              day: dayLabel(entry.log_date, todayKey, {
+              // Day and time both from when it was logged, in the reader's
+              // clock: the owner's diary day is their own zone's, and beside a
+              // time in this one it could name the wrong day.
+              day: dayLabel(dateKey(new Date(entry.logged_at)), todayKey, {
                 today: t('common:date.today'),
                 yesterday: t('common:date.yesterday'),
               }),
