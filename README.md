@@ -2676,15 +2676,18 @@ A part with no unit keeps its multiplier and cannot be typed into.
 
 **A part's macros are behind a "Macros" switch, off by default**, at the top
 right of the dish's INGREDIENTS card and of the ingredients page. It is one
-preference for both screens, kept on the phone (`usePartMacros`). Off, a part is
-one line: "1 × Steamed Chicken 200 g", then its calories. On, the amount moves to
-a second line and leads carbs, protein and fat as three bare figures in the
-macro bars' colours ("200 g · 0 · 40 · 18", `MacroFigures`), and the page's
-total spells the names out once. It shipped first as three dots with grams under
-every part, always on, and a five-part plate read as a table when what most
-people open it for is the calories. The amount on the one-line row is joined
-with no-break spaces, so "30 g" never splits across a wrap the way the old
-"(30 g)" bracket did.
+setting for both screens and for the account, `user_settings.show_part_macros`
+(`usePartMacros`), so it is the same answer on every phone the person signs in
+on. Off, a part is one line: "1 × Steamed Chicken 200 g", then its calories. On,
+the amount moves to a second line, followed by carbs, protein and fat as three
+bare figures in one small grey capsule with hairlines between them, each in its
+macro bar's colour (`MacroFigures`); the page's total spells the names out once.
+It shipped first as three dots with grams under every part, always on, and a
+five-part plate read as a table when what most people open it for is the
+calories; a run of "0 · 40 · 18" after that read as unrelated numbers, which is
+what the capsule groups. The amount on the one-line row is joined with no-break
+spaces, so "30 g" never splits across a wrap the way the old "(30 g)" bracket
+did.
 
 **The count is rounded to a quarter and the weight is not**, so the row can read
 "1¼ × Fried Rice (110 g)". Rounding the stored amount instead would cost the

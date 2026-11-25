@@ -42,6 +42,9 @@ GRANT ALL ON FUNCTION public.set_ingredient_unit(uuid, text) TO service_role;
 ALTER TABLE public.food_log_ingredients
   ADD COLUMN display_unit text;
 
+ALTER TABLE public.user_settings
+  ADD COLUMN show_part_macros boolean DEFAULT false NOT NULL;
+
 ALTER TABLE public.food_log_ingredients
   ADD CONSTRAINT food_log_ingredients_display_unit_check
     CHECK (display_unit = ANY (ARRAY['g'::text, 'kg'::text, 'oz'::text, 'lb'::text, 'ml'::text, 'l'::text, 'tsp'::text, 'tbsp'::text, 'cup'::text, 'floz'::text]));

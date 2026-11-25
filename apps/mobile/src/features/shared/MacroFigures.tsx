@@ -1,8 +1,9 @@
 import { Fragment } from 'react'
 import { useTranslation } from 'react-i18next'
+import { View } from 'react-native'
 
 import { useTheme } from '@/theme/useTheme'
-import { cn, Text } from '@/ui'
+import { Text } from '@/ui'
 
 /**
  * Grams at a tenth below ten and whole above, which is what the figure is worth:
@@ -13,9 +14,9 @@ const gramsFigure = (value: number) =>
 
 /**
  * Each macro's colour as text. The bars' own fills are too pale to read as
- * type on a white card, so each takes its readable shade. Carbs is the odd one:
- * `kaya-ink` is the yellow itself in dark mode but a near-black brown in light,
- * where the yellow figure is the kaya slab's amber instead.
+ * type, so each takes its readable shade. Carbs is the odd one: `kaya-ink` is
+ * the yellow itself in dark mode but a near-black brown in light, where the
+ * figure takes the kaya slab's amber instead.
  */
 const MACROS = [
   { key: 'carbs', light: 'text-kaya-slab', dark: 'text-kaya-ink' },
@@ -24,16 +25,17 @@ const MACROS = [
 ] as const
 
 /**
- * Carbs, protein and fat as three figures in the macro bars' own colours, one
- * short run of text: "200 g · 0 · 40 · 18". The colours are the key, so a row
- * carries no names, no dots and no repeated "g". `named` spells them out once
- * ("Carbs 93g · Protein 47g · Fat 26g"), for a total with no bars beside it.
+ * Carbs, protein and fat as three figures in the macro bars' colours, held in
+ * one small capsule with hairlines between them: "200 g  ( 0 | 40 | 18 )". The
+ * colours are the key, so a row carries no names and no repeated "g". `named`
+ * spells them out once, for a total with no bars beside it.
  *
- * It was three dots with grams under every part, and a five-part plate read as
- * a table. This is what is left when that is cut to the figures.
+ * One capsule rather than dots or a dotted run: the three figures are one
+ * thing, read together, and a run of "0 · 40 · 18" read like a list of
+ * unrelated numbers.
  *
- * One run, so it wraps like a sentence, and one accessible element that says
- * the names in full, since a colour says nothing to a screen reader.
+ * One accessible element that says the names in full, since a colour says
+ * nothing to a screen reader.
  */
 export function MacroFigures({
   carbs,
@@ -45,7 +47,7 @@ export function MacroFigures({
   carbs: number
   protein: number
   fat: number
-  /** What the run starts with, the part's amount: "200 g". */
+  /** What the line starts with, the part's amount: "200 g". */
   lead?: string
   named?: boolean
 }) {
@@ -56,17 +58,25 @@ export function MacroFigures({
   const spoken = MACROS.map((m) => `${t(`macro.${m.key}`)} ${grams(m.key)}`).join(', ')
 
   return (
-    <Text variant="meta" accessibilityLabel={lead ? `${lead}, ${spoken}` : spoken}>
-      {lead ? `${lead} · ` : ''}
-      {MACROS.map((m, index) => (
-        <Fragment key={m.key}>
-          {index > 0 ? ' · ' : ''}
-          {named ? `${t(`macro.${m.key}`)} ` : ''}
-          <Text variant="meta" className={cn('font-body-black', isDark ? m.dark : m.light)}>
-            {named ? grams(m.key) : gramsFigure(values[m.key])}
-          </Text>
-        </Fragment>
-      ))}
-    </Text>
+    <View
+      accessible
+      accessibilityLabel={lead ? `${lead}, ${spoken}` : spoken}
+      className="flex-row flex-wrap items-center gap-x-2 gap-y-1"
+    >
+      {lead ? <Text variant="meta">{lead}</Text> : null}
+      <View className="flex-row items-center rounded-full bg-track px-1">
+        {MACROS.map((m, index) => (
+          <Fragment key={m.key}>
+            {index > 0 ? <View className="my-1 w-[1.5px] self-stretch bg-surface" /> : null}
+            <Text variant="caption" className="px-2 py-0.5">
+              {named ? `${t(`macro.${m.key}`)} ` : ''}
+              <Text variant="caption" className={isDark ? m.dark : m.light}>
+                {named ? grams(m.key) : gramsFigure(values[m.key])}
+              </Text>
+            </Text>
+          </Fragment>
+        ))}
+      </View>
+    </View>
   )
 }

@@ -2614,6 +2614,7 @@ export type Database = {
           quiet_from: string
           quiet_to: string
           share_with_family: boolean
+          show_part_macros: boolean
           step_goal: number
           track_focus: string
           units: Database['public']['Enums']['unit_system']
@@ -2637,6 +2638,7 @@ export type Database = {
           quiet_from?: string
           quiet_to?: string
           share_with_family?: boolean
+          show_part_macros?: boolean
           step_goal?: number
           track_focus?: string
           units?: Database['public']['Enums']['unit_system']
@@ -2660,6 +2662,7 @@ export type Database = {
           quiet_from?: string
           quiet_to?: string
           share_with_family?: boolean
+          show_part_macros?: boolean
           step_goal?: number
           track_focus?: string
           units?: Database['public']['Enums']['unit_system']

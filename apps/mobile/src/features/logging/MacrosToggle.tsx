@@ -1,7 +1,6 @@
-import { useSyncExternalStore } from 'react'
 import { useTranslation } from 'react-i18next'
-import { createMMKV } from 'react-native-mmkv'
 
+import { useSettings, useUpdateSettings } from '@/data'
 import { cn, Tappable, Text } from '@/ui'
 
 /**
@@ -9,30 +8,18 @@ import { cn, Tappable, Text } from '@/ui'
  * on the ingredients page alike.
  *
  * OFF BY DEFAULT. With carbs, protein and fat on every part, a five-part plate
- * read as a table, and what most people open it for is the calories. The switch
- * is one preference for both screens, so turning it on in one is what the
- * other shows when the user goes back to it, and it is remembered on the phone.
+ * read as a table, and what most people open it for is the calories.
+ *
+ * `user_settings.show_part_macros`, one setting for both screens and for the
+ * account rather than the phone, so the answer is the same wherever the person
+ * signs in. The settings query is optimistic and persisted, so the switch moves
+ * at once and is right offline.
  */
-const storage = createMMKV({ id: 'ricecal-logging' })
-const KEY = 'partMacros'
-const listeners = new Set<() => void>()
-
-const read = () => storage.getBoolean(KEY) ?? false
-
-function subscribe(listener: () => void) {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
-
 export function usePartMacros(): [boolean, (on: boolean) => void] {
-  const on = useSyncExternalStore(subscribe, read, read)
-  const set = (next: boolean) => {
-    storage.set(KEY, next)
-    for (const listener of listeners) listener()
-  }
-  return [on, set]
+  const { data: settings } = useSettings()
+  const update = useUpdateSettings()
+  const on = settings?.show_part_macros ?? false
+  return [on, (next) => update.mutate({ show_part_macros: next })]
 }
 
 /**

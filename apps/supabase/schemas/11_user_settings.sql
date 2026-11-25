@@ -68,6 +68,13 @@ create table public.user_settings (
   -- only ever wants the shutter, and a photo is then read on its own.
   photo_note_prompt      boolean not null default true,
 
+  -- Whether a plate's parts show their carbs, protein and fat, on the dish's
+  -- ingredient card and the ingredients page alike. Off: most people open a
+  -- plate for its calories, and five parts with three macros each read as a
+  -- table. A setting of the account rather than the phone, so it is one answer
+  -- wherever the person signs in.
+  show_part_macros       boolean not null default false,
+
   -- Workouts ----------------------------------------------------------------
   -- Seconds the logger counts down after a set, for an exercise that has no
   -- rest of its own. Ninety is the middle of what a hypertrophy program asks
