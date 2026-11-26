@@ -1085,8 +1085,13 @@ signing in unwound the root stack rather than the questions.
 
 ### `about` answers nothing for the user
 
-Every control on it starts empty and Continue is dead until all five are
-filled. `setup` in front of it is the exception and says why in its own section:
+Every question on it starts empty and Continue is dead until all four (height,
+weight, age, sex) are answered. The target-weight slider is the exception: it is
+locked until the weight exists, then sits on that weight, and Continue records
+it there when nobody drags it, which is "keep my weight". It used to wait for a
+drag too, so somebody happy at their weight had to drag the thumb away and back,
+and real people stalled on a screen that looked finished. The plan step names
+the goal that produces and links back here. `setup` in front of it is the exception and says why in its own section:
 a language and a unit system both open on an answer, so there is no version of
 that screen somebody can fail to fill in. It used to open on 164 cm, 65 kg, 29, female, and every one of those is
 a real answer as far as `compute_targets()` is concerned, so tapping straight
@@ -1892,7 +1897,17 @@ is what separates them.
 | `unusable: 110200` | origin is not on the widget's hostname list | add it under Hostname Management |
 | `unusable: 110100` / `110110` / `400020` / `400070` | wrong or disabled site key | the key, or the widget |
 | `gave up after N retryable errors` | scored a bot, twice | the widget's mode |
-| `timed out with no answer` | executed, then twenty seconds of silence | usually the network |
+| `timed out with no answer` | executed twice, twenty seconds of silence each time | usually the network |
+
+**A silent timeout gets one automatic retry.** With the gate on, a request sent
+without a token is refused, so giving up after the first twenty seconds meant a
+refused sign-up. Of 33 people who hit it in the six weeks to 2026-11-26, 24
+never got in and most of those tried once; the ones who recovered mostly tapped
+again within a minute. The provider now resets the widget and runs it once more
+before sending the request without a token, so the button can wait up to forty
+seconds. `timed out with no answer` is filed only after both attempts, so its
+rate against those six weeks (48 reports from 33 people) is what the retry
+saved; a success is not filed, since error tracking is for failures.
 
 **Nothing at all in error tracking, with sign-in still failing, is the sixth case: the
 secret.** It has to belong to the same widget as the site key. A mismatched pair

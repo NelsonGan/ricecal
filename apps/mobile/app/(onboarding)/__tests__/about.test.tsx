@@ -113,19 +113,52 @@ it('will not move on until every question is answered', async () => {
   await user.type(screen.getByLabelText('HEIGHT'), '170')
   await user.type(screen.getByLabelText('WEIGHT'), '65')
   await user.type(screen.getByLabelText('AGE'), '30')
-  await user.press(screen.getByText('Female'))
 
-  // Still held: the target weight is the one answer left, and it is the one a
-  // user is most likely to walk past because the slider looks answered. The
-  // card says so, or a dash and a dead button are all there is to go on.
+  // Still held with one answer missing. A press on a disabled button does
+  // nothing at all, which is the behaviour that matters: an incomplete draft
+  // reaching the flush leaves the budget trigger with nothing to read and it
+  // gives up quietly.
   expect(advance()).toBeDisabled()
-  expect(screen.getByText('Slide to set the weight you are aiming for.')).toBeTruthy()
-
-  // A press on a disabled button does nothing at all, which is the behaviour
-  // that matters — an incomplete draft reaching the flush leaves the budget
-  // trigger with nothing to read and it gives up quietly.
   await continueOn()
   expect(mockPush).not.toHaveBeenCalled()
+
+  await user.press(screen.getByText('Female'))
+  expect(advance()).toBeEnabled()
+})
+
+/**
+ * Continue used to wait for a drag of the target slider too. Its thumb already
+ * sits on the current weight, so somebody keeping their weight had to drag it
+ * away and back, and real people stalled on a screen that looked finished.
+ */
+it('takes the current weight as the target when the slider is left alone', async () => {
+  await render(<AboutStep />)
+
+  await user.type(screen.getByLabelText('HEIGHT'), '170')
+  await user.type(screen.getByLabelText('WEIGHT'), '65')
+  await user.type(screen.getByLabelText('AGE'), '30')
+  await user.press(screen.getByText('Female'))
+
+  // The readout says what will be recorded, rather than a dash, and the card
+  // still says the slider is there to be moved.
+  expect(screen.getByText('65.0 kg')).toBeOnTheScreen()
+  expect(screen.getByText('Slide to set the weight you are aiming for.')).toBeTruthy()
+
+  await continueOn()
+  expect(saved()).toEqual(expect.objectContaining({ weightKg: 65, targetWeightKg: 65 }))
+  expect(mockPush).toHaveBeenCalledWith('/(onboarding)/activity')
+})
+
+it('shows a dash for the target until there is a weight to measure it from', async () => {
+  await render(<AboutStep />)
+
+  await user.type(screen.getByLabelText('HEIGHT'), '170')
+  await user.type(screen.getByLabelText('AGE'), '30')
+  await user.press(screen.getByText('Female'))
+
+  expect(screen.getByText('—')).toBeTruthy()
+  expect(screen.getByText('Enter your weight first.')).toBeTruthy()
+  expect(advance()).toBeDisabled()
 })
 
 it('records every answer once they are all given', async () => {
@@ -164,7 +197,25 @@ it('records what was typed', async () => {
   await user.type(screen.getByLabelText('WEIGHT'), '.5')
   await continueOn()
 
-  expect(saved()).toEqual(expect.objectContaining({ weightKg: 65.5 }))
+  // The 60 kg target was dragged to, so a new weight leaves it where it is.
+  expect(saved()).toEqual(expect.objectContaining({ weightKg: 65.5, targetWeightKg: 60 }))
+})
+
+/**
+ * Continue records an untouched target as the weight. Coming back to correct the
+ * weight has to move that default with it, or "keep my weight" becomes a plan to
+ * lose or gain the difference without anybody choosing one.
+ */
+it('moves a default target with a corrected weight', async () => {
+  seed({ ...COMPLETE, weightKg: 65, targetWeightKg: 65 })
+  await render(<AboutStep />)
+
+  await user.type(screen.getByLabelText('WEIGHT'), '.5')
+  expect(screen.getByText('65.5 kg')).toBeOnTheScreen()
+  expect(screen.getByText('Slide to set the weight you are aiming for.')).toBeTruthy()
+
+  await continueOn()
+  expect(saved()).toEqual(expect.objectContaining({ weightKg: 65.5, targetWeightKg: 65.5 }))
 })
 
 it('accepts a body and target weight below 30 kg', async () => {
