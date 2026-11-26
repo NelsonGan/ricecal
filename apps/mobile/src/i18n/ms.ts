@@ -37,7 +37,7 @@ export const ms = {
       'Sembunyikan daripada carian, cadangan dan Teroka. Pengikut masih boleh melihat siaran anda.',
     autoPostFoods: 'Siarkan makanan automatik',
     autoPostFoodsHint:
-      'Makanan baharu yang dicatat disiarkan secara automatik. Profil peribadi berkongsi dengan pengikut sahaja.',
+      'Makanan baharu yang direkod disiarkan secara automatik. Profil peribadi berkongsi dengan pengikut sahaja.',
     avatar: 'Pilih foto',
     handleInvalid: 'Gunakan 3 hingga 24 huruf kecil, nombor, titik atau garis bawah.',
     save: 'Simpan',
@@ -94,7 +94,7 @@ export const ms = {
     blocked: 'Orang disekat',
     unblock: 'Nyahsekat',
     unblockBody: 'Hubungan mengikuti tidak akan dipulihkan.',
-    report: 'Lapor',
+    report: 'Laporkan',
     reportTitle: 'Mengapa anda melaporkan ini?',
     notifications: 'Pemberitahuan',
     unread: 'Belum dibaca',
@@ -103,7 +103,7 @@ export const ms = {
     unreadNotificationsOverflow: '99 atau lebih pemberitahuan belum dibaca',
     notificationFollow: '{{name}} mengikuti anda',
     notificationLike: '{{name}} menyukai siaran anda',
-    notificationComment: '{{name}} mengomen siaran anda',
+    notificationComment: '{{name}} memberi komen pada siaran anda',
     emptyFollowing: 'Ikuti orang atau kongsi makanan dari diari anda.',
     emptyPeople: 'Tiada orang ditemui',
     emptyPosts: 'Belum ada siaran',
@@ -113,7 +113,7 @@ export const ms = {
       'Hanya nama, masa, angka, senaman dan kapsyen anda dikongsi, bukan nota. Memadam senaman juga memadam siarannya.',
     autoPostWorkouts: 'Siarkan senaman automatik',
     autoPostWorkoutsHint:
-      'Senaman yang selesai disiarkan secara automatik. Senaman yang diimport tidak sekali-kali.',
+      'Senaman yang selesai disiarkan secara automatik. Senaman yang diimport tidak akan disiarkan.',
     emptyComments: 'Mulakan perbualan',
     emptyConnections: 'Belum ada orang',
     emptyBlocked: 'Tiada orang disekat',
@@ -230,10 +230,10 @@ export const ms = {
     aiLanguage: {
       open: 'Bahasa yang digunakan ciri AI',
       title: 'Ciri AI berfungsi dalam bahasa Inggeris',
-      body: 'Snap pinggan dan cakap apa yang anda makan kedua-duanya pergi kepada model yang paling memahami bahasa Inggeris. Terangkan makanan anda dalam bahasa Inggeris dan ia memahami anda dengan lebih tepat.',
+      body: 'Mengambil gambar pinggan dan menerangkan makanan dengan kata-kata, kedua-duanya dihantar kepada model yang paling memahami bahasa Inggeris. Terangkan makanan anda dalam bahasa Inggeris dan ia akan memahami anda dengan lebih tepat.',
       results:
         'Apa yang kembali juga dalam bahasa Inggeris. Nama hidangan, bahan dan saiz hidangan disimpan dalam bahasa Inggeris di dalam katalog makanan, jadi itulah bahasa yang akan muncul walau apa pun tetapan apl.',
-      dishes: 'Nama hidangan kekal dalam bahasa ia ditulis.',
+      dishes: 'Nama hidangan kekal dalam bahasa asal ia ditulis.',
       note: 'Terangkan makanan dalam bahasa Inggeris untuk bacaan paling tepat. Hasilnya juga dalam bahasa Inggeris.',
     },
 
@@ -246,7 +246,7 @@ export const ms = {
     offline: {
       title: 'Menunggu sambungan',
       body: 'Yang ini belum disimpan dalam telefon anda. Ia akan dimuatkan sebaik sahaja anda dalam talian.',
-      dayTitle: 'Hari ini tiada dalam telefon anda',
+      dayTitle: 'Hari tersebut tiada dalam telefon anda',
       dayBody: 'Pilih hari yang pernah anda buka, atau datang semula bila anda dalam talian.',
       unreachableTitle: 'Tidak dapat menghubungi RiceCal',
       unreachableBody: 'Anda dalam talian, tetapi permintaan tidak berjaya dihantar.',
@@ -353,7 +353,7 @@ export const ms = {
       lastSynced: 'Disegerakkan {{when}}',
       syncNow: 'Segerakkan sekarang',
       syncing: 'Menyegerak…',
-      extendBudget: 'Pergerakan memanjangkan bajet saya',
+      extendBudget: 'Pergerakan menambah bajet saya',
       extendBudgetBody:
         'Kalori yang dibakar ditambah kepada hari itu, tidak pernah ditolak daripada apa yang anda makan.',
       stepGoal: 'Sasaran langkah',
@@ -375,7 +375,7 @@ export const ms = {
     },
 
     zone: {
-      easy: 'Senang',
+      easy: 'Ringan',
       steady: 'Sekata',
       hard: 'Berat',
       peak: 'Puncak',
@@ -399,7 +399,7 @@ export const ms = {
       dance: 'Menari',
       martialArts: 'Seni mempertahankan diri',
       rowing: 'Mendayung',
-      stairs: 'Tangga',
+      stairs: 'Panjat tangga',
       other: 'Senaman',
     },
   },
@@ -425,7 +425,7 @@ export const ms = {
       signIn: 'Log masuk',
       forgot: 'Lupa kata laluan anda?',
 
-      codeInstead: 'E-melkan saya kod sahaja',
+      codeInstead: 'Hantar kod ke e-mel saya',
 
       haveAccount: 'Sudah ada akaun? Log masuk',
       needAccount: 'Baru di sini? Buka akaun',
@@ -451,7 +451,7 @@ export const ms = {
     reset: {
       askTitle: 'Tetapkan semula kata laluan anda',
       askSubtitle: 'Beritahu kami alamat pada akaun anda dan kami akan e-melkan satu kod.',
-      send: 'E-melkan saya kod tetapan semula',
+      send: 'Hantar kod tetapan semula ke e-mel saya',
 
       newTitle: 'Pilih kata laluan baharu',
       newSubtitle: 'Hampir siap. Pilih sesuatu yang anda akan ingat.',
@@ -504,22 +504,23 @@ export const ms = {
     },
 
     welcome: {
-      title: 'Snap pinggan anda. Tahu kalorinya.',
+      title: 'Ambil gambar pinggan anda. Ketahui kalorinya.',
       subtitle: 'Penjejak kalori untuk makanan Asia.',
       start: 'Mula',
       signIn: 'Saya sudah ada akaun',
     },
 
     how: {
-      title: 'Snap. Kami kira.',
-      subtitle: 'Satu gambar memberi hidangan, saiz hidangan dan kalorinya.',
+      title: 'Ambil gambar. Kami kira.',
+      subtitle: 'Satu gambar memberi hidangan, saiz bahagian dan kalorinya.',
       portion: '1 pinggan',
       more: 'Atau taip, cari, atau imbas barkod.',
     },
 
     workouts: {
-      title: 'Catat senaman juga',
-      subtitle: 'Set, ulangan dan pemasa rehat. Angkatan lepas anda di sebelah setiap set.',
+      title: 'Rekod senaman juga',
+      subtitle:
+        'Set, ulangan dan pemasa rehat. Beban terakhir anda dipaparkan di sebelah setiap set.',
       routine: 'Senaman pagi',
     },
 
@@ -555,7 +556,7 @@ export const ms = {
     },
 
     activity: {
-      title: 'Sesibuk mana hari anda?',
+      title: 'Seaktif mana hari anda?',
       subtitle: 'Pilih yang paling dekat dengan hari biasa anda.',
       sedentary: { title: 'Kebanyakannya duduk', subtitle: 'Pejabat, memandu, belajar' },
       light: { title: 'Aktif sedikit', subtitle: 'Sedikit berjalan, kerja rumah ringan' },
@@ -568,7 +569,7 @@ export const ms = {
 
     source: {
       title: 'Dari mana anda dengar tentang kami?',
-      subtitle: 'Satu ketik. Ia membantu kami berkembang.',
+      subtitle: 'Satu ketikan. Ia membantu kami berkembang.',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
       tiktok: 'TikTok',
@@ -636,7 +637,7 @@ export const ms = {
       log: {
         title: 'Tiga cara merekod',
         subtitle: 'Ketik butang hijau pada Hari ini, kemudian pilih satu.',
-        snap: 'Snap',
+        snap: 'Foto',
         snapBody: 'Gambar pinggan itu',
         describe: 'Terangkan',
         describeBody: 'Taip apa yang anda makan',
@@ -646,7 +647,7 @@ export const ms = {
       },
 
       read: {
-        title: 'Ia mendarat pada hari anda',
+        title: 'Ia terus masuk ke hari anda',
         subtitle: 'Kami namakan hidangannya, ukur bahagiannya dan kira untuk anda.',
         exampleName: 'Nasi lemak ayam',
         exampleDetail: '1 pinggan, 320 g',
@@ -674,7 +675,7 @@ export const ms = {
         carbs: 'Karbo',
         protein: 'Protein',
         fat: 'Lemak',
-        note: 'Pergerakan dari jam tangan anda ditambah di atas, tidak pernah ditolak.',
+        note: 'Pergerakan dari jam tangan anda ditambah ke bajet, tidak pernah ditolak.',
       },
     },
 
@@ -712,8 +713,7 @@ export const ms = {
       tomorrow: 'esok',
       show: 'Lihat',
       title: 'Foto yang akan dipadam',
-      intro:
-        'Akaun percuma menyimpan foto makanan selama {{days}} hari. Catatan makanan anda kekal.',
+      intro: 'Akaun percuma menyimpan foto makanan selama {{days}} hari. Rekod makanan anda kekal.',
       keep: 'Simpan dengan Pro',
       empty: 'Tiada foto yang akan dipadam.',
     },
@@ -721,21 +721,21 @@ export const ms = {
       title: 'Hari ini',
       backToTodayA11y: 'Kembali ke hari ini',
       kcalLeft: 'BAKI KCAL',
-      kcalOver: 'KCAL LEBIH',
+      kcalOver: 'LEBIH KCAL',
       kcalOfGoal: '/{{goal}} KCAL',
       grams: '{{value}}g',
       proteinLeft: 'BAKI PROTEIN',
       proteinOver: 'LEBIH PROTEIN',
       proteinOfGoal: '/{{goal}}G PROTEIN',
       proteinA11y: '{{value}} daripada {{goal}} gram protein',
-      showGoals: 'Tunjuk peruntukan hari ini',
+      showGoals: 'Tunjuk peruntukan harian',
       showLeft: 'Tunjuk apa yang tinggal',
       dayHeading: 'Hari anda',
       activity: 'Aktiviti',
       steps_one: '{{steps}} langkah',
       steps_other: '{{steps}} langkah',
       analysing: 'Membaca pinggan anda',
-      analysingHint: 'Mengira sebaik sahaja ia tahu ini apa',
+      analysingHint: 'Mengira sebaik sahaja ia tahu apa ini',
       describing: 'Membaca apa yang anda tulis',
       describingRead: 'Membaca apa yang anda tulis…',
       scanningRead: 'Membaca pinggan anda…',
@@ -757,7 +757,7 @@ export const ms = {
       analysisFailedHint: 'Ketik untuk pilih hidangannya sendiri',
 
       noBudgetTitle: 'Belum ada bajet harian',
-      noBudgetBody: 'Tetapkan sasaran anda dan cincin itu ada sesuatu untuk diisi.',
+      noBudgetBody: 'Tetapkan sasaran anda supaya cincin itu ada sesuatu untuk diisi.',
       noBudgetAction: 'Tetapkan sasaran saya',
     },
 
@@ -765,8 +765,8 @@ export const ms = {
       a11y: {
         plain: '{{day}}',
         ahead: '{{day}}, belum tiba',
-        under: '{{day}}, bawah sasaran',
-        over: '{{day}}, atas sasaran',
+        under: '{{day}}, di bawah sasaran',
+        over: '{{day}}, melebihi sasaran',
         missed: '{{day}}, tiada rekod',
       },
     },
@@ -777,16 +777,16 @@ export const ms = {
       previousMonth: 'Bulan sebelumnya',
       nextMonth: 'Bulan selepasnya',
       legend: {
-        under: 'Bawah sasaran',
-        over: 'Atas sasaran',
+        under: 'Di bawah sasaran',
+        over: 'Melebihi sasaran',
         missed: 'Tiada rekod',
       },
     },
 
     selector: {
       title: 'Rekod satu hidangan',
-      remaining: 'baki {{count}} kcal',
-      snap: 'Snap',
+      remaining: 'Baki {{count}} kcal',
+      snap: 'Foto',
       describe: 'Terangkan',
       search: 'Cari',
     },
@@ -796,8 +796,8 @@ export const ms = {
       meal: 'Hidangan',
       barcode: 'Barkod',
       scansLeft_zero: 'Tiada baki imbasan hari ini. Ia kembali esok.',
-      scansLeft_one: 'baki {{count}} imbasan hari ini',
-      scansLeft_other: 'baki {{count}} imbasan hari ini',
+      scansLeft_one: 'Baki {{count}} imbasan hari ini',
+      scansLeft_other: 'Baki {{count}} imbasan hari ini',
     },
 
     barcode: {
@@ -810,7 +810,7 @@ export const ms = {
       tryAgain: 'Imbas lagi',
       photographLabel: 'Ambil gambar label',
       labelTitle: 'Ambil gambar label pemakanan',
-      labelPrompt: 'Kami belum ada pek ini. Terbalikkan pek dan kami akan membaca nilainya.',
+      labelPrompt: 'Kami tiada rekod bungkusan ini. Terbalikkan dan kami akan membaca nilainya.',
     },
 
     describe: {
@@ -822,7 +822,7 @@ export const ms = {
       title: 'Maklumat tambahan',
       placeholder: 'Daging lembu bukan ayam, teh o kosong, kongsi',
       skip: 'Langkau',
-      log: 'Catat hidangan',
+      log: 'Rekod hidangan',
       retake: 'Ambil semula',
       photo: 'Foto anda',
       suggestion: {
@@ -860,7 +860,7 @@ export const ms = {
       tabPast: 'Pernah dimakan',
       mineEmptyTitle: 'Belum ada resipi anda sendiri',
       mineEmptyBody:
-        'Satu periuk kongsi tiada saiz hidangan. Masukkan apa yang dimasukkan dan berapa orang ia cukup, sekali sahaja, dan merekodnya hanya satu ketikan selepas itu.',
+        'Periuk yang dikongsi tiada saiz hidangan. Tulis bahan-bahannya dan untuk berapa orang, sekali sahaja, dan selepas itu merekodnya hanya satu ketikan.',
       mineNoMatchBody: 'Tiada resipi anda yang sepadan dengan itu.',
       mineOfflineBody:
         'Resipi anda berada di pelayan. Ini akan dimuatkan sebaik anda kembali dalam talian.',
@@ -873,7 +873,7 @@ export const ms = {
       emptyBody: 'Cuba perkataan yang lebih pendek, atau kurangkan perkataannya.',
       offlineTitle: 'Tiada sambungan',
       offlineBody:
-        'Senarai hidangan berada di pelayan. Ini akan berjalan sebaik sahaja anda kembali dalam talian.',
+        'Senarai hidangan berada di pelayan. Carian akan dijalankan sebaik sahaja anda kembali dalam talian.',
       errorTitle: 'Tidak dapat mencari',
       errorBody: 'Ada sesuatu yang tidak kena semasa mencarinya. Cuba lagi sebentar nanti.',
     },
@@ -899,13 +899,13 @@ export const ms = {
       plateTitle: 'BAHAN',
       plateHeading: 'Bahan',
       plateTotal: 'Jumlah',
-      plateNone: 'Ini dikira sebagai satu benda. Edit untuk memecahkannya kepada bahan.',
+      plateNone: 'Ini dikira sebagai satu benda. Sunting untuk memecahkannya kepada bahan.',
       addPart: 'Tambah bahan',
       addPartTitle: 'Tambah bahan',
       partAdded: '{{food}} ditambah ke dalam pinggan',
       addPartFailed: 'Tidak dapat menambah itu. Cuba lagi',
       addPartTyped:
-        'Entri ini menggunakan angka kalori anda sendiri, jadi ia tidak boleh dipecahkan',
+        'Rekod ini menggunakan angka kalori anda sendiri, jadi ia tidak boleh dipecahkan',
       plateEmptied:
         'Tiada apa-apa tinggal pada pinggan. Rekod itu kembali dikira sebagai satu bahagian.',
       times: '× {{amount}}',
@@ -943,13 +943,13 @@ export const ms = {
       timeTitle: 'Masa',
       hour: 'Jam',
       minute: 'Minit',
-      am: 'pagi',
-      pm: 'petang',
+      am: 'am',
+      pm: 'pm',
       movedTo: 'Dipindahkan ke {{day}}',
       save: 'Simpan',
       saveFailed: 'Tidak dapat menyimpan perubahan itu',
       discardTitle: 'Keluar tanpa menyimpan?',
-      discardBody: 'Apa yang anda ubah di sini akan digugurkan dan rekod itu kekal seperti asal.',
+      discardBody: 'Apa yang anda ubah di sini akan dibuang dan rekod itu kekal seperti asal.',
       discardConfirm: 'Buang',
       deleteEntry: 'Padam rekod ini',
       deleteTitle: 'Padam rekod ini?',
@@ -959,7 +959,7 @@ export const ms = {
       increaseServing: 'Tambah satu',
       choosePicture: 'Pilih gambar untuk rekod ini',
       addPicture: 'Ketik untuk tambah gambar',
-      photoFailed: 'Tidak dapat menyimpan gambar itu',
+      photoFailed: 'Tidak dapat menyimpan foto itu',
       replacePhoto: 'Ganti foto dengan gambar',
       replacePhotoTitle: 'Ganti foto anda?',
       replacePhotoBody:
@@ -979,14 +979,14 @@ export const ms = {
       searchTab: 'Cari',
       cameraTab: 'Kamera',
       searchLabel: 'Cari gambar',
-      searchPlaceholder: 'nasi lemak, teh tarik, ikan',
+      searchPlaceholder: 'nasi lemak, teh tarik, fish',
       noMatch: 'Tiada yang sepadan dengan “{{query}}”.',
     },
 
     water: {
       goal: 'Sasaran {{goal}} ml',
       addTitle: 'Tambah air',
-      left: 'baki {{amount}} ml',
+      left: 'Baki {{amount}} ml',
       add: 'Tambah {{amount}} ml',
       customLabel: 'Jumlah lain',
       customPlaceholder: '600',
@@ -1026,7 +1026,7 @@ export const ms = {
       chart: 'Kalori sehari dalam {{span}}, berbanding sasaran anda',
       share: '{{macro}} {{value}}%',
       grams: '{{value}} g',
-      empty: 'Tiada makanan dicatat dalam julat ini.',
+      empty: 'Tiada makanan direkod dalam julat ini.',
     },
     protein: {
       unit: 'g sehari',
@@ -1045,13 +1045,13 @@ export const ms = {
       perDay: '{{value}} sehari',
       latest: 'TERKINI',
       startTitle: 'Jejaki senaman anda',
-      startBody: 'Catat satu sesi dan latihan anda muncul di sini.',
+      startBody: 'Rekod satu sesi dan latihan anda akan muncul di sini.',
     },
     water: {
       unit: '{{unit}} sehari',
       goalDays: '{{done}} daripada {{total}} hari capai sasaran',
       chart: 'Air sehari berbanding sasaran {{amount}}',
-      empty: 'Tiada air dicatat dalam julat ini.',
+      empty: 'Tiada air direkod dalam julat ini.',
     },
     weight: {
       change: '{{value}} {{unit}}',
@@ -1060,7 +1060,7 @@ export const ms = {
       toGoal: '{{value}} {{unit}} lagi ke sasaran {{target}} {{unit}} anda',
       atGoal: 'Pada berat sasaran anda',
       weeksAway: '~{{count}} minggu',
-      empty: 'Belum ada berat dicatat.',
+      empty: 'Belum ada berat direkod.',
       add: 'Tambah',
       reading: '{{value}} {{unit}}',
       firstReading: 'Pertama',
@@ -1077,7 +1077,7 @@ export const ms = {
       remove: 'Buang bacaan ini',
       removeTitle: 'Buang bacaan ini?',
       removeBody:
-        'Carta itu kehilangan hari ini. Jika ia yang terkini, bajet anda kembali kepada yang sebelumnya.',
+        'Carta akan kehilangan hari itu. Jika ia yang terkini, bajet anda kembali kepada yang sebelumnya.',
     },
     history: {
       caloriesTitle: 'Sejarah kalori',
@@ -1131,7 +1131,7 @@ export const ms = {
     },
 
     account: {
-      title: 'Edit profil',
+      title: 'Sunting profil',
       name: 'NAMA',
       nameRequired: 'Masukkan nama anda',
       saved: 'Nama disimpan',
@@ -1155,7 +1155,7 @@ export const ms = {
       goesPhotos: 'Setiap gambar yang anda ambil',
       goesRecipes: 'Resipi yang anda tulis, termasuk yang diterbitkan',
       goesProfile: 'Profil, tetapan dan log masuk anda',
-      cancelFirst: 'Batalkan langganan anda di stor dahulu, atau caj akan diteruskan.',
+      cancelFirst: 'Batalkan langganan anda di gedung dahulu, atau caj akan diteruskan.',
       action: 'Padam akaun saya',
       confirmTitle: 'Padam akaun anda?',
       confirmBody:
@@ -1171,7 +1171,7 @@ export const ms = {
       no: 'Tidak juga',
       later: 'Nanti dulu',
       feedbackTitle: 'Apa yang perlu diperbaiki?',
-      feedbackBody: 'Beritahu kami di Discord. Kebanyakan isi aplikasi ini bermula begitu.',
+      feedbackBody: 'Beritahu kami di Discord. Kebanyakan isi apl ini bermula begitu.',
       feedbackOpen: 'Buka Discord',
       feedbackSkip: 'Bukan sekarang',
     },
@@ -1194,18 +1194,18 @@ export const ms = {
       title: 'Saya buat satu lagi apl',
       body: 'Namanya Money2Time. Ia menjejak perbelanjaan anda dan menunjukkan berapa jam kerja setiap pembelian. Saya harap anda mencubanya.',
       action: 'Cuba Money2Time',
-      failed: 'Kami tidak dapat membuka kedai apl',
+      failed: 'Kami tidak dapat membuka gedung apl',
     },
 
     shareEarn: {
       row: 'Kongsi dan dapat Pro',
       title: 'Kongsi dan dapat Pro',
-      heroTitle: 'Pos tentang RiceCal, dapat Pro',
+      heroTitle: 'Pos tentang RiceCal, dapat Pro percuma',
       card: 'Pos, dapat Pro',
       heroBody:
         'Tunjukkan orang pinggan yang anda rekod. Semakin banyak hantaran anda disukai, semakin lama Pro yang kami hantar.',
 
-      platforms: 'HANTAR DI',
+      platforms: 'SIARKAN DI',
 
       rewards: 'APA NILAINYA',
       postReward: '1 bulan Pro',
@@ -1213,7 +1213,7 @@ export const ms = {
       postBody: 'Mana-mana hantaran awam tentang apl ini, pada mana-mana daripadanya.',
       likedReward: '1 tahun Pro',
       likedBadge: '100+ suka',
-      likedBody: 'Hantaran anda menemui orang yang ia ditujukan.',
+      likedBody: 'Hantaran anda sampai kepada orang yang sepatutnya.',
       viralReward: 'Pro selamanya',
       viralBadge: '500+ suka',
       viralBody:
@@ -1230,7 +1230,7 @@ export const ms = {
       claimAction: 'Buka Discord',
 
       finePrint:
-        'Satu ganjaran seorang. Kami semak hantaran itu awam dan kira sukanya semasa anda menuntut, jadi beri ia masa dahulu.',
+        'Satu ganjaran seorang. Kami semak sama ada hantaran itu awam dan kira sukanya semasa anda menuntut, jadi beri ia masa dahulu.',
       openFailed: 'Kami tidak dapat membuka apl itu',
     },
 
@@ -1257,7 +1257,7 @@ export const ms = {
     personalisation: {
       title: 'Pemperibadian',
       mealsTitle: 'WAKTU MAKAN',
-      editMeal: 'Tukar bila {{meal}}',
+      editMeal: 'Tukar waktu {{meal}}',
       hour: 'Jam',
       minute: 'Minit',
       preview: 'Mengingatkan pada {{time}}',
@@ -1302,10 +1302,10 @@ export const ms = {
       energy: 'Tenaga',
       kcal: 'kcal',
       kj: 'kJ',
-      appearance: 'RUPA',
+      appearance: 'PENAMPILAN',
       light: 'Cerah',
       dark: 'Gelap',
-      auto: 'Auto',
+      auto: 'Automatik',
       focus: 'FOKUS PADA',
       focusCalories: 'Kalori',
       focusProtein: 'Protein',
@@ -1316,7 +1316,7 @@ export const ms = {
       pro: 'RiceCal Pro',
       trialLeft_one: 'Percubaan percuma, baki {{count}} hari',
       trialLeft_other: 'Percubaan percuma, baki {{count}} hari',
-      renews: 'Diperbaharui pada {{price}}.',
+      renews: 'Diperbaharui dengan harga {{price}}.',
       neverRenews: 'Dibayar sekali. Tiada pembaharuan.',
       freeBody: '{{scans}} imbasan sehari, {{recipes}} resipi sendiri, dan trend minggu lepas.',
       whatYouGet: 'APA YANG ANDA DAPAT DENGAN PRO',
@@ -1383,12 +1383,12 @@ export const ms = {
       pro: 'Pro',
       rows: {
         snap: {
-          label: 'Snap satu pinggan',
+          label: 'Ambil gambar pinggan',
           free: '{{scans}}/hari',
           pro: 'Tanpa had',
         },
         describe: {
-          label: 'Cakap apa yang anda makan, dalam perkataan',
+          label: 'Cakap apa yang anda makan, dengan kata-kata',
           free: '',
           pro: '',
         },
@@ -1458,7 +1458,7 @@ export const ms = {
           pro: 'Setiap satu',
         },
         photos: {
-          label: 'Gambar hidangan anda',
+          label: 'Foto makanan anda',
           free: '{{days}} hari',
           pro: 'Tanpa had',
         },
@@ -1475,13 +1475,13 @@ export const ms = {
 
     limit: {
       freeReached:
-        'Itu {{count}} imbasan anda untuk hari ini. Pro mengimbas seberapa banyak anda mahu.',
+        'Itu {{count}} imbasan anda untuk hari ini. Dengan Pro, imbas seberapa banyak yang anda mahu.',
       proReached: 'Anda sudah mencapai had imbasan hari ini. Sila hubungi admin.',
       notEntitledDetail: 'Langganan anda tidak aktif.',
-      confirming: 'Pembelian anda sedang diproses. Beri ia sebentar dan cuba lagi.',
+      confirming: 'Pembelian anda sedang diproses. Tunggu sebentar dan cuba lagi.',
       feature: {
         camera: 'Mengimbas satu lagi pinggan hari ini memerlukan RiceCal Pro.',
-        describe: 'Mengatakan apa yang anda makan dalam perkataan memerlukan RiceCal Pro.',
+        describe: 'Menerangkan apa yang anda makan dengan kata-kata memerlukan RiceCal Pro.',
         refine: 'Membetulkan hidangan dengan menerangkannya memerlukan RiceCal Pro.',
         read_recipe: 'Mengisi resipi daripada gambar memerlukan RiceCal Pro.',
         new_recipe: 'Menyimpan lebih daripada {{recipes}} resipi sendiri memerlukan RiceCal Pro.',
@@ -1494,7 +1494,7 @@ export const ms = {
         review: 'Membaca ulasan lama memerlukan RiceCal Pro.',
         group_icon: 'Lebih banyak ikon kumpulan memerlukan RiceCal Pro.',
         photo_retention: 'Menyimpan foto makanan selamanya memerlukan RiceCal Pro.',
-        nudge_streak: '{{days}} hari berturut-turut dicatat. Syabas.',
+        nudge_streak: '{{days}} hari berturut-turut direkod. Syabas.',
         nudge_goal: 'Anda mencapai berat sasaran. Syabas.',
       },
     },
@@ -1508,10 +1508,10 @@ export const ms = {
       bodyActive: 'Semuanya terbuka.',
       bodyLifetime: 'RiceCal Pro milik anda selamanya. Semuanya terbuka.',
       perks: {
-        log: 'Snap, imbas atau cakap',
+        log: 'Ambil gambar, imbas atau cakap',
         database: 'Setiap hidangan dan bungkusan',
       },
-      manageNote: 'Urus atau batalkan bila-bila masa dalam Profil, Langganan.',
+      manageNote: 'Urus atau batalkan bila-bila masa dalam Saya, RiceCal Pro.',
       manageNoteLifetime: 'Dibayar sekali. Tiada apa-apa untuk diperbaharui atau dibatalkan.',
       start: 'Pergi ke diari saya',
     },
@@ -1521,9 +1521,9 @@ export const ms = {
     pinned: 'Lokasi ditanda',
     title: 'Lokasi',
     enable: 'Simpan lokasi makan',
-    enableHint: 'Tanda makanan dengan tempat anda makan. Hanya anda yang boleh melihatnya.',
-    autoTag: 'Tanda makanan baharu secara automatik',
-    autoTagHint: 'Makanan yang direkod untuk hari ini diberi tempat anda berada.',
+    enableHint: 'Tandakan makanan dengan tempat anda makan. Hanya anda yang boleh melihatnya.',
+    autoTag: 'Tandakan makanan baharu secara automatik',
+    autoTagHint: 'Makanan yang direkod untuk hari ini ditandakan dengan tempat anda berada.',
     accessOff: 'Akses lokasi dimatikan',
     allow: 'Benarkan',
     openSettings: 'Buka Tetapan',
@@ -1545,8 +1545,8 @@ export const ms = {
     week: 'Minggu',
     month: 'Bulan',
     all: 'Sepanjang masa',
-    previous: 'Sebelum',
-    next: 'Selepas',
+    previous: 'Sebelumnya',
+    next: 'Seterusnya',
     placesCount_one: '{{count}} tempat',
     placesCount_other: '{{count}} tempat',
     weekShort: 'Minggu',
@@ -1558,10 +1558,10 @@ export const ms = {
     placesHere_other: '{{count}} tempat di sini',
     showAll: 'Tunjukkan semua tempat',
     emptyTitle: 'Belum ada tempat',
-    emptyBody: 'Makanan yang anda tanda dengan tempat dipaparkan di sini.',
+    emptyBody: 'Makanan yang anda tandakan dengan tempat dipaparkan di sini.',
     mapUnavailable: 'Peta memerlukan versi terkini RiceCal.',
     offerTitle: 'Ingat tempat anda makan?',
-    offerBody: 'Tanda makanan dengan tempatnya dan lihat pada peta makanan anda.',
+    offerBody: 'Tandakan makanan dengan tempatnya dan lihat pada peta makanan anda.',
     offerAccept: 'Hidupkan Lokasi',
     offerDecline: 'Bukan sekarang',
   },
@@ -1569,7 +1569,7 @@ export const ms = {
     title: 'Resipi',
 
     shelf: {
-      mine: 'Saya',
+      mine: 'Milik saya',
       community: 'Komuniti',
     },
 
@@ -1614,7 +1614,7 @@ export const ms = {
         write: 'Menulis resipi',
         count: 'Mengira kalori',
       },
-      leave: 'Anda boleh tinggalkan skrin ini. Resipi akan ada dalam “Saya”.',
+      leave: 'Anda boleh tinggalkan skrin ini. Resipi akan ada dalam “Milik saya”.',
       done: 'Disimpan ke resipi anda',
       doneCommunity: 'Disimpan, dan dikongsi ke Komuniti',
       doneExisting: 'Anda sudah ada resipi ini',
@@ -1682,7 +1682,7 @@ export const ms = {
 
     empty: {
       mineTitle: 'Belum ada resipi',
-      mineBody: 'Simpan hidangan yang kerap anda masak untuk log dengan satu ketikan.',
+      mineBody: 'Simpan hidangan yang kerap anda masak untuk direkod dengan satu ketikan.',
       communityTitle: 'Belum ada yang dikongsi',
       communityBody: 'Kongsi resipi anda dari menunya.',
     },
@@ -1714,9 +1714,9 @@ export const ms = {
     edit: {
       title: 'Sunting resipi',
       name: 'Nama',
-      namePlaceholder: 'Apa anda panggil ia?',
+      namePlaceholder: 'Apa nama hidangan ini?',
       changePicture: 'Tukar gambar',
-      replacePhotoTitle: 'Guna lukisan sebaliknya?',
+      replacePhotoTitle: 'Guna lukisan sebagai ganti?',
       replacePhotoBody: 'Foto resipi ini akan dibuang.',
       replacePhotoConfirm: 'Guna lukisan',
       servingsRow: 'Hidangan',
@@ -1730,7 +1730,7 @@ export const ms = {
       source: 'Sumber',
       sourcePlaceholder: 'Pautan ke reel atau siaran',
       sourceInvalid: 'Pautan itu nampak tidak betul',
-      perServing: '{{kcal}} kcal sehidang, untuk {{count}}',
+      perServing: '{{kcal}} kcal sehidangan, untuk {{count}}',
       ingredients: 'Bahan',
       addIngredient: 'Tambah satu bahan',
       steps: 'Langkah',
@@ -1819,7 +1819,7 @@ export const ms = {
     report: {
       title: 'Laporkan resipi ini',
       body: 'Ia berhenti muncul untuk anda serta-merta. Tukang masak tidak diberitahu.',
-      inappropriate: 'Menyinggung atau bukan makanan',
+      inappropriate: 'Menyinggung perasaan atau bukan makanan',
       spam: 'Spam atau iklan',
       dangerous: 'Tidak selamat dimasak atau dimakan',
       stolen: 'Hasil kerja orang lain',
@@ -1847,7 +1847,7 @@ export const ms = {
       youNeed: 'Anda perlukan',
       ingredients: 'Bahan',
       close: 'Berhenti memasak',
-      noSteps: 'Belum ada langkah ditulis. Tambahnya daripada menu resipi.',
+      noSteps: 'Belum ada langkah ditulis. Tambahkannya daripada menu resipi.',
       finishedTitle: 'Selamat menjamu selera',
       finishedBody: 'Tambah satu hidangan ke hari anda?',
       finishedSkip: 'Bukan sekarang',
@@ -1863,7 +1863,7 @@ export const ms = {
     kind: {
       week: 'Mingguan',
       month: 'Bulanan',
-      label: 'Panjang ulasan',
+      label: 'Tempoh ulasan',
     },
     list: {
       weekMeta: 'Minggu {{index}}',
@@ -1901,8 +1901,8 @@ export const ms = {
     card: {
       brand: 'RiceCal',
       kcalADay: 'kcal sehari',
-      under: '{{value}} bawah sasaran',
-      over: '{{value}} atas sasaran',
+      under: '{{value}} di bawah sasaran',
+      over: '{{value}} melebihi sasaran',
       onBudget: 'Tepat pada bajet',
       logged: 'DIREKOD',
       loggedValue: '{{done}} daripada {{total}}',
@@ -1938,7 +1938,7 @@ export const ms = {
       kcal: 'kcal',
       under: '{{value}} kurang',
       over: '{{value}} lebih',
-      goalNote: 'Sasaran {{goal}}. Bawahnya pada {{done}} daripada {{total}} hari.',
+      goalNote: 'Sasaran {{goal}}. Di bawahnya pada {{done}} daripada {{total}} hari.',
       noGoal: 'Tiada bajet harian berkuat kuasa ketika itu.',
       everyDay: 'SETIAP HARI',
       everyWeek: 'SETIAP MINGGU',
@@ -1979,33 +1979,33 @@ export const ms = {
       title: 'Resipi video, satu tab Sosial dan banyak lagi',
     },
     recipeImport: {
-      title: 'Jadikan video masakan resipi',
+      title: 'Jadikan video masakan sebagai resipi',
       body: 'Tampal pautan dari TikTok, Instagram, Rednote dan lain-lain, dan kami tuliskan resipinya.',
       exampleName: 'Laksa kari',
       previewLabel: 'Video masakan yang dijadikan resipi',
     },
     socialTab: {
-      title: 'Rakan dan kumpulan dalam satu tab',
+      title: 'Kawan dan kumpulan dalam satu tab',
       body: 'Hari kumpulan anda kini di atas suapan dalam Sosial.',
       exampleGroup: 'Geng makan tengah hari',
       previewLabel: 'Contoh tab Sosial',
     },
     mealPlaces: {
       title: 'Ingat tempat anda makan',
-      body: 'Tanda makanan dengan tempat anda makan, dan lihat semuanya pada peta makanan.',
+      body: 'Tandakan makanan dengan tempat anda makan, dan lihat semuanya pada peta makanan.',
       previewLabel: 'Contoh makanan yang ditanda dengan tempatnya',
     },
     kitchenUnits: {
       title: 'Cawan, sudu dan banyak lagi',
-      body: 'Catat makanan dalam sudu teh, sudu besar dan cawan, bukan hanya gram dan hidangan.',
+      body: 'Rekod makanan dalam sudu teh, sudu besar dan cawan, bukan hanya gram dan bahagian.',
       previewLabel: 'Contoh makanan yang disukat dalam cawan',
     },
     groupsNews: {
-      title: 'Kumpulan: makan bersama rakan',
+      title: 'Kumpulan: makan bersama kawan',
     },
     groupsBoard: {
       title: 'Makan bersama dalam Kumpulan',
-      body: 'Lihat apa yang rakan makan setiap hari, dan cuit sesiapa yang terlepas makan.',
+      body: 'Lihat apa yang kawan makan setiap hari, dan cuit sesiapa yang terlepas makan.',
       previewLabel: 'Contoh hidangan sehari dalam kumpulan',
     },
     groupsChat: {
@@ -2017,15 +2017,15 @@ export const ms = {
       title: 'Senaman, siaran suapan dan kamera baharu',
     },
     workouts: {
-      title: 'Catat senaman anda',
+      title: 'Rekod senaman anda',
       body: 'Jejak set, ulangan dan rehat dalam tab Senaman yang baharu.',
       bodyIos:
         'Jejak set, ulangan dan rehat dalam tab Senaman yang baharu. Pada Apple Watch, kadar denyutan jantung turut direkodkan.',
-      previewLabel: 'Contoh senaman yang sedang dicatat',
+      previewLabel: 'Contoh senaman yang sedang direkod',
     },
     feedAutoShare: {
       title: 'Makanan anda kini disiarkan ke suapan',
-      body: 'Senaman yang selesai turut disiarkan. Matikan mana-mana satu dalam Edit profil.',
+      body: 'Senaman yang selesai turut disiarkan. Matikan mana-mana satu dalam Sunting profil.',
       you: 'Anda',
       previewLabel: 'Contoh makanan yang disiarkan ke suapan anda',
     },
@@ -2062,7 +2062,7 @@ export const ms = {
     routines: {
       title: 'Rutin saya',
       newTitle: 'Rutin baharu',
-      namePlaceholder: 'cth. Hari tolak',
+      namePlaceholder: 'cth. Push day',
       save: 'Simpan rutin',
       emptyTitle: 'Belum ada rutin',
       lastDone: 'Terakhir dibuat {{date}}',
@@ -2125,7 +2125,7 @@ export const ms = {
         name: 'Dumbbell sahaja',
         description: 'Seluruh badan dengan sepasang dumbbell.',
       },
-      core: { name: 'Core', description: 'Lima belas minit untuk perut dan oblik.' },
+      core: { name: 'Teras', description: 'Lima belas minit untuk perut dan oblik.' },
       glutes: { name: 'Punggung', description: 'Hip thrust, split squat dan kickback.' },
       hiit: { name: 'HIIT', description: 'Set pendek, rehat pendek, tercungap-cungap.' },
       mobility: { name: 'Mobiliti', description: 'Foam roll, regangan dan flow.' },
@@ -2133,7 +2133,7 @@ export const ms = {
 
     calendar: {
       showList: 'Tunjuk senarai',
-      dayEmpty: 'Tiada senaman pada hari ini',
+      dayEmpty: 'Tiada senaman pada hari tersebut',
     },
 
     history: {
@@ -2184,9 +2184,9 @@ export const ms = {
       removeSet: 'Buang set',
       rpe: 'RPE',
       rpeValue: 'RPE {{value}}',
-      rpeTitle: 'Betapa sukar?',
+      rpeTitle: 'Sesukar mana?',
       rpeNone: 'Tiada RPE',
-      rpe10: '10, tiada lagi',
+      rpe10: '10, tiada baki',
       rpeLeft_one: '{{value}}, baki {{count}} rep',
       rpeLeft_other: '{{value}}, baki {{count}} rep',
       restOff: 'Rehat dimatikan',
@@ -2207,8 +2207,8 @@ export const ms = {
       },
       menu: {
         replace: 'Ganti latihan',
-        superset: 'Superset dengan seterusnya',
-        reorder: 'Susun semula senaman',
+        superset: 'Superset dengan latihan seterusnya',
+        reorder: 'Susun semula latihan',
         unsuperset: 'Keluarkan daripada superset',
         rest: 'Pemasa rehat',
         remove: 'Buang latihan',
@@ -2483,7 +2483,7 @@ export const ms = {
       shoulders: 'Bahu',
       arms: 'Lengan',
       legs: 'Kaki',
-      core: 'Core',
+      core: 'Teras',
       fullBody: 'Seluruh badan',
       cardio: 'Kardio',
       mobility: 'Mobiliti',
@@ -2528,7 +2528,7 @@ export const ms = {
       shoulders: 'Bahu',
       arms: 'Lengan',
       legs: 'Kaki',
-      core: 'Core',
+      core: 'Teras',
     },
     tracking: {
       weight_reps: 'Beban dan reps',
@@ -2571,7 +2571,7 @@ export const ms = {
     decline: 'Tolak',
     members_one: '{{count}} ahli',
     members_other: '{{count}} ahli',
-    loggedToday: '{{logged}} daripada {{count}} mencatat hari ini',
+    loggedToday: '{{logged}} daripada {{count}} merekod hari ini',
     leaderBadge: 'Ketua',
     invites: 'Jemputan',
     noInvites: 'Tiada jemputan buat masa ini',
@@ -2632,7 +2632,7 @@ export const ms = {
     tabWorkouts: 'Senaman',
     tabMyFood: 'Resipi saya',
     shareMyFoodEmpty: 'Resipi yang anda tulis ada di sini.',
-    shareWorkoutEmpty: 'Senaman yang anda log atau rekod ada di sini.',
+    shareWorkoutEmpty: 'Senaman yang anda rekod atau rakam ada di sini.',
     statTime: 'Masa',
     statDistance: 'Jarak',
     statExercises: 'Latihan',
@@ -2665,7 +2665,7 @@ export const ms = {
     settingsGroup: 'Kumpulan',
     sharing: 'Perkongsian',
     shareUpdates: 'Siarkan makanan dan senaman saya',
-    shareUpdatesHint: 'Yang baharu masuk ke sembang ini semasa anda log.',
+    shareUpdatesHint: 'Yang baharu masuk ke sembang ini semasa anda merekodnya.',
     notifications: 'Pemberitahuan',
     notifyChat: 'Mesej sembang dan cuitan',
     notifyUpdates: 'Kemas kini makanan dan senaman',

@@ -23,20 +23,20 @@ export const zhHans = {
     feedShow: '显示',
     feedShowAll: '全部',
     feedShowFood: '饮食',
-    feedShowWorkouts: '锻炼',
+    feedShowWorkouts: '训练',
     people: '找人',
     suggestions: '推荐关注',
     search: '搜索用户名',
     profile: '主页',
     myProfile: '我的主页',
-    editProfile: '编辑主页',
+    editProfile: '编辑个人资料',
     handle: '用户名',
     handleHint: '3 至 24 个小写英文字母、数字、句点或下划线。',
     bio: '简介',
     privateProfile: '私人主页',
-    privateProfileHint: '不在搜索、推荐和发现中显示。关注者仍可看到你的帖子。',
+    privateProfileHint: '不在搜索、推荐和发现中显示。粉丝仍可看到你的帖子。',
     autoPostFoods: '自动发布食物',
-    autoPostFoodsHint: '新记录的食物会自动发布到动态。私人主页仅与关注者分享。',
+    autoPostFoodsHint: '新记录的食物会自动发布到动态。私人主页仅与粉丝分享。',
     avatar: '选择照片',
     handleInvalid: '请使用 3 至 24 个小写英文字母、数字、句点或下划线。',
     save: '保存',
@@ -64,15 +64,15 @@ export const zhHans = {
     everyoneHint: '所有已登录的用户都能看到这篇帖子。',
     followersHint: '只有你和你的粉丝能看到这篇帖子。',
     shareInfo: '关于分享',
-    shareHint: '仅分享这份食物、它的热量和三大营养素，以及配文。删除日记记录时，也会删除对应帖子。',
+    shareHint: '仅分享这份食物、它的热量和三大营养素，以及配文。删除这条记录时，也会删除对应帖子。',
     post: '帖子',
     deletePost: '删除帖子',
-    deletePostBody: '日记记录会保留。',
+    deletePostBody: '你的这条记录会保留。',
     sourceDelete: '删除这餐也会删除对应的动态帖子和评论。',
     like: '点赞',
     unlike: '取消点赞',
-    likes_one: '{{count}} 次赞',
-    likes_other: '{{count}} 次赞',
+    likes_one: '{{count}} 个赞',
+    likes_other: '{{count}} 个赞',
     comments_one: '{{count}} 条评论',
     comments_other: '{{count}} 条评论',
     comment: '评论',
@@ -102,19 +102,19 @@ export const zhHans = {
     notificationFollow: '{{name}} 关注了你',
     notificationLike: '{{name}} 赞了你的帖子',
     notificationComment: '{{name}} 评论了你的帖子',
-    emptyFollowing: '关注他人，或从日记中分享一餐。',
+    emptyFollowing: '关注他人，或从你的记录中分享一餐。',
     emptyPeople: '未找到用户',
     emptyPosts: '还没有帖子',
     newWorkoutPost: '分享训练',
     captionWorkoutPlaceholder: '说说你的训练',
     shareWorkoutHint:
-      '只分享这次训练的名称、时间、数据、动作和你的说明，从不分享备注。删除训练也会删除它的帖子。',
+      '只分享这次训练的名称、时间、数据、动作和你的配文，从不分享备注。删除训练也会删除它的帖子。',
     autoPostWorkouts: '自动发布训练',
     autoPostWorkoutsHint: '完成的训练会自动发布到动态。导入的训练不会发布。',
     emptyComments: '来聊聊吧',
     emptyConnections: '暂无用户',
     emptyBlocked: '没有已屏蔽用户',
-    emptyNotifications: '已看完所有动态',
+    emptyNotifications: '已看完所有通知',
     unavailable: '此内容已不可用',
     loadMore: '加载更多',
     end: '已经到底了',
@@ -280,7 +280,7 @@ export const zhHans = {
       workoutsBody: '类型、时长、配速、心率',
 
       privacy:
-        '连接后只读取数据。只有你开启后，我们才会把训练保存到那里，你的健康数据只保存在你自己的账户中。',
+        '连接后只读取数据。只有你开启后，我们才会把训练保存到那里，你的健康数据只保存在你自己的账号中。',
 
       appleBody: 'Apple Health，iPhone 和 Apple Watch',
       connectHealthBody: 'Health Connect：Samsung Health、Fitbit、Garmin',
@@ -514,13 +514,13 @@ export const zhHans = {
 
     social: {
       title: '和朋友一起更有动力',
-      subtitle: '分享餐食，互相鼓励，在群组里聊天。',
+      subtitle: '分享餐食，互相鼓励，在小组里聊天。',
       group: '午餐俱乐部',
     },
 
     about: {
       title: '几个基本信息',
-      subtitle: '用于计算你的每日热量预算。',
+      subtitle: '用于计算你的每日热量额度。',
       height: '身高',
       heightPlaceholder: '170',
       weight: '体重',
@@ -569,7 +569,7 @@ export const zhHans = {
     },
 
     calculating: {
-      title: '正在做你的方案',
+      title: '正在为你制定计划',
       subtitle: '根据你的回答算出来的，不是平均值。',
       steps: {
         budget: '每日热量目标',
@@ -581,7 +581,7 @@ export const zhHans = {
     target: {
       title: '你的每日额度',
       subtitle: '根据你的回答计算。任何数字都可以改。',
-      perDay: '千卡每天',
+      perDay: '千卡/天',
       goalWeight: '目标体重',
       goalBy: '预计达成',
       maintain: '维持',
@@ -605,8 +605,8 @@ export const zhHans = {
       meals: '用餐提醒',
       scans: '你的这盘已经算好了',
       nothingElse: '除此之外什么都不发',
-      promise: '在「我的」里的提醒中随时关掉任何一项。',
-      blocked: 'RiceCal 的提醒是关着的。可以在「我的」里的提醒中打开。',
+      promise: '在“我的”里的提醒中随时关掉任何一项。',
+      blocked: 'RiceCal 的提醒是关着的。可以在“我的”里的提醒中打开。',
     },
 
     tutorial: {
@@ -631,9 +631,9 @@ export const zhHans = {
       },
 
       read: {
-        title: '它会落在你的这一天里',
+        title: '直接记到你的这一天',
         subtitle: '我们认出菜名、估出份量，帮你算好。',
-        exampleName: '椰浆饭配炸鸡',
+        exampleName: 'Nasi lemak ayam',
         exampleDetail: '1 盘，320 克',
         exampleKcal: '644',
         tip: '正上方垂直拍，整盘都要在画面里。',
@@ -696,7 +696,7 @@ export const zhHans = {
       tomorrow: '明天',
       show: '查看',
       title: '即将删除的照片',
-      intro: '免费账户的餐食照片保留 {{days}} 天。餐食记录会保留。',
+      intro: '免费账号的餐食照片保留 {{days}} 天。餐食记录会保留。',
       keep: '升级 Pro 保留',
       empty: '没有即将删除的照片。',
     },
@@ -791,17 +791,17 @@ export const zhHans = {
       tryAgain: '重新扫',
       photographLabel: '拍摄标签',
       labelTitle: '拍下营养成分表',
-      labelPrompt: '我们还没有这个包装。把它翻到背面，我们来读取数值。',
+      labelPrompt: '我们还没有这个包装的数据。把它翻到背面，我们来读取数值。',
     },
 
     describe: {
-      placeholder: '椰浆饭配炸鸡，还有一杯拉茶',
+      placeholder: 'Nasi lemak 配炸鸡，还有一杯 teh tarik',
       send: '记下这一餐',
     },
 
     photoNote: {
       title: '补充信息',
-      placeholder: '是牛肉不是鸡肉，无糖茶，和人分着吃',
+      placeholder: '是牛肉不是鸡肉，teh o kosong，和人分着吃',
       skip: '跳过',
       log: '记录这餐',
       retake: '重拍',
@@ -842,11 +842,11 @@ export const zhHans = {
       mineEmptyTitle: '还没有你自己的食谱',
       mineEmptyBody: '一锅菜没有现成的份量。把用了什么、够几个人吃填一次，之后记录就只要点一下。',
       mineNoMatchBody: '你的食谱里没有匹配的。',
-      mineOfflineBody: '你的食谱存在服务器上。回到网络后就会载入。',
+      mineOfflineBody: '你的食谱存在服务器上。恢复联网后就会加载。',
       pastEmptyTitle: '还没有记录',
       pastEmptyBody: '你记录过的餐会出现在这里，随时可以再加一次。',
       pastNoMatchBody: '你吃过的东西里没有匹配的。',
-      pastOfflineBody: '你的记录在服务器上。恢复联网后就会载入。',
+      pastOfflineBody: '你的记录在服务器上。恢复联网后就会加载。',
       emptyTitle: '没有叫这个名字的菜',
       emptyBody: '换个短一点的词，或者少打几个字。',
       offlineTitle: '没有网络',
@@ -865,7 +865,7 @@ export const zhHans = {
       sodium: '盐（钠）',
       milligrams: '{{value}}毫克',
       fixTitle: '打字修正',
-      fixPlaceholder: '没有参峇酱，而且只吃了半盘',
+      fixPlaceholder: '没有 sambal，而且只吃了半盘',
       fixAction: '修正一下',
       fixNotApplied: '这个没法应用。换个说法试试',
       fixNoCalories: '这不会改变热量，所以什么都没有变',
@@ -907,7 +907,7 @@ export const zhHans = {
       amount: '用量',
       quickFix: {
         halfPortion: '只吃了一半',
-        noSambal: '不要参峇酱',
+        noSambal: '不要 sambal',
         addEgg: '加一个蛋',
         extraRice: '多加饭',
       },
@@ -953,7 +953,7 @@ export const zhHans = {
       searchTab: '搜索',
       cameraTab: '相机',
       searchLabel: '搜索图片',
-      searchPlaceholder: '椰浆饭、拉茶、鱼',
+      searchPlaceholder: 'nasi lemak、teh tarik、fish',
       noMatch: '没有和“{{query}}”匹配的。',
     },
 
@@ -993,8 +993,8 @@ export const zhHans = {
       between: '{{from}} 至 {{to}}',
     },
     calories: {
-      unit: 'kcal/天',
-      value: '{{value}} kcal',
+      unit: '千卡/天',
+      value: '{{value}} 千卡',
       under: '低 {{value}}',
       over: '高 {{value}}',
       chart: '{{span}}每日热量与目标',
@@ -1003,9 +1003,9 @@ export const zhHans = {
       empty: '这段时间没有记录餐食。',
     },
     protein: {
-      unit: 'g/天',
-      above: '高 {{value}} g',
-      short: '差 {{value}} g',
+      unit: '克/天',
+      above: '高 {{value}} 克',
+      short: '差 {{value}} 克',
       chart: '{{span}}每日蛋白质与目标',
     },
     workouts: {
@@ -1078,8 +1078,8 @@ export const zhHans = {
       noName: '你的账号',
       signOutTitle: '退出登录？',
       signOutBody: '你的记录会安全保留。在任何一台手机上重新登录都能接着用。',
-      proTrialIn_one: '还有 {{count}} 天',
-      proTrialIn_other: '还有 {{count}} 天',
+      proTrialIn_one: '{{count}} 天后',
+      proTrialIn_other: '{{count}} 天后',
       proActive: '{{plan}}方案，使用中',
       proActivePlain: 'Pro 使用中',
       proNone: '免费方案',
@@ -1128,11 +1128,11 @@ export const zhHans = {
       goesRecipes: '你写的食谱，包括已发布的',
       goesProfile: '你的资料、设置和登录身份',
       cancelFirst: '请先在商店里取消订阅，否则会继续扣费。',
-      action: '删除我的账户',
-      confirmTitle: '删除你的账户？',
+      action: '删除我的账号',
+      confirmTitle: '删除你的账号？',
       confirmBody: '此操作无法撤销。之后你和我们都无法恢复你的记录。',
-      done: '你的账户已删除。',
-      failed: '无法删除你的账户，请重试。',
+      done: '你的账号已删除。',
+      failed: '无法删除你的账号，请重试。',
     },
 
     rate: {
@@ -1144,7 +1144,7 @@ export const zhHans = {
       feedbackTitle: '哪里需要改？',
       feedbackBody: '在 Discord 上告诉我们。应用里的大部分东西都是这么来的。',
       feedbackOpen: '打开 Discord',
-      feedbackSkip: '算了',
+      feedbackSkip: '暂时不用',
     },
 
     help: {
@@ -1218,7 +1218,7 @@ export const zhHans = {
       paceHolding: '保持不变',
       other: '其他',
       waterGoal: '喝水目标',
-      saved: '指标已保存',
+      saved: '目标已保存',
       saveFailed: '无法保存目标，请重试。',
     },
 
@@ -1340,7 +1340,7 @@ export const zhHans = {
       privacy: '隐私',
       nothingToRestore: '这个账号没有可恢复的购买',
       notConfigured: '这个版本还没有配置好购买功能。',
-      restored: '你的购买回来了',
+      restored: '已恢复你的购买',
     },
 
     table: {
@@ -1468,16 +1468,16 @@ export const zhHans = {
     checking: '稍等一下，我们正在确认你的方案。',
 
     welcome: {
-      title: '你进来了，开吃吧。',
+      title: '欢迎加入，开吃吧。',
       body: '免费试用持续 {{duration}}。全部功能都解锁了。',
       bodyTrialUnknown: '免费试用从现在开始。全部功能都解锁了。',
       bodyActive: '全部功能都解锁了。',
       bodyLifetime: 'RiceCal Pro 永远是你的了。全部功能都解锁了。',
       perks: {
         log: '拍照、扫码或者说一句',
-        database: '每道菜和每件包装',
+        database: '每道菜和包装食品',
       },
-      manageNote: '随时在「我的」里的订阅中管理或取消。',
+      manageNote: '随时在“我的”里的 RiceCal Pro 中管理或取消。',
       manageNoteLifetime: '一次付清。没有什么要续费或者取消的。',
       start: '去我的记录',
     },
@@ -1550,7 +1550,7 @@ export const zhHans = {
 
     add: {
       title: '添加食谱',
-      write: '手写',
+      write: '自己写',
       photo: '照片',
       describe: '描述',
       video: '视频',
@@ -1617,7 +1617,7 @@ export const zhHans = {
         },
         proLimit: {
           title: '食谱已经很多了',
-          body: '本月你已导入一个账户可导入的最多视频。下个月可以继续导入。',
+          body: '本月你已导入一个账号可导入的最多视频。下个月可以继续导入。',
         },
         too_long: {
           title: '视频太长了',
@@ -1662,7 +1662,7 @@ export const zhHans = {
       title: '新食谱',
       scanTitle: '用照片填好',
       describeTitle: '用文字描述',
-      describePlaceholder: '咖喱鸡。600 克鸡腿肉，一罐椰浆，3 个土豆。够 4 个人吃。',
+      describePlaceholder: 'Kari ayam。600 克鸡腿肉，一罐椰浆，3 个土豆。够 4 个人吃。',
       describeHint: '用量和够几个人吃，这两样最值得写。',
       describeAction: '填进表格',
       describeFailed: '这一段我们没读懂。在下面自己填吧。',
@@ -1673,7 +1673,7 @@ export const zhHans = {
       readingIngredients: '正在弄清楚放了什么…',
       readingPortions: '正在估份量…',
       readingSteps: '正在写步骤…',
-      readingHint: '稍等一下。落下来之后什么都能改。',
+      readingHint: '稍等一下。出来之后什么都能改。',
     },
 
     edit: {
@@ -1695,7 +1695,7 @@ export const zhHans = {
       source: '来源',
       sourcePlaceholder: '短视频或帖子的链接',
       sourceInvalid: '这个链接看起来不对',
-      perServing: '每份 {{kcal}} kcal，共 {{count}} 份',
+      perServing: '每份 {{kcal}} 千卡，共 {{count}} 份',
       ingredients: '食材',
       addIngredient: '添加一样食材',
       steps: '步骤',
@@ -1836,7 +1836,7 @@ export const zhHans = {
       monthSummary: '每天 {{kcal}} 千卡',
       monthSummaryWeight: '每天 {{kcal}} 千卡，{{weight}}',
       summaryEmpty: '没有记录',
-      kcal: 'kcal',
+      kcal: '千卡',
       workouts_one: '次训练',
       workouts_other: '次训练',
       workoutCount_one: '训练 {{count}} 次',
@@ -1862,7 +1862,7 @@ export const zhHans = {
     },
     card: {
       brand: 'RiceCal',
-      kcalADay: '千卡每天',
+      kcalADay: '千卡/天',
       under: '低于目标 {{value}}',
       over: '高于目标 {{value}}',
       onBudget: '正好在额度内',
@@ -1942,7 +1942,7 @@ export const zhHans = {
     recipeImport: {
       title: '把烹饪视频变成食谱',
       body: '粘贴 TikTok、Instagram、小红书等平台的链接，我们帮你写好食谱。',
-      exampleName: '咖喱叻沙',
+      exampleName: 'Curry laksa',
       previewLabel: '烹饪视频变成食谱的示例',
     },
     socialTab: {
@@ -1971,7 +1971,7 @@ export const zhHans = {
     },
     groupsChat: {
       title: '和小组聊天',
-      body: '分享饮食和锻炼，并用表情回应。',
+      body: '分享饮食和运动，并用表情回应。',
       previewLabel: '在小组聊天中分享餐食的示例',
     },
     update110: {
@@ -1979,8 +1979,8 @@ export const zhHans = {
     },
     workouts: {
       title: '记录你的训练',
-      body: '在新的“训练”标签中记录组数、次数和休息。',
-      bodyIos: '在新的“训练”标签中记录组数、次数和休息。用 Apple Watch 还能记录心率。',
+      body: '在新的“训练”标签页中记录组数、次数和休息。',
+      bodyIos: '在新的“训练”标签页中记录组数、次数和休息。用 Apple Watch 还能记录心率。',
       previewLabel: '记录训练的示例',
     },
     feedAutoShare: {
@@ -2384,7 +2384,7 @@ export const zhHans = {
       rest: '默认休息时间',
       units: '重量单位',
       health: '把训练保存到 Apple 健康',
-      healthDenied: 'Apple 健康没有允许。请在「设置」>「健康」>「数据访问与设备」中打开。',
+      healthDenied: 'Apple 健康没有允许。请在“设置”>“健康”>“数据访问与设备”中打开。',
       reminders: '训练提醒',
       reminderTime: '时间',
       keepAwake: '训练时保持屏幕常亮',
@@ -2634,7 +2634,7 @@ export const zhHans = {
     removeBody: '之后只有被邀请才能再加入。',
     leave: '退出小组',
     leaveTitle: '退出 {{name}}？',
-    leaveBody: '你的食物仍保留在日记中。',
+    leaveBody: '你的食物仍保留在你的记录里。',
     leaveLast: '小组将被删除。',
     pickLeader: '选择新组长',
     leaveAndPass: '让 {{name}} 当组长并退出',

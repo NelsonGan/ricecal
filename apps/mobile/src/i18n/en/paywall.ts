@@ -324,7 +324,7 @@ export const paywall = {
       log: 'Snap, scan or say it',
       database: 'Every dish and packet',
     },
-    manageNote: 'Manage or cancel any time in Profile, Subscription.',
+    manageNote: 'Manage or cancel any time in Me, RiceCal Pro.',
     manageNoteLifetime: 'Paid once. There is nothing to renew or cancel.',
     // Not "Log my first meal", which it said while this button also raised the
     // log sheet: a purchase should hand somebody their app back rather than
