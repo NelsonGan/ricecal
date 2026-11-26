@@ -34,7 +34,6 @@ export {
 export {
   gridColumns,
   NavColumnProvider,
-  useNavColumn,
   useOverlayInsets,
   usePaneWidth,
   useWindowLayout,

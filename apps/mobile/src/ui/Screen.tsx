@@ -380,9 +380,10 @@ export function Screen({
   const asideFrame = panes ? frames.aside : null
   /**
    * With one pane, the column the page is drawn in, and how far in from each
-   * side of the page box that is. Zero on every phone; on an iPad the readable
-   * column, centred. The scroll view still spans the box, so a drag beside the
-   * column scrolls the page too.
+   * side of the page box that is. Zero on a phone; on an iPad the readable
+   * column, centred; on iPhone Duo open, a `wide` page made symmetric about the
+   * fold. The scroll view still spans the box, so a drag beside the column
+   * scrolls the page too.
    */
   const single = singlePaneFrame(layout, navColumn, wide)
   // Measured against the whole page box, not `frames.main`: on a window with

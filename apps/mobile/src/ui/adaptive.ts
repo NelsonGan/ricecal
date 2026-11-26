@@ -51,7 +51,7 @@ const SPLIT_MIN_WIDTH = 760
  * rail iPhone Duo uses, at the width of iOS's own column there plus a little,
  * since an iPad's captions run longer than its icons.
  */
-export const TABLET_RAIL_COLUMN = 88
+const TABLET_RAIL_COLUMN = 88
 
 /**
  * The narrowest iPad window that gets the rail. Narrower (a slide-over, or a
@@ -105,7 +105,7 @@ export type WindowLayout = {
 }
 
 /** Which layout a device gets. `null` is the phone layout, whatever the window. */
-export type DeviceClass = 'phone' | 'tablet' | null
+type DeviceClass = 'phone' | 'tablet' | null
 
 type LayoutInput = {
   width: number
@@ -139,7 +139,7 @@ export function windowLayout({ width, insets, device }: LayoutInput): WindowLayo
   return { ...base, tabBar, split, fold: split }
 }
 
-export function deviceClass(): DeviceClass {
+function deviceClass(): DeviceClass {
   if (Platform.OS !== 'ios') return null
   return Platform.isPad ? 'tablet' : 'phone'
 }
@@ -150,7 +150,7 @@ export function useWindowLayout(): WindowLayout {
   return windowLayout({ width, insets: { left, right }, device: deviceClass() })
 }
 
-export type PaneFrame = { left: number; width: number }
+type PaneFrame = { left: number; width: number }
 
 /**
  * Where each pane sits across the window. `column` is the tab rail's, on a tab
@@ -229,7 +229,7 @@ export function overlayInsets(layout: WindowLayout, column = 0): { left: number;
  * the page: the window inside its safe area, less the tab rail's `column` on a
  * tab screen.
  */
-export function centredInsets(
+function centredInsets(
   layout: WindowLayout,
   max: number,
   column = 0,
