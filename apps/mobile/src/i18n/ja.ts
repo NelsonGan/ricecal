@@ -28,7 +28,7 @@ export const ja = {
     bio: '自己紹介',
     privateProfile: '非公開プロフィール',
     privateProfileHint:
-      '検索、おすすめ、見つけるに表示しません。フォロワーは投稿を引き続き見られます。',
+      '検索、おすすめ、「見つける」に表示しません。フォロワーは投稿を引き続き見られます。',
     autoPostFoods: '食事を自動投稿',
     autoPostFoodsHint:
       '新しく記録した食事を自動で投稿します。非公開プロフィールではフォロワーだけに共有します。',
@@ -60,10 +60,10 @@ export const ja = {
     followersHint: 'あなたとフォロワーだけが見られます。',
     shareInfo: 'シェアについて',
     shareHint:
-      'この食事とそのカロリー、マクロ、キャプションだけが公開されます。日記の記録を削除すると投稿も削除されます。',
+      'この食事とそのカロリー、マクロ、キャプションだけが公開されます。記録を削除すると投稿も削除されます。',
     post: '投稿',
     deletePost: '投稿を削除',
-    deletePostBody: '日記の記録は残ります。',
+    deletePostBody: '食事の記録は残ります。',
     sourceDelete: 'この食事を削除すると、フィードの投稿とコメントも削除されます。',
     like: 'いいね',
     unlike: 'いいねを取り消す',
@@ -98,10 +98,10 @@ export const ja = {
     notificationFollow: '{{name}}さんがあなたをフォローしました',
     notificationLike: '{{name}}さんが投稿にいいねしました',
     notificationComment: '{{name}}さんが投稿にコメントしました',
-    emptyFollowing: '誰かをフォローするか、日記から食事をシェアしましょう。',
+    emptyFollowing: '誰かをフォローするか、記録から食事をシェアしましょう。',
     emptyPeople: 'ユーザーが見つかりません',
     emptyPosts: 'まだ投稿がありません',
-    newWorkoutPost: 'ワークアウトを共有',
+    newWorkoutPost: 'ワークアウトをシェア',
     captionWorkoutPlaceholder: 'ワークアウトについてひとこと',
     shareWorkoutHint:
       '共有されるのはこのワークアウトの名前、時間、数値、種目とキャプションだけで、メモは共有しません。ワークアウトを削除すると投稿も消えます。',
@@ -224,7 +224,7 @@ export const ja = {
     aiLanguage: {
       open: 'AI 機能が読み書きする言語',
       title: 'AI 機能は英語で動きます',
-      body: '皿の撮影も、食べたものを言葉で書くことも、英語をいちばんよく読むモデルに渡されます。英語で書いていただくほど、正確に読み取れます。',
+      body: 'お皿の撮影も、食べたものを言葉で書くことも、英語をいちばんよく読むモデルに渡されます。英語で書いていただくほど、正確に読み取れます。',
       results:
         '返ってくるものも英語です。料理名、材料、分量はいずれも食品カタログに英語で保存されているため、アプリをどの言語に設定していても英語で届きます。',
       dishes: '料理名は書かれたときの言語のままです。',
@@ -253,7 +253,7 @@ export const ja = {
       more: 'その他の操作',
       decrease: '減らす',
       increase: '増やす',
-      step: '{{total}} 中 {{current}} ステップ目',
+      step: 'ステップ {{current}}/{{total}}',
       backspace: '最後の桁を削除',
       decimalPoint: '小数点',
     },
@@ -421,8 +421,8 @@ export const ja = {
 
       codeInstead: '代わりにコードをメールで送る',
 
-      haveAccount: 'すでにアカウントをお持ちですか。ログイン',
-      needAccount: 'はじめてですか。アカウントを作成',
+      haveAccount: 'アカウントをお持ちの方はログイン',
+      needAccount: 'はじめての方はアカウントを作成',
 
       maybeExisting:
         'このアドレスにすでにアカウントがある場合は、下からログインするかコードを請求してください。',
@@ -474,14 +474,14 @@ export const ja = {
       invalid_credentials:
         'そのメールとパスワードは一致しません。もう一度試すか、コードを請求してください。',
       email_not_confirmed: '先にメールアドレスを確認してください。新しいコードをお送りしました。',
-      account_exists: 'このアドレスでログインするか、コードをメールで送らせてください。',
+      account_exists: 'このアドレスでログインするか、コードをメールで請求してください。',
       code_invalid: 'そのコードは誤っているか期限切れです。新しいものを請求してください。',
-      weak_password: 'そのパスワードは推測されやすすぎます。もっと長いものにしてください。',
+      weak_password: 'そのパスワードは推測されやすいです。もっと長いものにしてください。',
       same_password: 'それは今お使いのパスワードです。別のものを選んでください。',
       rate_limited: '次のメールを請求するまで少しお待ちください。',
       rate_limited_in: '次のメールを請求するまで {{seconds}} 秒お待ちください。',
       captcha: 'あなたが人間であることを確認できませんでした。接続を確認して再度お試しください。',
-      offline: '接続がありません。オンラインに戻ったら試してください。',
+      offline: '接続がありません。オンラインに戻ったらもう一度お試しください。',
       unknown: '問題が起きました。もう一度お試しください。',
     },
   },
@@ -510,7 +510,7 @@ export const ja = {
     },
 
     workouts: {
-      title: '筋トレも記録',
+      title: 'ワークアウトも記録',
       subtitle: 'セット、回数、休憩タイマー。前回の重量が各セットの横に表示されます。',
       routine: '朝のワークアウト',
     },
@@ -523,7 +523,7 @@ export const ja = {
 
     about: {
       title: '基本のことを少しだけ',
-      subtitle: '1日のカロリー予算を計算するために使います。',
+      subtitle: '1日のカロリー枠を計算するために使います。',
       height: '身長',
       heightPlaceholder: '170',
       weight: '体重',
@@ -556,7 +556,7 @@ export const ja = {
     },
 
     source: {
-      title: '何で知りましたか',
+      title: 'どこで知りましたか',
       subtitle: 'タップひとつで、私たちの成長の助けになります。',
       xiaohongshu: 'XiaoHongShu',
       instagram: 'Instagram',
@@ -567,7 +567,7 @@ export const ja = {
       threads: 'Threads',
       appStore: 'App Store',
       googlePlay: 'Google Play',
-      friend: '友人か家族',
+      friend: '友だち・家族',
       other: 'その他',
     },
 
@@ -584,7 +584,7 @@ export const ja = {
     target: {
       title: '1 日の枠',
       subtitle: '回答から計算しました。どの数字も変更できます。',
-      perDay: '1 日 KCAL',
+      perDay: '1 日の KCAL',
       goalWeight: '目標体重',
       goalBy: '到達見込み',
       maintain: '維持',
@@ -597,8 +597,9 @@ export const ja = {
       title: '数えるのは時計にまかせる',
       subtitle: '消費した分は今日の枠に足されます。',
       demo: '生成した活動を使う',
-      emptyToast: 'ヘルスケアから何も返ってきませんでした。活動画面から再度つなげます。',
-      failedToast: 'ヘルスデータに接続できませんでした。活動画面からもう一度お試しください。',
+      emptyToast: 'ヘルスケアから何も返ってきませんでした。「アクティビティ」から再度つなげます。',
+      failedToast:
+        'ヘルスデータに接続できませんでした。「アクティビティ」からもう一度お試しください。',
       reassurance: '読み取りのみ。書き込むことはありません。',
     },
 
@@ -606,10 +607,10 @@ export const ja = {
       title: 'ちょうどいいタイミングでひと声',
       subtitle: '食事のリマインダーを 3 つ、あなたの時間で。',
       meals: '食事のリマインダー',
-      scans: 'お皿を数え終えました',
+      scans: 'お皿のカロリーを計算しました',
       nothingElse: 'それ以外は送りません',
-      promise: '自分のリマインダーで、どれでもオフにできます。',
-      blocked: 'RiceCal のリマインダーはオフです。自分のリマインダーからオンにできます。',
+      promise: '「自分」の「リマインダー」で、どれでもオフにできます。',
+      blocked: 'RiceCal のリマインダーはオフです。「自分」の「リマインダー」からオンにできます。',
     },
 
     tutorial: {
@@ -629,14 +630,14 @@ export const ja = {
         describe: '書く',
         describeBody: '食べたものを入力',
         search: '探す',
-        searchBody: 'うちのも自分のも',
-        barcode: '商品ですか。カメラはバーコードも読みます。',
+        searchBody: 'カタログも自分のレシピも',
+        barcode: 'パッケージ商品なら、カメラでバーコードも読み取れます。',
       },
 
       read: {
         title: 'その日の記録に入ります',
-        subtitle: '料理名をつけ、量を見積もり、代わりに数えます。',
-        exampleName: 'ナシレマ アヤム',
+        subtitle: '料理名をつけ、量を見積もり、カロリーを計算します。',
+        exampleName: 'Nasi lemak ayam',
         exampleDetail: '1 皿、320 g',
         exampleKcal: '644',
         tip: '真上から、お皿全体がフレームに入るように撮ってください。',
@@ -721,17 +722,17 @@ export const ja = {
       steps_one: '{{steps}} 歩',
       steps_other: '{{steps}} 歩',
       analysing: 'お皿を読み取っています',
-      analysingHint: '何かわかり次第、数えます',
+      analysingHint: '何かわかり次第、カロリーを計算します',
       describing: '書かれた内容を読んでいます',
       describingRead: '書かれた内容を読んでいます…',
       scanningRead: 'お皿を読み取っています…',
       scanningMatch: 'カタログから探しています…',
       scanningPortion: '量を見積もっています…',
-      scanningCount: 'カロリーを数えています…',
+      scanningCount: 'カロリーを計算しています…',
       refiningApply: '修正を反映しています…',
-      refiningCount: 'カロリーを数え直しています…',
-      scanDoneTitle: 'お皿を数え終えました',
-      describeDoneTitle: '食事を数え終えました',
+      refiningCount: 'カロリーを再計算しています…',
+      scanDoneTitle: 'お皿のカロリーを計算しました',
+      describeDoneTitle: '食事のカロリーを計算しました',
       scanDoneBody: '{{food}} · {{kcal}} kcal',
       scanDoneBodyPlain: 'タップすると中身が見られます。',
       deleteEntry: '削除',
@@ -781,7 +782,7 @@ export const ja = {
       tabs: '何に向けていますか',
       meal: '料理',
       barcode: 'バーコード',
-      scansLeft_zero: '今日の撮影回数を使い切りました。明日また戻ります。',
+      scansLeft_zero: '今日の読み取り回数を使い切りました。明日また使えます。',
       scansLeft_one: '今日はあと {{count}} 回',
       scansLeft_other: '今日はあと {{count}} 回',
     },
@@ -799,13 +800,13 @@ export const ja = {
     },
 
     describe: {
-      placeholder: 'ナシレマとフライドチキン、それにテータレ',
+      placeholder: 'Nasi lemak とフライドチキン、それに teh tarik',
       send: 'この食事を記録',
     },
 
     photoNote: {
       title: '追加情報',
-      placeholder: '鶏じゃなく牛肉、無糖の紅茶、シェアした',
+      placeholder: '鶏じゃなく牛肉、teh o kosong、シェアした',
       skip: 'スキップ',
       log: '記録する',
       retake: '撮り直す',
@@ -813,7 +814,7 @@ export const ja = {
       suggestion: {
         shared: 'シェアした',
         half: '半分食べた',
-        lessRice: 'ご飯少なめ',
+        lessRice: 'ごはん少なめ',
         noSugar: '砂糖なし',
       },
     },
@@ -831,7 +832,7 @@ export const ja = {
     },
 
     added: {
-      toast: '追加しました、{{kcal}} kcal',
+      toast: '{{kcal}} kcal を追加しました',
       removedToast: '今日から削除しました',
     },
 
@@ -866,7 +867,7 @@ export const ja = {
       total: '合計 KCAL',
       moreNutrients: 'その他の栄養素',
       fibre: '食物繊維',
-      sugar: '糖質',
+      sugar: '糖類',
       sodium: '塩分（ナトリウム）',
       milligrams: '{{value}}mg',
       fixTitle: '入力して修正',
@@ -886,7 +887,7 @@ export const ja = {
       addPartTitle: '材料を追加',
       partAdded: '{{food}} をお皿に追加しました',
       addPartFailed: '追加できませんでした。もう一度お試しください',
-      addPartTyped: 'この記録はご自分で入力したカロリーを使っているため、内訳にできません',
+      addPartTyped: 'この記録はご自分で入力したカロリーを使っているため、材料に分けられません',
       plateEmptied: 'お皿に何も残っていません。この記録は 1 人前として数え直されます。',
       times: '× {{amount}}',
       partKcal: '{{kcal}} kcal',
@@ -895,7 +896,7 @@ export const ja = {
       removeOf: '{{name}} を外す',
       replacePart: '差し替え',
       replaceOf: '{{name}} を差し替える',
-      partReplaced: '{{food}} がかわりにお皿にあります',
+      partReplaced: '{{food}} に差し替えました',
       editKcal: 'カロリー',
       figuresTitle: '自分で入れた数値',
       macrosTitle: 'マクロ',
@@ -959,7 +960,7 @@ export const ja = {
       searchTab: '検索',
       cameraTab: 'カメラ',
       searchLabel: '絵を検索',
-      searchPlaceholder: 'ナシレマ、テータレ、魚',
+      searchPlaceholder: 'nasi lemak, teh tarik, fish',
       noMatch: '「{{query}}」に一致するものはありません。',
     },
 
@@ -1023,8 +1024,8 @@ export const ja = {
       vs1y: '前年比 {{delta}}',
       chart: '{{span}}のトレーニング時間',
       perDay: '1日あたり {{value}}',
-      latest: '最近',
-      startTitle: 'ワークアウトを記録しよう',
+      latest: '最新',
+      startTitle: 'ワークアウトを記録しましょう',
       startBody: 'セッションを記録すると、ここに表示されます。',
     },
     water: {
@@ -1084,8 +1085,8 @@ export const ja = {
       noName: 'あなたのアカウント',
       signOutTitle: 'ログアウトしますか',
       signOutBody: '記録は安全に残ります。どの端末でもログインし直せば続きから使えます。',
-      proTrialIn_one: 'あと {{count}} 日',
-      proTrialIn_other: 'あと {{count}} 日',
+      proTrialIn_one: '{{count}} 日後に',
+      proTrialIn_other: '{{count}} 日後に',
       proActive: '{{plan}}プラン、利用中',
       proActivePlain: 'Pro、利用中',
       proNone: '無料プラン',
@@ -1197,7 +1198,7 @@ export const ja = {
 
       how: '流れ',
       step1:
-        'RiceCal について公開の場に投稿してください。記録のスクリーンショットか、読み取ったお皿がいちばん効きます。',
+        'RiceCal について公開の場に投稿してください。記録のスクリーンショットか、読み取ったお皿がおすすめです。',
       step2: '数日おいて、いいねが集まるのを待ちます。',
       step3: 'リンクを Discord に持ってきていただければ、Pro コードをお送りします。',
 
@@ -1294,7 +1295,7 @@ export const ja = {
       trialLeft_other: '無料トライアル、残り {{count}} 日',
       renews: '{{price}} で更新されます。',
       neverRenews: '一度きりの支払いです。更新はありません。',
-      freeBody: '1 日 {{scans}} 回の撮影、自分のレシピ {{recipes}} 件、直近 1 週間のトレンド。',
+      freeBody: '1 日 {{scans}} 回の読み取り、自分のレシピ {{recipes}} 件、直近 1 週間のトレンド。',
       whatYouGet: 'PRO で使えるもの',
       included: '含まれるもの',
       cancel: 'サブスクリプションを解約',
@@ -1348,7 +1349,7 @@ export const ja = {
       privacy: 'プライバシー',
       nothingToRestore: 'このアカウントに復元できる購入はありません',
       notConfigured: 'このビルドではまだ購入が設定されていません。',
-      restored: '購入が戻りました',
+      restored: '購入を復元しました',
     },
 
     table: {
@@ -1464,12 +1465,12 @@ export const ja = {
         trend_range: '1 週間より前を見るには RiceCal Pro が必要です。',
         new_routine: 'ルーティンを {{routines}} 件より多く持つには RiceCal Pro が必要です。',
         new_group: 'グループを {{groups}} 個より多く作るには RiceCal Pro が必要です。',
-        workout_range: '3 か月より前の記録を見るには RiceCal Pro が必要です。',
+        workout_range: '3 か月より前のワークアウトの記録を見るには RiceCal Pro が必要です。',
         review: '古い振り返りを読むには RiceCal Pro が必要です。',
         group_icon: 'その他のグループアイコンには RiceCal Pro が必要です。',
         photo_retention: '食事の写真をずっと残すには RiceCal Pro が必要です。',
-        nudge_streak: '{{days}} 日連続で記録しました。よくできました。',
-        nudge_goal: '目標体重に到達しました。よくできました。',
+        nudge_streak: '{{days}} 日連続で記録しました。その調子です。',
+        nudge_goal: '目標体重に到達しました。おめでとうございます。',
       },
     },
 
@@ -1485,7 +1486,7 @@ export const ja = {
         log: '撮る、読み取る、書く',
         database: 'すべての料理と商品',
       },
-      manageNote: 'プロフィールのサブスクリプションから、いつでも管理・解約できます。',
+      manageNote: '「自分」の「RiceCal Pro」から、いつでも管理・解約できます。',
       manageNoteLifetime: '一度きりの支払いです。更新も解約もありません。',
       start: '記録を見にいく',
     },
@@ -1657,8 +1658,8 @@ export const ja = {
     empty: {
       mineTitle: 'まだレシピがありません',
       mineBody: 'よく作る料理を保存しておくと、ワンタップで記録できます。',
-      communityTitle: 'まだ共有はありません',
-      communityBody: '自分のレシピをメニューから共有しましょう。',
+      communityTitle: 'まだシェアされたレシピはありません',
+      communityBody: '自分のレシピをメニューからシェアしましょう。',
     },
 
     servings_one: '{{count}} 人前',
@@ -1671,9 +1672,9 @@ export const ja = {
       scanTitle: '写真から埋める',
       describeTitle: '言葉で書く',
       describePlaceholder:
-        'カリアヤム。鶏もも 600g、ココナッツミルク 1 缶、じゃがいも 3 個。4 人分。',
-      describeHint: '分量と何人分か、この 2 つを書く価値があります。',
-      describeAction: 'フォームに入れる',
+        'Kari ayam。鶏もも 600g、ココナッツミルク 1 缶、じゃがいも 3 個。4 人分。',
+      describeHint: '分量と何人分かを書くのがポイントです。',
+      describeAction: 'フォームに入力',
       describeFailed: 'それは読み取れませんでした。下から自分で入力してください。',
       scanFailed: 'それは読み取れませんでした。下から自分で入力してください。',
 
@@ -1786,7 +1787,7 @@ export const ja = {
         '削除されたか、非公開に戻された可能性があります。共有してくれた人に新しいリンクをもらってください。',
       delete: 'レシピを削除',
       deleteTitle: 'このレシピを削除しますか',
-      deleteBody: 'すでに記録した食事は、記録に残ります。',
+      deleteBody: 'このレシピから記録した食事は残ります。',
       deleted: 'レシピを削除しました',
     },
 
@@ -1808,9 +1809,9 @@ export const ja = {
       title: 'このレシピをシェア',
       body: 'リンクを持つ人は材料、手順、カロリーを見て、自分用に保存できます。あなたのものはあなたのままです。',
       publicTitle: '公開する',
-      publicBody: 'コミュニティのタブに並び、誰でも見つけて保存できます。',
+      publicBody: '「みんなの」タブに並び、誰でも見つけて保存できます。',
       publishFailed: 'それは変更できませんでした。もう一度お試しください。',
-      published: 'レシピがコミュニティに公開されました',
+      published: 'レシピを「みんなの」に公開しました',
     },
 
     cook: {
@@ -1862,7 +1863,7 @@ export const ja = {
     },
     share: {
       card: '{{card}}をシェア',
-      preview: '送られるままのカード',
+      preview: '送信されるカードのプレビュー',
     },
     story: {
       close: '閉じる',
@@ -1899,7 +1900,7 @@ export const ja = {
       days: '{{total}} 日中 {{done}} 日トレーニング',
     },
     food: {
-      title: 'いちばん大きかった一皿',
+      title: '特に大きかったお皿',
       macros: '1 日のマクロ',
       grams: '{{value}} g',
       share: 'エネルギーの {{value}}%',
@@ -1932,7 +1933,7 @@ export const ja = {
       waterValue: '1 日 {{amount}}',
       waterNote_one: '1 日は目標達成',
       waterNote_other: '{{count}} 日は目標達成',
-      move: '運動した分数',
+      move: '運動時間',
       moveNote_one: 'ワークアウト 1 回',
       moveNote_other: 'ワークアウト {{count}} 回',
       moveNoteNone: 'ワークアウトの記録なし',
@@ -1952,7 +1953,7 @@ export const ja = {
     recipeImport: {
       title: '料理動画をレシピに',
       body: 'TikTok、Instagram、Rednote などのリンクを貼るだけで、レシピを書き起こします。',
-      exampleName: 'カレーラクサ',
+      exampleName: 'Curry laksa',
       previewLabel: '料理動画がレシピになる例',
     },
     socialTab: {
@@ -1976,7 +1977,7 @@ export const ja = {
     },
     groupsBoard: {
       title: 'グループで一緒に食べよう',
-      body: '友だちが毎日何を食べたか見て、食事を抜いた人をつつけます。',
+      body: '友だちが毎日何を食べたか見て、まだ記録していない人をつつけます。',
       previewLabel: 'グループの1日の食事の例',
     },
     groupsChat: {
@@ -2286,7 +2287,7 @@ export const ja = {
       edit: 'ワークアウトを編集',
       repeat: 'もう一度行う',
       saveRoutine: 'ルーティンとして保存',
-      share: 'ワークアウトを共有',
+      share: 'ワークアウトをシェア',
       savedRoutine: 'マイルーティンに保存しました',
       delete: 'ワークアウトを削除',
       deleteTitle: 'このワークアウトを削除しますか',
@@ -2551,7 +2552,7 @@ export const ja = {
     noInvites: '今は招待がありません',
     invitedBy: '{{name}}さんから',
     emptyTitle: '一緒に食べて、一緒に続ける',
-    emptyBody: '友だちが毎日何を食べたか見てみよう。',
+    emptyBody: '友だちが毎日何を食べたか見てみましょう。',
     startGroup: 'グループを作る',
     seeAll: 'すべて見る（{{total}}）',
     openBoard: 'ボードを開く',
@@ -2570,11 +2571,11 @@ export const ja = {
     position: '{{count}} 件中 {{index}} 件目',
     unread_one: '未読 {{count}} 件',
     unread_other: '未読 {{count}} 件',
-    reportGroup: '{{name}}を通報しますか？',
-    reportedGroup: '通報しました',
+    reportGroup: '{{name}}を報告しますか？',
+    reportedGroup: '報告しました',
     you: 'あなた',
     nudge: 'つつく',
-    nudgeLabel: '{{name}}さんに{{meal}}の記録をつつく',
+    nudgeLabel: '{{meal}}の記録について{{name}}さんをつつく',
     nudgedBy: '{{name}}さんがつつきました',
     nudgedByYou: 'あなたがつつきました',
     nudgeSent: 'つつきました',
@@ -2583,10 +2584,10 @@ export const ja = {
     moveTo: '移動',
     chat: 'チャット',
     online: '{{count}}人がオンライン',
-    chatEmpty: 'まだメッセージはありません。あいさつしよう。',
+    chatEmpty: 'まだメッセージはありません。あいさつしましょう。',
     message: '{{name}}にメッセージ',
     send: '送信',
-    report: '通報',
+    report: '報告',
     deleteMessage: '削除',
     messageActions: 'メッセージ',
     reply: '返信',
@@ -2633,7 +2634,7 @@ export const ja = {
     inviteField: 'ユーザー名またはメール',
     inviteSent: '招待を送りました',
     suggested: 'おすすめ',
-    inviteFirst: '友だちを招待してボードを埋めよう。',
+    inviteFirst: '友だちを招待してボードを埋めましょう。',
     invited: '招待中',
     settingsMembers: 'メンバー',
     settingsGroup: 'グループ',
@@ -2652,14 +2653,14 @@ export const ja = {
     removeBody: '招待されない限り再参加できません。',
     leave: 'グループを抜ける',
     leaveTitle: '{{name}}を抜けますか？',
-    leaveBody: '食事は日記に残ります。',
+    leaveBody: '食事の記録は残ります。',
     leaveLast: 'グループは削除されます。',
     pickLeader: '新しいリーダーを選ぶ',
     leaveAndPass: '{{name}}さんをリーダーにして抜ける',
     save: '保存',
     errors: {
       not_found: 'そのユーザー名またはメールのアカウントはありません。',
-      already_member: 'すでにこのグループにいます。',
+      already_member: 'すでにこのグループのメンバーです。',
       group_full: 'このグループは満員です。',
       too_many_groups: '参加しているグループが多すぎます。',
       rate_limited: '回数が多すぎます。しばらくしてからお試しください。',

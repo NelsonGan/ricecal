@@ -23,7 +23,7 @@ export const fil = {
     feedShow: 'Ipakita',
     feedShowAll: 'Lahat',
     feedShowFood: 'Pagkain',
-    feedShowWorkouts: 'Ehersisyo',
+    feedShowWorkouts: 'Workout',
     people: 'Maghanap ng tao',
     suggestions: 'Mga taong puwedeng sundan',
     search: 'Maghanap ng username',
@@ -35,10 +35,10 @@ export const fil = {
     bio: 'Tungkol sa iyo',
     privateProfile: 'Pribadong profile',
     privateProfileHint:
-      'Itago sa paghahanap, mga mungkahi at Discover. Makikita pa rin ng mga follower ang mga post mo.',
+      'Itago sa paghahanap, mga mungkahi at Tuklasin. Makikita pa rin ng mga tagasunod ang mga post mo.',
     autoPostFoods: 'Awtomatikong i-post ang pagkain',
     autoPostFoodsHint:
-      'Awtomatikong lalabas sa feed ang bagong ni-log na pagkain. Sa pribadong profile, mga follower lang ang makakakita.',
+      'Awtomatikong lalabas sa feed ang bagong ni-log na pagkain. Sa pribadong profile, mga tagasunod lang ang makakakita.',
     avatar: 'Pumili ng larawan',
     handleInvalid: 'Gumamit ng 3 hanggang 24 na maliliit na titik, numero, tuldok, o underscore.',
     save: 'I-save',
@@ -67,15 +67,15 @@ export const fil = {
     followersHint: 'Ikaw at ang mga tagasunod mo lang ang makakakita nito.',
     shareInfo: 'Tungkol sa pagbabahagi',
     shareHint:
-      'Ang pagkain, ang calories at macros nito, at ang caption lang ang ibabahagi. Kapag binura ang tala sa talaarawan, mabubura rin ang post.',
+      'Ang pagkain, ang calories at macros nito, at ang caption lang ang ibabahagi. Kapag binura ang entry sa diary, mabubura rin ang post.',
     post: 'Post',
     deletePost: 'Burahin ang post',
-    deletePostBody: 'Mananatili ang tala sa talaarawan.',
+    deletePostBody: 'Mananatili ang entry sa diary mo.',
     sourceDelete: 'Mabubura rin ang post sa feed at mga komento kapag binura ang pagkaing ito.',
     like: 'Gusto',
     unlike: 'Alisin ang gusto',
-    likes_one: '{{count}} gusto',
-    likes_other: '{{count}} gusto',
+    likes_one: '{{count}} like',
+    likes_other: '{{count}} like',
     comments_one: '{{count}} komento',
     comments_other: '{{count}} komento',
     comment: 'Komento',
@@ -91,7 +91,7 @@ export const fil = {
     pendingBody: 'Ikaw lang ang makakakita nito hanggang maaprubahan.',
     retryReview: 'Ipasuri muli',
     block: 'I-block',
-    blockBody: "Hindi na kayo magkakakita rito. Aalisin ang pagsunod sa isa't isa.",
+    blockBody: "Hindi na kayo magkikita rito. Aalisin ang pagsunod sa isa't isa.",
     blocked: 'Mga naka-block',
     unblock: 'I-unblock',
     unblockBody: "Hindi maibabalik ang pagsunod sa isa't isa.",
@@ -105,18 +105,18 @@ export const fil = {
     notificationFollow: 'Sinundan ka ni {{name}}',
     notificationLike: 'Nagustuhan ni {{name}} ang post mo',
     notificationComment: 'Nagkomento si {{name}} sa post mo',
-    emptyFollowing: 'Sundan ang iba o magbahagi ng pagkain mula sa talaarawan.',
+    emptyFollowing: 'Sundan ang iba o magbahagi ng pagkain mula sa diary mo.',
     emptyPeople: 'Walang nahanap',
     emptyPosts: 'Wala pang post',
     newWorkoutPost: 'Ibahagi ang workout',
     captionWorkoutPlaceholder: 'Magsabi tungkol sa workout mo',
     shareWorkoutHint:
-      'Ang pangalan, oras, mga numero, ehersisyo ng workout na ito at ang caption mo lang ang ibinabahagi, hindi kailanman ang notes. Kapag binura ang workout, mabubura rin ang post nito.',
+      'Ang pangalan, oras, mga numero, ehersisyo ng workout na ito at ang caption mo lang ang ibinabahagi, hindi kailanman ang mga tala. Kapag binura ang workout, mabubura rin ang post nito.',
     autoPostWorkouts: 'Awtomatikong i-post ang workout',
     autoPostWorkoutsHint:
       'Awtomatikong lalabas sa feed ang mga workout na matatapos mo. Hindi kailanman ang mga na-import.',
     emptyComments: 'Simulan ang usapan',
-    emptyConnections: 'Wala pa rito',
+    emptyConnections: 'Wala pang tao rito',
     emptyBlocked: 'Walang naka-block',
     emptyNotifications: 'Nabasa mo na ang lahat',
     unavailable: 'Hindi na ito available',
@@ -231,10 +231,10 @@ export const fil = {
     aiLanguage: {
       open: 'Anong wika ang ginagamit ng mga AI feature',
       title: 'Gumagana sa Ingles ang mga AI feature',
-      body: 'Ang pagkuha ng litrato ng plato at ang pagsasabi sa salita kung ano ang kinain mo ay parehong pumupunta sa isang modelong pinakamahusay sa Ingles. Ilarawan ang pagkain mo sa Ingles at mas malapit ang pagkakaintindi nito.',
+      body: 'Ang pagkuha ng litrato ng plato at ang pagsasabi sa salita kung ano ang kinain mo ay parehong pumupunta sa isang modelong pinakamahusay sa Ingles. Ilarawan ang pagkain mo sa Ingles para mas maintindihan ka nito.',
       results:
         'Sa Ingles din ang bumabalik. Nakaimbak sa Ingles ang mga pangalan ng ulam, sangkap at laki ng serving sa food catalogue, kaya iyon ang wikang darating anuman ang naka-set sa app.',
-      dishes: 'Nananatili ang pangalan ng ulam sa wikang isinulat ito.',
+      dishes: 'Nananatili ang pangalan ng ulam sa wikang pinagsulatan nito.',
       note: 'Ilarawan ang pagkain sa Ingles para sa pinakatumpak. Sa Ingles din ang resulta.',
     },
 
@@ -262,7 +262,7 @@ export const fil = {
       increase: 'Dagdagan',
       step: 'Hakbang {{current}} sa {{total}}',
       backspace: 'Burahin ang huling numero',
-      decimalPoint: 'Tuldok desimal',
+      decimalPoint: 'Punto desimal',
     },
     delivery: {
       sending: 'Ipinapadala…',
@@ -348,15 +348,15 @@ export const fil = {
     },
 
     settings: {
-      title: 'Health sync',
+      title: 'Pag-sync sa Health',
       connectedTitle: 'NAKAKONEKTA',
       sourceTitle: 'ANO ANG BINABASA NAMIN',
       lastSynced: 'Huling na-sync {{when}}',
       syncNow: 'Mag-sync ngayon',
       syncing: 'Nagsi-sync…',
-      extendBudget: 'Pinahahaba ng galaw ang badyet ko',
+      extendBudget: 'Dinadagdagan ng galaw ang badyet ko',
       extendBudgetBody:
-        'Ang nasunog na calories ay idinadagdag sa araw, hindi kailanman binabawas sa kinain mo.',
+        'Ang nasunog na calories ay idinadagdag sa araw, hindi kailanman ibinabawas sa kinain mo.',
       stepGoal: 'Target na hakbang',
       disconnect: 'Idiskonekta',
       disconnectBody: 'Hihinto ang pag-sync. Nananatili sa kasaysayan mo ang lahat ng nabasa na.',
@@ -377,7 +377,7 @@ export const fil = {
 
     zone: {
       easy: 'Madali',
-      steady: 'Pantay',
+      steady: 'Katamtaman',
       hard: 'Mabigat',
       peak: 'Rurok',
     },
@@ -497,7 +497,7 @@ export const fil = {
 
   onboarding: {
     setup: {
-      title: 'Wika at mga yunit',
+      title: 'Wika at unit',
       subtitle: 'Puwede mong palitan ang dalawa mamaya sa Ako.',
       unitsTitle: 'MGA UNIT',
       metric: 'Metric',
@@ -519,7 +519,7 @@ export const fil = {
     },
 
     workouts: {
-      title: 'I-log din ang workouts mo',
+      title: 'I-log din ang mga workout mo',
       subtitle: 'Sets, reps at rest timer. Katabi ng bawat set ang huli mong buhat.',
       routine: 'Workout sa umaga',
     },
@@ -551,7 +551,7 @@ export const fil = {
       years: 'taon',
       targetWeight: 'TARGET NA TIMBANG',
       targetWeightUnset: '—',
-      targetWeightHint: 'I-slide para itakda ang timbang na tinutunton mo.',
+      targetWeightHint: 'I-slide para itakda ang timbang na gusto mong maabot.',
       targetWeightLocked: 'Ilagay muna ang timbang mo.',
     },
 
@@ -577,7 +577,7 @@ export const fil = {
       appStore: 'App Store',
       googlePlay: 'Google Play',
       friend: 'Kaibigan o pamilya',
-      other: 'Ibang lugar',
+      other: 'Iba pa',
     },
 
     calculating: {
@@ -594,11 +594,11 @@ export const fil = {
       title: 'Ang badyet mo kada araw',
       subtitle: 'Batay sa mga sagot mo. Palitan ang kahit anong numero.',
       perDay: 'KCAL KADA ARAW',
-      goalWeight: 'TIMBANG NA LAYUNIN',
+      goalWeight: 'TARGET NA TIMBANG',
       goalBy: 'INAASAHANG MAABOT',
       maintain: 'PANATILIHIN',
       maintainValue: 'Matatag',
-      looksRight: 'Tama naman ito',
+      looksRight: 'Mukhang tama ito',
       adjust: 'Baguhin ang mga sagot ko',
     },
 
@@ -609,7 +609,7 @@ export const fil = {
       emptyToast: 'Walang bumalik mula sa Health. Puwede kang kumonekta ulit mula sa Aktibidad.',
       failedToast:
         'Hindi kami makakonekta sa health store mo. Puwede mong subukan ulit mula sa Aktibidad.',
-      reassurance: 'Basahin lang. Wala kaming isinusulat pabalik.',
+      reassurance: 'Pagbasa lang. Wala kaming isinusulat pabalik.',
     },
 
     notifications: {
@@ -641,7 +641,7 @@ export const fil = {
         describeBody: 'I-type ang kinain mo',
         search: 'Hanapin',
         searchBody: 'Sa amin o sa iyo',
-        barcode: 'May pakete? Nagba-barcode din ang camera.',
+        barcode: 'May pakete? Nag-i-scan din ng barcode ang camera.',
       },
 
       read: {
@@ -673,14 +673,15 @@ export const fil = {
         carbs: 'Carbs',
         protein: 'Protina',
         fat: 'Taba',
-        note: 'Ang galaw mula sa relo mo ay idinadagdag sa itaas, hindi kailanman binabawas.',
+        note: 'Ang galaw mula sa relo mo ay idinadagdag pa, hindi kailanman ibinabawas.',
       },
     },
 
     saving: {
       title: 'Sini-save ang mga sagot mo…',
       offlineTitle: 'Naghihintay ng koneksyon',
-      offlineBody: 'Ligtas ang mga sagot mo sa teleponong ito. Sasave namin ito pagkakonekta mo.',
+      offlineBody:
+        'Ligtas ang mga sagot mo sa teleponong ito. Ise-save namin ang mga ito pagkakonekta mo.',
       failedTitle: 'Hindi namin na-save ang mga sagot mo',
       failedBody: 'Walang nawala. Tingnan ang koneksyon mo at subukan ulit.',
     },
@@ -704,17 +705,17 @@ export const fil = {
 
   logging: {
     photoRemovals: {
-      toast_one: '1 larawan ng pagkain ang mabubura {{when}}',
-      toast_other: '{{count}} larawan ng pagkain ang mabubura {{when}}',
+      toast_one: '{{count}} litrato ng pagkain ang mabubura {{when}}',
+      toast_other: '{{count}} litrato ng pagkain ang mabubura {{when}}',
       by: 'bago mag-{{day}}',
       today: 'ngayong araw',
       tomorrow: 'bukas',
       show: 'Tingnan',
-      title: 'Mga larawang mabubura',
+      title: 'Mga litratong mabubura',
       intro:
-        'Ang mga libreng account ay nagtatago ng larawan ng pagkain nang {{days}} araw. Mananatili ang mga pagkain.',
+        'Ang mga libreng account ay nagtatago ng litrato ng pagkain nang {{days}} araw. Mananatili ang mga na-log mong pagkain.',
       keep: 'Itago gamit ang Pro',
-      empty: 'Walang larawang mabubura.',
+      empty: 'Walang litratong mabubura.',
     },
     today: {
       title: 'Ngayon',
@@ -723,7 +724,7 @@ export const fil = {
       kcalOver: 'KCAL NA LAMPAS',
       kcalOfGoal: '/{{goal}} KCAL',
       grams: '{{value}}g',
-      proteinLeft: 'PROTINA NA KULANG',
+      proteinLeft: 'PROTINA NA NATITIRA',
       proteinOver: 'PROTINA NA LAMPAS',
       proteinOfGoal: '/{{goal}}G PROTINA',
       proteinA11y: '{{value}} sa {{goal}} gramo ng protina',
@@ -751,9 +752,9 @@ export const fil = {
       noFoodTitle: 'Walang pagkain sa litratong ito',
       noFoodTypedTitle: 'Walang pagkain sa isinulat mo',
       noFoodHint: 'Walang naidagdag sa araw mo.',
-      noFoodDismiss: 'I-dismiss',
+      noFoodDismiss: 'Isara',
       analysisFailedTitle: 'Hindi mabasa ito',
-      analysisFailedHint: 'I-tap para pumili ng ulam mismo',
+      analysisFailedHint: 'I-tap para ikaw mismo ang pumili ng ulam',
 
       noBudgetTitle: 'Wala pang badyet kada araw',
       noBudgetBody: 'Itakda ang target mo at may pupunuin na ang singsing.',
@@ -808,9 +809,9 @@ export const fil = {
         'Hindi namin maabot ang catalogue ngayon. Baka maayos naman ang pakete; ang koneksyon ang hindi.',
       tryAgain: 'Mag-scan ulit',
       photographLabel: 'Kunan ng litrato ang label',
-      labelTitle: 'Kuhanan ng litrato ang nutrition label',
+      labelTitle: 'Kunan ng litrato ang nutrition label',
       labelPrompt:
-        'Wala pa sa amin ang packet na ito. Baliktarin ito at babasahin namin ang mga numero.',
+        'Wala pa sa amin ang paketeng ito. Baliktarin ito at babasahin namin ang mga numero.',
     },
 
     describe: {
@@ -856,22 +857,22 @@ export const fil = {
       clear: 'I-clear ang paghahanap',
       tabs: 'Aling mga pagkain ang hahanapin',
       tabCatalogue: 'Lahat ng pagkain',
-      tabMine: 'Aking recipe',
+      tabMine: 'Mga recipe ko',
       tabPast: 'Nakain na',
       mineEmptyTitle: 'Wala ka pang sariling recipe',
       mineEmptyBody:
-        'Walang nakatakdang serving ang isang kaldero. Ilagay kung ano ang inilagay at para sa ilan ito, isang beses lang, at isang tap na lang ang pag-log mula noon.',
+        'Walang nakatakdang serving ang isang kaldero. Isulat kung ano ang inilagay at para sa ilan ito, isang beses lang, at isang tap na lang ang pag-log mula noon.',
       mineNoMatchBody: 'Walang recipe mo ang tugma doon.',
       mineOfflineBody: 'Nasa server ang mga recipe mo. Mag-lo-load ito kapag online ka na ulit.',
       pastEmptyTitle: 'Wala pang nakatala',
       pastEmptyBody: 'Lilitaw dito ang mga pagkaing itinatala mo, handang idagdag muli.',
       pastNoMatchBody: 'Walang tumutugma diyan sa mga nakain mo.',
-      pastOfflineBody: 'Nasa server ang talaan mo. Magloload ito pagbalik mo online.',
+      pastOfflineBody: 'Nasa server ang diary mo. Mag-lo-load ito pagbalik mo online.',
       emptyTitle: 'Walang ulam na ganoon ang pangalan',
       emptyBody: 'Subukan ang mas maikling salita, o bawasan ang mga ito.',
       offlineTitle: 'Walang koneksyon',
       offlineBody: 'Nasa server ang listahan ng ulam. Tatakbo ito pagbalik mo online.',
-      errorTitle: 'Hindi makahanap',
+      errorTitle: 'Hindi makapaghanap',
       errorBody: 'May nagkamali sa paghahanap niyan. Subukan ulit maya-maya.',
     },
 
@@ -939,8 +940,8 @@ export const fil = {
       timeTitle: 'Oras',
       hour: 'Oras',
       minute: 'Minuto',
-      am: 'ng umaga',
-      pm: 'ng hapon',
+      am: 'am',
+      pm: 'pm',
       movedTo: 'Inilipat sa {{day}}',
       save: 'I-save',
       saveFailed: 'Hindi ma-save ang mga pagbabagong iyon',
@@ -975,7 +976,7 @@ export const fil = {
       searchTab: 'Hanapin',
       cameraTab: 'Camera',
       searchLabel: 'Maghanap ng larawan',
-      searchPlaceholder: 'nasi lemak, teh tarik, isda',
+      searchPlaceholder: 'nasi lemak, teh tarik, fish',
       noMatch: 'Walang tumutugma sa “{{query}}”.',
     },
 
@@ -1070,8 +1071,8 @@ export const fil = {
       saved: 'Na-save ang pagtimbang',
       saveFailed: 'Hindi na-save ang pagtimbang. Subukan ulit.',
       saveOffline: 'Offline ka. Hindi na-save ang pagtimbang.',
-      remove: 'Alisin ang basang ito',
-      removeTitle: 'Alisin ang basang ito?',
+      remove: 'Alisin ang timbang na ito',
+      removeTitle: 'Alisin ang timbang na ito?',
       removeBody:
         'Mawawala sa chart ang araw na ito. Kung ito ang pinakahuli, babalik ang badyet mo sa nauna.',
     },
@@ -1120,7 +1121,7 @@ export const fil = {
       healthOff: 'Hindi nakakonekta',
       units: 'Wika at unit',
       tutorial: 'Paano gumagana ang RiceCal',
-      help: 'Help centre',
+      help: 'Tulong',
       rate: 'I-rate ang RiceCal',
       signOut: 'Mag-sign out',
     },
@@ -1147,7 +1148,7 @@ export const fil = {
       terms: 'Mga Tuntunin ng Paggamit',
 
       goesDiary: 'Bawat pagkain, timbang, tubig at tala',
-      goesPhotos: 'Bawat larawang kinuha mo',
+      goesPhotos: 'Bawat litratong kinuha mo',
       goesRecipes: 'Ang mga recipe na isinulat mo, pati ang mga na-publish',
       goesProfile: 'Ang profile, mga setting at sign-in mo',
       cancelFirst:
@@ -1155,7 +1156,7 @@ export const fil = {
       action: 'Burahin ang aking account',
       confirmTitle: 'Burahin ang account mo?',
       confirmBody:
-        'Hindi ito maibabalik. Pagkatapos nito ay hindi na mababawi ang talaarawan mo, ng iyo man o namin.',
+        'Hindi ito maibabalik. Hindi na mababawi ang diary mo pagkatapos nito, ikaw man o kami.',
       done: 'Nabura na ang account mo.',
       failed: 'Hindi namin nabura ang account mo. Subukan ulit.',
     },
@@ -1169,7 +1170,7 @@ export const fil = {
       feedbackTitle: 'Ano ang dapat ayusin?',
       feedbackBody: 'Sabihin mo sa amin sa Discord. Karamihan sa laman ng app ay nagsimula doon.',
       feedbackOpen: 'Buksan ang Discord',
-      feedbackSkip: 'Huwag na',
+      feedbackSkip: 'Huwag muna',
     },
 
     help: {
@@ -1196,7 +1197,7 @@ export const fil = {
     shareEarn: {
       row: 'Mag-share at kumita ng Pro',
       title: 'Mag-share at kumita ng Pro',
-      heroTitle: 'Mag-post sa RiceCal, libreng Pro',
+      heroTitle: 'Mag-post tungkol sa RiceCal, libre ang Pro',
       card: 'Mag-post, may Pro',
       heroBody:
         'Ipakita sa mga tao ang platong ni-log mo. Habang dumarami ang like ng post mo, humahaba ang Pro na ipapadala namin.',
@@ -1216,7 +1217,7 @@ export const fil = {
 
       how: 'PAANO ITO GUMAGANA',
       step1:
-        'Mag-post tungkol sa RiceCal kahit saang pampubliko. Screenshot ng diary mo, o isang platong ni-scan mo, ang pinakaepektibo.',
+        'Mag-post tungkol sa RiceCal kahit saan, basta pampubliko. Screenshot ng diary mo, o isang platong ni-scan mo, ang pinakaepektibo.',
       step2: 'Bigyan ito ng ilang araw para makaipon ng like.',
       step3: 'Dalhin ang link sa Discord namin at padadalhan ka namin ng Pro code.',
 
@@ -1246,7 +1247,7 @@ export const fil = {
       paceHolding: 'Nananatiling matatag',
       other: 'IBA PA',
       waterGoal: 'Target na tubig',
-      saved: 'Na-save ang mga layunin',
+      saved: 'Na-save ang mga target',
       saveFailed: 'Hindi ma-save ang mga target. Subukan muli.',
     },
 
@@ -1277,9 +1278,9 @@ export const fil = {
         mealTitle: 'Oras na para sa {{meal}}',
         mealBody: 'I-log habang naaalala mo. Sampung segundo lang ito.',
         waterTitle: 'Check ng tubig',
-        waterBody: 'Gaano na karaming tubig ngayong araw?',
+        waterBody: 'Gaano na karami ang nainom mong tubig ngayong araw?',
         weighInTitle: 'Pagtimbang sa umaga',
-        weighInBody: 'Ang pinakaunang oras ang nagbibigay ng pinakatatag na basa.',
+        weighInBody: 'Pinakatatag ang timbang pagkagising mo.',
         weeklyTitle: 'Ang linggo mo sa pagkain',
         weeklyBody: 'Pitong araw ng pag-log, sa isang screen.',
         monthlyTitle: 'Ang buwan mo sa pagkain',
@@ -1335,7 +1336,7 @@ export const fil = {
     plans: {
       yearly: 'Taunan',
       perMonth: '{{price}} kada buwan',
-      yearlyBadge: 'MAKAKATIPID NG {{percent}}%',
+      yearlyBadge: 'TIPID {{percent}}%',
       yearlyBilling: 'Sinisingil bawat taon',
       monthly: 'Buwanan',
       monthlyBilling: 'Sinisingil bawat buwan',
@@ -1344,9 +1345,9 @@ export const fil = {
     },
 
     hard: {
-      choosePlan: 'Piliin ang iyong plan',
+      choosePlan: 'Piliin ang iyong plano',
       assurance: 'Walang commitment, kanselahin anumang oras',
-      assuranceLifetime: 'Isang bayad, maibabalik sa pamamagitan ng store',
+      assuranceLifetime: 'Isang bayad, puwedeng i-refund sa store',
       smallPrintYearly: 'Libre nang {{duration}}, tapos {{price}} kada taon.',
       smallPrintMonthly: 'Libre nang {{duration}}, tapos {{price}} kada buwan.',
       smallPrintYearlyNoTrial: '{{price}} kada taon.',
@@ -1494,7 +1495,7 @@ export const fil = {
         review: 'Kailangan ng RiceCal Pro para magbasa ng mas lumang review.',
         group_icon: 'Kailangan ng RiceCal Pro para sa mas maraming group icon.',
         photo_retention:
-          'Kailangan ng RiceCal Pro para itago ang mga larawan ng pagkain nang permanente.',
+          'Kailangan ng RiceCal Pro para itago ang mga litrato ng pagkain nang permanente.',
         nudge_streak: '{{days}} araw na sunod-sunod kang nag-log. Magaling.',
         nudge_goal: 'Naabot mo ang target mong timbang. Magaling.',
       },
@@ -1512,7 +1513,7 @@ export const fil = {
         log: 'Kunan, i-scan o sabihin',
         database: 'Bawat ulam at pakete',
       },
-      manageNote: 'Pamahalaan o kanselahin anumang oras sa Profile, Subscription.',
+      manageNote: 'Pamahalaan o kanselahin anumang oras sa Ako, RiceCal Pro.',
       manageNoteLifetime: 'Bayad nang isang beses. Walang ire-renew o kakanselahin.',
       start: 'Pumunta sa diary ko',
     },
@@ -1632,7 +1633,7 @@ export const fil = {
         },
         unreadable: {
           title: 'Hindi mabuksan ang post na iyon',
-          body: 'Baka private ito o binura na. Kopyahin ulit ang link at subukan muli.',
+          body: 'Baka pribado ito o binura na. Kopyahin ulit ang link at subukan muli.',
         },
         unsupported_link: {
           title: 'Hindi ito link ng video',
@@ -1693,7 +1694,7 @@ export const fil = {
     servings_one: '{{count}} serving',
     servings_other: '{{count}} serving',
     fromAuthor: 'Mula kay {{name}}',
-    someCook: 'May isang tao',
+    someCook: 'Isang tao',
 
     new: {
       title: 'Bagong recipe',
@@ -1778,7 +1779,7 @@ export const fil = {
         piece_other: 'piraso',
       },
       unitTitle: 'Sukatin sa',
-      changeUnit: 'Yunit ng {{name}}, {{unit}}',
+      changeUnit: 'Unit ng {{name}}, {{unit}}',
       unitGroup: {
         weight: 'Timbang',
         volume: 'Dami',
@@ -1837,7 +1838,7 @@ export const fil = {
       title: 'Ibahagi ang recipe na ito',
       body: 'Makikita ng sinumang may link ang mga sangkap, hakbang at calories, at makakapag-save ng sarili nilang kopya. Sa iyo pa rin ang sa iyo.',
       publicTitle: 'Gawin itong pampubliko',
-      publicBody: 'Sasali ito sa community tab para mahanap at ma-save ninuman.',
+      publicBody: 'Mapupunta ito sa Komunidad para mahanap at ma-save ng kahit sino.',
       publishFailed: 'Hindi mapalitan iyon. Subukan ulit.',
       published: 'Nasa komunidad na ang recipe mo',
     },
@@ -1893,7 +1894,7 @@ export const fil = {
     },
     share: {
       card: 'Ibahagi ang {{card}}',
-      preview: 'Ang card gaya ng ipapadala ito',
+      preview: 'Ganito ang ipapadalang card',
     },
     story: {
       close: 'Isara',
@@ -1904,7 +1905,7 @@ export const fil = {
     card: {
       brand: 'RiceCal',
       kcalADay: 'kcal kada araw',
-      under: '{{value}} sa ilalim ng target',
+      under: '{{value}} mas mababa sa target',
       over: '{{value}} lampas sa target',
       onBudget: 'Nasa badyet',
       logged: 'NAKA-LOG',
@@ -1926,7 +1927,7 @@ export const fil = {
       vsMonth: '{{delta}} kumpara noong nakaraang buwan',
       time: 'ORAS',
       volume: 'VOLUME',
-      bests: 'MGA BAGONG BEST',
+      bests: 'MGA BAGONG RECORD',
       best: '{{weight}} × {{reps}}',
       days: 'Nag-training sa {{done}} sa {{total}} araw',
     },
@@ -1941,7 +1942,7 @@ export const fil = {
       kcal: 'kcal',
       under: '{{value}} kulang',
       over: '{{value}} lampas',
-      goalNote: 'Target {{goal}}. Nasa ilalim nito sa {{done}} sa {{total}} araw.',
+      goalNote: 'Target {{goal}}. Mas mababa rito sa {{done}} sa {{total}} araw.',
       noGoal: 'Walang badyet kada araw na umiiral noon.',
       everyDay: 'ARAW-ARAW',
       everyWeek: 'LINGGO-LINGGO',
@@ -1953,7 +1954,7 @@ export const fil = {
     },
     body: {
       weight: 'TIMBANG',
-      weighIns_one: 'Isang pagtimbang',
+      weighIns_one: '{{count}} pagtimbang',
       weighIns_other: '{{count}} pagtimbang',
       weightChart: 'Timbang sa buong panahon',
       steps: 'HAKBANG KADA ARAW',
@@ -1962,10 +1963,10 @@ export const fil = {
       others: 'IBA PA',
       water: 'Tubig',
       waterValue: '{{amount}} kada araw',
-      waterNote_one: 'Puno sa isang araw',
+      waterNote_one: 'Puno sa {{count}} araw',
       waterNote_other: 'Puno sa {{count}} araw',
       move: 'Aktibong minuto',
-      moveNote_one: 'Isang workout',
+      moveNote_one: '{{count}} workout',
       moveNote_other: '{{count}} workout',
       moveNoteNone: 'Walang naitalang workout',
       burn: 'Nasunog kada araw',
@@ -2013,7 +2014,7 @@ export const fil = {
     },
     groupsChat: {
       title: 'Mag-chat sa iyong grupo',
-      body: 'Ibahagi ang pagkain at ehersisyo, at mag-react gamit ang emoji.',
+      body: 'Ibahagi ang pagkain at workout, at mag-react gamit ang emoji.',
       previewLabel: 'Halimbawa ng pagkaing ibinahagi sa chat ng grupo',
     },
     update110: {
@@ -2023,11 +2024,11 @@ export const fil = {
       title: 'I-log ang mga workout mo',
       body: 'Subaybayan ang sets, reps at pahinga sa bagong Workout tab.',
       bodyIos:
-        'Subaybayan ang sets, reps at pahinga sa bagong Workout tab. Sa Apple Watch, naitatala rin ang heart rate mo.',
+        'Subaybayan ang sets, reps at pahinga sa bagong Workout tab. Sa Apple Watch, naitatala rin ang tibok ng puso mo.',
       previewLabel: 'Halimbawa ng workout na nilo-log',
     },
     feedAutoShare: {
-      title: 'Naka-post na sa feed mo ang mga kinakain mo',
+      title: 'Napo-post na sa feed mo ang mga kinakain mo',
       body: 'Naipo-post din ang mga natapos na workout. I-off ang alinman sa I-edit ang profile.',
       you: 'Ikaw',
       previewLabel: 'Halimbawa ng pagkaing naka-post sa feed mo',
@@ -2214,7 +2215,7 @@ export const fil = {
       menu: {
         replace: 'Palitan ang ehersisyo',
         superset: 'I-superset sa susunod',
-        reorder: 'Ayusin ang pagkakasunod',
+        reorder: 'Ayusin ang pagkakasunod-sunod',
         unsuperset: 'Alisin sa superset',
         rest: 'Timer ng pahinga',
         remove: 'Alisin ang ehersisyo',
@@ -2463,10 +2464,10 @@ export const fil = {
       ownExercises: 'Idinagdag bilang sarili mong ehersisyo',
       units: 'Mga unit sa file na ito',
       distanceUnit: 'Unit ng distansya',
-      import_one: 'I-import ang {{count}} na workout',
+      import_one: 'I-import ang {{count}} workout',
       import_other: 'I-import ang {{count}} na workout',
       importing: 'Nag-iimport ng {{done}} sa {{total}}',
-      done_one: '{{count}} na workout ang na-import',
+      done_one: '{{count}} workout ang na-import',
       done_other: '{{count}} na workout ang na-import',
       existing_one: '{{count}} ang nasa kasaysayan mo na',
       existing_other: '{{count}} ang nasa kasaysayan mo na',
@@ -2554,11 +2555,11 @@ export const fil = {
     newGroup: 'Bagong grupo',
     create: 'Gumawa',
     name: 'Pangalan ng grupo',
-    namePlaceholder: 'Makan Buddies',
+    namePlaceholder: 'Kain Buddies',
     moreIcons: 'Iba pang icon',
     needsPro: 'Kailangan ng RiceCal Pro',
     viewMore: 'Tingnan pa',
-    viewLess: 'Bawasan',
+    viewLess: 'Mas kaunti',
     uploadIcon: 'Mag-upload ng larawan',
     iconUploadFailed: 'Hindi ma-upload ang larawang iyon.',
     changeIcon: 'Palitan ang icon',
@@ -2591,7 +2592,7 @@ export const fil = {
       breakfast: 'Almusal',
       lunch: 'Tanghalian',
       dinner: 'Hapunan',
-      workout: 'Ehersisyo',
+      workout: 'Workout',
     },
     mealInSentence: {
       breakfast: 'almusal',
@@ -2634,12 +2635,12 @@ export const fil = {
     tapToRemove: 'I-tap para alisin',
     share: 'Ibahagi',
     tabFood: 'Pagkain',
-    tabWorkouts: 'Ehersisyo',
+    tabWorkouts: 'Workout',
     tabMyFood: 'Mga recipe ko',
     shareMyFoodEmpty: 'Dito lalabas ang mga recipe na isinulat mo.',
-    shareWorkoutEmpty: 'Dito lalabas ang mga ehersisyong na-log o naitala mo.',
+    shareWorkoutEmpty: 'Dito lalabas ang mga workout na na-log o naitala mo.',
     statTime: 'Oras',
-    statDistance: 'Layo',
+    statDistance: 'Distansya',
     statExercises: 'Ehersisyo',
     statSets: 'Set',
     statActive: 'Aktibo',
@@ -2669,14 +2670,14 @@ export const fil = {
     settingsMembers: 'Mga miyembro',
     settingsGroup: 'Grupo',
     sharing: 'Pagbabahagi',
-    shareUpdates: 'I-post ang pagkain at ehersisyo ko',
+    shareUpdates: 'I-post ang pagkain at workout ko',
     shareUpdatesHint: 'Mapupunta sa chat na ito ang mga bago habang nilo-log mo.',
     notifications: 'Mga notification',
     notifyChat: 'Mga mensahe sa chat at kalabit',
-    notifyUpdates: 'Mga update sa pagkain at ehersisyo',
+    notifyUpdates: 'Mga update sa pagkain at workout',
     muteNone: 'Naka-on lahat ng notification',
     muteChatOnly: 'I-mute ang mga mensahe sa chat',
-    muteUpdatesOnly: 'I-mute ang mga update sa pagkain at ehersisyo',
+    muteUpdatesOnly: 'I-mute ang mga update sa pagkain at workout',
     muteAll: 'I-mute lahat',
     remove: 'Alisin',
     removeTitle: 'Alisin si {{name}}?',

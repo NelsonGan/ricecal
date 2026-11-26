@@ -16,7 +16,7 @@ export const vi = {
     feedShow: 'Hiển thị',
     feedShowAll: 'Tất cả',
     feedShowFood: 'Món ăn',
-    feedShowWorkouts: 'Bài tập',
+    feedShowWorkouts: 'Buổi tập',
     people: 'Tìm người',
     suggestions: 'Người nên theo dõi',
     search: 'Tìm tên người dùng',
@@ -36,7 +36,7 @@ export const vi = {
     handleInvalid: 'Dùng 3 đến 24 chữ thường, số, dấu chấm hoặc dấu gạch dưới.',
     save: 'Lưu',
     saved: 'Đã lưu',
-    cancel: 'Hủy',
+    cancel: 'Huỷ',
     back: 'Quay lại',
     followers: 'Người theo dõi',
     posts_one: '{{count}} bài đăng',
@@ -46,7 +46,7 @@ export const vi = {
     follow: 'Theo dõi',
     unfollow: 'Bỏ theo dõi',
     followsYou: 'Đang theo dõi bạn',
-    removeFollower: 'Xóa người theo dõi',
+    removeFollower: 'Xoá người theo dõi',
     removeFollowerBody: 'Họ sẽ không còn thấy bài chỉ dành cho người theo dõi.',
     share: 'Chia sẻ lên bảng tin',
     newPost: 'Chia sẻ bữa ăn',
@@ -60,11 +60,11 @@ export const vi = {
     followersHint: 'Chỉ bạn và người theo dõi bạn có thể xem bài này.',
     shareInfo: 'Về việc chia sẻ',
     shareHint:
-      'Chỉ chia sẻ món này, calo và dưỡng chất chính, cùng chú thích. Xóa mục nhật ký cũng xóa bài đăng.',
+      'Chỉ chia sẻ món này, calo và dưỡng chất chính, cùng chú thích. Xoá mục nhật ký cũng xoá bài đăng.',
     post: 'Bài đăng',
-    deletePost: 'Xóa bài đăng',
+    deletePost: 'Xoá bài đăng',
     deletePostBody: 'Mục nhật ký vẫn được giữ.',
-    sourceDelete: 'Xóa món này cũng xóa bài đăng trên bảng tin và bình luận.',
+    sourceDelete: 'Xoá món này cũng xoá bài đăng trên bảng tin và bình luận.',
     like: 'Thích',
     unlike: 'Bỏ thích',
     likes_one: '{{count}} lượt thích',
@@ -75,16 +75,16 @@ export const vi = {
     justNow: 'Vừa xong',
     commentPlaceholder: 'Thêm bình luận',
     send: 'Gửi',
-    deleteComment: 'Xóa bình luận',
-    deleteCommentBody: 'Bình luận này sẽ bị xóa.',
+    deleteComment: 'Xoá bình luận',
+    deleteCommentBody: 'Bình luận này sẽ bị xoá.',
     pending: 'Đang chờ duyệt',
     rejected: 'Cần chỉnh sửa',
     quarantined: 'Đang xem xét',
     approved: 'Đã đăng',
     pendingBody: 'Chỉ bạn thấy nội dung này cho đến khi được duyệt.',
-    retryReview: 'Duyệt lại',
+    retryReview: 'Gửi duyệt lại',
     block: 'Chặn',
-    blockBody: 'Hai bên sẽ không còn thấy nhau ở đây. Quan hệ theo dõi sẽ bị xóa.',
+    blockBody: 'Hai bên sẽ không còn thấy nhau ở đây. Quan hệ theo dõi sẽ bị xoá.',
     blocked: 'Người đã chặn',
     unblock: 'Bỏ chặn',
     unblockBody: 'Quan hệ theo dõi sẽ không được khôi phục.',
@@ -102,9 +102,9 @@ export const vi = {
     emptyPeople: 'Không tìm thấy ai',
     emptyPosts: 'Chưa có bài đăng',
     newWorkoutPost: 'Chia sẻ buổi tập',
-    captionWorkoutPlaceholder: 'Nói đôi điều về buổi tập của bạn',
+    captionWorkoutPlaceholder: 'Chia sẻ đôi lời về buổi tập của bạn',
     shareWorkoutHint:
-      'Chỉ tên, thời gian, số liệu, bài tập của buổi tập này và chú thích của bạn được chia sẻ, không bao giờ có ghi chú. Xóa buổi tập cũng xóa bài đăng của nó.',
+      'Chỉ tên, thời gian, số liệu, bài tập của buổi tập này và chú thích của bạn được chia sẻ, không bao giờ có ghi chú. Xoá buổi tập cũng xoá bài đăng của nó.',
     autoPostWorkouts: 'Tự động đăng buổi tập',
     autoPostWorkoutsHint:
       'Buổi tập bạn hoàn thành sẽ tự động xuất hiện trên bảng tin. Buổi tập được nhập thì không.',
@@ -121,7 +121,7 @@ export const vi = {
     saveFailed: 'Không thể lưu. Hãy thử lại.',
     offline: 'Kết nối để tiếp tục',
     unknownPerson: 'Ai đó',
-    options: 'Tùy chọn',
+    options: 'Tuỳ chọn',
     characterCount: '{{count}} / {{limit}}',
   },
   common: {
@@ -224,11 +224,11 @@ export const vi = {
     aiLanguage: {
       open: 'Các tính năng AI dùng ngôn ngữ nào',
       title: 'Các tính năng AI hoạt động bằng tiếng Anh',
-      body: 'Chụp một đĩa và nói bằng lời bạn đã ăn gì đều được gửi tới một mô hình đọc tiếng Anh tốt nhất. Hãy mô tả món ăn bằng tiếng Anh để nó hiểu bạn sát hơn.',
+      body: 'Cả ảnh chụp đĩa ăn lẫn lời mô tả món bạn ăn đều được gửi tới một mô hình đọc tiếng Anh tốt nhất. Hãy mô tả món ăn bằng tiếng Anh để nó hiểu bạn sát hơn.',
       results:
         'Thứ trả về cũng bằng tiếng Anh. Tên món, nguyên liệu và khẩu phần đều được lưu bằng tiếng Anh trong danh mục món ăn, nên đó là ngôn ngữ chúng xuất hiện, dù ứng dụng đang đặt ở ngôn ngữ nào.',
       dishes: 'Tên món ăn giữ nguyên ngôn ngữ lúc được viết ra.',
-      note: 'Mô tả món ăn bằng tiếng Anh để đọc sát nhất. Kết quả trả về bằng tiếng Anh.',
+      note: 'Mô tả món ăn bằng tiếng Anh để được hiểu chính xác nhất. Kết quả trả về bằng tiếng Anh.',
     },
 
     notFound: {
@@ -277,7 +277,7 @@ export const vi = {
       workoutsBody: 'Loại hình, thời gian, tốc độ, nhịp tim',
 
       privacy:
-        'Kết nối chỉ để đọc. Chúng tôi chỉ lưu buổi tập vào đó khi bạn bật tính năng này, và dữ liệu sức khỏe của bạn chỉ nằm trong tài khoản của chính bạn.',
+        'Kết nối chỉ để đọc. Chúng tôi chỉ lưu buổi tập vào đó khi bạn bật tính năng này, và dữ liệu sức khoẻ của bạn chỉ nằm trong tài khoản của chính bạn.',
 
       appleBody: 'Apple Health, trên iPhone và Apple Watch',
       connectHealthBody: 'Health Connect: Samsung Health, Fitbit, Garmin',
@@ -321,7 +321,7 @@ export const vi = {
       rowPaceUnit: '{{value}} /500 m',
       distance: 'QUÃNG ĐƯỜNG',
       time: 'THỜI GIAN',
-      pace: 'TỐC ĐỘ PHÚT',
+      pace: 'NHỊP ĐỘ',
       speed: 'VẬN TỐC',
       paceUnit: '{{value}} /km',
       speedUnit: '{{value}} km/h',
@@ -346,7 +346,7 @@ export const vi = {
       lastSynced: 'Đồng bộ lần cuối {{when}}',
       syncNow: 'Đồng bộ ngay',
       syncing: 'Đang đồng bộ…',
-      extendBudget: 'Vận động kéo dài hạn mức của tôi',
+      extendBudget: 'Vận động tăng hạn mức của tôi',
       extendBudgetBody:
         'Calo đốt được cộng vào ngày hôm đó, không bao giờ trừ khỏi phần bạn đã ăn.',
       stepGoal: 'Mục tiêu bước',
@@ -418,10 +418,10 @@ export const vi = {
       signIn: 'Đăng nhập',
       forgot: 'Quên mật khẩu?',
 
-      codeInstead: 'Gửi mã cho tôi thay vì vậy',
+      codeInstead: 'Gửi mã qua email cho tôi',
 
       haveAccount: 'Đã có tài khoản? Đăng nhập',
-      needAccount: 'Mới ở đây? Tạo tài khoản',
+      needAccount: 'Chưa có tài khoản? Tạo tài khoản',
 
       maybeExisting: 'Nếu địa chỉ này đã có tài khoản, hãy đăng nhập bên dưới hoặc yêu cầu một mã.',
     },
@@ -442,11 +442,11 @@ export const vi = {
 
     reset: {
       askTitle: 'Đặt lại mật khẩu',
-      askSubtitle: 'Cho chúng tôi biết địa chỉ trên tài khoản và chúng tôi sẽ gửi một mã.',
+      askSubtitle: 'Nhập địa chỉ email của tài khoản, chúng tôi sẽ gửi mã cho bạn.',
       send: 'Gửi mã đặt lại cho tôi',
 
       newTitle: 'Chọn mật khẩu mới',
-      newSubtitle: 'Sắp xong rồi. Chọn thứ bạn sẽ nhớ.',
+      newSubtitle: 'Sắp xong rồi. Chọn mật khẩu bạn dễ nhớ.',
       field: 'MẬT KHẨU MỚI',
       confirmField: 'XÁC NHẬN MẬT KHẨU MỚI',
       save: 'Lưu và đăng nhập',
@@ -454,7 +454,7 @@ export const vi = {
     },
 
     captcha: {
-      title: 'Một kiểm tra nhanh',
+      title: 'Kiểm tra nhanh',
       body: 'Cloudflare muốn xác nhận bạn là người thật. Chỉ mất một giây.',
     },
 
@@ -508,7 +508,7 @@ export const vi = {
 
     workouts: {
       title: 'Ghi lại cả buổi tập',
-      subtitle: 'Hiệp, số lần và hẹn giờ nghỉ. Mức tạ lần trước hiện bên mỗi hiệp.',
+      subtitle: 'Set, rep và hẹn giờ nghỉ. Mức tạ lần trước hiện bên mỗi set.',
       routine: 'Buổi tập sáng',
     },
 
@@ -520,7 +520,7 @@ export const vi = {
 
     about: {
       title: 'Vài thông tin cơ bản',
-      subtitle: 'Để tính ngân sách calo mỗi ngày của bạn.',
+      subtitle: 'Để tính hạn mức calo mỗi ngày của bạn.',
       height: 'CHIỀU CAO',
       heightPlaceholder: '170',
       weight: 'CÂN NẶNG',
@@ -582,7 +582,7 @@ export const vi = {
       title: 'Hạn mức hằng ngày của bạn',
       subtitle: 'Tính từ câu trả lời của bạn. Sửa con số nào cũng được.',
       perDay: 'KCAL MỖI NGÀY',
-      goalWeight: 'CÂN NẶNG ĐÍCH',
+      goalWeight: 'CÂN NẶNG MỤC TIÊU',
       goalBy: 'DỰ KIẾN ĐẠT',
       maintain: 'GIỮ NGUYÊN',
       maintainValue: 'Ổn định',
@@ -597,7 +597,7 @@ export const vi = {
       emptyToast: 'Health không trả về gì cả. Bạn có thể kết nối lại từ mục Hoạt động.',
       failedToast:
         'Chúng tôi không kết nối được kho sức khoẻ. Bạn có thể thử lại từ mục Hoạt động.',
-      reassurance: 'Chỉ đọc. Chúng tôi không bao giờ ghi lại bất cứ điều gì.',
+      reassurance: 'Chỉ đọc. Chúng tôi không bao giờ ghi gì vào đó.',
     },
 
     notifications: {
@@ -615,7 +615,7 @@ export const vi = {
       skip: 'Bỏ qua',
       next: 'Tiếp',
       done: 'Bắt đầu ghi',
-      offerTitle: 'Mới ở đây?',
+      offerTitle: 'Lần đầu dùng?',
       offerBody: 'Một vòng 30 giây về cách ghi món ăn.',
       offerAction: 'Cho tôi xem',
 
@@ -623,16 +623,16 @@ export const vi = {
         title: 'Ba cách ghi',
         subtitle: 'Chạm nút màu xanh ở Hôm nay, rồi chọn một cách.',
         snap: 'Chụp',
-        snapBody: 'Một tấm ảnh của đĩa ăn',
+        snapBody: 'Ảnh chụp đĩa ăn',
         describe: 'Mô tả',
         describeBody: 'Gõ ra bạn đã ăn gì',
         search: 'Tìm',
-        searchBody: 'Chúng tôi hoặc bạn',
-        barcode: 'Có gói hàng? Máy ảnh cũng quét mã vạch.',
+        searchBody: 'Của chúng tôi hoặc của bạn',
+        barcode: 'Đồ đóng gói? Máy ảnh cũng quét được mã vạch.',
       },
 
       read: {
-        title: 'Nó rơi vào ngày của bạn',
+        title: 'Món ăn hiện ngay trong ngày của bạn',
         subtitle: 'Chúng tôi gọi tên món, ước lượng khẩu phần và tính hộ bạn.',
         exampleName: 'Nasi lemak ayam',
         exampleDetail: '1 đĩa, 320 g',
@@ -645,7 +645,7 @@ export const vi = {
         subtitle: 'Chạm vào mục đó, rồi chạm biểu tượng lấp lánh. Nói bình thường là đủ.',
         chipHalf: 'Nửa khẩu phần',
         chipNoRice: 'Không cơm',
-        chipExtra: 'Thêm một đồ uống',
+        chipExtra: 'Thêm đồ uống',
         typed: 'Tôi chỉ ăn nửa phần cơm',
         beforeLabel: 'TRƯỚC',
         before: '644',
@@ -684,23 +684,23 @@ export const vi = {
       email: 'EMAIL',
       emailPlaceholder: 'you@email.com',
       errors: {
-        email: 'Cái đó trông không giống một địa chỉ email.',
+        email: 'Địa chỉ email này có vẻ không đúng.',
       },
     },
   },
 
   logging: {
     photoRemovals: {
-      toast_one: '{{count}} ảnh bữa ăn sẽ bị xóa {{when}}',
-      toast_other: '{{count}} ảnh bữa ăn sẽ bị xóa {{when}}',
+      toast_one: '{{count}} ảnh bữa ăn sẽ bị xoá {{when}}',
+      toast_other: '{{count}} ảnh bữa ăn sẽ bị xoá {{when}}',
       by: 'trước {{day}}',
       today: 'hôm nay',
       tomorrow: 'ngày mai',
       show: 'Xem',
-      title: 'Ảnh sắp bị xóa',
+      title: 'Ảnh sắp bị xoá',
       intro: 'Tài khoản miễn phí giữ ảnh bữa ăn trong {{days}} ngày. Bữa ăn vẫn được giữ.',
       keep: 'Giữ lại với Pro',
-      empty: 'Không có ảnh nào sắp bị xóa.',
+      empty: 'Không có ảnh nào sắp bị xoá.',
     },
     today: {
       title: 'Hôm nay',
@@ -721,8 +721,8 @@ export const vi = {
       steps_other: '{{steps}} bước',
       analysing: 'Đang đọc đĩa của bạn',
       analysingHint: 'Sẽ tính ngay khi biết đây là món gì',
-      describing: 'Đang đọc điều bạn viết',
-      describingRead: 'Đang đọc điều bạn viết…',
+      describing: 'Đang đọc những gì bạn viết',
+      describingRead: 'Đang đọc những gì bạn viết…',
       scanningRead: 'Đang đọc đĩa của bạn…',
       scanningMatch: 'Đang tìm trong danh mục…',
       scanningPortion: 'Đang ước lượng khẩu phần…',
@@ -735,7 +735,7 @@ export const vi = {
       scanDoneBodyPlain: 'Chạm để xem có gì trong đó.',
       deleteEntry: 'Xoá',
       noFoodTitle: 'Không có món ăn nào trong ảnh này',
-      noFoodTypedTitle: 'Không có món ăn nào trong điều bạn viết',
+      noFoodTypedTitle: 'Không có món ăn nào trong những gì bạn viết',
       noFoodHint: 'Không có gì được thêm vào ngày của bạn.',
       noFoodDismiss: 'Bỏ qua',
       analysisFailedTitle: 'Không đọc được cái này',
@@ -780,31 +780,31 @@ export const vi = {
       tabs: 'Bạn đang hướng vào cái gì',
       meal: 'Bữa ăn',
       barcode: 'Mã vạch',
-      scansLeft_zero: 'Hôm nay hết lượt chụp rồi. Mai sẽ có lại.',
-      scansLeft_one: 'còn {{count}} lượt chụp hôm nay',
-      scansLeft_other: 'còn {{count}} lượt chụp hôm nay',
+      scansLeft_zero: 'Hôm nay hết lượt quét rồi. Mai sẽ có lại.',
+      scansLeft_one: 'còn {{count}} lượt quét hôm nay',
+      scansLeft_other: 'còn {{count}} lượt quét hôm nay',
     },
 
     barcode: {
       permissionTitle: 'Cho phép RiceCal dùng máy ảnh',
-      permissionBody: 'Máy ảnh đọc mã vạch trên gói hàng. Không ghi lại và không tải lên gì cả.',
+      permissionBody: 'Máy ảnh đọc mã vạch trên bao bì. Không ghi lại và không tải lên gì cả.',
       failedTitle: 'Không có phản hồi',
       failed:
-        'Lúc này chúng tôi không kết nối được tới danh mục. Gói hàng có thể vẫn ổn; kết nối thì không.',
+        'Lúc này chúng tôi không kết nối được tới danh mục. Sản phẩm có thể không sao; lỗi là ở kết nối.',
       tryAgain: 'Quét lại',
       photographLabel: 'Chụp nhãn dinh dưỡng',
       labelTitle: 'Chụp nhãn dinh dưỡng',
-      labelPrompt: 'Chúng tôi chưa có gói này. Lật mặt sau và chúng tôi sẽ đọc các chỉ số.',
+      labelPrompt: 'Chúng tôi chưa có sản phẩm này. Lật mặt sau và chúng tôi sẽ đọc các chỉ số.',
     },
 
     describe: {
-      placeholder: 'Nasi lemak với gà rán và một ly trà sữa',
+      placeholder: 'Nasi lemak với gà rán và một ly teh tarik',
       send: 'Ghi bữa này',
     },
 
     photoNote: {
       title: 'Thông tin bổ sung',
-      placeholder: 'Thịt bò chứ không phải gà, trà không đường, ăn chung',
+      placeholder: 'Thịt bò chứ không phải gà, teh o kosong, ăn chung',
       skip: 'Bỏ qua',
       log: 'Ghi bữa ăn',
       retake: 'Chụp lại',
@@ -826,7 +826,7 @@ export const vi = {
       libraryFailed: 'Không mở được ảnh này',
       flip: 'Đổi máy ảnh',
       resetZoom: 'Đặt lại thu phóng',
-      photoOf: 'Ảnh của {{food}}',
+      photoOf: 'Ảnh {{food}}',
     },
 
     added: {
@@ -923,8 +923,8 @@ export const vi = {
       timeTitle: 'Giờ',
       hour: 'Giờ',
       minute: 'Phút',
-      am: 'sáng',
-      pm: 'chiều',
+      am: 'SA',
+      pm: 'CH',
       movedTo: 'Đã chuyển sang {{day}}',
       save: 'Lưu',
       saveFailed: 'Không lưu được những thay đổi đó',
@@ -933,7 +933,7 @@ export const vi = {
       discardConfirm: 'Bỏ',
       deleteEntry: 'Xoá mục này',
       deleteTitle: 'Xoá mục này?',
-      deleteBody: 'Nó ra khỏi hôm nay ngay và số đếm tăng trở lại.',
+      deleteBody: 'Mục này bị xoá khỏi hôm nay và lượng calo còn lại tăng lên.',
       addToDiary: 'Thêm vào nhật ký',
       decreaseServing: 'Bớt một',
       increaseServing: 'Thêm một',
@@ -959,7 +959,7 @@ export const vi = {
       searchTab: 'Tìm',
       cameraTab: 'Máy ảnh',
       searchLabel: 'Tìm hình',
-      searchPlaceholder: 'nasi lemak, trà sữa, cá',
+      searchPlaceholder: 'nasi lemak, teh tarik, fish',
       noMatch: 'Không có gì khớp với “{{query}}”.',
     },
 
@@ -989,13 +989,13 @@ export const vi = {
     },
     range: {
       label: 'Khoảng',
-      '7d': '7N',
-      '30d': '30N',
-      '1y': '1N',
+      '7d': '7 ngày',
+      '30d': '30 ngày',
+      '1y': '1 năm',
       span7d: '7 ngày qua',
       span30d: '30 ngày qua',
       span1y: '12 tháng qua',
-      week: 'T {{index}}',
+      week: 'Tuần {{index}}',
       between: '{{from}} đến {{to}}',
     },
     calories: {
@@ -1010,7 +1010,7 @@ export const vi = {
     },
     protein: {
       unit: 'g mỗi ngày',
-      above: 'hơn {{value}} g',
+      above: 'vượt {{value}} g',
       short: 'thiếu {{value}} g',
       chart: 'Đạm mỗi ngày trong {{span}}, so với mục tiêu',
     },
@@ -1031,7 +1031,7 @@ export const vi = {
       unit: '{{unit}} mỗi ngày',
       goalDays: '{{done}}/{{total}} ngày đạt mục tiêu',
       chart: 'Nước mỗi ngày so với mục tiêu {{amount}}',
-      empty: 'Không có nước nào được ghi trong khoảng này.',
+      empty: 'Chưa ghi lượng nước nào trong khoảng này.',
     },
     weight: {
       change: '{{value}} {{unit}}',
@@ -1085,8 +1085,8 @@ export const vi = {
       noName: 'Tài khoản của bạn',
       signOutTitle: 'Đăng xuất?',
       signOutBody: 'Nhật ký của bạn vẫn an toàn. Đăng nhập lại trên bất kỳ máy nào để tiếp tục.',
-      proTrialIn_one: 'trong {{count}} ngày',
-      proTrialIn_other: 'trong {{count}} ngày',
+      proTrialIn_one: 'sau {{count}} ngày',
+      proTrialIn_other: 'sau {{count}} ngày',
       proActive: 'Gói {{plan}}, đang hoạt động',
       proActivePlain: 'Pro, đang hoạt động',
       proNone: 'Gói miễn phí',
@@ -1094,7 +1094,7 @@ export const vi = {
       imperial: 'Hệ Anh',
       groupNutrition: 'DINH DƯỠNG',
       groupActivity: 'HOẠT ĐỘNG',
-      groupPreferences: 'TÙY CHỌN',
+      groupPreferences: 'TUỲ CHỌN',
       groupSupport: 'HỖ TRỢ',
       personalisation: 'Cá nhân hoá',
       goals: 'Mục tiêu và chỉ tiêu',
@@ -1125,7 +1125,7 @@ export const vi = {
       photoSaved: 'Đã lưu ảnh',
       photoFailed: 'Không thể cập nhật ảnh',
       typeDelete: 'Nhập "delete" để xác nhận',
-      deleteDetails: 'Những gì sẽ bị xóa',
+      deleteDetails: 'Những gì sẽ bị xoá',
 
       privacy: 'Chính sách quyền riêng tư',
       terms: 'Điều khoản sử dụng',
@@ -1134,13 +1134,13 @@ export const vi = {
       goesPhotos: 'Mọi ảnh bạn đã chụp',
       goesRecipes: 'Công thức bạn viết, kể cả công thức đã đăng',
       goesProfile: 'Hồ sơ, cài đặt và thông tin đăng nhập của bạn',
-      cancelFirst: 'Hãy hủy đăng ký trong cửa hàng trước, nếu không bạn vẫn bị tính phí.',
-      action: 'Xóa tài khoản của tôi',
-      confirmTitle: 'Xóa tài khoản của bạn?',
+      cancelFirst: 'Hãy huỷ đăng ký trong cửa hàng trước, nếu không bạn vẫn bị tính phí.',
+      action: 'Xoá tài khoản của tôi',
+      confirmTitle: 'Xoá tài khoản của bạn?',
       confirmBody:
         'Không thể hoàn tác. Sau đó, nhật ký của bạn không thể khôi phục, dù là bạn hay chúng tôi.',
-      done: 'Tài khoản của bạn đã bị xóa.',
-      failed: 'Chúng tôi không xóa được tài khoản của bạn. Vui lòng thử lại.',
+      done: 'Tài khoản của bạn đã bị xoá.',
+      failed: 'Chúng tôi không xoá được tài khoản của bạn. Vui lòng thử lại.',
     },
 
     rate: {
@@ -1153,7 +1153,7 @@ export const vi = {
       feedbackBody:
         'Hãy nói với chúng tôi trên Discord. Phần lớn những gì có trong ứng dụng đều bắt đầu từ đó.',
       feedbackOpen: 'Mở Discord',
-      feedbackSkip: 'Thôi',
+      feedbackSkip: 'Để sau',
     },
 
     help: {
@@ -1180,23 +1180,23 @@ export const vi = {
     shareEarn: {
       row: 'Chia sẻ và nhận Pro',
       title: 'Chia sẻ và nhận Pro',
-      heroTitle: 'Đăng bài về RiceCal, nhận Pro',
+      heroTitle: 'Đăng bài về RiceCal, nhận Pro miễn phí',
       card: 'Đăng bài nhận Pro',
       heroBody:
         'Cho mọi người xem một đĩa bạn đã ghi. Bài đăng càng nhiều lượt thích, Pro chúng tôi tặng càng dài.',
 
       platforms: 'ĐĂNG Ở',
 
-      rewards: 'GIÁ TRỊ RA SAO',
+      rewards: 'PHẦN THƯỞNG',
       postReward: '1 tháng Pro',
-      postBadge: '30+ thích',
+      postBadge: '30+ lượt thích',
       postBody: 'Bất kỳ bài công khai nào về ứng dụng, trên bất kỳ nền tảng nào ở đây.',
       likedReward: '1 năm Pro',
-      likedBadge: '100+ thích',
+      likedBadge: '100+ lượt thích',
       likedBody: 'Bài của bạn đã tới đúng người.',
       viralReward: 'Pro trọn đời',
-      viralBadge: '500+ thích',
-      viralBody: 'Bạn đã viral. Nó là của bạn, không gia hạn, không có gì để huỷ.',
+      viralBadge: '500+ lượt thích',
+      viralBody: 'Bạn đã viral. Pro là của bạn mãi mãi, không gia hạn, không có gì để huỷ.',
 
       how: 'CÁCH THỨC',
       step1:
@@ -1230,7 +1230,7 @@ export const vi = {
       other: 'KHÁC',
       waterGoal: 'Mục tiêu nước',
       saved: 'Đã lưu chỉ tiêu',
-      saveFailed: 'Không thể lưu mục tiêu. Hãy thử lại.',
+      saveFailed: 'Không thể lưu chỉ tiêu. Hãy thử lại.',
     },
 
     personalisation: {
@@ -1296,7 +1296,7 @@ export const vi = {
       trialLeft_one: 'Dùng thử miễn phí, còn {{count}} ngày',
       trialLeft_other: 'Dùng thử miễn phí, còn {{count}} ngày',
       renews: 'Gia hạn ở mức {{price}}.',
-      neverRenews: 'Trả một lần. Không có gì gia hạn.',
+      neverRenews: 'Trả một lần. Không gia hạn.',
       freeBody:
         '{{scans}} lượt quét mỗi ngày, {{recipes}} công thức của mình, và xu hướng của tuần vừa rồi.',
       whatYouGet: 'BẠN ĐƯỢC GÌ VỚI PRO',
@@ -1328,12 +1328,12 @@ export const vi = {
     hard: {
       choosePlan: 'Chọn gói của bạn',
       assurance: 'Không ràng buộc, huỷ bất cứ lúc nào',
-      assuranceLifetime: 'Trả một lần, hoàn tiền qua cửa hàng',
+      assuranceLifetime: 'Trả một lần, có thể hoàn tiền qua cửa hàng',
       smallPrintYearly: 'Miễn phí {{duration}}, sau đó {{price}} mỗi năm.',
       smallPrintMonthly: 'Miễn phí {{duration}}, sau đó {{price}} mỗi tháng.',
       smallPrintYearlyNoTrial: '{{price}} mỗi năm.',
       smallPrintMonthlyNoTrial: '{{price}} mỗi tháng.',
-      smallPrintLifetime: 'Trả một lần {{price}}. Không phải đăng ký, không gia hạn.',
+      smallPrintLifetime: 'Trả một lần {{price}}. Không phải gói đăng ký, không gia hạn.',
       trialDuration: {
         day_one: '{{count}} ngày',
         day_other: '{{count}} ngày',
@@ -1352,12 +1352,12 @@ export const vi = {
       privacy: 'Quyền riêng tư',
       nothingToRestore: 'Không có gì để khôi phục trên tài khoản này',
       notConfigured: 'Bản dựng này chưa thiết lập việc mua hàng.',
-      restored: 'Giao dịch của bạn đã trở lại',
+      restored: 'Đã khôi phục giao dịch',
     },
 
     table: {
       sectionTitle: 'Mọi thứ trong Pro',
-      sectionSubtitle: 'Xem chính xác những gì được mở khóa khi nâng cấp',
+      sectionSubtitle: 'Xem chính xác những gì được mở khoá khi nâng cấp',
       title: 'MIỄN PHÍ SO VỚI PRO',
       free: 'Miễn phí',
       pro: 'Pro',
@@ -1373,7 +1373,7 @@ export const vi = {
           pro: '',
         },
         barcode: {
-          label: 'Quét một gói hàng',
+          label: 'Quét mã vạch bao bì',
           free: '',
           pro: '',
         },
@@ -1446,7 +1446,7 @@ export const vi = {
     },
 
     intro: {
-      later: 'Có thể để sau',
+      later: 'Để sau',
     },
 
     ended: {
@@ -1454,7 +1454,8 @@ export const vi = {
     },
 
     limit: {
-      freeReached: 'Đó là {{count}} lượt quét của bạn hôm nay. Pro quét bao nhiêu tuỳ bạn.',
+      freeReached:
+        'Bạn đã dùng hết {{count}} lượt quét hôm nay. Với Pro, quét bao nhiêu tuỳ thích.',
       proReached: 'Bạn đã chạm giới hạn quét của hôm nay. Vui lòng liên hệ quản trị viên.',
       notEntitledDetail: 'Gói đăng ký của bạn không còn hoạt động.',
       confirming: 'Giao dịch của bạn đang được xử lý. Chờ một lát rồi thử lại.',
@@ -1487,9 +1488,9 @@ export const vi = {
       bodyLifetime: 'RiceCal Pro là của bạn mãi mãi. Mọi thứ đã mở khoá.',
       perks: {
         log: 'Chụp, quét hoặc nói',
-        database: 'Mọi món và mọi gói',
+        database: 'Mọi món ăn và sản phẩm đóng gói',
       },
-      manageNote: 'Quản lý hoặc huỷ bất cứ lúc nào ở Hồ sơ, Gói đăng ký.',
+      manageNote: 'Quản lý hoặc huỷ bất cứ lúc nào ở Tôi, RiceCal Pro.',
       manageNoteLifetime: 'Trả một lần. Không có gì để gia hạn hay huỷ.',
       start: 'Tới nhật ký của tôi',
     },
@@ -1500,7 +1501,7 @@ export const vi = {
     title: 'Vị trí',
     enable: 'Lưu nơi ăn',
     enableHint: 'Gắn nơi bạn đã ăn vào bữa ăn. Chỉ bạn thấy.',
-    autoTag: 'Tự gắn cho bữa ăn mới',
+    autoTag: 'Tự gắn địa điểm cho bữa ăn mới',
     autoTagHint: 'Bữa ăn ghi cho hôm nay được gắn nơi bạn đang ở.',
     accessOff: 'Quyền truy cập vị trí đang tắt',
     allow: 'Cho phép',
@@ -1668,21 +1669,21 @@ export const vi = {
     servings_one: '{{count}} khẩu phần',
     servings_other: '{{count}} khẩu phần',
     fromAuthor: 'Từ {{name}}',
-    someCook: 'Một người',
+    someCook: 'Ai đó',
 
     new: {
       title: 'Công thức mới',
       scanTitle: 'Điền từ một tấm ảnh',
-      describeTitle: 'Mô tả nó',
+      describeTitle: 'Mô tả món ăn',
       describePlaceholder:
-        'Cà ri gà. 600g đùi gà, một hộp nước cốt dừa, 3 củ khoai tây. Đủ cho 4 người.',
+        'Kari ayam. 600g đùi gà, một hộp nước cốt dừa, 3 củ khoai tây. Đủ cho 4 người.',
       describeHint: 'Định lượng và đủ cho mấy người là hai thứ đáng gõ nhất.',
       describeAction: 'Điền vào biểu mẫu',
       describeFailed: 'Chúng tôi không đọc được cái đó. Tự điền bên dưới nhé.',
       scanFailed: 'Chúng tôi không đọc được cái đó. Tự điền bên dưới nhé.',
 
       readingPhoto: 'Đang đọc ảnh của bạn…',
-      readingText: 'Đang đọc điều bạn viết…',
+      readingText: 'Đang đọc những gì bạn viết…',
       readingIngredients: 'Đang xem đã cho những gì vào…',
       readingPortions: 'Đang ước lượng khẩu phần…',
       readingSteps: 'Đang viết các bước…',
@@ -1708,11 +1709,11 @@ export const vi = {
       source: 'Nguồn',
       sourcePlaceholder: 'Liên kết tới reel hoặc bài đăng',
       sourceInvalid: 'Liên kết đó có vẻ không đúng',
-      perServing: '{{kcal}} kcal mỗi phần, cho {{count}} người',
+      perServing: '{{kcal}} kcal mỗi khẩu phần, cho {{count}} người',
       ingredients: 'Nguyên liệu',
       addIngredient: 'Thêm một nguyên liệu',
       steps: 'Các bước',
-      stepsSheetTitle: 'Bạn nấu thế nào',
+      stepsSheetTitle: 'Cách bạn nấu',
       stepsCount_one: '{{count}} bước',
       stepsCount_other: '{{count}} bước',
       stepsMore_one: 'Thêm {{count}} bước',
@@ -1723,7 +1724,7 @@ export const vi = {
       stepLabel: 'Bước {{count}}',
       stepPlaceholder: 'Bạn làm gì ở bước này?',
       addStep: 'Thêm bước',
-      removeStep: 'Xóa bước {{count}}',
+      removeStep: 'Xoá bước {{count}}',
       save: 'Lưu công thức',
       saved: 'Đã lưu công thức',
       nameRequired: 'Đặt tên cho nó trước đã',
@@ -1777,9 +1778,9 @@ export const vi = {
       source: 'Nguồn',
       startCooking: 'Nấu',
       logTitle: 'Bạn đã ăn bao nhiêu?',
-      steps: 'TÔI NẤU THẾ NÀO',
-      stepsFrom: '{{name}} NẤU THẾ NÀO',
-      noSteps: 'Không có bước nào được viết ra.',
+      steps: 'CÁCH TÔI NẤU',
+      stepsFrom: 'CÁCH {{name}} NẤU',
+      noSteps: 'Chưa ghi bước nào.',
       noIngredients: 'Chưa ghi nguyên liệu nào.',
       addToDay: 'Thêm vào hôm nay',
       saveCopy: 'Lưu vào công thức của tôi',
@@ -1796,7 +1797,7 @@ export const vi = {
 
     report: {
       title: 'Báo cáo công thức này',
-      body: 'Công thức này sẽ không hiện với bạn nữa, ngay lập tức. Người nấu không được báo.',
+      body: 'Công thức này sẽ ngừng hiện với bạn ngay lập tức. Tác giả không được thông báo.',
       inappropriate: 'Phản cảm hoặc không phải đồ ăn',
       spam: 'Spam hoặc quảng cáo',
       dangerous: 'Không an toàn để nấu hoặc ăn',
@@ -1812,7 +1813,7 @@ export const vi = {
       title: 'Chia sẻ công thức này',
       body: 'Bất kỳ ai có liên kết đều xem được nguyên liệu, các bước và calo, và lưu một bản của riêng họ. Của bạn vẫn là của bạn.',
       publicTitle: 'Đặt công khai',
-      publicBody: 'Nó vào tab cộng đồng để bất kỳ ai cũng tìm và lưu được.',
+      publicBody: 'Nó vào thẻ Cộng đồng để bất kỳ ai cũng tìm và lưu được.',
       publishFailed: 'Không đổi được. Thử lại.',
       published: 'Công thức của bạn đã vào cộng đồng',
     },
@@ -1936,8 +1937,8 @@ export const vi = {
       others: 'KHÁC',
       water: 'Nước',
       waterValue: '{{amount}} mỗi ngày',
-      waterNote_one: 'Đầy vào một ngày',
-      waterNote_other: 'Đầy vào {{count}} ngày',
+      waterNote_one: 'Đủ nước trong một ngày',
+      waterNote_other: 'Đủ nước trong {{count}} ngày',
       move: 'Số phút vận động',
       moveNote_one: 'Một buổi tập',
       moveNote_other: '{{count}} buổi tập',
@@ -1969,12 +1970,12 @@ export const vi = {
     },
     mealPlaces: {
       title: 'Nhớ nơi bạn đã ăn',
-      body: 'Gắn nơi bạn đã ăn cho bữa ăn, và xem tất cả trên bản đồ ẩm thực.',
+      body: 'Gắn địa điểm cho bữa ăn, và xem tất cả trên bản đồ ẩm thực.',
       previewLabel: 'Ví dụ về bữa ăn được gắn địa điểm',
     },
     kitchenUnits: {
       title: 'Cốc, thìa và hơn thế',
-      body: 'Ghi món ăn bằng thìa cà phê, thìa canh và cốc, không chỉ gam và phần.',
+      body: 'Ghi món ăn bằng thìa cà phê, thìa canh và cốc, không chỉ gam và khẩu phần.',
       previewLabel: 'Ví dụ về món ăn đo bằng cốc',
     },
     groupsNews: {
@@ -1987,17 +1988,17 @@ export const vi = {
     },
     groupsChat: {
       title: 'Trò chuyện với nhóm',
-      body: 'Chia sẻ món ăn và bài tập, và thả cảm xúc bằng emoji.',
+      body: 'Chia sẻ món ăn và buổi tập, và thả cảm xúc bằng emoji.',
       previewLabel: 'Ví dụ món ăn được chia sẻ trong trò chuyện nhóm',
     },
     update110: {
-      title: 'Tập luyện, đăng bảng tin và camera mới',
+      title: 'Tập luyện, bài đăng bảng tin và máy ảnh mới',
     },
     workouts: {
       title: 'Ghi lại buổi tập',
-      body: 'Theo dõi hiệp, số lần và thời gian nghỉ trong thẻ Tập luyện mới.',
+      body: 'Theo dõi set, rep và thời gian nghỉ trong thẻ Tập luyện mới.',
       bodyIos:
-        'Theo dõi hiệp, số lần và thời gian nghỉ trong thẻ Tập luyện mới. Trên Apple Watch, nhịp tim cũng được ghi lại.',
+        'Theo dõi set, rep và thời gian nghỉ trong thẻ Tập luyện mới. Trên Apple Watch, nhịp tim cũng được ghi lại.',
       previewLabel: 'Ví dụ về một buổi tập đang được ghi',
     },
     feedAutoShare: {
@@ -2007,7 +2008,7 @@ export const vi = {
       previewLabel: 'Ví dụ về một bữa ăn được đăng lên bảng tin của bạn',
     },
     photoNote: {
-      title: 'Camera giờ toàn màn hình',
+      title: 'Máy ảnh giờ toàn màn hình',
       body: 'Sau khi chụp, ứng dụng hỏi thêm vài chi tiết để ước tính chính xác hơn. Tắt trong Cá nhân hoá.',
       previewLabel: 'Ví dụ về câu hỏi sau khi chụp bữa ăn',
     },
@@ -2038,9 +2039,9 @@ export const vi = {
 
     routines: {
       title: 'Giáo án của tôi',
-      newTitle: 'Lịch tập mới',
-      namePlaceholder: 'vd. Ngày đẩy',
-      save: 'Lưu lịch tập',
+      newTitle: 'Giáo án mới',
+      namePlaceholder: 'vd. Ngày Push',
+      save: 'Lưu giáo án',
       emptyTitle: 'Chưa có giáo án',
       lastDone: 'Tập lần cuối {{date}}',
       never: 'Chưa tập lần nào',
@@ -2164,12 +2165,12 @@ export const vi = {
       rpeTitle: 'Nặng đến mức nào?',
       rpeNone: 'Không có RPE',
       rpe10: '10, hết sức',
-      rpeLeft_one: '{{value}}, còn {{count}} lần',
-      rpeLeft_other: '{{value}}, còn {{count}} lần',
-      restOff: 'Tắt nghỉ',
+      rpeLeft_one: '{{value}}, còn {{count}} rep',
+      rpeLeft_other: '{{value}}, còn {{count}} rep',
+      restOff: 'Không nghỉ',
       rest: 'Nghỉ {{time}}',
       next: 'Tiếp',
-      completeSet: 'Hoàn thành hiệp',
+      completeSet: 'Hoàn thành set',
       exerciseNotes: 'Thêm ghi chú',
       kind: {
         normal: 'Set chính',
@@ -2194,8 +2195,8 @@ export const vi = {
       superset: 'Superset',
       restTitle: 'Hẹn giờ nghỉ',
       menuFor: 'Tuỳ chọn cho {{name}}',
-      removeTitle: 'Xóa {{name}}?',
-      removeBody: 'Các hiệp của nó cũng bị xóa.',
+      removeTitle: 'Xoá {{name}}?',
+      removeBody: 'Các set của nó cũng bị xoá.',
       restDefault: 'Dùng mặc định ({{time}})',
       pr: 'Kỷ lục mới',
       noNumbers: 'Điền set trước đã',
@@ -2272,7 +2273,7 @@ export const vi = {
 
     stale: {
       title: 'Vẫn đang tập?',
-      body: 'Buổi tập này bắt đầu từ {{time}} trước.',
+      body: 'Buổi tập này đã bắt đầu {{time}} trước.',
       endAtLast: 'Kết thúc ở set cuối ({{time}})',
       endAt: 'Đặt giờ kết thúc',
       keepGoing: 'Tập tiếp',
@@ -2364,9 +2365,9 @@ export const vi = {
       bestDuration: 'Set lâu nhất',
       bestDistance: 'Quãng đường dài nhất',
       totalVolume: 'Tổng tạ',
-      repRecords: 'Kỷ lục theo số lần',
-      repCount_one: '{{count}} lần',
-      repCount_other: '{{count}} lần',
+      repRecords: 'Kỷ lục theo rep',
+      repCount_one: '{{count}} rep',
+      repCount_other: '{{count}} rep',
       sessions_one: '{{count}} buổi tập',
       sessions_other: '{{count}} buổi tập',
       weightReps: '{{weight}} × {{reps}}',
@@ -2477,7 +2478,7 @@ export const vi = {
     },
     level: {
       beginner: 'Mới bắt đầu',
-      intermediate: 'Trung bình',
+      intermediate: 'Trung cấp',
       advanced: 'Nâng cao',
     },
     muscle: {
@@ -2544,7 +2545,7 @@ export const vi = {
     searchPublic: 'Tìm nhóm công khai',
     noPublic: 'Không có nhóm công khai nào',
     join: 'Tham gia',
-    full: 'Đã đủ',
+    full: 'Đủ người',
     decline: 'Từ chối',
     members_one: '{{count}} thành viên',
     members_other: '{{count}} thành viên',
@@ -2590,12 +2591,12 @@ export const vi = {
     message: 'Nhắn {{name}}',
     send: 'Gửi',
     report: 'Báo cáo',
-    deleteMessage: 'Xóa',
+    deleteMessage: 'Xoá',
     messageActions: 'Tin nhắn',
     reply: 'Trả lời',
     replyingTo: 'Đang trả lời {{name}}',
     replyingToSelf: 'Đang trả lời chính bạn',
-    cancelReply: 'Hủy trả lời',
+    cancelReply: 'Huỷ trả lời',
     quoting: 'Trả lời {{name}}: {{body}}',
     heart: 'Thả tim',
     reactWith: 'Bày tỏ {{emoji}}',
@@ -2613,7 +2614,7 @@ export const vi = {
     statTime: 'Thời gian',
     statDistance: 'Quãng đường',
     statExercises: 'Bài tập',
-    statSets: 'Hiệp',
+    statSets: 'Set',
     statActive: 'Vận động',
     shareFoodEmpty: 'Món ăn bạn đăng sẽ hiện ở đây.',
     shareThis: 'Chia sẻ {{name}}',
@@ -2650,22 +2651,22 @@ export const vi = {
     muteChatOnly: 'Tắt tin nhắn trò chuyện',
     muteUpdatesOnly: 'Tắt cập nhật bữa ăn và tập luyện',
     muteAll: 'Tắt tất cả',
-    remove: 'Xóa khỏi nhóm',
-    removeTitle: 'Xóa {{name}}?',
+    remove: 'Xoá khỏi nhóm',
+    removeTitle: 'Xoá {{name}}?',
     removeBody: 'Họ chỉ có thể vào lại nếu được mời.',
     leave: 'Rời nhóm',
     leaveTitle: 'Rời {{name}}?',
     leaveBody: 'Món ăn của bạn vẫn ở trong nhật ký.',
-    leaveLast: 'Nhóm sẽ bị xóa.',
+    leaveLast: 'Nhóm sẽ bị xoá.',
     pickLeader: 'Chọn trưởng nhóm mới',
     leaveAndPass: 'Để {{name}} làm trưởng nhóm và rời đi',
     save: 'Lưu',
     errors: {
       not_found: 'Không có tài khoản nào với tên người dùng hoặc email đó.',
-      already_member: 'Đã ở trong nhóm này.',
+      already_member: 'Người này đã ở trong nhóm.',
       group_full: 'Nhóm này đã đủ người.',
       too_many_groups: 'Bạn đang ở quá nhiều nhóm.',
-      rate_limited: 'Quá nhiều lần một lúc. Thử lại sau.',
+      rate_limited: 'Quá nhiều yêu cầu cùng lúc. Thử lại sau.',
       nudge_closed: 'Đã có người nhắc họ rồi.',
       invite_gone: 'Lời mời này không còn hiệu lực.',
       choose_leader: 'Hãy chọn trưởng nhóm mới trước.',
