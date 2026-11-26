@@ -49,7 +49,9 @@ export function GroupFoodScreen({ groupId, entryId }: { groupId: string; entryId
   const query = useGroupFood(groupId, entryId)
   const insets = useSafeAreaInsets()
   const scrollY = useSharedValue(0)
-  const view = query.data
+  // A route restored without its params leaves the query disabled, and a
+  // disabled query never answers: say it is gone rather than load forever.
+  const view = groupId && entryId ? query.data : null
   const heroHeight = (view?.entry.photo_path ? 298 : 198) + CONTENT_LIFT + insets.top
   return (
     <Screen
