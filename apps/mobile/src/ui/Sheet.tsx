@@ -26,7 +26,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
-import { useOverlayInsets } from './adaptive'
+import { PaneWidthProvider, useOverlayInsets } from './adaptive'
 import { cn } from './cn'
 import { NumpadHost, useNumpadZone } from './Numpad'
 import { Text } from './Text'
@@ -44,8 +44,16 @@ const ScrollBody = cssInterop(KeyboardAwareScrollView, {
 
 /** How long the panel takes to rise. */
 const RISE_MS = 260
+
 /** And to fall, once a drag has decided it is leaving. Quicker than it arrived. */
 const FALL_MS = 180
+
+/** A centred panel's widest, the `max-w-[420px]` it is drawn with. */
+const CENTRED_MAX_WIDTH = 420
+
+/** The room kept either side of a centred panel, its wrapper's `px-6`. */
+const CENTRED_SIDE = 24
+
 /**
  * How far down the handle has to be dragged for the release to dismiss. Also
  * cleared by a flick, since a short fast drag and a long slow one mean the same
@@ -305,8 +313,13 @@ export function SheetSurface({
 }: SheetSurfaceProps) {
   const insets = useSafeAreaInsets()
   const overlay = useOverlayInsets()
-  const { height } = useWindowDimensions()
+  const { height, width } = useWindowDimensions()
   const center = placement === 'center'
+  // The panel's own width, for what inside it sizes itself by arithmetic (a
+  // grid of tiles). Without it they read the page's pane behind the sheet,
+  // which on an iPad is wider than the panel.
+  const strip = width - overlay.left - overlay.right
+  const panelWidth = center ? Math.min(strip - 2 * CENTRED_SIDE, CENTRED_MAX_WIDTH) : strip
   const keysBehind = behindKeyboard && !center && !fullHeight
   const keyboard = useReanimatedKeyboardAnimation()
 
@@ -565,42 +578,43 @@ export function SheetSurface({
           of the screen has to keep reaching it; the scroll view above insets its
           own content instead, so the field stays above the keys and the surface
           runs the whole way down. */}
-        <KeyboardAvoidingView
-          behavior={(fullHeight && !center) || keysBehind ? undefined : 'padding'}
-          // Styled rather than classed: this is the one element here that is not
-          // a plain RN view, and whether NativeWind reaches it is not worth
-          // depending on for the layout that decides the panel's height.
-          //
-          // The margin keeps the scrim visible above a full-height panel, which
-          // flush to the top edge reads as a screen from the wrong direction.
-          //
-          // Any other panel shrinks rather than growing past the top of the
-          // screen, keyboard included, since the padding above is part of this
-          // view's height: the body inside gives way and scrolls.
-          style={[
-            fullHeight && !center
-              ? { flex: 1, marginTop: insets.top }
-              : center
-                ? // Equal margins, so a centred card stays centred.
-                  {
-                    flexShrink: 1,
-                    marginVertical: Math.max(insets.top, insets.bottom) + spacing.md,
-                  }
-                : { flexShrink: 1, marginTop: insets.top + spacing.md },
-            // Clear of iOS's side column on iPhone Duo, and in the trailing
-            // pane when the window has two, so a sheet never rests in the fold.
-            // Both zero on a phone.
-            { marginLeft: overlay.left, marginRight: overlay.right },
-          ]}
-        >
-          <Animated.View
-            className={cn(
-              'gap-md bg-surface px-gutter pt-md',
-              center ? 'w-full max-w-[420px] self-center rounded-card' : 'rounded-t-card',
-              fullHeight && !center ? 'flex-1' : 'shrink',
-              className,
-            )}
-            /* The home indicator's inset OR the gutter, not both added together.
+        <PaneWidthProvider value={panelWidth}>
+          <KeyboardAvoidingView
+            behavior={(fullHeight && !center) || keysBehind ? undefined : 'padding'}
+            // Styled rather than classed: this is the one element here that is not
+            // a plain RN view, and whether NativeWind reaches it is not worth
+            // depending on for the layout that decides the panel's height.
+            //
+            // The margin keeps the scrim visible above a full-height panel, which
+            // flush to the top edge reads as a screen from the wrong direction.
+            //
+            // Any other panel shrinks rather than growing past the top of the
+            // screen, keyboard included, since the padding above is part of this
+            // view's height: the body inside gives way and scrolls.
+            style={[
+              fullHeight && !center
+                ? { flex: 1, marginTop: insets.top }
+                : center
+                  ? // Equal margins, so a centred card stays centred.
+                    {
+                      flexShrink: 1,
+                      marginVertical: Math.max(insets.top, insets.bottom) + spacing.md,
+                    }
+                  : { flexShrink: 1, marginTop: insets.top + spacing.md },
+              // Clear of iOS's side column on iPhone Duo, and in the trailing
+              // pane when the window has two, so a sheet never rests in the fold.
+              // Centred and phone-sized on an iPad. Both zero on a phone.
+              { marginLeft: overlay.left, marginRight: overlay.right },
+            ]}
+          >
+            <Animated.View
+              className={cn(
+                'gap-md bg-surface px-gutter pt-md',
+                center ? 'w-full max-w-[420px] self-center rounded-card' : 'rounded-t-card',
+                fullHeight && !center ? 'flex-1' : 'shrink',
+                className,
+              )}
+              /* The home indicator's inset OR the gutter, not both added together.
              Stacked, they left 54pt of blank surface under the last thing in the
              sheet — invisible under a full-width button, and an obvious band of
              nothing under anything else, like the picture picker's grid. The
@@ -611,27 +625,27 @@ export function SheetSurface({
              the pad is not a keyboard — without this the panel would sit under
              our own keys. At full height the list above insets instead, and
              adding it here as well would count the pad twice. */
-            style={[
-              panel,
-              center
-                ? {
-                    paddingBottom: spacing.gutter,
-                    // Most of the screen, never all of it: the scrim around a
-                    // centred card is what says it floats.
-                    height: fullHeight
-                      ? Math.min(height - insets.top - insets.bottom - 96, 640)
-                      : undefined,
-                  }
-                : {
-                    paddingBottom:
-                      sheetBottomPadding(insets.bottom) + (fullHeight ? 0 : numpad.height),
-                  },
-              keysPadding,
-            ]}
-            accessibilityViewIsModal
-            accessible={false}
-          >
-            {/* The grab area is the row, not the 6pt line: a drag target has to be
+              style={[
+                panel,
+                center
+                  ? {
+                      paddingBottom: spacing.gutter,
+                      // Most of the screen, never all of it: the scrim around a
+                      // centred card is what says it floats.
+                      height: fullHeight
+                        ? Math.min(height - insets.top - insets.bottom - 96, 640)
+                        : undefined,
+                    }
+                  : {
+                      paddingBottom:
+                        sheetBottomPadding(insets.bottom) + (fullHeight ? 0 : numpad.height),
+                    },
+                keysPadding,
+              ]}
+              accessibilityViewIsModal
+              accessible={false}
+            >
+              {/* The grab area is the row, not the 6pt line: a drag target has to be
               catchable without aiming, and the padding is what makes it 30pt tall
               without moving anything below it — `-mt-md` takes back the panel's
               own top padding, which the row then supplies itself.
@@ -639,39 +653,40 @@ export function SheetSurface({
               Announced as a button too, so the handle is not a gesture with no
               keyboard or screen-reader equivalent. Tapping it closes, which is
               what dragging it does. */}
-            {center ? (
-              // The handle's place, so the title does not sit hard on the edge.
-              <View className="h-1" />
-            ) : (
-              <GestureDetector gesture={dragHandle}>
-                <Pressable
-                  className="-mt-md items-center py-md"
-                  onPress={dismiss}
-                  accessibilityRole="button"
-                  accessibilityLabel={closeLabel}
-                  accessibilityState={{ disabled: !dismissible }}
-                  disabled={!dismissible}
-                >
-                  <View className="h-1.5 w-[54px] rounded-full bg-line" />
-                </Pressable>
-              </GestureDetector>
-            )}
+              {center ? (
+                // The handle's place, so the title does not sit hard on the edge.
+                <View className="h-1" />
+              ) : (
+                <GestureDetector gesture={dragHandle}>
+                  <Pressable
+                    className="-mt-md items-center py-md"
+                    onPress={dismiss}
+                    accessibilityRole="button"
+                    accessibilityLabel={closeLabel}
+                    accessibilityState={{ disabled: !dismissible }}
+                    disabled={!dismissible}
+                  >
+                    <View className="h-1.5 w-[54px] rounded-full bg-line" />
+                  </Pressable>
+                </GestureDetector>
+              )}
 
-            {title ? (
-              <View className="flex-row items-center justify-between gap-md">
-                {titleLeading}
-                <Text variant="subtitle" className="flex-1" numberOfLines={titleLines}>
-                  {title}
-                </Text>
-                {titleAction}
-              </View>
-            ) : null}
-            {description ? <Text variant="body">{description}</Text> : null}
+              {title ? (
+                <View className="flex-row items-center justify-between gap-md">
+                  {titleLeading}
+                  <Text variant="subtitle" className="flex-1" numberOfLines={titleLines}>
+                    {title}
+                  </Text>
+                  {titleAction}
+                </View>
+              ) : null}
+              {description ? <Text variant="body">{description}</Text> : null}
 
-            {children ? body : null}
-            {footer}
-          </Animated.View>
-        </KeyboardAvoidingView>
+              {children ? body : null}
+              {footer}
+            </Animated.View>
+          </KeyboardAvoidingView>
+        </PaneWidthProvider>
       </NumpadHost>
 
       {/* AND ITS OWN TOAST OUTLET, for the reason the numpad host above it

@@ -20,8 +20,19 @@ import {
 } from '@/lib/places'
 import { ReplayMask } from '@/lib/replay-mask'
 import { useDebouncedValue } from '@/lib/use-debounce'
+import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, Icon, IconButton, SearchField, Spinner, Tappable, Text } from '@/ui'
+import {
+  Button,
+  Icon,
+  IconButton,
+  SearchField,
+  Spinner,
+  Tappable,
+  Text,
+  useWindowLayout,
+} from '@/ui'
+import { overlayInsets } from '@/ui/adaptive'
 
 import { placeCategoryIcon } from '../lib/placeIcons'
 import {
@@ -111,6 +122,11 @@ export function PlacePickerSheet({
   const { t } = useTranslation(['places', 'common', 'logging'])
   const colors = useThemeColors()
   const insets = useSafeAreaInsets()
+  // The map runs edge to edge. What is laid over and under it keeps out of
+  // iOS's side column on iPhone Duo, and on an iPad stands at a sheet's width,
+  // centred. A full-screen modal covers the tab rail, so no column comes off.
+  const layout = useWindowLayout()
+  const edges = layout.tablet ? overlayInsets(layout) : { left: layout.left, right: layout.right }
   const language = currentLanguage()
   const maps = mapsModule()
   const mapRef = useRef<MapViewType>(null)
@@ -457,8 +473,8 @@ export function PlacePickerSheet({
 
               {/* Close and search, floating over the map's top edge. */}
               <View
-                className="absolute left-0 right-0 flex-row items-center gap-2 px-gutter"
-                style={{ top: insets.top + 8 }}
+                className="absolute flex-row items-center gap-2 px-gutter"
+                style={{ top: insets.top + 8, left: edges.left, right: edges.right }}
               >
                 <IconButton
                   size="xs"
@@ -485,7 +501,10 @@ export function PlacePickerSheet({
               </View>
 
               {locating && here.status !== 'unavailable' ? (
-                <View className="absolute right-gutter" style={{ bottom: SHEET_OVERLAP + 12 }}>
+                <View
+                  className="absolute"
+                  style={{ bottom: SHEET_OVERLAP + 12, right: spacing.gutter + edges.right }}
+                >
                   <IconButton
                     size="xs"
                     variant="neutral"
@@ -500,7 +519,11 @@ export function PlacePickerSheet({
 
             <View
               className="flex-1 rounded-t-sheet bg-surface"
-              style={{ marginTop: -SHEET_OVERLAP }}
+              style={{
+                marginTop: -SHEET_OVERLAP,
+                paddingLeft: edges.left,
+                paddingRight: edges.right,
+              }}
             >
               <View className="items-center pt-2">
                 <View className="h-1.5 w-10 rounded-full bg-track" />

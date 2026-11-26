@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useMemo, useRef, useState } from 'react'
+import { type ReactElement, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { ScrollView, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAvatarUrl, useUserId } from '@/data'
 import {
   type SocialComment,
@@ -22,8 +23,21 @@ import {
   useSocialTask,
   useSocialTime,
 } from '@/features/social/components'
+import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, cn, Icon, IconButton, Screen, Sheet, Tappable, Text, TextField } from '@/ui'
+import {
+  Aside,
+  Button,
+  cn,
+  Icon,
+  IconButton,
+  Screen,
+  Sheet,
+  Tappable,
+  Text,
+  TextField,
+  useWindowLayout,
+} from '@/ui'
 
 const COMMENT_LIMIT = 500
 
@@ -389,6 +403,48 @@ function Post({ id }: { id: string }) {
     outbox.send(body.trim())
     setBody('')
   }
+  // With room for two panes, the post stands on its own and the conversation
+  // beside it, with the composer under the comments it adds to. On one, the
+  // post heads the list of comments, as it always has.
+  const { split } = useWindowLayout()
+  const insets = useSafeAreaInsets()
+  const pending = [...outbox.pending]
+    .reverse()
+    .map((item) => (
+      <OutgoingComment
+        key={item.requestId}
+        item={item}
+        onRetry={() => outbox.retry(item.requestId)}
+      />
+    ))
+  /* Only when there is something to say: empty, its padding sat between the
+     post and its first comment as a blank band. */
+  const notice = own.data?.quarantined ? (
+    <View className="gap-3 px-5 py-4">
+      <ReviewNotice
+        status="quarantined"
+        reason={own.data.review_reason}
+        kind="profile"
+        id={own.data.user_id}
+      />
+      <Button variant="secondary" onPress={() => router.push('/settings/account')}>
+        {t('editProfile')}
+      </Button>
+    </View>
+  ) : null
+  const commentList = (header: ReactElement) => (
+    <SocialList
+      query={comments}
+      variant="feed"
+      skeleton="comments"
+      rowKey={(comment) => comment.id}
+      renderRow={(comment, visible) => (
+        <CommentRow comment={comment} owner={post.data?.author_id ?? ''} visible={visible} />
+      )}
+      empty={outbox.pending.length > 0 ? null : t('emptyComments')}
+      header={header}
+    />
+  )
   return (
     <Screen
       scroll={false}
@@ -417,48 +473,27 @@ function Post({ id }: { id: string }) {
         ) : undefined
       }
     >
-      {post.data ? (
-        <SocialList
-          query={comments}
-          variant="feed"
-          skeleton="comments"
-          rowKey={(comment) => comment.id}
-          renderRow={(comment, visible) => (
-            <CommentRow comment={comment} owner={post.data?.author_id ?? ''} visible={visible} />
-          )}
-          empty={outbox.pending.length > 0 ? null : t('emptyComments')}
-          header={
-            <View>
-              <PostCard post={post.data} detail />
-              {[...outbox.pending].reverse().map((item) => (
-                <OutgoingComment
-                  key={item.requestId}
-                  item={item}
-                  onRetry={() => outbox.retry(item.requestId)}
-                />
-              ))}
-              {/* Only when there is something to say: empty, its padding sat
-                  between the post and its first comment as a blank band. */}
-              {own.data?.quarantined ? (
-                <View className="gap-3 px-5 py-4">
-                  {own.data ? (
-                    <>
-                      <ReviewNotice
-                        status="quarantined"
-                        reason={own.data.review_reason}
-                        kind="profile"
-                        id={own.data.user_id}
-                      />
-                      <Button variant="secondary" onPress={() => router.push('/settings/account')}>
-                        {t('editProfile')}
-                      </Button>
-                    </>
-                  ) : null}
-                </View>
-              ) : null}
-            </View>
-          }
-        />
+      {post.data && split ? (
+        <>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            // The composer is under the other pane, so nothing below this one
+            // clears the home indicator for it.
+            contentContainerStyle={{ paddingBottom: insets.bottom + spacing.gutter }}
+          >
+            <PostCard post={post.data} detail />
+            {notice}
+          </ScrollView>
+          <Aside>{commentList(<View>{pending}</View>)}</Aside>
+        </>
+      ) : post.data ? (
+        commentList(
+          <View>
+            <PostCard post={post.data} detail />
+            {pending}
+            {notice}
+          </View>,
+        )
       ) : (
         <View className="p-5">
           <QueryNotice

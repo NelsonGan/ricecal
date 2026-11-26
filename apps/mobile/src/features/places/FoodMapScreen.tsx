@@ -15,8 +15,18 @@ import { datePattern } from '@/lib/dates'
 import { useBack } from '@/lib/navigation'
 import { useLocationsPreference } from '@/lib/places'
 import { ReplayMask } from '@/lib/replay-mask'
+import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
-import { Button, FLOAT_SHADOW, Icon, Skeleton, Tappable, Text } from '@/ui'
+import {
+  Button,
+  FLOAT_SHADOW,
+  Icon,
+  Skeleton,
+  Tappable,
+  Text,
+  useOverlayInsets,
+  useWindowLayout,
+} from '@/ui'
 
 import { AppMap, mapsModule } from './components/AppMap'
 import { Chevron } from './components/Chevron'
@@ -83,6 +93,13 @@ export function FoodMapScreen() {
   const { enabled } = useLocationsPreference(userId)
   const insets = useSafeAreaInsets()
   const { width, height } = useWindowDimensions()
+  // The map runs under everything, edge to edge. What floats over it keeps out
+  // of iOS's side column on iPhone Duo, and the panel and the switch between
+  // periods stand where every overlay does: the trailing pane when the Duo is
+  // open, so neither lies across the fold, and phone width, centred, on an
+  // iPad. All of it zero on a phone.
+  const layout = useWindowLayout()
+  const overlay = useOverlayInsets()
   const mapRef = useRef<MapViewType>(null)
   const maps = mapsModule()
   const colors = useThemeColors()
@@ -368,10 +385,14 @@ export function FoodMapScreen() {
           of that kind, with its arrows, heads the panel below. */}
       <View
         className="absolute left-0 right-0 top-0 h-10 items-center justify-center"
-        style={{ marginTop: insets.top + 6 }}
+        style={{
+          marginTop: insets.top + 6,
+          paddingLeft: overlay.left,
+          paddingRight: overlay.right,
+        }}
         pointerEvents="box-none"
       >
-        <View className="absolute left-gutter">
+        <View className="absolute" style={{ left: spacing.gutter + layout.left }}>
           <RoundButton onPress={back} label={t('common:a11y.back')}>
             <Chevron direction="left" color={colors.ink} />
           </RoundButton>
@@ -407,7 +428,10 @@ export function FoodMapScreen() {
       </View>
 
       {/* Locate and fit, stacked over the panel's top right corner. */}
-      <View className="absolute right-gutter gap-2" style={{ bottom: panelHeight + 12 }}>
+      <View
+        className="absolute gap-2"
+        style={{ bottom: panelHeight + 12, right: spacing.gutter + overlay.right }}
+      >
         {showMe ? (
           <RoundButton onPress={locateMe} label={t('places:current')}>
             <Icon set="ui" name="locate" size={20} />
@@ -424,13 +448,19 @@ export function FoodMapScreen() {
         <PlaceCard
           group={placed}
           bottom={insets.bottom + 8}
+          edges={overlay}
           onClose={() => setSelection(null)}
           onOpenEntry={openEntry}
         />
       ) : (
         <View
-          className="absolute bottom-0 left-0 right-0 rounded-t-sheet bg-surface"
-          style={{ height: panelHeight, paddingBottom: insets.bottom }}
+          className="absolute bottom-0 rounded-t-sheet bg-surface"
+          style={{
+            height: panelHeight,
+            paddingBottom: insets.bottom,
+            left: overlay.left,
+            right: overlay.right,
+          }}
         >
           <View className="items-center pt-2">
             <View className="h-1 w-9 rounded-full bg-track" />
@@ -624,11 +654,14 @@ function PlaceTile({
 function PlaceCard({
   group,
   bottom,
+  edges,
   onClose,
   onOpenEntry,
 }: {
   group: PlaceGroup
   bottom: number
+  /** The strip it floats in. See `useOverlayInsets`. */
+  edges: { left: number; right: number }
   onClose: () => void
   onOpenEntry: (entry: LocatedEntry) => void
 }) {
@@ -636,8 +669,11 @@ function PlaceCard({
   const colors = useThemeColors()
   return (
     <View
-      className="absolute left-3 right-3 rounded-card bg-surface px-md pb-md pt-3"
-      style={[FLOAT_SHADOW, { bottom, height: PLACE_CARD_HEIGHT }]}
+      className="absolute rounded-card bg-surface px-md pb-md pt-3"
+      style={[
+        FLOAT_SHADOW,
+        { bottom, height: PLACE_CARD_HEIGHT, left: edges.left + 12, right: edges.right + 12 },
+      ]}
     >
       <View className="flex-row items-center gap-3">
         <View className="h-12 w-12 items-center justify-center overflow-hidden rounded-sm bg-surface-alt">

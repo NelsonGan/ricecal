@@ -25,7 +25,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { spacing } from '@/theme/tokens'
 import { splitPanes } from './Aside'
-import { PaneWidthProvider, paneFrames, useWindowLayout } from './adaptive'
+import {
+  PaneWidthProvider,
+  paneFrames,
+  singlePaneFrame,
+  useNavColumn,
+  useWindowLayout,
+} from './adaptive'
 import { useNavInset } from './BottomNav'
 import { cn } from './cn'
 import { NumpadHost, useNumpadZone } from './Numpad'
@@ -157,6 +163,14 @@ export type ScreenProps = Omit<ScrollViewProps, 'contentContainerStyle'> & {
   /** Drop the 20pt screen gutter, for content that bleeds to the edge. */
   flush?: boolean
   /**
+   * Take the window's whole width for one pane, for a page that sizes a grid
+   * to it (`usePaneWidth`, `gridColumns`). Without it, a page of one pane keeps
+   * to a readable column on an iPad. On iPhone Duo open it lays the page
+   * symmetric about the fold, so an even grid's middle gap falls there. See
+   * `singlePaneFrame`.
+   */
+  wide?: boolean
+  /**
    * Whether this shell owns the top safe-area inset.
    *
    * Disable only when a fixed header above the shell already pads itself for
@@ -242,6 +256,7 @@ export function Screen({
   floatingTrailing,
   toastsAboveFloating = false,
   flush = false,
+  wide = false,
   safeAreaTop = true,
   scroll = true,
   keyboardAvoid = 'padding',
@@ -254,6 +269,8 @@ export function Screen({
   // A tab screen's bottom is under the floating nav bar. Zero everywhere else.
   const navInset = useNavInset()
   const layout = useWindowLayout()
+  // The tab rail's column on an iPad, on a tab screen only. Zero elsewhere.
+  const navColumn = useNavColumn()
   const panes = layout.split ? splitPanes(children) : null
   const { height: windowHeight } = useWindowDimensions()
 
@@ -359,8 +376,37 @@ export function Screen({
   })
 
   /** Where the panes sit across the window. Null for the second on a phone. */
-  const frames = paneFrames(layout)
+  const frames = paneFrames(layout, navColumn)
   const asideFrame = panes ? frames.aside : null
+  /**
+   * With one pane, the column the page is drawn in, and how far in from each
+   * side of the page box that is. Zero on a phone; on an iPad the readable
+   * column, centred; on iPhone Duo open, a `wide` page made symmetric about the
+   * fold. The scroll view still spans the box, so a drag beside the column
+   * scrolls the page too.
+   */
+  const single = singlePaneFrame(layout, navColumn, wide)
+  // Measured against the whole page box, not `frames.main`: on a window with
+  // room for two, that is the first of two panes this page does not have.
+  const whole = paneFrames({ ...layout, split: false }, navColumn).main
+  const inset = asideFrame
+    ? { left: 0, right: 0 }
+    : {
+        left: single.left - whole.left,
+        right: whole.left + whole.width - single.left - single.width,
+      }
+  /**
+   * Where the floating corners stand: in the page's column with one pane, and
+   * with two at the outer edges of the pair, which on a wide iPad is short of
+   * the window's. The add button belongs to the diary beside it, not to an
+   * empty margin.
+   */
+  const corners = asideFrame
+    ? {
+        left: frames.main.left - (layout.left + navColumn),
+        right: layout.width - layout.right - (asideFrame.left + asideFrame.width),
+      }
+    : inset
   // A number rather than the frame, which is a new object every render: the
   // pad's host reruns its reveal whenever `revealForNumpad` changes.
   const asideLeft = asideFrame?.left
@@ -400,6 +446,8 @@ export function Screen({
           // footer. See `contentClassName` for why it is conditional.
           ...(contentClassName ? { flexGrow: 1 } : null),
           padding: flush ? 0 : spacing.gutter,
+          paddingLeft: (flush ? 0 : spacing.gutter) + inset.left,
+          paddingRight: (flush ? 0 : spacing.gutter) + inset.right,
           // Every route draws its own title bar with `headerShown: false`, so the
           // status bar is this view's problem. Without the top inset the first
           // line of every screen sits under the clock.
@@ -456,6 +504,8 @@ export function Screen({
         className={cn('flex-1', !flush && 'p-gutter', contentClassName)}
         style={{
           gap: spacing.stack,
+          paddingLeft: (flush ? 0 : spacing.gutter) + inset.left,
+          paddingRight: (flush ? 0 : spacing.gutter) + inset.right,
           paddingTop: header ? 0 : (flush ? 0 : spacing.gutter) + (safeAreaTop ? insets.top : 0),
           // No scroll view to inset, so the content box is what shrinks — the
           // same thing `behavior="padding"` does for the shell when a system
@@ -497,7 +547,8 @@ export function Screen({
       <Reanimated.View
         onLayout={scroll ? measureFooter : undefined}
         className="gap-md bg-canvas px-gutter pt-md"
-        style={footerPad}
+        // In the page's column, under the content it acts on.
+        style={[footerPad, { marginLeft: inset.left, marginRight: inset.right }]}
       >
         {footer}
       </Reanimated.View>
@@ -543,9 +594,11 @@ export function Screen({
   // Flush ones would run edge to edge into each other, two rows reading as
   // one, so each gives up half of a narrow seam.
   const seam = flush ? FOLD_SEAM / 2 : 0
+  // Centred: the panes fill the box on iPhone Duo, and on a wide iPad they
+  // stop at `TABLET_PANE_MAX` each and stand in the middle of it.
   const body =
     panes && asideFrame ? (
-      <View className="flex-1 flex-row">
+      <View className="flex-1 flex-row justify-center">
         <View style={{ width: frames.main.width, paddingRight: seam }}>
           <PaneWidthProvider value={frames.main.width - seam}>
             {renderBody(panes.main, true)}
@@ -559,7 +612,7 @@ export function Screen({
         </View>
       </View>
     ) : (
-      renderBody(children, true)
+      <PaneWidthProvider value={single.width}>{renderBody(children, true)}</PaneWidthProvider>
     )
 
   /**
@@ -578,7 +631,9 @@ export function Screen({
         style={[
           {
             position: 'absolute',
-            ...(side === 'left' ? { left: spacing.gutter } : { right: spacing.gutter }),
+            ...(side === 'left'
+              ? { left: spacing.gutter + corners.left }
+              : { right: spacing.gutter + corners.right }),
             bottom: spacing.gutter + navInset,
             alignItems: side === 'left' ? 'flex-start' : 'flex-end',
           },
@@ -609,7 +664,12 @@ export function Screen({
             camera. The canvas still runs under it; only the page stops short.
             Everything absolutely placed below, the corners and the toasts,
             measures from this box, so they move in with it. */}
-        <View className="flex-1" style={{ marginLeft: layout.left, marginRight: layout.right }}>
+        {/* On an iPad's tab screen the rail's column comes off the leading
+            side as well. */}
+        <View
+          className="flex-1"
+          style={{ marginLeft: layout.left + navColumn, marginRight: layout.right }}
+        >
           {header ? (
             /* Outside `body`, so neither a drag nor keyboard-driven reveal can
              move the page's way out. The bottom padding is the same stack gap

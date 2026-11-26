@@ -55,6 +55,7 @@ import {
   Tappable,
   Text,
   TextField,
+  useOverlayInsets,
   useToast,
 } from '@/ui'
 
@@ -863,6 +864,7 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
   const toast = useToast()
   const userId = useUserId()
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const overlay = useOverlayInsets()
   const [confirmation, setConfirmation] = useState('')
   const [pending, setPending] = useState(false)
   const running = useRef(false)
@@ -944,7 +946,12 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
         animationType="fade"
         onRequestClose={() => setDetailsOpen(false)}
       >
-        <View className="flex-1 justify-center bg-black/30 px-6 py-16">
+        <View
+          className="flex-1 justify-center bg-black/30 py-16"
+          // In the overlay strip, as `Dialog` is: off iPhone Duo's fold and
+          // phone-sized on an iPad. The whole window on a phone.
+          style={{ paddingLeft: overlay.left + 24, paddingRight: overlay.right + 24 }}
+        >
           <Tappable
             haptics={false}
             className="absolute inset-0"
@@ -952,7 +959,10 @@ function DeleteAccount({ onClose }: { onClose: () => void }) {
             accessibilityRole="button"
             onPress={() => setDetailsOpen(false)}
           />
-          <View className="max-h-full rounded-lg bg-surface p-5" accessibilityViewIsModal>
+          <View
+            className="max-h-full w-full max-w-[420px] self-center rounded-lg bg-surface p-5"
+            accessibilityViewIsModal
+          >
             <ScrollView>
               <Text variant="subtitle">{t('profile:account.deleteDetails')}</Text>
               <View className="gap-3 py-4">

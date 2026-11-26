@@ -2,7 +2,8 @@ import { Children, cloneElement, Fragment, isValidElement, type ReactNode } from
 
 /**
  * The part of a screen that moves into a second pane when the window has room
- * for two (`useWindowLayout().split`), which today means iPhone Duo open.
+ * for two (`useWindowLayout().split`), which today means iPhone Duo open and
+ * an iPad.
  *
  * Anywhere else it is nothing at all: its children render where it stands, so
  * a phone draws the screen exactly as written. That is the point of marking a

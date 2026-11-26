@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useCallback, useRef, useState } from 'react'
+import { type ReactElement, useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import { useAvatarUrl, useEntitlement, useProfile, useUserId } from '@/data'
@@ -14,7 +14,20 @@ import {
   SocialList,
   SocialPhoto,
 } from '@/features/social/components'
-import { Badge, Button, Icon, IconButton, ProRing, Screen, Sheet, Tappable, Text } from '@/ui'
+import {
+  Badge,
+  Button,
+  gridColumns,
+  Icon,
+  IconButton,
+  ProRing,
+  Screen,
+  Sheet,
+  Tappable,
+  Text,
+  usePaneWidth,
+  useWindowLayout,
+} from '@/ui'
 
 export default function ProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -45,96 +58,100 @@ function Profile({ id }: { id: string }) {
   const avatarPath = person?.avatar_path ?? account?.avatar_path
   const ownAvatar = useAvatarUrl(mine ? (avatarPath ?? undefined) : undefined)
   const header = visible ? (
-    <View className="gap-4 border-b-2 border-track bg-surface px-5 pb-5 pt-2">
-      <View className="flex-row items-center gap-4">
-        <ProRing pro={person?.is_pro ?? (mine && entitled)} size="lg">
-          <SocialPhoto
-            path={mine ? null : person?.avatar_path}
-            privateUri={ownAvatar.data}
-            avatar
-            size="lg"
-            label={name}
-          />
-        </ProRing>
-        <View className="min-w-0 flex-1 gap-1">
-          <Text variant="subtitle" numberOfLines={1}>
-            {name}
-          </Text>
-          <View className="flex-row flex-wrap items-center gap-2">
-            {handle ? (
-              <Text variant="meta" numberOfLines={1}>
-                @{handle}
-              </Text>
-            ) : null}
-            {person?.is_followed_by ? (
-              <Badge tone="neutral" size="sm">
-                {t('followsYou')}
-              </Badge>
-            ) : null}
+    <View className="border-b-2 border-track bg-surface px-5 pb-5 pt-2">
+      {/* The band runs the width of the grid under it; what is in it keeps to
+          a phone's, so an iPad's button is not a metre long. */}
+      <View className="w-full max-w-[600px] gap-4 self-center">
+        <View className="flex-row items-center gap-4">
+          <ProRing pro={person?.is_pro ?? (mine && entitled)} size="lg">
+            <SocialPhoto
+              path={mine ? null : person?.avatar_path}
+              privateUri={ownAvatar.data}
+              avatar
+              size="lg"
+              label={name}
+            />
+          </ProRing>
+          <View className="min-w-0 flex-1 gap-1">
+            <Text variant="subtitle" numberOfLines={1}>
+              {name}
+            </Text>
+            <View className="flex-row flex-wrap items-center gap-2">
+              {handle ? (
+                <Text variant="meta" numberOfLines={1}>
+                  @{handle}
+                </Text>
+              ) : null}
+              {person?.is_followed_by ? (
+                <Badge tone="neutral" size="sm">
+                  {t('followsYou')}
+                </Badge>
+              ) : null}
+            </View>
           </View>
         </View>
-      </View>
 
-      {bio ? <Text>{bio}</Text> : null}
+        {bio ? <Text>{bio}</Text> : null}
 
-      <View className="flex-row items-stretch rounded-md bg-track px-1 py-1">
-        <View className="min-h-sm flex-1 items-center justify-center px-1">
-          <Text variant="label" className="text-center" numberOfLines={2}>
-            {/* `post_count` is meals only, which is what an app from before
+        <View className="flex-row items-stretch rounded-md bg-track px-1 py-1">
+          <View className="min-h-sm flex-1 items-center justify-center px-1">
+            <Text variant="label" className="text-center" numberOfLines={2}>
+              {/* `post_count` is meals only, which is what an app from before
                 workout posts draws it over; the workouts are the ones this
                 viewer can see. */}
-            {t('posts', { count: (person?.post_count ?? 0) + workouts })}
-          </Text>
+              {t('posts', { count: (person?.post_count ?? 0) + workouts })}
+            </Text>
+          </View>
+          <Tappable
+            className="min-h-sm flex-1 items-center justify-center px-1"
+            accessibilityRole="button"
+            accessibilityLabel={t('followers', { count: person?.follower_count ?? 0 })}
+            onPress={() =>
+              router.push({
+                pathname: '/social/connections/[id]',
+                params: { id, direction: 'followers' },
+              })
+            }
+          >
+            <Text variant="label" className="text-center" numberOfLines={2}>
+              {t('followers', { count: person?.follower_count ?? 0 })}
+            </Text>
+          </Tappable>
+          <Tappable
+            className="min-h-sm flex-1 items-center justify-center px-1"
+            accessibilityRole="button"
+            accessibilityLabel={`${person?.following_count ?? 0} ${t('following')}`}
+            onPress={() =>
+              router.push({
+                pathname: '/social/connections/[id]',
+                params: { id, direction: 'following' },
+              })
+            }
+          >
+            <Text variant="label" className="text-center" numberOfLines={2}>
+              {person?.following_count ?? 0} {t('following')}
+            </Text>
+          </Tappable>
         </View>
-        <Tappable
-          className="min-h-sm flex-1 items-center justify-center px-1"
-          accessibilityRole="button"
-          accessibilityLabel={t('followers', { count: person?.follower_count ?? 0 })}
-          onPress={() =>
-            router.push({
-              pathname: '/social/connections/[id]',
-              params: { id, direction: 'followers' },
-            })
-          }
-        >
-          <Text variant="label" className="text-center" numberOfLines={2}>
-            {t('followers', { count: person?.follower_count ?? 0 })}
-          </Text>
-        </Tappable>
-        <Tappable
-          className="min-h-sm flex-1 items-center justify-center px-1"
-          accessibilityRole="button"
-          accessibilityLabel={`${person?.following_count ?? 0} ${t('following')}`}
-          onPress={() =>
-            router.push({
-              pathname: '/social/connections/[id]',
-              params: { id, direction: 'following' },
-            })
-          }
-        >
-          <Text variant="label" className="text-center" numberOfLines={2}>
-            {person?.following_count ?? 0} {t('following')}
-          </Text>
-        </Tappable>
-      </View>
 
-      {mine ? (
-        <>
-          {person?.quarantined ? (
-            <ReviewNotice
-              status={person.quarantined ? 'quarantined' : person.review_status}
-              reason={person.review_reason}
-              kind="profile"
-              id={person.user_id}
-            />
-          ) : null}
-          <Button fullWidth variant="secondary" onPress={() => router.push('/settings/account')}>
-            {t('editProfile')}
-          </Button>
-        </>
-      ) : (
-        <FollowButton id={id} following={person?.is_following ?? false} fullWidth />
-      )}
+        {mine ? (
+          <>
+            {person?.quarantined ? (
+              <ReviewNotice
+                status={person.quarantined ? 'quarantined' : person.review_status}
+                reason={person.review_reason}
+                kind="profile"
+                id={person.user_id}
+              />
+            ) : null}
+            <Button fullWidth variant="secondary" onPress={() => router.push('/settings/account')}>
+              {t('editProfile')}
+            </Button>
+          </>
+        ) : (
+          <FollowButton id={id} following={person?.is_following ?? false} fullWidth />
+        )}
+      </View>
     </View>
   ) : undefined
   const action = visible ? (
@@ -156,18 +173,26 @@ function Profile({ id }: { id: string }) {
       <Screen
         scroll={false}
         flush
+        // The grid takes the width it is given. See `PostGrid`.
+        wide
         header={<SocialBar title={t(mine ? 'myProfile' : 'profile')} action={action} />}
       >
         {visible ? (
-          <SocialList
-            query={posts}
-            rowKey={(post) => post.id}
-            renderRow={(post, visible) => <PostTile post={post} visible={visible} />}
-            header={header}
-            empty={t('emptyPosts')}
-            variant="grid"
-            columns={2}
-          />
+          <PostGrid>
+            {(columns) => (
+              <SocialList
+                // A list cannot change its column count in place.
+                key={columns}
+                query={posts}
+                rowKey={(post) => post.id}
+                renderRow={(post, visible) => <PostTile post={post} visible={visible} />}
+                header={header}
+                empty={t('emptyPosts')}
+                variant="grid"
+                columns={columns}
+              />
+            )}
+          </PostGrid>
         ) : (
           <View className="p-5">
             <QueryNotice
@@ -208,4 +233,17 @@ function Profile({ id }: { id: string }) {
       </Sheet>
     </>
   )
+}
+
+/**
+ * How many posts to a row: two on a phone as always, as many as fit at about
+ * a phone's half-width on an iPad, and an even count on iPhone Duo open, whose
+ * page is laid symmetric about the fold so the fold falls between two tiles.
+ * A component because the width is the pane's, which `Screen` provides only to
+ * what it renders.
+ */
+function PostGrid({ children }: { children: (columns: number) => ReactElement }) {
+  const width = usePaneWidth()
+  const { fold } = useWindowLayout()
+  return children(gridColumns(width, { min: 180, gap: 4, even: fold }))
 }

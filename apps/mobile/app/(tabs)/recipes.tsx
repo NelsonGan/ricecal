@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router'
-import { useRef, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Keyboard, type TextInputInstance, View } from 'react-native'
 
@@ -28,10 +28,12 @@ import {
 import { ScreenTitle } from '@/features/shared'
 import { currentLanguage } from '@/i18n'
 import { useDebouncedValue } from '@/lib/use-debounce'
+import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   Button,
   EmptyState,
+  gridColumns,
   Icon,
   IconButton,
   Screen,
@@ -40,7 +42,9 @@ import {
   Sheet,
   Skeleton,
   Text,
+  usePaneWidth,
   useToast,
+  useWindowLayout,
 } from '@/ui'
 
 const SHELVES: RecipeShelf[] = ['mine', 'community']
@@ -210,7 +214,8 @@ export default function RecipesTab() {
   const logOne = (recipe: Recipe) => log(shownRecipe(recipe, currentLanguage()), 1, logDate)
 
   return (
-    <Screen>
+    // Wide: the grid takes as many columns as the window holds. See `ShelfGrid`.
+    <Screen wide>
       <ScreenTitle
         title={t('recipes:title')}
         trailing={
@@ -246,6 +251,8 @@ export default function RecipesTab() {
       />
 
       <SegmentedControl
+        // Two words do not need the width of an iPad. Phone width at most.
+        className="w-full max-w-[520px] self-center"
         options={SHELVES.map((value) => ({ value, label: t(`recipes:shelf.${value}`) }))}
         value={shelf}
         onChange={(next) => {
@@ -259,6 +266,7 @@ export default function RecipesTab() {
 
       {searchOpen ? (
         <SearchField
+          containerClassName="w-full max-w-[520px] self-center"
           ref={searchField}
           autoFocus
           value={query}
@@ -273,17 +281,19 @@ export default function RecipesTab() {
       {/* The wait holds the grid's two-column shape, so the answer landing does
           not jump a stack of rows into wide cards. */}
       {loading ? (
-        <View className="flex-row flex-wrap justify-between gap-y-4">
-          {SKELETON_CARDS.map((id) => (
-            <View key={id} className="w-[48%] gap-2">
-              <View className="aspect-[4/3] overflow-hidden rounded-tile">
-                <Skeleton width="100%" height="100%" rounded={false} className="bg-line" />
+        <ShelfGrid rowGap={16}>
+          {(width) =>
+            SKELETON_CARDS.map((id) => (
+              <View key={id} className="gap-2" style={{ width }}>
+                <View className="aspect-[4/3] overflow-hidden rounded-tile">
+                  <Skeleton width="100%" height="100%" rounded={false} className="bg-line" />
+                </View>
+                <Skeleton width="80%" height={16} />
+                <Skeleton width="55%" height={12} />
               </View>
-              <Skeleton width="80%" height={16} />
-              <Skeleton width="55%" height={12} />
-            </View>
-          ))}
-        </View>
+            ))
+          }
+        </ShelfGrid>
       ) : null}
 
       {!loading && recipes.length === 0 ? (
@@ -322,16 +332,19 @@ export default function RecipesTab() {
       ) : null}
 
       {recipes.length > 0 ? (
-        <View className="flex-row flex-wrap justify-between gap-y-5">
-          {recipes.map((recipe) => (
-            <RecipeCard
-              key={recipe.id}
-              recipe={recipe}
-              onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
-              onLog={() => logOne(recipe)}
-            />
-          ))}
-        </View>
+        <ShelfGrid rowGap={20}>
+          {(width) =>
+            recipes.map((recipe) => (
+              <RecipeCard
+                key={recipe.id}
+                width={width}
+                recipe={recipe}
+                onPress={() => router.push({ pathname: '/recipe/[id]', params: { id: recipe.id } })}
+                onLog={() => logOne(recipe)}
+              />
+            ))
+          }
+        </ShelfGrid>
       ) : null}
 
       <Sheet
@@ -407,5 +420,47 @@ export default function RecipesTab() {
         <ImportVideoPanel onSubmit={submitVideo} />
       </Sheet>
     </Screen>
+  )
+}
+
+/** The narrowest a recipe card gets before the grid drops a column. */
+const CARD_MIN = 172
+
+/** The least space between two cards in a row. */
+const CARD_GAP = 14
+
+/**
+ * The shelf, as many cards to a row as fit at `CARD_MIN`: two on a phone, as
+ * it always was, and on an iPad three to six by its size and which way up it
+ * is (four on a 13-inch one upright). On iPhone Duo
+ * open the page is laid symmetric about the fold and the count kept even, so
+ * the fold falls between two cards rather than through one.
+ *
+ * A component of its own because the width is the pane's, which `Screen`
+ * provides only to what it renders.
+ */
+function ShelfGrid({
+  rowGap,
+  children,
+}: {
+  rowGap: number
+  children: (cardWidth: number) => ReactNode
+}) {
+  const pane = usePaneWidth()
+  const { fold } = useWindowLayout()
+  const inner = pane - 2 * spacing.gutter
+  const columns = gridColumns(inner, { min: CARD_MIN, gap: CARD_GAP, even: fold })
+  const width = Math.floor((inner - CARD_GAP * (columns - 1)) / columns)
+  // The rounding goes into the gaps, so the row spans the pane and an even
+  // grid's middle gap is centred on it. Rounded down to a hundredth: a row
+  // that sums to the width exactly can overshoot it in floating point and
+  // wrap its last card.
+  const columnGap =
+    columns > 1 ? Math.floor(((inner - width * columns) / (columns - 1)) * 100) / 100 : 0
+
+  return (
+    <View className="flex-row flex-wrap" style={{ rowGap, columnGap }}>
+      {children(width)}
+    </View>
   )
 }

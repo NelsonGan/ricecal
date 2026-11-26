@@ -16,10 +16,13 @@ export type RecipeCardProps = {
   onPress: () => void
   /** One serving into the day. Absent where logging is not on offer. */
   onLog?: () => void
+  /** The card's width, from the grid that sizes its columns to the window. */
+  width: number
 }
 
 /**
- * One recipe on the Recipes shelf, two to a row.
+ * One recipe on the Recipes shelf, two to a row on a phone (more on a wider
+ * window: see the shelf's `ShelfGrid`).
  *
  * Two columns rather than the three the Settings shelf had, because a cook
  * picks dinner by the picture and by how long it takes, and at a third of the
@@ -27,7 +30,7 @@ export type RecipeCardProps = {
  * pill stays on the photo; the plus beside the name is the one-tap log this app
  * exists for, so eating the same curry three days running is three taps.
  */
-export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
+export function RecipeCard({ recipe, onPress, onLog, width }: RecipeCardProps) {
   const { t } = useTranslation(['recipes', 'common'])
   const duration = useDurationText()
   const colors = useThemeColors()
@@ -54,7 +57,7 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
     .join(' · ')
 
   return (
-    <View className="w-[48%]">
+    <View style={{ width }}>
       {/* One button for the card, and the plus over it rather than inside: a
           press target inside another reads to a screen reader as one label
           with a stray button in it. */}

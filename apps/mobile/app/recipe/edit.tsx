@@ -44,6 +44,7 @@ import { useBack } from '@/lib/navigation'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
+  Aside,
   Button,
   Card,
   Chip,
@@ -618,48 +619,53 @@ export default function RecipeFormScreen() {
             })}
           </ScrollView>
 
-          <FormSection
-            title={t('recipes:edit.ingredients')}
-            meta={items.length ? String(items.length) : undefined}
-            action={
-              items.length ? (
-                <Text variant="bodyStrong">
-                  {t('logging:detail.partKcal', { kcal: totals.total.kcal.toLocaleString() })}
-                </Text>
-              ) : undefined
-            }
-          >
-            <RecipeIngredientEditor
-              ingredients={items}
-              onAmountChange={(key, amount) => {
-                setItems((current) =>
-                  current.map((item) => (item.key === key ? { ...item, amount } : item)),
-                )
-                touch()
-              }}
-              units={settings?.units}
-              onUnitChange={(key, displayUnit) => {
-                setItems((current) =>
-                  current.map((item) => (item.key === key ? { ...item, displayUnit } : item)),
-                )
-                touch()
-              }}
-              onAdd={() => setPickingIngredient({})}
-              onRemove={(ingredient) => {
-                setItems((current) => current.filter((item) => item.key !== ingredient.key))
-                touch()
-              }}
-              onReplace={(ingredient) => setPickingIngredient({ replacingKey: ingredient.key })}
-            />
-          </FormSection>
+          {/* With two panes, what the recipe is stays on the left and the
+              cooking (ingredients and method) goes on the right, as on the
+              recipe page. The source, last on a phone, stays on the left. */}
+          <Aside>
+            <FormSection
+              title={t('recipes:edit.ingredients')}
+              meta={items.length ? String(items.length) : undefined}
+              action={
+                items.length ? (
+                  <Text variant="bodyStrong">
+                    {t('logging:detail.partKcal', { kcal: totals.total.kcal.toLocaleString() })}
+                  </Text>
+                ) : undefined
+              }
+            >
+              <RecipeIngredientEditor
+                ingredients={items}
+                onAmountChange={(key, amount) => {
+                  setItems((current) =>
+                    current.map((item) => (item.key === key ? { ...item, amount } : item)),
+                  )
+                  touch()
+                }}
+                units={settings?.units}
+                onUnitChange={(key, displayUnit) => {
+                  setItems((current) =>
+                    current.map((item) => (item.key === key ? { ...item, displayUnit } : item)),
+                  )
+                  touch()
+                }}
+                onAdd={() => setPickingIngredient({})}
+                onRemove={(ingredient) => {
+                  setItems((current) => current.filter((item) => item.key !== ingredient.key))
+                  touch()
+                }}
+                onReplace={(ingredient) => setPickingIngredient({ replacingKey: ingredient.key })}
+              />
+            </FormSection>
 
-          <StepsField
-            value={steps}
-            onChange={(next) => {
-              setSteps(next)
-              touch()
-            }}
-          />
+            <StepsField
+              value={steps}
+              onChange={(next) => {
+                setSteps(next)
+                touch()
+              }}
+            />
+          </Aside>
 
           {/* Where it came from: a reel, a post, a blog. Shown back to the
               cook alone, so it is a bookmark rather than a credit line. */}
