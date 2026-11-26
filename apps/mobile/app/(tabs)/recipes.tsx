@@ -424,7 +424,7 @@ export default function RecipesTab() {
 }
 
 /** The narrowest a recipe card gets before the grid drops a column. */
-const CARD_MIN = 160
+const CARD_MIN = 172
 
 /** The least space between two cards in a row. */
 const CARD_GAP = 14
