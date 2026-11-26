@@ -26,11 +26,12 @@ const FIELD_WIDTH = 'w-[124px]'
  *
  * It used to open on a plausible body, every field of which is a real answer as
  * far as `compute_targets()` is concerned, so Continue was live on arrival and a
- * user who tapped through got a budget worked out for somebody else. The five
- * controls are empty and the CTA is dead until all five are filled.
+ * user who tapped through got a budget worked out for somebody else. The four
+ * questions are empty and the CTA is dead until all four are answered.
  *
- * The cost is that the target-weight slider has no honest place for its thumb
- * until the weight above it exists, which is why it is held until then.
+ * The target-weight slider has no honest place for its thumb until the weight
+ * above it exists, which is why it is held until then. After that it starts on
+ * that weight and needs no drag: keeping the weight you have is a real answer.
  *
  * Every bound below is metric and the fields are not: `setup` asked which system
  * to use one screen ago, so both are converted before anything is clamped or
@@ -91,9 +92,19 @@ export default function AboutStep() {
    */
   const targetRange = targetWeightRange(weightKg ?? 0)
 
-  /** What the slider shows before it has been dragged. Never written anywhere. */
-  const targetPreview =
-    targetWeightKg ?? (weightKg != null ? clamp(weightKg, targetRange) : targetRange.min)
+  /**
+   * The target the screen will record: the one dragged to, or, untouched, the
+   * weight typed above it, which is "keep my weight".
+   *
+   * Continue used to wait for a drag as well. The thumb already sits on the
+   * current weight, so somebody happy there had to drag it away and back, and
+   * people stalled on a screen that looked finished. The plan step names the
+   * goal this produces and has a way back here, so the default is never silent.
+   */
+  const target = targetWeightKg ?? (weightKg != null ? clamp(weightKg, targetRange) : undefined)
+
+  /** Where the thumb sits, which needs a number even before there is a weight. */
+  const targetPreview = target ?? targetRange.min
 
   /** Blur is where the clamp becomes visible: "show me what you understood". */
   const settle = (key: keyof typeof fields, within: { min: number; max: number }) => () =>
@@ -122,8 +133,8 @@ export default function AboutStep() {
   const ready = heightCm != null && weightKg != null && age != null && sex != null
 
   const save = () => {
-    if (!ready || targetWeightKg == null) return
-    patch({ heightCm, weightKg, age, sex, targetWeightKg })
+    if (!ready || target == null) return
+    patch({ heightCm, weightKg, age, sex, targetWeightKg: target })
     // Group-qualified, because `activity` is a route name this app uses TWICE —
     // here and as the tab. Route groups add no path segment, so a bare
     // `/activity` is ambiguous and expo-router resolves it to whichever it
@@ -151,7 +162,7 @@ export default function AboutStep() {
        */
       onBack={() => router.dismissTo('/(onboarding)/setup')}
       primaryLabel={t('common:action.continue')}
-      primaryDisabled={!ready || targetWeightKg == null}
+      primaryDisabled={!ready || target == null}
       onPrimary={save}
     >
       {/* One card of rows, a label on the left and a small box on the right.
@@ -265,8 +276,8 @@ export default function AboutStep() {
           value={
             <ReplayMask>
               <Text variant="bodyStrong">
-                {targetWeightKg != null
-                  ? `${fromKg(targetWeightKg, weightUnit).toFixed(1)} ${t(UNIT_KEY[weightUnit])}`
+                {target != null
+                  ? `${fromKg(target, weightUnit).toFixed(1)} ${t(UNIT_KEY[weightUnit])}`
                   : t('about.targetWeightUnset')}
               </Text>
             </ReplayMask>
@@ -290,9 +301,8 @@ export default function AboutStep() {
                   format={(value) => `${value.toFixed(1)} ${t(UNIT_KEY[weightUnit])}`}
                 />
               </ReplayMask>
-              {/* Continue waits on the target, so the card says what it is
-                  waiting for: the weight first, then a drag. Without the
-                  second line a typed weight left a dash and a dead button. */}
+              {/* The slider is locked until there is a weight, so the card says
+                  so; then, until it is dragged, that it can be. */}
               {weightKg == null ? (
                 <Text variant="meta">{t('about.targetWeightLocked')}</Text>
               ) : targetWeightKg == null ? (

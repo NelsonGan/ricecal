@@ -73,11 +73,27 @@ function loadWebView(): WebViewComponent | null {
  */
 const TOKEN_TIMEOUT_MS = 20_000
 
+/**
+ * How many silent timeouts one request sits through before it goes without a
+ * token: one, so the widget is reset and run a second time before giving up.
+ *
+ * With the gate on, a request sent without a token is refused, so the timeout
+ * used to mean a refusal. Of 33 people it happened to over six weeks to
+ * 2026-11-26, 24 never got in, and most of those tried once. The 9 who did get in mostly
+ * tapped again within a minute, which runs this same reset-and-execute, so
+ * the app now makes that second attempt for them. More than one retry holds
+ * the button for another twenty seconds each, for a widget that is now
+ * unlikely to answer.
+ */
+const TIMEOUT_RETRIES = 1
+
 type Pending = {
   resolve: (token: string | undefined) => void
   timer: ReturnType<typeof setTimeout> | null
   /** Retryable errors seen for THIS request. See `RETRIES_ALLOWED`. */
   errors: number
+  /** Silent timeouts seen for THIS request. See `TIMEOUT_RETRIES`. */
+  timeouts: number
   /** A human is being asked to click something, so nothing here may give up. */
   interactive: boolean
 }
@@ -297,6 +313,9 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
           for (const run of queued.current.splice(0)) run()
           return
         case 'token':
+          // Filed so the retry can be measured: each of these is a sign-in the
+          // first timeout used to refuse.
+          if (pending.current?.timeouts) report('answered after a timeout retry')
           settle(payload.token)
           return
         case 'interactive': {
@@ -384,20 +403,38 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
     settle(undefined)
 
     return new Promise<string | undefined>((resolve) => {
-      const waiting: Pending = { resolve, timer: null, errors: 0, interactive: false }
+      const waiting: Pending = {
+        resolve,
+        timer: null,
+        errors: 0,
+        timeouts: 0,
+        interactive: false,
+      }
+      const execute = () => web.current?.injectJavaScript('window.rcExecute(); true;')
+
       // A timeout with the widget still silent means it never loaded. One that
-      // fires after `ready` is one slow attempt, and the next may be fine.
-      waiting.timer = setTimeout(() => {
+      // fires after `ready` is one slow attempt, and the next may be fine, so it
+      // gets one (`TIMEOUT_RETRIES`). `rcExecute` resets the widget first, so
+      // the second attempt starts clean rather than waiting on the first.
+      const onTimeout = () => {
         if (!ready.current) return giveUp('never became ready')
-        // Ready, executed, and twenty seconds of silence: no token, no error
-        // code, nothing to go on. Worth filing precisely because there is
-        // nothing else to file.
+        if (pending.current !== waiting) return
+        if (waiting.timeouts < TIMEOUT_RETRIES) {
+          waiting.timeouts += 1
+          console.warn('[captcha] turnstile timed out, trying once more')
+          waiting.timer = setTimeout(onTimeout, TOKEN_TIMEOUT_MS)
+          execute()
+          return
+        }
+        // Ready, executed twice, and twenty seconds of silence each time: no
+        // token, no error code, nothing to go on. Worth filing precisely
+        // because there is nothing else to file.
         report('timed out with no answer')
         settle(undefined)
-      }, TOKEN_TIMEOUT_MS)
+      }
+      waiting.timer = setTimeout(onTimeout, TOKEN_TIMEOUT_MS)
       pending.current = waiting
 
-      const execute = () => web.current?.injectJavaScript('window.rcExecute(); true;')
       if (ready.current) execute()
       else queued.current.push(execute)
     })
