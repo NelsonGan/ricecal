@@ -30,7 +30,18 @@ jest.mock('@/data', () => ({
 jest.mock('@/lib/navigation', () => ({ useBack: () => jest.fn() }))
 jest.mock('@/data/groups', () => ({
   ...jest.requireActual('@/data/groups'),
-  useGroupFood: () => ({ data: null, isError: false, fetchStatus: 'idle', refetch: jest.fn() }),
+  // As react-query answers: a food that is gone comes back null, while a query
+  // left disabled (a route restored without its params) never settles.
+  useGroupFood: (groupId?: string, entryId?: string) =>
+    groupId && entryId
+      ? { data: null, isPending: false, isError: false, fetchStatus: 'idle', refetch: jest.fn() }
+      : {
+          data: undefined,
+          isPending: true,
+          isError: false,
+          fetchStatus: 'idle',
+          refetch: jest.fn(),
+        },
 }))
 jest.mock('../parts', () => ({
   ...jest.requireActual('../parts'),
@@ -187,6 +198,22 @@ it('says a food that is gone or out of reach is gone, with nothing to retry', as
     </SafeAreaProvider>,
   )
   expect(screen.getByText('This is no longer available')).toBeTruthy()
+  expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
+})
+
+it('says a food opened without its group or entry is gone, rather than loading forever', async () => {
+  // A restored route can arrive with its params missing; the query is then
+  // disabled and never answers, so the page must not wait on it.
+  await render(
+    <SafeAreaProvider initialMetrics={METRICS}>
+      <GroupFoodScreen
+        groupId={undefined as unknown as string}
+        entryId={undefined as unknown as string}
+      />
+    </SafeAreaProvider>,
+  )
+  expect(screen.getByText('This is no longer available')).toBeTruthy()
+  // A retry would refetch a disabled query with no ids to ask for.
   expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
 })
 
