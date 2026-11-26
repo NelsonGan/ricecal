@@ -733,6 +733,9 @@ export const ko = {
       noFoodTypedTitle: '적으신 내용에는 음식이 없어요',
       noFoodHint: '하루 기록에 아무것도 추가되지 않았어요.',
       noFoodDismiss: '닫기',
+      queuedTitle: '연결을 기다리는 중',
+      queuedHint: '다시 온라인이 되면 보내요',
+      queuedDismiss: '삭제',
       analysisFailedTitle: '이건 읽지 못했어요',
       analysisFailedHint: '눌러서 직접 고르기',
 
@@ -1614,7 +1617,7 @@ export const ko = {
         },
         offline: {
           title: '오프라인 상태예요',
-          body: '인터넷에 연결한 뒤 다시 시도하세요.',
+          body: '다시 온라인이 되면 자동으로 다시 시도해요.',
         },
         proLimit: {
           title: '레시피를 정말 많이 모았어요',

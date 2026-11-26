@@ -91,6 +91,14 @@ export const logging = {
     noFoodTypedTitle: 'No food in what you wrote',
     noFoodHint: 'Nothing was added to your day.',
     noFoodDismiss: 'Dismiss',
+    /**
+     * A meal photographed or typed with no connection. Nothing was sent, so
+     * nothing is counted yet; it goes by itself once the phone is online.
+     */
+    queuedTitle: 'Waiting for a connection',
+    queuedHint: 'Sends when you are back online',
+    /** The row's close button, to a screen reader: taking the meal back. */
+    queuedDismiss: 'Remove',
     analysisFailedTitle: 'Could not read this one',
     analysisFailedHint: 'Tap to pick the dish yourself',
     // No `emptyTitle` / `emptyBody`. A day before its first meal is where this

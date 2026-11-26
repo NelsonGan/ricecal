@@ -847,11 +847,27 @@ export function useImportRecipe() {
       queryClient.invalidateQueries({ queryKey: keys.recipesAll(userId) })
     },
     mutationFn: async (url: string): Promise<ImportedRecipe> => {
-      const { data, error } = await supabase.functions.invoke('recipes', {
-        // The app's language: anything but English gets the recipe in that
-        // language too, kept beside the English. See `recipeLanguage.ts`.
-        body: { action: 'import', url, language: currentLanguage() },
-      })
+      const send = () =>
+        supabase.functions.invoke('recipes', {
+          // The app's language: anything but English gets the recipe in that
+          // language too, kept beside the English. See `recipeLanguage.ts`.
+          body: { action: 'import', url, language: currentLanguage() },
+        })
+      const sentAt = Date.now()
+      let { data, error } = await send()
+      // A request that got no answer at all, and got it fast, is sent once
+      // more before the screen says "offline". Both ways in come straight back
+      // from another app (the share sheet, or a link copied there), and iOS
+      // then sends the first request down a pooled connection the other end
+      // dropped and fails it at once with "The network connection was lost."
+      // without retrying a POST, as `onceMoreIfLost` in `photos.ts` found for
+      // the camera. A slow failure is left alone: that request may well be
+      // running on the server, and a second would start a second model run
+      // for the same video. Either is safe for the shelf: the import is written
+      // once per account and video (`import_recipe_for`).
+      if (lostRequest(error) && Date.now() - sentAt < QUICK_LOSS_MS) {
+        ;({ data, error } = await send())
+      }
       const body = (error ? await errorBody(error) : data) as {
         ok?: boolean
         code?: string
@@ -865,13 +881,14 @@ export function useImportRecipe() {
       } | null
 
       if (body?.ok && body.recipe_id) {
+        const existing = body.existing === true
         track('Recipe Imported', {
           platform: body.platform ?? 'unknown',
-          outcome: body.existing ? 'existing' : 'imported',
+          outcome: existing ? 'existing' : 'imported',
         })
         return {
           recipeId: body.recipe_id,
-          existing: body.existing === true,
+          existing,
           community: body.community === true,
         }
       }
@@ -884,18 +901,29 @@ export function useImportRecipe() {
       }
       // Distinguish a non-JSON HTTP gateway error (502/504 HTML) from a real
       // transport failure so online users do not get told they are offline.
-      const gotResponse =
-        !error || typeof (error as { context?: { status?: unknown } })?.context?.status === 'number'
       const code: VideoImportFailure =
         body?.code && IMPORT_FAILURES.has(body.code as VideoImportFailure)
           ? (body.code as VideoImportFailure)
-          : body || gotResponse
+          : body || !lostRequest(error)
             ? 'failed'
             : 'offline'
       track('Recipe Imported', { platform: body?.platform ?? 'unknown', outcome: code })
       throw new VideoImportError(code)
     },
   })
+}
+
+/** How soon a lost import has to fail for it to be a dead pooled connection. */
+const QUICK_LOSS_MS = 5_000
+
+/**
+ * Whether an invoke came back with no HTTP answer at all: the connection
+ * failed, or the body never arrived whole. A status, even a gateway's HTML
+ * 502, is an answer. Exported for its test.
+ */
+export function lostRequest(error: unknown): boolean {
+  if (!error) return false
+  return typeof (error as { context?: { status?: unknown } })?.context?.status !== 'number'
 }
 
 /**

@@ -2142,6 +2142,33 @@ misses Malaysian packets" above.
    The poll asks only for the days its scans will land on, every six seconds.
    It used to refetch every mounted day, which re-read whole diaries the scan
    could not touch and was a visible share of the project's egress.
+6. **A meal taken with no connection waits for one.** When the phone says it is
+   offline at the shutter, or the photo's upload gets no answer at all
+   (`lostUpload`), nothing reached the server, so the row turns `queued`
+   ("Waiting for a connection") instead of failing. The photo is copied out of
+   the cache into the documents directory (`queued-photos.ts`), because the
+   OS may empty the cache before the phone is back online, and the row keeps the
+   note, the barcode, the location and its owner. `SnapQueue`, mounted once in
+   the root layout, sends it when the phone comes back online or the app comes
+   to the front, and every 30 seconds while one waits, through the same path the
+   shutter uses. A typed meal has no upload to prove the connection, so its
+   resend reads one row first and waits again if that is lost; and a resend
+   books the "plate is counted" notice only once the photo is up. The kept
+   photo's path is rebuilt from its file name each time (`queuedPhotoUri`),
+   because iOS can move the app's container on an update, and copies no row
+   uses are swept at launch and deleted with the rest on sign-out. The request carries `logged_at`, the shutter's time, so lunch
+   taken in a basement car park is not logged at whatever hour a signal came
+   back; `scan-meal` accepts it up to five minutes ahead and eight days back
+   (`readLoggedAt`) and an older function ignores it.
+
+   **Only a scan that was never sent is queued, and that is the whole
+   guarantee against a duplicate.** A scan request that broke after it went
+   out is never sent again: the function may be writing that entry right now,
+   so the row is `waiting` and polled for as above. A queued row is sent once
+   at a time, only as the account that took it, and kept for a week rather
+   than the day other rows get, since dropping it is losing the meal. It never
+   claims an entry in `unclaimedSnaps` (nothing of it has been written), or the
+   next meal photographed once online would take it off the day unsent.
 
 **Server** (`functions/scan-meal/index.ts`, cascade in `_shared/cascade.ts`,
 model calls in `_shared/llm.ts`). One vision call returns queries, per-component
@@ -3491,7 +3518,22 @@ failure has its own sentence and one way forward (`import.failure.*`). A link
 shared before signing in is held in memory (`pendingImport.ts`) and imported
 once the tabs mount behind a session, rather than lost at the welcome screen.
 Offline, the import is sent anyway (`networkMode: 'always'`) and fails at once
-with its own message, rather than waiting on a paused allowance query for good.
+with its own message, rather than waiting on a paused allowance query for good,
+and the screen sends it again by itself when the phone comes back online.
+
+**"Offline" only after a second try.** Both ways in come straight back from
+another app, and the first request then often goes down a pooled connection the
+other end dropped while the app sat in the background: iOS fails it at once with
+"The network connection was lost." and does not retry a POST. That used to show
+"You are offline" to somebody who was online, and the recipe turned up a moment
+later. So a request that got no HTTP answer at all is sent once more before the
+screen says so (`lostRequest` in `data/recipes.ts`), as `onceMoreIfLost` does for
+the camera's upload. Only a failure inside five seconds is repeated: that is a
+dead connection, and the request never left. A slow one may be running on the
+server, and a second would start a second model run for the same video, so it
+shows "offline" and the screen tries again on reconnect. A try after a lost
+request that comes back `existing` is shown as imported rather than "already
+yours": the lost request is very likely what made it.
 A Pro account at its unprinted ceiling gets a sentence of its own and no
 paywall. A recipe that lands while another screen is on top of this one (a
 notification, another shared link) is announced with a toast instead of
@@ -8073,7 +8115,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Account Deleted | ricecal_account_deleted | none | `src/data/auth.ts` | Server confirms account deletion; each success, before clearing the PostHog person and signing out. |
 | Log Sheet Opened | ricecal_log_sheet_opened | panel: string; date_offset: number | `app/log/index.tsx` | Log sheet opens; once per presentation using its actual initial panel (explicit link, remembered choice, then camera) and selected date, not on panel changes. |
 | Meal Logged | ricecal_meal_logged | method: LogMethod; date_offset: number; with_note?: boolean; located?: boolean | `src/data/entries.ts`<br>`src/data/snap.ts` | Local insert succeeds, or camera/describe starts its optimistic row; once per logging action, not per decomposed food component. `with_note` only on camera. `located` only when the meal is tagged with a place or the automatic tag was asked for. |
-| Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` | Camera/describe request reaches a reported outcome; once per attempt, including refusals, empty food, failure and detached requests. |
+| Meal Scan Completed | ricecal_meal_scan_completed | method: 'camera' &#124; 'describe'; outcome: ScanOutcome; duration_ms: number; tier: number &#124; null; components: number | `src/data/snap.ts` | Camera/describe request reaches a reported outcome; once per attempt, including refusals, empty food, failure and detached requests. A meal that could not be sent for want of a connection (offline at the shutter, or an upload with no answer) is queued and sends nothing then; it reports once when `SnapQueue` sends it, and `duration_ms` runs from that send, not the shutter. |
 | Barcode Scanned | ricecal_barcode_scanned | outcome: 'found' &#124; 'not_found' &#124; 'error' | `app/log/food/[id].tsx` | Barcode lookup settles; once per barcode value on the mounted food route. Reopening the route can count again. |
 | Entry Updated | ricecal_entry_updated | changed: string[] | `src/data/entries.ts` | Entry update succeeds; each successful save, with names of changed fields. |
 | Locations Toggled | ricecal_locations_toggled | enabled: boolean; source: 'settings' &#124; 'offer' &#124; 'announcement' | `src/features/places/components/LocationsSettingsCard.tsx`<br>`src/features/places/components/LocationsOffer.tsx`<br>`src/features/news/AnnouncementCard.tsx` | The Locations switch in Personalisation changes, or Turn on Locations is tapped on the one-time offer or the 1.3.0 news card's places page; once per change. |
@@ -8100,7 +8142,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Recipe Saved | ricecal_recipe_saved | is_new: boolean; ingredients: number; servings: number | `src/data/recipes.ts` | Recipe save succeeds; each new/edit save, with ingredient/serving counts only. |
 | Recipe Drafted | ricecal_recipe_drafted | source: 'photo' &#124; 'text'; outcome: 'drafted' &#124; 'empty' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled' | `src/data/recipes.ts` | Photo/text drafting reaches its outcome; each attempt, including refusals, empty and failure. It does not prove a recipe was saved. |
 | Recipe Published | ricecal_recipe_published | outcome: 'approved' &#124; 'rejected' &#124; 'pending' | `src/data/recipes.ts` | Turning a recipe public; once per publish, with the status `set_recipe_public` returns, which is always `approved` since the publish review was removed. `rejected` and `pending`, and an event on saving an edit to a public recipe, come only from older builds. Unpublishing emits nothing. |
-| Recipe Imported | ricecal_recipe_imported | platform: string; outcome: ImportOutcome | `src/data/recipes.ts` | An import of a cooking video answers; each attempt, once, including refusals and failures. `imported` and `existing` mean a recipe is on the user's shelf (written by the server); the link itself is never sent. |
+| Recipe Imported | ricecal_recipe_imported | platform: string; outcome: ImportOutcome | `src/data/recipes.ts` | An import of a cooking video answers; each attempt, once, including refusals and failures. `imported` and `existing` mean a recipe is on the user's shelf (written by the server); the link itself is never sent. A request lost within five seconds is sent again inside the same attempt, so `offline` means two lost requests, or one slow one. |
 | Recipe Copied | ricecal_recipe_copied | none | `src/data/recipes.ts` | Copying a community recipe succeeds; each successful copy. |
 | Recipe Reported | ricecal_recipe_reported | reason: ReportReason | `src/data/moderation.ts` | Moderation report write succeeds; each successful report, with its controlled reason only. |
 | Author Blocked | ricecal_author_blocked | none | `src/data/moderation.ts` | Blocking an author succeeds; each success, without the author identity. |
@@ -8178,7 +8220,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `video_import`, `new_routine`, `new_group`, `group_icon`, `photo_retention`, `trend_range`, `workout_range`, `review`, `nudge_streak`, `nudge_goal` | Refused capability or milestone offer; trial expiration is a paywall screen value, not a feature. `nudge` (the two-day standing offer) appears only in data from app versions before the milestone offers; `suggest` only from versions released before "what to eat next" was removed |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
-| `outcome` / `ImportOutcome` | `imported`, `existing`, `limit_reached`, `unsupported_link`, `unreadable`, `not_recipe`, `too_long`, `failed`, `busy`, `offline` | `data/recipes.ts` (`Recipe Imported`); `imported` and `existing` mean the server wrote a recipe to the shelf, the rest are its refusal codes, and `offline` is a request with no answer |
+| `outcome` / `ImportOutcome` | `imported`, `existing`, `limit_reached`, `unsupported_link`, `unreadable`, `not_recipe`, `too_long`, `failed`, `busy`, `offline` | `data/recipes.ts` (`Recipe Imported`); `imported` and `existing` mean the server wrote a recipe to the shelf, the rest are its refusal codes, and `offline` is a request with no answer (after one quick retry, see `Recipe Imported`) |
 | `meal` / `Meal` | `breakfast`, `lunch`, `dinner`, `snack` | `data/types.ts` / database enum; reminder category only |
 | `plan_direction` | `lose`, `gain`, `maintain` | Locally derived; a missing target or absolute target/current weight difference below 0.5 kg means maintain. Body values never leave the app through analytics |
 | `activity_level` | `sedentary`, `light`, `onFeet`, `veryActive` | Client vocabulary; normalized from database spellings |

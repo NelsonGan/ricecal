@@ -96,16 +96,27 @@ export type DayView = DayLog & {
  *
  * `nofood` is left out. It is a finished scan that wrote nothing, so it has no
  * entry to find, and letting it claim the next camera row would delete the
- * user's answer along with somebody else's meal.
+ * user's answer along with somebody else's meal. `queued` is left out for the
+ * same reason from the other end: it has not been sent, so no entry can be its
+ * yet, and the next meal photographed once the phone is online would otherwise
+ * take the queued one off the day before it was ever sent.
  *
  * Exported for its own test: four lines, every one of which has been wrong in
  * ways that read as a caching bug.
  */
-export function unclaimedSnaps<S extends { loggedAt: string; text?: string; status: EntryStatus }>(
-  snaps: S[],
-  entries: Array<{ id: string; source: EntrySource; loggedAt: string }>,
-): S[] {
+export function unclaimedSnaps<
+  S extends { loggedAt: string; sentAt?: string; text?: string; status: EntryStatus },
+>(snaps: S[], entries: Array<{ id: string; source: EntrySource; loggedAt: string }>): S[] {
   const claimed = new Set<string>()
+  // A meal sent from the queue is written with its own shutter time as
+  // `logged_at` (`readLoggedAt`), so its entry is the one stamped exactly then,
+  // and nothing else is. Any later entry would do for the old rule, and a
+  // snack photographed after a queued lunch took the lunch off the day, photo
+  // and all, while it was still uploading. That exact entry is held back from
+  // every other row for the same reason.
+  const resent = new Set(
+    snaps.filter((snap) => snap.sentAt).map((snap) => Date.parse(snap.loggedAt)),
+  )
   const landed = (snap: S) => {
     // Parsed, not compared as text. Postgres stamps microseconds and an offset
     // ("...:00.123456+00:00") where `toISOString` writes milliseconds and a Z,
@@ -115,12 +126,15 @@ export function unclaimedSnaps<S extends { loggedAt: string; text?: string; stat
     const wrote = snap.text ? 'text' : 'camera'
     return entries.some((entry) => {
       if (entry.source !== wrote || claimed.has(entry.id)) return false
-      if (Date.parse(entry.loggedAt) < shutter) return false
+      const at = Date.parse(entry.loggedAt)
+      if (snap.sentAt ? at !== shutter : at < shutter || resent.has(at)) return false
       claimed.add(entry.id)
       return true
     })
   }
-  return snaps.filter((snap) => snap.status === 'nofood' || !landed(snap))
+  return snaps.filter(
+    (snap) => snap.status === 'nofood' || snap.status === 'queued' || !landed(snap),
+  )
 }
 
 /**
@@ -133,6 +147,7 @@ export function unclaimedSnaps<S extends { loggedAt: string; text?: string; stat
 export function useDayLog(date: string): DayView {
   const { data, isPending, isPaused, isError, refetch } = useDay(date)
   const { snaps, remove } = usePendingSnaps()
+  const userId = useUserId()
 
   const view = useMemo((): DayView & { settled: string[] } => {
     const base = {
@@ -143,7 +158,12 @@ export function useDayLog(date: string): DayView {
       refetch,
       settled: [],
     }
-    const mine = snaps.filter((snap) => snap.logDate === date)
+    // Another account's queued meal stays off this one's day: it is sent as
+    // its owner or not at all (`SnapQueue`). A row from before snaps carried an
+    // owner has none, and shows as it always did.
+    const mine = snaps.filter(
+      (snap) => snap.logDate === date && (!snap.userId || snap.userId === userId),
+    )
     if (mine.length === 0) return base
 
     const unresolved = unclaimedSnaps(mine, base.entries)
@@ -176,7 +196,7 @@ export function useDayLog(date: string): DayView {
         a.loggedAt.localeCompare(b.loggedAt),
       ),
     }
-  }, [data, snaps, date, isPending, isPaused, isError, refetch])
+  }, [data, snaps, userId, date, isPending, isPaused, isError, refetch])
 
   // Swept after render rather than during it: `remove` sets state on another
   // provider, and the list this hook returns is already correct without it.

@@ -735,6 +735,9 @@ export const th = {
       noFoodTypedTitle: 'ไม่มีอาหารในสิ่งที่คุณเขียน',
       noFoodHint: 'ไม่มีอะไรถูกเพิ่มเข้าวันของคุณ',
       noFoodDismiss: 'ปิด',
+      queuedTitle: 'กำลังรอการเชื่อมต่อ',
+      queuedHint: 'จะส่งเมื่อกลับมาออนไลน์',
+      queuedDismiss: 'ลบ',
       analysisFailedTitle: 'อ่านอันนี้ไม่ได้',
       analysisFailedHint: 'แตะเพื่อเลือกจานเอง',
 
@@ -1612,7 +1615,7 @@ export const th = {
         },
         offline: {
           title: 'คุณออฟไลน์อยู่',
-          body: 'เชื่อมต่ออินเทอร์เน็ตแล้วลองอีกครั้ง',
+          body: 'จะลองอีกครั้งเมื่อคุณกลับมาออนไลน์',
         },
         proLimit: {
           title: 'สูตรเยอะมากแล้ว',

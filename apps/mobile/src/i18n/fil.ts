@@ -753,6 +753,9 @@ export const fil = {
       noFoodTypedTitle: 'Walang pagkain sa isinulat mo',
       noFoodHint: 'Walang naidagdag sa araw mo.',
       noFoodDismiss: 'Isara',
+      queuedTitle: 'Naghihintay ng koneksyon',
+      queuedHint: 'Ipapadala pagbalik mo online',
+      queuedDismiss: 'Alisin',
       analysisFailedTitle: 'Hindi mabasa ito',
       analysisFailedHint: 'I-tap para ikaw mismo ang pumili ng ulam',
 
@@ -1649,7 +1652,7 @@ export const fil = {
         },
         offline: {
           title: 'Offline ka',
-          body: 'Kumonekta sa internet at subukan ulit.',
+          body: 'Susubukan ulit ito pagbalik mo online.',
         },
         proLimit: {
           title: 'Ang dami nang recipe',

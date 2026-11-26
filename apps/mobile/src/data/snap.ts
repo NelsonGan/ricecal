@@ -1,5 +1,5 @@
-import { useQueryClient } from '@tanstack/react-query'
-import { useCallback } from 'react'
+import { onlineManager, useQueryClient } from '@tanstack/react-query'
+import { createElement, useCallback, useEffect, useRef } from 'react'
 import { AppState } from 'react-native'
 
 import i18n from '@/i18n'
@@ -10,6 +10,7 @@ import {
   ensureNotificationPermission,
   scheduleScanNotice,
 } from '@/lib/notifications'
+import { useOnline } from '@/lib/online'
 import { autoTagLocation, autoTagWanted, recordMealForLocationsOffer } from '@/lib/places'
 import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
@@ -17,9 +18,10 @@ import { useToast } from '@/ui'
 import { TIMED_OUT, today, withDeadline } from './client'
 import { invalidateEatenTotals, invalidateEntryPosts, keys } from './keys'
 import { usePendingSnaps } from './pending-snaps'
-import { uploadMealPhoto } from './photos'
+import { lostUpload, uploadMealPhoto } from './photos'
+import { keepQueuedPhoto, queuedPhotoUri } from './queued-photos'
 import { announceRefusal, refusalFrom, ScanLimitError } from './refusals'
-import { useUserId } from './session'
+import { useSession, useUserId } from './session'
 import type { EntryLocation } from './types'
 
 export type SnapInput = {
@@ -116,6 +118,7 @@ async function scanMeal(input: {
   barcode?: string
   note?: string
   location?: EntryLocation | null
+  loggedAt?: string
 }): Promise<ScanResponse> {
   const { data, error } = await supabase.functions.invoke<ScanResponse>('scan-meal', {
     body: {
@@ -128,6 +131,9 @@ async function scanMeal(input: {
       note: input.photoPath && input.note ? input.note : undefined,
       // An older function ignores it, so the deploy order does not matter here.
       location: input.location ?? undefined,
+      // Only for a meal sent after its shutter, from the queue. An older
+      // function ignores it and stamps the entry when it arrives.
+      logged_at: input.loggedAt,
     },
   })
   if (error) {
@@ -155,18 +161,66 @@ async function scanMeal(input: {
 }
 
 /**
- * Logs a snapped plate optimistically: the row appears now, the dish arrives
- * later. Waiting for the upload and the model call would make snapping the
- * slowest way to log rather than the fastest.
+ * A scan that was never sent, because there was no connection to send it on.
  *
- * The upload comes first rather than in parallel, because the edge function reads
- * the photo out of the bucket. The ordering also keeps `photo_path` naming a real
- * object, and an orphan from a failed scan is harmless.
+ * Thrown before the request to `scan-meal`, never after: the phone said it was
+ * offline, or the photo's upload got no answer, so no object or request reached
+ * the server and nothing about this meal exists there. That certainty is what
+ * lets the queue send it again later with no chance of a second entry. A scan
+ * request that broke in flight is a different thing (`detach`), because the
+ * server may well be writing that one.
+ */
+class NotSent extends Error {
+  readonly location: EntryLocation | null
+  constructor(location: EntryLocation | null) {
+    super('not sent: offline')
+    this.name = 'NotSent'
+    this.location = location
+  }
+}
+
+/**
+ * Whether Supabase answers at all, whatever it says. postgrest-js reports a
+ * request that got no answer as status 0 rather than throwing.
+ */
+async function reachable(): Promise<boolean> {
+  try {
+    const { status } = await supabase.from('profiles').select('id', { head: true }).limit(1)
+    return status > 0
+  } catch {
+    return false
+  }
+}
+
+/** Everything a scan needs to be sent, whether at the shutter or from the queue. */
+type Outgoing = {
+  id: string
+  logDate: string
+  photoUri?: string
+  text?: string
+  barcode?: string
+  note?: string
+  /**
+   * The fix started at the shutter, or the one a queued meal kept. A queued
+   * meal is sent as from where it was eaten, not where the phone is now.
+   */
+  location?: Promise<EntryLocation | null> | EntryLocation | null
+  /**
+   * When the shutter fired, for a meal sent later than that. The entry is
+   * stamped with it, so lunch photographed offline is not logged at dinner.
+   */
+  loggedAt?: string
+}
+
+/**
+ * Sends one scan and settles its pending row: upload, invoke, and every way
+ * that can end. Shared by the shutter and the queue, so a meal sent an hour
+ * late is handled exactly like one sent at once.
  *
  * Nothing is cancelled when the caller unmounts: the sheet is gone a frame later
  * by design, and a snap that stopped there would be the app losing their food.
  */
-function useRecogniseMeal() {
+function useSendScan() {
   const userId = useUserId()
   const queryClient = useQueryClient()
   const pending = usePendingSnaps()
@@ -177,50 +231,10 @@ function useRecogniseMeal() {
   const toast = useToast()
 
   return useCallback(
-    ({
-      logDate,
-      photoUri,
-      text,
-      barcode,
-      note,
-      picked = false,
-    }: {
-      logDate: string
-      photoUri?: string
-      text?: string
-      barcode?: string
-      note?: string
-      picked?: boolean
-    }): string => {
-      // Started now, at the shutter, so the upload covers the GPS's wait.
-      const location =
-        !picked && autoTagWanted(userId, logDate) ? autoTagLocation(userId, logDate) : undefined
-      // Not a database id: this row does not exist yet. Prefixed so nothing
-      // mistakes it for one and tries to update it.
-      const id = `snap-${Date.now()}-${Math.round(Math.random() * 1e6)}`
-      pending.add({ id, logDate, photoUri, text })
-
-      /**
-       * Two events for one meal. `Meal Logged` fires here, at the commit, because
-       * that is what the user did and what the day shows; `Meal Scan Completed`
-       * follows when the cascade answers, carrying the tier and the duration.
-       *
-       * One event at the end would drop every meal whose request broke, which is
-       * the case the pending row exists to survive.
-       */
+    (snap: Outgoing): Promise<void> => {
+      const { id, logDate, photoUri, text, barcode, note, location, loggedAt } = snap
       const method = text ? 'describe' : 'camera'
       const startedAt = Date.now()
-      const offset = dateOffset(logDate, today())
-      track('Meal Logged', {
-        method,
-        date_offset: offset,
-        // Whether the shot carried words, never the words themselves: a note
-        // is diary content, and analytics carries none.
-        // A device with no camera has no photo, so its note is never sent.
-        ...(method === 'camera' ? { with_note: Boolean(note && photoUri) } : {}),
-        // Asked for, not yet known: the fix may still miss the scan's wait.
-        ...(location ? { located: true } : {}),
-      })
 
       const completed = (outcome: ScanOutcome, result?: ScanResponse) =>
         track('Meal Scan Completed', {
@@ -245,42 +259,81 @@ function useRecogniseMeal() {
       //
       // The notice is booked here too: by the time the answer comes back the app
       // may be suspended, and a suspended app cannot post anything.
+      //
+      // A meal sent from the queue books it only once its photo is up. Its
+      // shutter was long ago, so there is no permission to ask in the moment,
+      // and on a connection that only looks alive the upload can outlast the
+      // notice: it fired "your plate is counted" over a meal that was queued
+      // again, every 30 seconds.
+      const resending = loggedAt !== undefined
       let notice: string | null = null
-      const booked = ensureNotificationPermission()
-        .catch(() => false)
-        .then(() =>
-          scheduleScanNotice(i18n.t(doneTitle), i18n.t('logging:today.scanDoneBodyPlain')),
+      let booked: Promise<string | null> = Promise.resolve(null)
+      const book = () => {
+        booked = ensureNotificationPermission()
+          .catch(() => false)
+          .then(() =>
+            scheduleScanNotice(i18n.t(doneTitle), i18n.t('logging:today.scanDoneBodyPlain')),
+          )
+          .then((id) => {
+            notice = id
+            return id
+          })
+          .catch(() => null)
+      }
+      if (!resending) book()
+
+      // Settled once, however many steps ask: the queue needs it as much as the
+      // scan does, and the fix is still being taken while the photo uploads.
+      let where: Promise<EntryLocation | null> | null = null
+      const settledWhere = () => {
+        where ??= settleLocation(
+          location instanceof Promise ? location : Promise.resolve(location ?? null),
+          photoUri ? LOCATION_WAIT_MS : LOCATION_WAIT_TYPED_MS,
         )
-        .then((id) => {
-          notice = id
-          return id
-        })
-        .catch(() => null)
+        return where
+      }
 
       /**
-       * Failures here mean two different things, and only one is a failed scan. An
-       * upload that throws leaves no object in the bucket, so nothing was asked to
-       * recognise anything: settled. A broken request to the function leaves the
+       * Failures here mean three different things, and only one is a failed
+       * scan. An upload that throws leaves no object in the bucket, so nothing
+       * was asked to recognise anything: settled, or queued when it was the
+       * connection that failed. A broken request to the function leaves the
        * function still working, because it writes the entry itself, and calling
        * that "failed" is how a scan that succeeded produced an error message.
        */
       const work = async (): Promise<ScanResponse> => {
+        // The phone says it is offline: nothing would arrive, so nothing is
+        // sent, and the meal waits for the connection instead of failing.
+        if (!onlineManager.isOnline()) throw new NotSent(await settledWhere())
         let path: string | undefined
         if (photoUri) {
           try {
             path = await uploadMealPhoto(photoUri)
           } catch (error) {
+            if (lostUpload(error)) throw new NotSent(await settledWhere())
             throw settled(error instanceof Error ? error : new Error('upload failed'))
           }
+        } else if (resending && !(await reachable())) {
+          // A typed meal has no upload to prove the connection first, and a
+          // scan request lost on the way could never be sent again safely.
+          // The phone said online the moment it reconnected, before it could
+          // know: one small read first, and the meal waits again if that is
+          // lost too.
+          throw new NotSent(await settledWhere())
         }
-        const where = await settleLocation(
-          location,
-          photoUri ? LOCATION_WAIT_MS : LOCATION_WAIT_TYPED_MS,
-        )
-        return scanMeal({ photoPath: path, text, logDate, barcode, note, location: where })
+        if (resending) book()
+        return scanMeal({
+          photoPath: path,
+          text,
+          logDate,
+          barcode,
+          note,
+          location: await settledWhere(),
+          loggedAt,
+        })
       }
 
-      work()
+      return work()
         .then((result) => {
           // Nothing edible in the photo: no entry exists to refetch into, so
           // the row stays and says so. Dismissing it is the user's answer.
@@ -335,7 +388,18 @@ function useRecogniseMeal() {
           // number matters most.
           queryClient.invalidateQueries({ queryKey: keys.scanQuota(userId) })
         })
-        .catch((error: unknown) => {
+        .catch(async (error: unknown) => {
+          // Never sent, so nothing is coming and nothing is lost: the row waits
+          // for a connection and `SnapQueue` sends it then. The booked notice
+          // goes, since "your plate is counted" is exactly what has not
+          // happened. No `Meal Scan Completed` yet: the scan has not run, and
+          // the send that does run it reports how it went.
+          if (error instanceof NotSent) {
+            void booked.then(() => cancelScanNotice(notice))
+            const kept = photoUri ? await keepQueuedPhoto(id, photoUri) : undefined
+            pending.queue(id, { photoUri: kept, location: error.location })
+            return
+          }
           // The two refusals. The camera is not behind the paywall any more, so
           // what lands here is a free account's fourth plate of the day and the
           // answer is the paywall rather than an apology. The exception is a
@@ -363,7 +427,9 @@ function useRecogniseMeal() {
           }
           // The request broke; the scan probably did not. The row keeps its
           // spinner and its photo, the day is polled until the entry appears, and
-          // only a deadline with nothing on it is a failure.
+          // only a deadline with nothing on it is a failure. Never queued: the
+          // server may be writing this entry right now, and sending it again
+          // could log the meal twice.
           //
           // The booked notice stays, which is the case it was written for: the
           // answer is still coming, this process will not hear it, and a scheduled
@@ -371,11 +437,167 @@ function useRecogniseMeal() {
           completed('detached')
           pending.detach(id)
         })
-
-      return id
     },
     [pending, queryClient, toast, userId],
   )
+}
+
+/**
+ * Logs a snapped plate optimistically: the row appears now, the dish arrives
+ * later. Waiting for the upload and the model call would make snapping the
+ * slowest way to log rather than the fastest.
+ *
+ * The upload comes first rather than in parallel, because the edge function reads
+ * the photo out of the bucket. The ordering also keeps `photo_path` naming a real
+ * object, and an orphan from a failed scan is harmless.
+ */
+function useRecogniseMeal() {
+  const userId = useUserId()
+  const pending = usePendingSnaps()
+  const send = useSendScan()
+
+  return useCallback(
+    ({
+      logDate,
+      photoUri,
+      text,
+      barcode,
+      note,
+      picked = false,
+    }: {
+      logDate: string
+      photoUri?: string
+      text?: string
+      barcode?: string
+      note?: string
+      picked?: boolean
+    }): string => {
+      // Started now, at the shutter, so the upload covers the GPS's wait.
+      const location =
+        !picked && autoTagWanted(userId, logDate) ? autoTagLocation(userId, logDate) : undefined
+      // Not a database id: this row does not exist yet. Prefixed so nothing
+      // mistakes it for one and tries to update it.
+      const id = `snap-${Date.now()}-${Math.round(Math.random() * 1e6)}`
+      // The note and the code ride on the row so a meal queued for want of a
+      // connection is sent later exactly as it would have been now.
+      pending.add({
+        id,
+        logDate,
+        photoUri,
+        text,
+        userId: userId ?? undefined,
+        note: photoUri && note ? note : undefined,
+        barcode,
+      })
+
+      /**
+       * Two events for one meal. `Meal Logged` fires here, at the commit, because
+       * that is what the user did and what the day shows; `Meal Scan Completed`
+       * follows when the cascade answers, carrying the tier and the duration.
+       *
+       * One event at the end would drop every meal whose request broke, which is
+       * the case the pending row exists to survive.
+       */
+      const method = text ? 'describe' : 'camera'
+      const offset = dateOffset(logDate, today())
+      track('Meal Logged', {
+        method,
+        date_offset: offset,
+        // Whether the shot carried words, never the words themselves: a note
+        // is diary content, and analytics carries none.
+        // A device with no camera has no photo, so its note is never sent.
+        ...(method === 'camera' ? { with_note: Boolean(note && photoUri) } : {}),
+        // Asked for, not yet known: the fix may still miss the scan's wait.
+        ...(location ? { located: true } : {}),
+      })
+
+      void send({ id, logDate, photoUri, text, barcode, note, location })
+      return id
+    },
+    [pending, send, userId],
+  )
+}
+
+/** How long a queued meal waits between tries while the phone says it is online. */
+const QUEUE_RETRY_MS = 30_000
+
+/**
+ * Sends the meals taken without a connection, once there is one. Renders
+ * nothing; mounted once, beside the toasts, because a refusal on the way may
+ * have one to show.
+ *
+ * Each queued meal is sent at most once at a time (`sending`), and only as the
+ * account that took it. It is tried when the phone comes back online or the
+ * app comes back to the front, and every `QUEUE_RETRY_MS` while one waits, for
+ * the phone that says it is online and still cannot get a photo up. A try that
+ * fails for want of a connection queues it again; any other ending is the
+ * ordinary scan's, so a queued meal is never sent twice.
+ */
+export function SnapQueue() {
+  // Mounted at the root, where nobody may be signed in: the sending half needs
+  // an account, and only exists while there is one.
+  const { userId } = useSession()
+  return userId ? createElement(SignedInSnapQueue) : null
+}
+
+function SignedInSnapQueue(): null {
+  const { snaps, resend } = usePendingSnaps()
+  const send = useSendScan()
+  const userId = useUserId()
+  const online = useOnline()
+
+  // Read through refs, so `flush` keeps one identity. The pending context is a
+  // new value on every change to any row, and an effect keyed on it resent a
+  // meal the moment it was queued, past the wait between tries.
+  const latest = useRef({ snaps, send, resend, userId })
+  latest.current = { snaps, send, resend, userId }
+  const sending = useRef(new Set<string>())
+  const triedAt = useRef(new Map<string, number>())
+
+  const flush = useCallback((now: boolean) => {
+    const { snaps, send, resend, userId } = latest.current
+    if (!userId || !onlineManager.isOnline()) return
+    for (const snap of snaps) {
+      if (snap.status !== 'queued' || snap.userId !== userId) continue
+      if (sending.current.has(snap.id)) continue
+      // A meal queued at the shutter counts the shutter as its first try.
+      const last = triedAt.current.get(snap.id) ?? Date.parse(snap.loggedAt)
+      if (!now && Date.now() - last < QUEUE_RETRY_MS) continue
+      sending.current.add(snap.id)
+      triedAt.current.set(snap.id, Date.now())
+      resend(snap.id)
+      void send({
+        id: snap.id,
+        logDate: snap.logDate,
+        photoUri: queuedPhotoUri(snap.photoUri),
+        text: snap.text,
+        barcode: snap.barcode,
+        note: snap.note,
+        location: snap.location ?? null,
+        loggedAt: snap.loggedAt,
+      }).finally(() => sending.current.delete(snap.id))
+    }
+  }, [])
+
+  // Coming back online, or signing in to the account that took them.
+  useEffect(() => {
+    if (online && userId) flush(true)
+  }, [online, userId, flush])
+
+  const waiting = snaps.some((snap) => snap.status === 'queued' && snap.userId === userId)
+  useEffect(() => {
+    if (!waiting) return
+    const timer = setInterval(() => flush(false), QUEUE_RETRY_MS)
+    const listener = AppState.addEventListener('change', (state) => {
+      if (state === 'active') flush(false)
+    })
+    return () => {
+      clearInterval(timer)
+      listener.remove()
+    }
+  }, [waiting, flush])
+
+  return null
 }
 
 /** The camera path. */

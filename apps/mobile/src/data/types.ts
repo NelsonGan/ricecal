@@ -146,9 +146,10 @@ export type Food = {
  * Where an entry is in the recognition round trip: a row that is not yet an
  * entry, and only ever set on one in the client's cache. `nofood` is the scan
  * reporting nothing edible, so no entry was written and the row waits to be
- * dismissed rather than counted.
+ * dismissed rather than counted. `queued` is a meal taken offline, waiting to
+ * be sent.
  */
-export type EntryStatus = 'analysing' | 'waiting' | 'failed' | 'nofood'
+export type EntryStatus = 'analysing' | 'waiting' | 'failed' | 'nofood' | 'queued'
 
 /**
  * Where an entry was eaten (README: Meal locations): the phone's own fix named

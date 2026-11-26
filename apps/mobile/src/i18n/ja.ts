@@ -740,6 +740,9 @@ export const ja = {
       noFoodTypedTitle: '書かれた内容に食べ物がありません',
       noFoodHint: 'その日には何も追加されていません。',
       noFoodDismiss: '閉じる',
+      queuedTitle: '接続を待っています',
+      queuedHint: 'オンラインに戻ると送信されます',
+      queuedDismiss: '削除',
       analysisFailedTitle: 'これは読み取れませんでした',
       analysisFailedHint: 'タップして自分で料理を選ぶ',
 
@@ -1622,7 +1625,7 @@ export const ja = {
         },
         offline: {
           title: 'オフラインです',
-          body: 'インターネットに接続して、もう一度お試しください。',
+          body: 'オンラインに戻ると、もう一度試します。',
         },
         proLimit: {
           title: 'たくさん読み込みました',

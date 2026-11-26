@@ -227,6 +227,32 @@ function EntryRow({
       />
     )
   }
+  // Taken with no connection and not sent yet. The photo stays on the day,
+  // nothing is counted, and it goes by itself once the phone is online
+  // (`SnapQueue`). The close button is the only thing to do with it: taking
+  // the meal back.
+  if (entry.status === 'queued') {
+    return (
+      <ItemRow
+        title={t('logging:today.queuedTitle')}
+        icon={{ set: 'ui', name: 'offline' }}
+        photoUri={entry.localPhotoUri}
+        value=""
+        compact
+        detail={entry.source === 'text' ? entry.foodName : t('logging:today.queuedHint')}
+        trailing={
+          <IconButton
+            size="sm"
+            variant="neutral"
+            accessibilityLabel={t('logging:today.queuedDismiss')}
+            onPress={() => onDismiss?.(entry)}
+          >
+            <Icon set="ui" name="close" size={16} />
+          </IconButton>
+        }
+      />
+    )
+  }
   if (entry.status === 'failed') {
     return (
       <ItemRow
