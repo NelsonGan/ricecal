@@ -3,7 +3,7 @@ import * as Linking from 'expo-linking'
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { View } from 'react-native'
+import { AppState, View } from 'react-native'
 import Animated, { FadeIn } from 'react-native-reanimated'
 
 import {
@@ -19,6 +19,7 @@ import { ImportRing } from '@/features/recipes/ImportRing'
 import { PlatformLogo } from '@/features/recipes/PlatformLogo'
 import { findVideoLink } from '@/features/recipes/videoLink'
 import { useBack } from '@/lib/navigation'
+import { useOnline } from '@/lib/online'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   AppBar,
@@ -91,20 +92,27 @@ export default function ImportRecipeScreen() {
   // earlier in-flight import so it cannot overwrite a newer import's UI.
   const started = useRef<string | null>(null)
   const requestId = useRef(0)
+  // Whether a request for this link was lost on the way back. The server may
+  // have finished it anyway, and then the next try is told the recipe is
+  // "already yours" about the one the lost request made a moment ago.
+  const lostOne = useRef(false)
   const start = () => {
     if (!link) return
     const currentRequest = ++requestId.current
     started.current = link.url
+    const afterLost = lostOne.current
+    lostOne.current = false
     setFailure(null)
     setStage(0)
     importRecipe
       .mutateAsync(link.url)
       .then((result) => {
-        const title = result.existing
-          ? t('recipes:import.doneExisting')
-          : result.community
-            ? t('recipes:import.doneCommunity')
-            : t('recipes:import.done')
+        const title =
+          result.existing && !afterLost
+            ? t('recipes:import.doneExisting')
+            : result.community
+              ? t('recipes:import.doneCommunity')
+              : t('recipes:import.done')
         if (mounted.current && onTop.current && requestId.current === currentRequest) {
           toast.show({ title, tone: 'success' })
           router.replace({ pathname: '/recipe/[id]', params: { id: result.recipeId } })
@@ -142,7 +150,9 @@ export default function ImportRecipeScreen() {
           }
           return
         }
-        setFailure(error instanceof VideoImportError ? error.code : 'failed')
+        const code = error instanceof VideoImportError ? error.code : 'failed'
+        if (code === 'offline') lostOne.current = true
+        setFailure(code)
       })
   }
   const startRef = useRef(start)
@@ -190,6 +200,33 @@ export default function ImportRecipeScreen() {
     })
     return () => subscription.remove()
   }, [linkUrl])
+
+  // Offline, the screen tries again by itself when the phone reconnects or the
+  // app comes back to the front, rather than leaving the user to notice and
+  // tap. Reconnecting counts even when it happened while the request was still
+  // out: `droppedOut` remembers the phone saying offline at any point since.
+  // Never in a loop: an "offline" while the phone says it is connected waits
+  // for one of those two things.
+  const online = useOnline()
+  const droppedOut = useRef(!online)
+  useEffect(() => {
+    if (!online) {
+      droppedOut.current = true
+      return
+    }
+    if (failure === 'offline' && droppedOut.current) {
+      droppedOut.current = false
+      startRef.current()
+    }
+  }, [online, failure])
+  const offline = failure === 'offline'
+  useEffect(() => {
+    if (!offline) return
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') startRef.current()
+    })
+    return () => subscription.remove()
+  }, [offline])
 
   useEffect(() => {
     if (failure || !importRecipe.isPending) return

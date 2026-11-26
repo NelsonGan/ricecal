@@ -736,6 +736,9 @@ export const zhHans = {
       noFoodTypedTitle: '你写的内容里没有食物',
       noFoodHint: '没有往你这一天里加任何东西。',
       noFoodDismiss: '知道了',
+      queuedTitle: '正在等待网络',
+      queuedHint: '联网后会自动发送',
+      queuedDismiss: '移除',
       analysisFailedTitle: '这张没能读出来',
       analysisFailedHint: '点一下自己选菜名',
 
@@ -1613,7 +1616,7 @@ export const zhHans = {
         },
         offline: {
           title: '你目前离线',
-          body: '联网后再试一次。',
+          body: '联网后会自动再试一次。',
         },
         proLimit: {
           title: '食谱已经很多了',

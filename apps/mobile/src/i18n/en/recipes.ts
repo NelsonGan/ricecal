@@ -110,7 +110,7 @@ export const recipes = {
       },
       offline: {
         title: 'You are offline',
-        body: 'Connect to the internet and try again.',
+        body: 'It tries again once you are back online.',
       },
       /** Pro's ceiling, which is never printed elsewhere: no paywall, nothing to buy. */
       proLimit: {

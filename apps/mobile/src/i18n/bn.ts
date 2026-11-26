@@ -730,6 +730,9 @@ export const bn = {
       noFoodTypedTitle: 'আপনি যা লিখেছেন তাতে কোনো খাবার নেই',
       noFoodHint: 'আপনার দিনে কিছুই যোগ হয়নি।',
       noFoodDismiss: 'ঠিক আছে',
+      queuedTitle: 'সংযোগের অপেক্ষায়',
+      queuedHint: 'আবার অনলাইন হলেই পাঠানো হবে',
+      queuedDismiss: 'সরান',
       analysisFailedTitle: 'এটি পড়া যায়নি',
       analysisFailedHint: 'নিজে পদ বাছতে চাপ দিন',
 
@@ -1610,7 +1613,7 @@ export const bn = {
         },
         offline: {
           title: 'আপনি অফলাইনে আছেন',
-          body: 'ইন্টারনেটে যুক্ত হয়ে আবার চেষ্টা করুন।',
+          body: 'আবার অনলাইন হলেই এটি নিজে থেকে আবার চেষ্টা করবে।',
         },
         proLimit: {
           title: 'অনেক রেসিপি হয়ে গেল',

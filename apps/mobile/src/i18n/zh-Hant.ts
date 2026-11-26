@@ -736,6 +736,9 @@ export const zhHant = {
       noFoodTypedTitle: '你寫的內容裡沒有食物',
       noFoodHint: '沒有往你這一天裡加任何東西。',
       noFoodDismiss: '知道了',
+      queuedTitle: '正在等待網路',
+      queuedHint: '連上網路後會自動送出',
+      queuedDismiss: '移除',
       analysisFailedTitle: '這張沒能讀出來',
       analysisFailedHint: '點一下自己選菜名',
 
@@ -1613,7 +1616,7 @@ export const zhHant = {
         },
         offline: {
           title: '你目前離線',
-          body: '連上網路後再試一次。',
+          body: '連上網路後會自動再試一次。',
         },
         proLimit: {
           title: '食譜已經很多了',

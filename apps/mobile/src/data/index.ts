@@ -155,7 +155,7 @@ export {
   useUpdateMealTime,
   useUpdateSettings,
 } from './settings'
-export { type DescribeInput, useDescribeFood, useSnapFood } from './snap'
+export { type DescribeInput, SnapQueue, useDescribeFood, useSnapFood } from './snap'
 export {
   ENTRY_FOOD_ID,
   ENTRY_SERVING_ID,

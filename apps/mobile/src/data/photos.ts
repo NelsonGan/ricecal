@@ -284,6 +284,8 @@ async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
         // `ArrayBuffer.isView(body)` and base64s it across to native; the lib.dom
         // `BodyInit` it is being checked against never heard of React Native.
         body: bytes as unknown as BodyInit,
+      }).catch((error: unknown) => {
+        throw markLost(error)
       }),
     () => true,
   )
@@ -304,6 +306,24 @@ async function uploadImage(kind: AssetKind, localUri: string): Promise<string> {
   }
 
   return key
+}
+
+/**
+ * Whether an upload failed for want of an answer rather than being refused: no
+ * reply from `photos` when asking where to put it, or none from storage while
+ * putting it. Either way nothing was stored, so the scan never started, and a
+ * meal taken offline can wait for the connection and be sent again
+ * (`SnapQueue`). A refusal, a 4xx or a photo that would not decode is not this.
+ */
+export function lostUpload(error: unknown): boolean {
+  const named = error as { name?: unknown; lost?: unknown } | null
+  return named?.name === 'FunctionsFetchError' || named?.lost === true
+}
+
+/** Marks a storage PUT that threw, since `fetch` only throws with no response at all. */
+function markLost(error: unknown): Error {
+  const marked = error instanceof Error ? error : new Error(String(error))
+  return Object.assign(marked, { lost: true })
 }
 
 /** How soon a failure has to come for it to be a stale connection. */

@@ -753,6 +753,9 @@ export const ms = {
       noFoodTypedTitle: 'Tiada makanan dalam apa yang anda tulis',
       noFoodHint: 'Tiada apa-apa ditambah kepada hari anda.',
       noFoodDismiss: 'Tutup',
+      queuedTitle: 'Menunggu sambungan',
+      queuedHint: 'Dihantar sebaik sahaja anda dalam talian',
+      queuedDismiss: 'Buang',
       analysisFailedTitle: 'Tidak dapat membaca yang ini',
       analysisFailedHint: 'Ketik untuk pilih hidangannya sendiri',
 
@@ -1647,7 +1650,7 @@ export const ms = {
         },
         offline: {
           title: 'Anda di luar talian',
-          body: 'Sambung ke internet dan cuba lagi.',
+          body: 'Ia akan cuba lagi sebaik sahaja anda dalam talian.',
         },
         proLimit: {
           title: 'Banyaknya resipi',

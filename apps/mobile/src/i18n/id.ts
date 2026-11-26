@@ -744,6 +744,9 @@ export const id = {
       noFoodTypedTitle: 'Tidak ada makanan dalam tulisanmu',
       noFoodHint: 'Tidak ada yang ditambahkan ke harimu.',
       noFoodDismiss: 'Tutup',
+      queuedTitle: 'Menunggu koneksi',
+      queuedHint: 'Terkirim begitu kamu online lagi',
+      queuedDismiss: 'Hapus',
       analysisFailedTitle: 'Tidak bisa membaca yang ini',
       analysisFailedHint: 'Ketuk untuk memilih hidangannya sendiri',
 
@@ -1630,7 +1633,7 @@ export const id = {
         },
         offline: {
           title: 'Kamu sedang offline',
-          body: 'Sambungkan ke internet dan coba lagi.',
+          body: 'Akan dicoba lagi begitu kamu online.',
         },
         proLimit: {
           title: 'Banyak sekali resepnya',

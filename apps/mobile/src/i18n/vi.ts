@@ -738,6 +738,9 @@ export const vi = {
       noFoodTypedTitle: 'Không có món ăn nào trong những gì bạn viết',
       noFoodHint: 'Không có gì được thêm vào ngày của bạn.',
       noFoodDismiss: 'Bỏ qua',
+      queuedTitle: 'Đang chờ kết nối',
+      queuedHint: 'Sẽ gửi khi bạn có mạng trở lại',
+      queuedDismiss: 'Xóa',
       analysisFailedTitle: 'Không đọc được cái này',
       analysisFailedHint: 'Chạm để tự chọn món',
 
@@ -1626,7 +1629,7 @@ export const vi = {
         },
         offline: {
           title: 'Bạn đang mất mạng',
-          body: 'Kết nối mạng rồi thử lại.',
+          body: 'Sẽ tự thử lại khi bạn có mạng trở lại.',
         },
         proLimit: {
           title: 'Nhiều công thức quá',

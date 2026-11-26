@@ -20,6 +20,7 @@ import {
   RefiningProvider,
   SelectedDateProvider,
   SessionProvider,
+  SnapQueue,
   useSession,
 } from '@/data'
 import { LoginLinkHandler, SessionEndedNotice } from '@/features/auth'
@@ -147,6 +148,12 @@ export default function RootLayout() {
                             screen. Inside `SessionProvider` because all three
                             are about one account's day. */}
                               <WidgetSync />
+                              {/* Renderless as well. Sends the meals photographed
+                            or typed with no connection once there is one. Under
+                            the toast because a refusal on the way has one to
+                            show, and inside `SessionProvider` because a queued
+                            meal is only ever sent as the account that took it. */}
+                              <SnapQueue />
                               <WatchSignOut />
                               {/* The one thing here that DOES render, and it
                             is here for the same reason the toast host is:

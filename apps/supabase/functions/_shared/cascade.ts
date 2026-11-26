@@ -1374,6 +1374,11 @@ export async function writeEntry(
      * photo becomes was eaten in the same place, so each carries it.
      */
     location?: LocationColumns | null
+    /**
+     * When the meal was taken, for one sent from the app's queue after the
+     * shutter (`readLoggedAt`). Null is the entry stamped as it is written.
+     */
+    loggedAt?: string | null
   },
 ): Promise<WrittenEntry> {
   const { resolved } = input
@@ -1415,6 +1420,7 @@ export async function writeEntry(
       display_label: resolved.displayLabel,
       suggested_edits: input.suggestedEdits.length ? input.suggestedEdits : null,
       ...(input.location ?? {}),
+      ...(input.loggedAt ? { logged_at: input.loggedAt } : {}),
     })
     .select('id')
     .single()

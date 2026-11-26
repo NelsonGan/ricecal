@@ -11,7 +11,13 @@ import {
 import { AppState } from 'react-native'
 import { createMMKV } from 'react-native-mmkv'
 
-import type { Entry } from './types'
+import {
+  dropQueuedPhoto,
+  dropQueuedPhotos,
+  queuedPhotoUri,
+  sweepQueuedPhotos,
+} from './queued-photos'
+import type { Entry, EntryLocation } from './types'
 
 /**
  * Snaps that have no row yet.
@@ -54,9 +60,31 @@ export type PendingSnap = {
    *
    * `nofood` is the scan answering that the photo has nothing edible in it, which
    * is a state of the row rather than an entry.
+   *
+   * `queued` is a scan that was never sent: the phone was offline at the
+   * shutter, or the photo could not be uploaded for want of a connection. It
+   * is the one state that can be sent again without any chance of a second
+   * entry, because no request for it ever reached `scan-meal`, and `SnapQueue`
+   * sends it when the phone is back online.
    */
-  status: 'analysing' | 'waiting' | 'failed' | 'nofood'
+  status: 'analysing' | 'waiting' | 'failed' | 'nofood' | 'queued'
+  /** When the shutter fired. A queued meal is logged at this time, not when it is sent. */
   loggedAt: string
+  /**
+   * When the request for a queued snap went out. The deadline is timed from
+   * this rather than the shutter, or a meal sent an hour after it was taken
+   * would be overdue the moment it left.
+   */
+  sentAt?: string
+  /**
+   * Whose meal this is. A queued snap is sent later by whoever is signed in
+   * then, so it carries its owner and is only ever sent as them.
+   */
+  userId?: string
+  /** What a queued snap needs to be sent as it would have been at the shutter. */
+  note?: string
+  barcode?: string
+  location?: EntryLocation | null
   /**
    * Read back from storage rather than started in this session. The row still
    * says it is working but gets no progress bar: the bar is timed from the
@@ -88,6 +116,10 @@ type PendingValue = {
   add: (snap: Omit<PendingSnap, 'status' | 'loggedAt'>) => void
   /** The request is gone but the scan may not be. See `status`. */
   detach: (id: string) => void
+  /** Never sent; send it when the phone is online. See `status`. */
+  queue: (id: string, details: Pick<PendingSnap, 'photoUri' | 'location'>) => void
+  /** A queued snap is being sent now. */
+  resend: (id: string) => void
   fail: (id: string) => void
   /** The scan came back with "there is no food in this photo". */
   noFood: (id: string) => void
@@ -114,6 +146,13 @@ const WAIT_MS = 150_000
  * off overnight without haunting a diary for a week.
  */
 const RESTORE_MS = 24 * 60 * 60 * 1000
+
+/**
+ * How long a queued snap is kept for. Longer than `RESTORE_MS`, because a
+ * queued meal is not in the database at all: dropping it is losing the meal.
+ * A week covers a trip without data and stops a dead one haunting the diary.
+ */
+const QUEUE_KEEP_MS = 7 * 24 * 60 * 60 * 1000
 
 /** How often the day is re-asked while a scan is running without us. */
 const POLL_MS = 6_000
@@ -147,7 +186,12 @@ const STORE_KEY = 'snaps'
  * this store outlives the process, so the next account on the same phone would
  * otherwise rehydrate the previous person's in-flight meals.
  */
+/** The mounted provider's rows, emptied when storage is. */
+const clearListeners = new Set<() => void>()
+
 export function clearPendingSnaps(): void {
+  for (const listener of clearListeners) listener()
+  dropQueuedPhotos()
   try {
     store.remove(STORE_KEY)
   } catch {
@@ -166,7 +210,12 @@ function readStored(): PendingSnap[] {
     // holding it is gone — so anything that thought it was mid-request is
     // moved to `waiting`, where it is polled for rather than waited on.
     return (parsed as PendingSnap[])
-      .filter((snap) => snap?.id && Date.parse(snap.loggedAt) > Date.now() - RESTORE_MS)
+      .filter(
+        (snap) =>
+          snap?.id &&
+          Date.parse(snap.sentAt ?? snap.loggedAt) >
+            Date.now() - (snap.status === 'queued' ? QUEUE_KEEP_MS : RESTORE_MS),
+      )
       .map((snap) => ({
         ...snap,
         status: snap.status === 'analysing' ? 'waiting' : snap.status,
@@ -180,6 +229,26 @@ function readStored(): PendingSnap[] {
 export function PendingSnapProvider({ children }: { children: ReactNode }) {
   const [snaps, setSnaps] = useState<PendingSnap[]>(readStored)
   const queryClient = useQueryClient()
+
+  // Kept photos no restored row uses any more: rows that aged out at launch,
+  // or went while their photo was being copied. Once, at mount, before
+  // anything can be copying.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the rows read back at launch, once
+  useEffect(() => {
+    sweepQueuedPhotos(snaps.map((snap) => snap.photoUri))
+  }, [])
+
+  // Signing out empties storage (`clearPendingSnaps`); the rows on screen go
+  // with it, or the next change here would write them straight back.
+  useEffect(() => {
+    clearListeners.add(setNone)
+    return () => {
+      clearListeners.delete(setNone)
+    }
+    function setNone() {
+      setSnaps([])
+    }
+  }, [])
 
   // Written on every change rather than on a timer: the process can be killed
   // between one and the next, and the whole point is surviving that.
@@ -241,6 +310,49 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
     )
   }, [])
 
+  const queue = useCallback((id: string, details: Pick<PendingSnap, 'photoUri' | 'location'>) => {
+    setSnaps((current) => {
+      // Removed while its photo was being copied: the copy has no row to
+      // belong to, so it goes rather than sitting in Documents for good.
+      if (!current.some((snap) => snap.id === id)) {
+        if (details.photoUri) dropQueuedPhoto(details.photoUri)
+        return current
+      }
+      return current.map((snap) =>
+        snap.id === id
+          ? {
+              ...snap,
+              ...details,
+              photoUri: details.photoUri ?? snap.photoUri,
+              status: 'queued',
+              sentAt: undefined,
+              suspended: undefined,
+            }
+          : snap,
+      )
+    })
+  }, [])
+
+  /**
+   * Back to `analysing` for the second try, timed from now. `restored` goes:
+   * this session is holding the request, so the row is a live scan again.
+   */
+  const resend = useCallback((id: string) => {
+    setSnaps((current) =>
+      current.map((snap) =>
+        snap.id === id && snap.status === 'queued'
+          ? {
+              ...snap,
+              status: 'analysing',
+              sentAt: new Date().toISOString(),
+              restored: undefined,
+              suspended: undefined,
+            }
+          : snap,
+      ),
+    )
+  }, [])
+
   const noFood = useCallback((id: string) => {
     setSnaps((current) =>
       current.map((snap) => (snap.id === id ? { ...snap, status: 'nofood' } : snap)),
@@ -248,7 +360,13 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const remove = useCallback((id: string) => {
-    setSnaps((current) => current.filter((snap) => snap.id !== id))
+    setSnaps((current) => {
+      const gone = current.find((snap) => snap.id === id)
+      // A queued snap's photo was copied somewhere the OS will not reclaim, so
+      // it is this store's to delete once the row is done with it.
+      if (gone?.photoUri) dropQueuedPhoto(gone.photoUri)
+      return current.filter((snap) => snap.id !== id)
+    })
   }, [])
 
   /**
@@ -287,7 +405,7 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
           // A row waiting on the USER — failed, or "no food here" — is not
           // overdue; it is unanswered, and timing it out would answer for them.
           if (snap.status !== 'analysing' && snap.status !== 'waiting') return snap
-          if (Date.parse(snap.loggedAt) > deadline) return snap
+          if (Date.parse(snap.sentAt ?? snap.loggedAt) > deadline) return snap
           changed = true
           // Past the deadline it becomes a failed row rather than nothing at all: the photo
           // stays, and so does the chance to log it by hand. Should the entry turn up later
@@ -329,8 +447,8 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
   }, [queryClient, watching, polledDays, unfinished, suspend])
 
   const value = useMemo(
-    () => ({ snaps, add, detach, fail, noFood, remove }),
-    [snaps, add, detach, fail, noFood, remove],
+    () => ({ snaps, add, detach, queue, resend, fail, noFood, remove }),
+    [snaps, add, detach, queue, resend, fail, noFood, remove],
   )
 
   return <PendingContext.Provider value={value}>{children}</PendingContext.Provider>
@@ -357,7 +475,8 @@ export function pendingAsEntry(snap: PendingSnap): Entry {
     // thing about it and `useDayLog` can tell it apart from the real entry
     // when that arrives.
     source: snap.text ? 'text' : 'camera',
-    localPhotoUri: snap.photoUri,
+    // Rebuilt rather than read as stored: see `queuedPhotoUri`.
+    localPhotoUri: queuedPhotoUri(snap.photoUri),
     status: snap.status,
     restored: snap.restored,
 

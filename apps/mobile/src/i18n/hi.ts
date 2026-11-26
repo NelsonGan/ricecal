@@ -732,6 +732,9 @@ export const hi = {
       noFoodTypedTitle: 'आपके लिखे में कोई खाना नहीं',
       noFoodHint: 'आपके दिन में कुछ नहीं जोड़ा गया।',
       noFoodDismiss: 'ठीक है',
+      queuedTitle: 'कनेक्शन का इंतज़ार है',
+      queuedHint: 'ऑनलाइन होते ही भेज दिया जाएगा',
+      queuedDismiss: 'हटाएँ',
       analysisFailedTitle: 'इसे पढ़ा नहीं जा सका',
       analysisFailedHint: 'ख़ुद पकवान चुनने के लिए दबाएं',
 
@@ -1614,7 +1617,7 @@ export const hi = {
         },
         offline: {
           title: 'आप ऑफ़लाइन हैं',
-          body: 'इंटरनेट से जुड़ें और फिर कोशिश करें।',
+          body: 'ऑनलाइन होते ही यह फिर कोशिश करेगा।',
         },
         proLimit: {
           title: 'काफ़ी रेसिपी हो गईं',
