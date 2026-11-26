@@ -9002,7 +9002,7 @@ never by its model name, and the iPad, recognised by `Platform.isPad`.
 | iPhone Duo closed (outer display) | 466 × 678 | 84pt column on the right | rail in that column | one |
 | iPhone Duo open on its side, flat or book | 951 × 669 | 84pt column on the right | rail in that column | two, meeting at the fold |
 | iPhone Duo open and upright | 669 × 951 | nothing at the sides | bottom | one |
-| iPad, 600pt wide or more | 744 to 1376 wide | nothing at the sides | rail in an 88pt column of its own, leading edge, at the top | two from 760pt; else one readable column |
+| iPad, 600pt wide or more | 744 to 1376 wide | nothing at the sides | rail in an 88pt column of its own, leading edge, at the top | two from 760pt (past the rail, on a tab page); else one readable column |
 | iPad window under 600pt | | nothing at the sides | bottom | one |
 | Any other iPhone, Android | | nothing at the sides | bottom | one |
 
@@ -9040,13 +9040,14 @@ never by its model name, and the iPad, recognised by `Platform.isPad`.
   A sheet provides its panel's width to what is inside it.
 - **The iPad.** Its tabs are the Duo's rail, stood in a column of its own down
   the leading edge (`NavColumnProvider`, which `Screen` keeps a tab's page clear
-  of; pushed pages have no rail and no column). Two panes share the width
-  equally, each at most 560pt, the pair centred, so landscape is not two 640pt
-  phones. A page of one pane keeps to a readable 680pt column, centred, with its
+  of; pushed pages have no rail and no column). Two panes need 760pt past the
+  rail, so an 11-inch iPad upright keeps one column on its tabs. They share the
+  width equally, each at most 560pt, the pair centred, so landscape is not two
+  640pt phones. A page of one pane keeps to a readable 680pt column, centred, with its
   app bar still across the top, because a settings row 1,000pt wide is mostly
   the gap between a label and its value.
 - **Grids** take `wide` on `Screen`, which gives one pane the whole width, and
-  size their columns with `gridColumns`: two on a phone, four or more on an
+  size their columns with `gridColumns`: two on a phone, three or more on an
   iPad (the recipes shelf, a profile's posts). On iPhone Duo open, `wide` lays
   the page symmetric about the fold and `even` keeps the count even, so the fold
   runs between two cards rather than through one.

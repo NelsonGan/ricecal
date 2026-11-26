@@ -42,7 +42,9 @@ const SIDE_COLUMN_MIN = 72
 /**
  * The content width from which an `Aside` becomes a second pane: two panes of
  * at least a small phone each. Open on its side, iPhone Duo has 867pt; upright
- * it has 669, which is one roomy column rather than two cramped ones.
+ * it has 669, which is one roomy column rather than two cramped ones. On an
+ * iPad's tab page the rail's column comes off first, so an 11-inch one upright
+ * (820pt, 732 past the rail) keeps one column there rather than two of 366.
  */
 const SPLIT_MIN_WIDTH = 760
 
@@ -112,15 +114,17 @@ type LayoutInput = {
   insets: { left: number; right: number }
   /** See `DeviceClass` and the top of the file. */
   device: DeviceClass
+  /** The tab rail's column on this page, which the panes share none of. See `useNavColumn`. */
+  column?: number
 }
 
-export function windowLayout({ width, insets, device }: LayoutInput): WindowLayout {
+export function windowLayout({ width, insets, device, column = 0 }: LayoutInput): WindowLayout {
   const { left, right } = insets
   const base = { width, left, right, railColumn: 0, fold: false, tablet: false }
   if (!device) return { ...base, tabBar: 'bottom', split: false }
 
   const content = width - left - right
-  const split = content >= SPLIT_MIN_WIDTH
+  const split = content - column >= SPLIT_MIN_WIDTH
 
   if (device === 'tablet') {
     const rail = content >= TABLET_RAIL_MIN_WIDTH
@@ -147,7 +151,8 @@ function deviceClass(): DeviceClass {
 export function useWindowLayout(): WindowLayout {
   const { width } = useWindowDimensions()
   const { left, right } = useSafeAreaInsets()
-  return windowLayout({ width, insets: { left, right }, device: deviceClass() })
+  const column = useNavColumn()
+  return windowLayout({ width, insets: { left, right }, device: deviceClass(), column })
 }
 
 type PaneFrame = { left: number; width: number }
@@ -248,8 +253,8 @@ export function useOverlayInsets(): { left: number; right: number } {
  * The width of the pane a component is drawn in, for the few that size
  * themselves by arithmetic rather than by flex: a grid of tiles, a pager.
  * `Screen` provides it for each pane, and a sheet for its panel; outside both
- * it is the window inside its side insets, which on every iPhone but iPhone
- * Duo is the window's width.
+ * it is the page inside its side insets and the tab rail's column, which on
+ * every iPhone but iPhone Duo is the window's width.
  */
 const PaneWidthContext = createContext<number | null>(null)
 export const PaneWidthProvider = PaneWidthContext.Provider
@@ -257,7 +262,8 @@ export const PaneWidthProvider = PaneWidthContext.Provider
 export function usePaneWidth(): number {
   const pane = useContext(PaneWidthContext)
   const layout = useWindowLayout()
-  return pane ?? paneFrames({ ...layout, split: false }).main.width
+  const column = useNavColumn()
+  return pane ?? paneFrames({ ...layout, split: false }, column).main.width
 }
 
 /**

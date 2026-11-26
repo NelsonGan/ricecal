@@ -431,7 +431,8 @@ const CARD_GAP = 14
 
 /**
  * The shelf, as many cards to a row as fit at `CARD_MIN`: two on a phone, as
- * it always was, four on an iPad upright and six on its side. On iPhone Duo
+ * it always was, and on an iPad three to six by its size and which way up it
+ * is (four on a 13-inch one upright). On iPhone Duo
  * open the page is laid symmetric about the fold and the count kept even, so
  * the fold falls between two cards rather than through one.
  *

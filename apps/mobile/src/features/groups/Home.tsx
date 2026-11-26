@@ -113,7 +113,12 @@ export function GroupsHome({
   const refreshPublic = () => {
     setRefreshingPublic(true)
     void queryClient
-      .refetchQueries({ queryKey: keys.groupsRead(userId, 'public_groups').slice(0, 3) })
+      // Active only: every search typed so far is cached under its own key,
+      // and refreshing what is on screen should not refetch each of them.
+      .refetchQueries({
+        queryKey: keys.groupsRead(userId, 'public_groups').slice(0, 3),
+        type: 'active',
+      })
       .finally(() => setRefreshingPublic(false))
   }
   const pane = (children: ReactNode, which: 'yours' | 'public' = 'yours') => (

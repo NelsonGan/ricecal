@@ -79,6 +79,14 @@ describe('windowLayout', () => {
     })
   })
 
+  it('splits an 11-inch iPad upright only where no rail takes its column', () => {
+    const ipad11 = { width: 820, insets: { left: 0, right: 0 }, device: 'tablet' } as const
+    expect(windowLayout(ipad11).split).toBe(true)
+    // 732pt past the rail: one roomy column, not two of 366.
+    expect(windowLayout({ ...ipad11, column: 88 }).split).toBe(false)
+    expect(windowLayout({ ...IPAD, device: 'tablet', column: 88 }).split).toBe(true)
+  })
+
   it('gives a narrow iPad window the bottom bar and one pane', () => {
     expect(windowLayout({ ...IPAD_NARROW, device: 'tablet' })).toMatchObject({
       tabBar: 'bottom',
@@ -115,13 +123,16 @@ describe('paneFrames', () => {
   })
 
   it('shares an iPad equally past the rail', () => {
-    const { main, aside } = paneFrames(windowLayout({ ...IPAD, device: 'tablet' }), 88)
+    const { main, aside } = paneFrames(windowLayout({ ...IPAD, device: 'tablet', column: 88 }), 88)
     expect(main).toEqual({ left: 88, width: 472 })
     expect(aside).toEqual({ left: 560, width: 472 })
   })
 
   it('caps each pane on a wide iPad and centres the pair', () => {
-    const { main, aside } = paneFrames(windowLayout({ ...IPAD_SIDEWAYS, device: 'tablet' }), 88)
+    const { main, aside } = paneFrames(
+      windowLayout({ ...IPAD_SIDEWAYS, device: 'tablet', column: 88 }),
+      88,
+    )
     expect(main).toEqual({ left: 172, width: 560 })
     expect(aside).toEqual({ left: 732, width: 560 })
   })
@@ -157,15 +168,19 @@ describe('singlePaneFrame', () => {
 })
 
 describe('gridColumns', () => {
-  const card = { min: 160, gap: 14 }
+  // The recipes shelf's.
+  const card = { min: 172, gap: 14 }
   it('keeps two to a row on a phone, even a small one', () => {
     expect(gridColumns(362, card)).toBe(2)
     expect(gridColumns(280, card)).toBe(2)
   })
 
   it('fills an iPad', () => {
-    expect(gridColumns(904, card)).toBe(5)
-    expect(gridColumns(904, { min: 170, gap: 14 })).toBe(4)
+    // A tab page's inner width past the rail: 13-inch upright and sideways,
+    // 11-inch upright.
+    expect(gridColumns(904, card)).toBe(4)
+    expect(gridColumns(1248, card)).toBe(6)
+    expect(gridColumns(692, card)).toBe(3)
   })
 
   it('keeps an even count when asked, so the fold falls between two', () => {
@@ -378,7 +393,7 @@ describe('NavBar', () => {
     expect(width()).toBeUndefined()
   })
 
-  it('stands in a column of its own at the top on an iPad', async () => {
+  it('stands in a column of its own on an iPad', async () => {
     const pad = asIpad()
     try {
       await show(1032, 0)

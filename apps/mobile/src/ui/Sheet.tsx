@@ -51,6 +51,9 @@ const FALL_MS = 180
 /** A centred panel's widest, the `max-w-[420px]` it is drawn with. */
 const CENTRED_MAX_WIDTH = 420
 
+/** The room kept either side of a centred panel, its wrapper's `px-6`. */
+const CENTRED_SIDE = 24
+
 /**
  * How far down the handle has to be dragged for the release to dismiss. Also
  * cleared by a flick, since a short fast drag and a long slow one mean the same
@@ -315,10 +318,8 @@ export function SheetSurface({
   // The panel's own width, for what inside it sizes itself by arithmetic (a
   // grid of tiles). Without it they read the page's pane behind the sheet,
   // which on an iPad is wider than the panel.
-  const panelWidth = Math.min(
-    width - overlay.left - overlay.right,
-    center ? CENTRED_MAX_WIDTH : Number.POSITIVE_INFINITY,
-  )
+  const strip = width - overlay.left - overlay.right
+  const panelWidth = center ? Math.min(strip - 2 * CENTRED_SIDE, CENTRED_MAX_WIDTH) : strip
   const keysBehind = behindKeyboard && !center && !fullHeight
   const keyboard = useReanimatedKeyboardAnimation()
 
