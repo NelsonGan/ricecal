@@ -106,8 +106,9 @@ export default function AboutStep() {
   const chosen = dragged || (targetWeightKg != null && targetWeightKg !== draft.weightKg)
 
   /**
-   * The target the screen will record: the one chosen, or the weight typed
-   * above it, which is "keep my weight".
+   * The default target: the weight typed above it, which is "keep my weight".
+   * What Continue records is `target` below, which waits for that weight to
+   * be in range.
    *
    * Continue used to wait for a drag as well. The thumb already sits on the
    * current weight, so somebody happy there had to drag it away and back, and
@@ -115,16 +116,18 @@ export default function AboutStep() {
    * goal this produces and has a way back here, so the default is never silent.
    */
   const followed = weightKg != null ? clamp(weightKg, targetRange) : undefined
-  const target = chosen ? targetWeightKg : followed
 
   /**
-   * What the readout and thumb show. The default only once the typed weight is
-   * inside its range: `read` clamps on every keystroke, so the "6" on the way to
-   * "65" would otherwise flash the 20 kg floor. Continue still records the
-   * clamped value, which is also what the field settles to on blur.
+   * What the readout and thumb show, and so what Continue records. The default
+   * only once the typed weight is inside its range: `read` clamps on every
+   * keystroke, so the "6" on the way to "65" would otherwise flash the 20 kg
+   * floor. Continue waits for it too, or a press there recorded a 20 kg body
+   * aiming for 20 kg that nobody typed or saw. On blur the field settles to
+   * the clamped value, which then shows and can be recorded.
    */
   const typedInRange = typedWeight != null && typedWeight === Number(fields.weight)
   const shownTarget = chosen ? targetWeightKg : typedInRange ? followed : undefined
+  const target = shownTarget
 
   /** Where the thumb sits, which needs a number even before there is a weight. */
   const targetPreview = shownTarget ?? targetRange.min
@@ -153,7 +156,10 @@ export default function AboutStep() {
       return { ...current, feet: String(feet), inches: String(inches) }
     })
 
-  const ready = heightCm != null && weightKg != null && age != null && sex != null
+  // The weight only counts once what is typed is in range (`typedInRange`):
+  // the "6" on the way to "62" reads as the 20 kg floor, and Continue there
+  // recorded a body nobody typed, whatever the target.
+  const ready = heightCm != null && weightKg != null && typedInRange && age != null && sex != null
 
   const save = () => {
     if (!ready || target == null) return

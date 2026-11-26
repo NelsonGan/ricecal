@@ -149,6 +149,45 @@ it('takes the current weight as the target when the slider is left alone', async
   expect(mockPush).toHaveBeenCalledWith('/(onboarding)/activity')
 })
 
+/**
+ * The "6" on the way to "62" reads as 20 kg, the floor. The readout keeps its
+ * dash for it, and Continue has to wait as well: pressed there, it recorded a
+ * 20 kg body with a 20 kg target, which nobody typed or saw.
+ */
+it('waits for a half-typed weight before recording it as the target', async () => {
+  await render(<AboutStep />)
+
+  await user.type(screen.getByLabelText('HEIGHT'), '168')
+  await user.type(screen.getByLabelText('AGE'), '31')
+  await user.press(screen.getByText('Female'))
+  await user.type(screen.getByLabelText('WEIGHT'), '6', { skipBlur: true })
+
+  expect(screen.getByText('—')).toBeTruthy()
+  expect(advance()).toBeDisabled()
+  await continueOn()
+  expect(mockPush).not.toHaveBeenCalled()
+
+  await user.type(screen.getByLabelText('WEIGHT'), '2', { skipBlur: true })
+  expect(screen.getByText('62.0 kg')).toBeOnTheScreen()
+  await continueOn()
+  expect(saved()).toEqual(expect.objectContaining({ weightKg: 62, targetWeightKg: 62 }))
+})
+
+/** The same "6" with a target already chosen: the weight is still not an answer. */
+it('waits for a half-typed weight when the target was chosen', async () => {
+  seed({ ...COMPLETE, weightKg: undefined })
+  await render(<AboutStep />)
+
+  await user.type(screen.getByLabelText('WEIGHT'), '6', { skipBlur: true })
+  expect(advance()).toBeDisabled()
+  await continueOn()
+  expect(mockPush).not.toHaveBeenCalled()
+
+  await user.type(screen.getByLabelText('WEIGHT'), '2', { skipBlur: true })
+  await continueOn()
+  expect(saved()).toEqual(expect.objectContaining({ weightKg: 62, targetWeightKg: 60 }))
+})
+
 it('shows a dash for the target until there is a weight to measure it from', async () => {
   await render(<AboutStep />)
 
