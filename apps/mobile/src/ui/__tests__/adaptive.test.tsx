@@ -194,6 +194,17 @@ describe('overlayInsets', () => {
     })
   })
 
+  it('centres on the page beside the rail on an iPad tab screen', () => {
+    // 944pt of page past the 88pt rail, 600pt of it the overlay's.
+    expect(overlayInsets(windowLayout({ ...IPAD, device: 'tablet' }), 88)).toEqual({
+      left: 260,
+      right: 172,
+    })
+    // A window just wide enough for the rail keeps the overlay out of it.
+    const narrow = windowLayout({ width: 700, insets: { left: 0, right: 0 }, device: 'tablet' })
+    expect(overlayInsets(narrow, 88).left).toBe(94)
+  })
+
   it('clears the column, and with two panes keeps to the trailing one', () => {
     expect(overlayInsets(windowLayout({ ...DUO_CLOSED, device: 'phone' }))).toEqual({
       left: 0,
@@ -281,6 +292,37 @@ describe('Screen with an Aside', () => {
     while (box && within(box).queryByText('Plans') === null) box = box.parent
     expect(box).not.toBeNull()
     expect(within(box as never).queryByText('What Pro adds')).toBeNull()
+  })
+
+  it('keeps a page without an Aside whole on iPhone Duo open, footer and all', async () => {
+    const window = { width: 951, height: 669, scale: 3, fontScale: 1 }
+    ReactNative.Dimensions.set({ window, screen: window })
+    const metrics = {
+      frame: { x: 0, y: 0, width: 951, height: 669 },
+      insets: { top: 0, left: 0, right: 84, bottom: 20 },
+    }
+    await render(
+      <SafeAreaProvider initialMetrics={metrics}>
+        <Screen testID="page" footer={<Text>Save</Text>}>
+          <Text>Settings</Text>
+        </Screen>
+      </SafeAreaProvider>,
+    )
+    // The gutter both sides, and the footer flush with the page rather than
+    // pushed out by half a window: measured against the first of two panes,
+    // this page lost its right gutter and its footer ran off the edge.
+    const content = ReactNative.StyleSheet.flatten(
+      screen.getByTestId('page').props.contentContainerStyle,
+    )
+    expect(content.paddingLeft).toBe(20)
+    expect(content.paddingRight).toBe(20)
+    let footer = screen.getByText('Save').parent
+    while (footer && ReactNative.StyleSheet.flatten(footer.props.style)?.marginRight === undefined)
+      footer = footer.parent
+    expect(ReactNative.StyleSheet.flatten(footer?.props.style)).toMatchObject({
+      marginLeft: 0,
+      marginRight: 0,
+    })
   })
 
   it('gives the aside a pane of its own on iPhone Duo open', async () => {
@@ -384,13 +426,19 @@ describe('Screen on an iPad', () => {
     await render(<SafeAreaProvider initialMetrics={metrics}>{page}</SafeAreaProvider>)
   }
 
-  it('keeps a page of one pane to a readable column', async () => {
+  it('keeps a page of one pane to a readable column, centred', async () => {
     await show(
-      <Screen>
+      <Screen testID="page">
         <Width label="column" />
       </Screen>,
     )
     expect(screen.getByText('column 680')).toBeOnTheScreen()
+    // (1032 - 680) / 2 either side, inside the gutter.
+    const content = ReactNative.StyleSheet.flatten(
+      screen.getByTestId('page').props.contentContainerStyle,
+    )
+    expect(content.paddingLeft).toBe(196)
+    expect(content.paddingRight).toBe(196)
   })
 
   it('gives a wide page the whole width past the rail', async () => {

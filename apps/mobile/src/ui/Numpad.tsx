@@ -23,7 +23,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ReplayMask } from '@/lib/replay-mask'
 import { motion, radius, slab, spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
-import { overlayInsets, useWindowLayout } from './adaptive'
+import { overlayInsets, useNavColumn, useWindowLayout } from './adaptive'
 import { cn } from './cn'
 import { Icon } from './Icon'
 import { Squish } from './Squish'
@@ -621,7 +621,8 @@ function NumpadSurface({
   const insets = useSafeAreaInsets()
   const layout = useWindowLayout()
   // On an iPad, the width of a sheet, centred, rather than keys a hand wide.
-  const side = edges ?? (layout.tablet ? overlayInsets(layout) : layout)
+  const column = useNavColumn()
+  const side = edges ?? (layout.tablet ? overlayInsets(layout, column) : layout)
   const colors = useThemeColors()
   const spec = session.field.current
   const tools = spec.tools

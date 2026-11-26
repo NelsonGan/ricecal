@@ -1,4 +1,5 @@
 import { FREE_GROUPS } from '@ricecal/shared'
+import { useQueryClient } from '@tanstack/react-query'
 import { useFocusEffect } from 'expo-router'
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -14,6 +15,7 @@ import {
   useMyGroups,
   usePublicGroups,
 } from '@/data/groups'
+import { keys } from '@/data/keys'
 import { useRequirePro } from '@/features/paywall'
 import { QueryNotice } from '@/features/social/components'
 import { track } from '@/lib/analytics'
@@ -103,11 +105,29 @@ export function GroupsHome({
   // With room for two panes, the groups somebody is in and the public ones to
   // find stand side by side, each scrolling on its own.
   const { split } = useWindowLayout()
-  const pane = (children: ReactNode) => (
+  // The public pane refreshes the public groups, which `PublicGroups` reads
+  // itself; one pane holding both refreshes the memberships, as it always has.
+  const queryClient = useQueryClient()
+  const userId = useUserId()
+  const [refreshingPublic, setRefreshingPublic] = useState(false)
+  const refreshPublic = () => {
+    setRefreshingPublic(true)
+    void queryClient
+      .refetchQueries({ queryKey: keys.groupsRead(userId, 'public_groups').slice(0, 3) })
+      .finally(() => setRefreshingPublic(false))
+  }
+  const pane = (children: ReactNode, which: 'yours' | 'public' = 'yours') => (
     <ScrollView
       contentContainerClassName="gap-lg px-gutter pb-xl pt-1"
       refreshControl={
-        <RefreshControl refreshing={groups.isRefetching} onRefresh={() => void groups.refetch()} />
+        which === 'public' ? (
+          <RefreshControl refreshing={refreshingPublic} onRefresh={refreshPublic} />
+        ) : (
+          <RefreshControl
+            refreshing={groups.isRefetching}
+            onRefresh={() => void groups.refetch()}
+          />
+        )
       }
     >
       {children}
@@ -200,7 +220,7 @@ export function GroupsHome({
               {sheets}
             </>,
           )}
-          <Aside>{pane(<PublicGroups onJoined={onOpen} />)}</Aside>
+          <Aside>{pane(<PublicGroups onJoined={onOpen} />, 'public')}</Aside>
         </>
       ) : (
         pane(

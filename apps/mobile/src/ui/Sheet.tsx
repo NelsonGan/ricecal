@@ -45,10 +45,12 @@ const ScrollBody = cssInterop(KeyboardAwareScrollView, {
 /** How long the panel takes to rise. */
 const RISE_MS = 260
 
-/** A centred panel's widest, the `max-w-[420px]` it is drawn with. */
-const CENTRED_MAX_WIDTH = 420
 /** And to fall, once a drag has decided it is leaving. Quicker than it arrived. */
 const FALL_MS = 180
+
+/** A centred panel's widest, the `max-w-[420px]` it is drawn with. */
+const CENTRED_MAX_WIDTH = 420
+
 /**
  * How far down the handle has to be dragged for the release to dismiss. Also
  * cleared by a flick, since a short fast drag and a long slow one mean the same

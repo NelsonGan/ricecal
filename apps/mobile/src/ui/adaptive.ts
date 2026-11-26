@@ -217,25 +217,31 @@ export function singlePaneFrame(layout: WindowLayout, column = 0, wide = false):
  * On an iPad, centred and no wider than `TABLET_OVERLAY_MAX`. There is no fold
  * to avoid, and a sheet the width of the screen is a band rather than a sheet.
  */
-export function overlayInsets(layout: WindowLayout): { left: number; right: number } {
-  if (layout.tablet) return centredInsets(layout, TABLET_OVERLAY_MAX)
+export function overlayInsets(layout: WindowLayout, column = 0): { left: number; right: number } {
+  if (layout.tablet) return centredInsets(layout, TABLET_OVERLAY_MAX, column)
   const { aside } = paneFrames(layout)
   if (!aside) return { left: layout.left, right: layout.right }
   return { left: aside.left, right: layout.right }
 }
 
 /**
- * The space to leave either side of something centred in the window and no
- * wider than `max`, never less than the safe area on its side.
+ * The space to leave either side of something no wider than `max`, centred on
+ * the page: the window inside its safe area, less the tab rail's `column` on a
+ * tab screen.
  */
-export function centredInsets(layout: WindowLayout, max: number): { left: number; right: number } {
-  const { width, left, right } = layout
-  const side = Math.max((width - max) / 2, 0)
-  return { left: Math.max(left, side), right: Math.max(right, side) }
+export function centredInsets(
+  layout: WindowLayout,
+  max: number,
+  column = 0,
+): { left: number; right: number } {
+  const left = layout.left + column
+  const { right } = layout
+  const side = Math.max((layout.width - left - right - max) / 2, 0)
+  return { left: left + side, right: right + side }
 }
 
 export function useOverlayInsets(): { left: number; right: number } {
-  return overlayInsets(useWindowLayout())
+  return overlayInsets(useWindowLayout(), useNavColumn())
 }
 
 /**

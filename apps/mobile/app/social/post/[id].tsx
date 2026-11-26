@@ -2,6 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { type ReactElement, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ScrollView, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAvatarUrl, useUserId } from '@/data'
 import {
   type SocialComment,
@@ -22,6 +23,7 @@ import {
   useSocialTask,
   useSocialTime,
 } from '@/features/social/components'
+import { spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import {
   Aside,
@@ -405,6 +407,7 @@ function Post({ id }: { id: string }) {
   // beside it, with the composer under the comments it adds to. On one, the
   // post heads the list of comments, as it always has.
   const { split } = useWindowLayout()
+  const insets = useSafeAreaInsets()
   const pending = [...outbox.pending]
     .reverse()
     .map((item) => (
@@ -472,7 +475,12 @@ function Post({ id }: { id: string }) {
     >
       {post.data && split ? (
         <>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            // The composer is under the other pane, so nothing below this one
+            // clears the home indicator for it.
+            contentContainerStyle={{ paddingBottom: insets.bottom + spacing.gutter }}
+          >
             <PostCard post={post.data} detail />
             {notice}
           </ScrollView>

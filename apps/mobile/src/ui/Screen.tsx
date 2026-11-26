@@ -385,11 +385,14 @@ export function Screen({
    * column scrolls the page too.
    */
   const single = singlePaneFrame(layout, navColumn, wide)
+  // Measured against the whole page box, not `frames.main`: on a window with
+  // room for two, that is the first of two panes this page does not have.
+  const whole = paneFrames({ ...layout, split: false }, navColumn).main
   const inset = asideFrame
     ? { left: 0, right: 0 }
     : {
-        left: single.left - frames.main.left,
-        right: frames.main.left + frames.main.width - single.left - single.width,
+        left: single.left - whole.left,
+        right: whole.left + whole.width - single.left - single.width,
       }
   /**
    * Where the floating corners stand: in the page's column with one pane, and

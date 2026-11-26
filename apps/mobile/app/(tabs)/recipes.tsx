@@ -450,9 +450,12 @@ function ShelfGrid({
   const inner = pane - 2 * spacing.gutter
   const columns = gridColumns(inner, { min: CARD_MIN, gap: CARD_GAP, even: fold })
   const width = Math.floor((inner - CARD_GAP * (columns - 1)) / columns)
-  // The rounding goes into the gaps, so the row spans the pane exactly and an
-  // even grid's middle gap is centred on it.
-  const columnGap = columns > 1 ? (inner - width * columns) / (columns - 1) : 0
+  // The rounding goes into the gaps, so the row spans the pane and an even
+  // grid's middle gap is centred on it. Rounded down to a hundredth: a row
+  // that sums to the width exactly can overshoot it in floating point and
+  // wrap its last card.
+  const columnGap =
+    columns > 1 ? Math.floor(((inner - width * columns) / (columns - 1)) * 100) / 100 : 0
 
   return (
     <View className="flex-row flex-wrap" style={{ rowGap, columnGap }}>
