@@ -37,7 +37,7 @@ export async function keepQueuedPhoto(id: string, uri: string): Promise<string> 
 }
 
 /** Whether `uri` is one of the copies `keepQueuedPhoto` made. */
-export function isQueuedPhoto(uri: string): boolean {
+function isQueuedPhoto(uri: string): boolean {
   return uri.includes(`/${FOLDER}/`)
 }
 

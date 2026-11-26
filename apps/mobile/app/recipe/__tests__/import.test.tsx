@@ -1,5 +1,6 @@
 import '@/i18n'
 
+import { onlineManager } from '@tanstack/react-query'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import { act, fireEvent, render, screen, waitFor } from '@/test-utils'
@@ -112,6 +113,7 @@ beforeEach(() => {
   mockQuota.current = { used: 1, limit: 5, remaining: 4, entitled: false }
   mockQuotaState.current = { isPending: false, fetchStatus: 'idle' }
   mockFocused.current = true
+  onlineManager.setOnline(true)
 })
 
 it('imports the link once and opens the recipe it made', async () => {
@@ -182,6 +184,52 @@ it('offline, it does not wait on a paused allowance and says so', async () => {
   expect(await screen.findByText('You are offline')).toBeTruthy()
   expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy()
   expect(mockImport).toHaveBeenCalledTimes(1)
+})
+
+it('tries again by itself when the phone comes back online', async () => {
+  const { VideoImportError } = jest.requireMock('@/data') as {
+    VideoImportError: new (code: string) => Error
+  }
+  mockImport.mockRejectedValueOnce(new VideoImportError('offline'))
+  mockImport.mockResolvedValueOnce({ recipeId: 'r1', existing: false, community: false })
+  await act(() => onlineManager.setOnline(false))
+  await renderScreen()
+  expect(await screen.findByText('You are offline')).toBeTruthy()
+
+  await act(async () => onlineManager.setOnline(true))
+  await waitFor(() =>
+    expect(mockReplace).toHaveBeenCalledWith({ pathname: '/recipe/[id]', params: { id: 'r1' } }),
+  )
+  expect(mockImport).toHaveBeenCalledTimes(2)
+})
+
+it('does not retry in a loop when the phone said it was online all along', async () => {
+  const { VideoImportError } = jest.requireMock('@/data') as {
+    VideoImportError: new (code: string) => Error
+  }
+  mockImport.mockRejectedValue(new VideoImportError('offline'))
+  await renderScreen()
+  expect(await screen.findByText('You are offline')).toBeTruthy()
+  await act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 50))
+  })
+  expect(mockImport).toHaveBeenCalledTimes(1)
+})
+
+it('calls the recipe a lost request made "saved", not "already yours"', async () => {
+  // The lost request finished on the server, so the next try finds the
+  // recipe on the shelf. Saying "you already have this one" would read as the
+  // import having done nothing.
+  const { VideoImportError } = jest.requireMock('@/data') as {
+    VideoImportError: new (code: string) => Error
+  }
+  mockImport.mockRejectedValueOnce(new VideoImportError('offline'))
+  mockImport.mockResolvedValueOnce({ recipeId: 'r1', existing: true, community: false })
+  await renderScreen()
+
+  fireEvent.press(await screen.findByRole('button', { name: 'Try again' }))
+  expect(await screen.findByText('Saved to your recipes')).toBeTruthy()
+  expect(screen.queryByText('You already have this one')).toBeNull()
 })
 
 it('waits while the allowance is actually loading', async () => {

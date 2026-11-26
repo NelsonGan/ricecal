@@ -241,12 +241,10 @@ export function PendingSnapProvider({ children }: { children: ReactNode }) {
   // Signing out empties storage (`clearPendingSnaps`); the rows on screen go
   // with it, or the next change here would write them straight back.
   useEffect(() => {
-    clearListeners.add(setNone)
+    const clear = () => setSnaps([])
+    clearListeners.add(clear)
     return () => {
-      clearListeners.delete(setNone)
-    }
-    function setNone() {
-      setSnaps([])
+      clearListeners.delete(clear)
     }
   }, [])
 
