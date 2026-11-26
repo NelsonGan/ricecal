@@ -1218,7 +1218,7 @@ export const zhHant = {
       paceHolding: '保持不變',
       other: '其他',
       waterGoal: '喝水目標',
-      saved: '指標已儲存',
+      saved: '目標已儲存',
       saveFailed: '無法儲存目標，請重試。',
     },
 

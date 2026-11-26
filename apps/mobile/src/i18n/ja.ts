@@ -630,7 +630,7 @@ export const ja = {
         describe: '書く',
         describeBody: '食べたものを入力',
         search: '探す',
-        searchBody: 'カタログも自分のレシピも',
+        searchBody: 'カタログも自分の料理も',
         barcode: 'パッケージ商品なら、カメラでバーコードも読み取れます。',
       },
 
@@ -1227,7 +1227,7 @@ export const ja = {
       paceHolding: '維持',
       other: 'その他',
       waterGoal: '水分の目標',
-      saved: '数値を保存しました',
+      saved: '目標を保存しました',
       saveFailed: '目標を保存できませんでした。もう一度お試しください。',
     },
 

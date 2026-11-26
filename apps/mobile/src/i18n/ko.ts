@@ -623,7 +623,7 @@ export const ko = {
         describe: '설명',
         describeBody: '먹은 것을 입력',
         search: '검색',
-        searchBody: '저희 목록 또는 내 레시피',
+        searchBody: '저희 목록 또는 내 음식',
         barcode: '포장 제품인가요? 카메라가 바코드도 읽어요.',
       },
 

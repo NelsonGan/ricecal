@@ -1218,7 +1218,7 @@ export const zhHans = {
       paceHolding: '保持不变',
       other: '其他',
       waterGoal: '喝水目标',
-      saved: '指标已保存',
+      saved: '目标已保存',
       saveFailed: '无法保存目标，请重试。',
     },
 

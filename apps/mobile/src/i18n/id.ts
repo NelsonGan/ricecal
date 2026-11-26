@@ -653,7 +653,7 @@ export const id = {
         chipHalf: 'Setengah porsi',
         chipNoRice: 'Tanpa nasi',
         chipExtra: 'Tambah minuman',
-        typed: 'Nasinya saya makan setengah saja',
+        typed: 'Nasinya aku makan setengah saja',
         beforeLabel: 'SEBELUM',
         before: '644',
         afterLabel: 'SESUDAH',
