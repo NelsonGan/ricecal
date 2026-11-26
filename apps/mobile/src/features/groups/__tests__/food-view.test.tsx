@@ -35,7 +35,13 @@ jest.mock('@/data/groups', () => ({
   useGroupFood: (groupId?: string, entryId?: string) =>
     groupId && entryId
       ? { data: null, isPending: false, isError: false, fetchStatus: 'idle', refetch: jest.fn() }
-      : { data: undefined, isPending: true, isError: false, fetchStatus: 'idle', refetch: jest.fn() },
+      : {
+          data: undefined,
+          isPending: true,
+          isError: false,
+          fetchStatus: 'idle',
+          refetch: jest.fn(),
+        },
 }))
 jest.mock('../parts', () => ({
   ...jest.requireActual('../parts'),
