@@ -106,8 +106,9 @@ export default function AboutStep() {
   const chosen = dragged || (targetWeightKg != null && targetWeightKg !== draft.weightKg)
 
   /**
-   * The target the screen will record: the one chosen, or the weight typed
-   * above it, which is "keep my weight".
+   * The default target: the weight typed above it, which is "keep my weight".
+   * What Continue records is `target` below, which waits for that weight to
+   * be in range.
    *
    * Continue used to wait for a drag as well. The thumb already sits on the
    * current weight, so somebody happy there had to drag it away and back, and
@@ -155,7 +156,10 @@ export default function AboutStep() {
       return { ...current, feet: String(feet), inches: String(inches) }
     })
 
-  const ready = heightCm != null && weightKg != null && age != null && sex != null
+  // The weight only counts once what is typed is in range (`typedInRange`):
+  // the "6" on the way to "62" reads as the 20 kg floor, and Continue there
+  // recorded a body nobody typed, whatever the target.
+  const ready = heightCm != null && weightKg != null && typedInRange && age != null && sex != null
 
   const save = () => {
     if (!ready || target == null) return

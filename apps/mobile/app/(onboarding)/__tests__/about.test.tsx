@@ -173,6 +173,21 @@ it('waits for a half-typed weight before recording it as the target', async () =
   expect(saved()).toEqual(expect.objectContaining({ weightKg: 62, targetWeightKg: 62 }))
 })
 
+/** The same "6" with a target already chosen: the weight is still not an answer. */
+it('waits for a half-typed weight when the target was chosen', async () => {
+  seed({ ...COMPLETE, weightKg: undefined })
+  await render(<AboutStep />)
+
+  await user.type(screen.getByLabelText('WEIGHT'), '6', { skipBlur: true })
+  expect(advance()).toBeDisabled()
+  await continueOn()
+  expect(mockPush).not.toHaveBeenCalled()
+
+  await user.type(screen.getByLabelText('WEIGHT'), '2', { skipBlur: true })
+  await continueOn()
+  expect(saved()).toEqual(expect.objectContaining({ weightKg: 62, targetWeightKg: 60 }))
+})
+
 it('shows a dash for the target until there is a weight to measure it from', async () => {
   await render(<AboutStep />)
 
