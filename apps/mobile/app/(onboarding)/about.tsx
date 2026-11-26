@@ -115,16 +115,18 @@ export default function AboutStep() {
    * goal this produces and has a way back here, so the default is never silent.
    */
   const followed = weightKg != null ? clamp(weightKg, targetRange) : undefined
-  const target = chosen ? targetWeightKg : followed
 
   /**
-   * What the readout and thumb show. The default only once the typed weight is
-   * inside its range: `read` clamps on every keystroke, so the "6" on the way to
-   * "65" would otherwise flash the 20 kg floor. Continue still records the
-   * clamped value, which is also what the field settles to on blur.
+   * What the readout and thumb show, and so what Continue records. The default
+   * only once the typed weight is inside its range: `read` clamps on every
+   * keystroke, so the "6" on the way to "65" would otherwise flash the 20 kg
+   * floor. Continue waits for it too, or a press there recorded a 20 kg body
+   * aiming for 20 kg that nobody typed or saw. On blur the field settles to
+   * the clamped value, which then shows and can be recorded.
    */
   const typedInRange = typedWeight != null && typedWeight === Number(fields.weight)
   const shownTarget = chosen ? targetWeightKg : typedInRange ? followed : undefined
+  const target = shownTarget
 
   /** Where the thumb sits, which needs a number even before there is a weight. */
   const targetPreview = shownTarget ?? targetRange.min
