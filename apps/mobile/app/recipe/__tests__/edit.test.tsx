@@ -101,6 +101,7 @@ jest.mock('@/ui', () => {
   ) as typeof import('react-native')
 
   return {
+    Aside: ({ children }: { children: React.ReactNode }) => children,
     AppBar: ({
       title,
       onBack,

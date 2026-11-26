@@ -16,6 +16,8 @@ export type RecipeCardProps = {
   onPress: () => void
   /** One serving into the day. Absent where logging is not on offer. */
   onLog?: () => void
+  /** The card's width in a grid that sizes its columns. Half a phone's row without it. */
+  width?: number
 }
 
 /**
@@ -27,7 +29,7 @@ export type RecipeCardProps = {
  * pill stays on the photo; the plus beside the name is the one-tap log this app
  * exists for, so eating the same curry three days running is three taps.
  */
-export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
+export function RecipeCard({ recipe, onPress, onLog, width }: RecipeCardProps) {
   const { t } = useTranslation(['recipes', 'common'])
   const duration = useDurationText()
   const colors = useThemeColors()
@@ -54,7 +56,10 @@ export function RecipeCard({ recipe, onPress, onLog }: RecipeCardProps) {
     .join(' · ')
 
   return (
-    <View className="w-[48%]">
+    <View
+      className={width === undefined ? 'w-[48%]' : undefined}
+      style={width ? { width } : undefined}
+    >
       {/* One button for the card, and the plus over it rather than inside: a
           press target inside another reads to a screen reader as one label
           with a stray button in it. */}

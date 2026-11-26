@@ -8989,20 +8989,22 @@ after it, which under the field would compete with the primary button.
 `secureTextEntry` is set and the value is empty, because iOS restyles the native
 placeholder of an AutoFill target and there is no prop that stops it.
 
-### iPhone Duo: the side column and two panes
+### iPhone Duo and iPad: the side column, the rail and two panes
 
 Every layout decision that depends on the shape of the device is made in
 `src/ui/adaptive.ts`, and nowhere else. Every iPhone but one gets the answer it
-always got: the floating tab bar along the bottom and one column. The exception
-is iPhone Duo, Apple's foldable, recognised by the space iOS gives the app and
-never by its model name.
+always got: the floating tab bar along the bottom and one column. The exceptions
+are iPhone Duo, Apple's foldable, recognised by the space iOS gives the app and
+never by its model name, and the iPad, recognised by `Platform.isPad`.
 
-| Pose | Window (pt) | What iOS reserves | Tab bar | Panes |
+| Device | Window (pt) | What iOS reserves | Tab bar | Panes |
 |---|---|---|---|---|
-| Closed (outer display) | 466 × 678 | 84pt column on the right | rail in that column | one |
-| Open on its side, flat or book | 951 × 669 | 84pt column on the right | rail in that column | two, meeting at the fold |
-| Open and upright | 669 × 951 | nothing at the sides | bottom | one |
-| Any iPhone, an iPad, Android | | nothing at the sides | bottom | one |
+| iPhone Duo closed (outer display) | 466 × 678 | 84pt column on the right | rail in that column | one |
+| iPhone Duo open on its side, flat or book | 951 × 669 | 84pt column on the right | rail in that column | two, meeting at the fold |
+| iPhone Duo open and upright | 669 × 951 | nothing at the sides | bottom | one |
+| iPad, 600pt wide or more | 744 to 1376 wide | nothing at the sides | rail in an 88pt column of its own, leading edge, at the top | two from 760pt; else one readable column |
+| iPad window under 600pt | | nothing at the sides | bottom | one |
+| Any other iPhone, Android | | nothing at the sides | bottom | one |
 
 - **The side column** is the clock and the camera's, and Apple's own tab bars
   stand in it. `NavBar` turns into a vertical rail there (`NavRail`), same items,
@@ -9012,23 +9014,42 @@ never by its model name.
   `<Aside>`. On a phone the marker renders its children where they stand, so the
   phone layout is the code as written. With room for two (content 760pt or
   wider), `Screen` moves the marked parts into a second pane that scrolls on its
-  own. The panes meet at the window's centre, which is the fold, so nothing
-  tappable sits in the crease. A `footer` CTA stands under the second pane, with
+  own. On iPhone Duo the panes meet at the window's centre, which is the fold,
+  so nothing tappable sits in the crease. A `footer` CTA stands under the second pane, with
   the content it acts on. The tabs use it: Today (summary | diary, or month |
   the chosen day's diary), Trends (eating and training | weight, water and reviews), Me (account |
   settings) and Social (the groups and Following | Discover). So do
   the pushed pages with more than one card, reflowed into two phone-width
   columns: the paywall (what Pro adds | plans over Subscribe), the meal page
-  (picture and portion | nutrition), the settings pages and the workout pages.
+  (picture and portion | nutrition), the recipe page and its editor (what it is
+  | ingredients and method), a post (the post | its comments, with the composer
+  under them), the groups list (yours | public ones), the settings pages and the
+  workout pages.
   A page that is one card or one list keeps one pane.
-- **Overlays** (sheets, dialogs, toasts, the running workout's bar) take
-  `useOverlayInsets()`: clear of the column, and in the trailing pane when there
-  are two, even over a one-pane page, because centred they would rest in the
-  fold. The number pad spans the page, or the sheet it types into.
+- **Overlays** (sheets, dialogs, toasts, the running workout's bar, the food
+  map's panel) take `useOverlayInsets()`: clear of the column, and on iPhone Duo
+  in the trailing pane when there are two, even over a one-pane page, because
+  centred they would rest in the fold. On an iPad they are centred and no wider
+  than 600pt, so a sheet reads as a sheet rather than a band across the glass.
+  The number pad spans the page, or the sheet it types into; on an iPad it takes
+  an overlay's width.
 - **Anything sized by arithmetic** rather than flex (a pager, a grid of tiles)
   reads `usePaneWidth()`, not the window. A pager keyed to its width must also
   survive the width changing under it: opening the device kept the closed
   display's offset and showed a week two weeks back (`WeekPicker`, the board).
+  A sheet provides its panel's width to what is inside it.
+- **The iPad.** Its tabs are the Duo's rail, stood in a column of its own down
+  the leading edge (`NavColumnProvider`, which `Screen` keeps a tab's page clear
+  of; pushed pages have no rail and no column). Two panes share the width
+  equally, each at most 560pt, the pair centred, so landscape is not two 640pt
+  phones. A page of one pane keeps to a readable 680pt column, centred, with its
+  app bar still across the top, because a settings row 1,000pt wide is mostly
+  the gap between a label and its value.
+- **Grids** take `wide` on `Screen`, which gives one pane the whole width, and
+  size their columns with `gridColumns`: two on a phone, four or more on an
+  iPad (the recipes shelf, a profile's posts). On iPhone Duo open, `wide` lays
+  the page symmetric about the fold and `even` keeps the count even, so the fold
+  runs between two cards rather than through one.
 
 Rules: an `Aside` counts only among `Screen`'s own children (fragments and
 arrays are looked through, components are not), so a page whose body is a

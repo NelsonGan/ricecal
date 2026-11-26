@@ -2,7 +2,7 @@ import { createContext, type ReactNode, type Ref, useContext } from 'react'
 import { View, type ViewInstance } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
-import { radius, slab } from '@/theme/tokens'
+import { radius, slab, spacing } from '@/theme/tokens'
 import { useThemeColors } from '@/theme/useTheme'
 import { type TabBarPlacement, useWindowLayout } from './adaptive'
 import { CountBadge } from './Badge'
@@ -38,7 +38,7 @@ export const useNavInset = () => useContext(NavInsetContext)
 
 /**
  * How much of the bottom the bar itself takes: `NAV_BAR_HEIGHT`, or nothing
- * where the tabs stand in iOS's side column instead (see `NavRail`). For
+ * where the tabs stand in a rail down the side instead (see `NavRail`). For
  * whatever floats above the bar, the toast and the running workout.
  */
 export function useNavBarHeight(): number {
@@ -81,11 +81,11 @@ export function NavBar({
   className?: string
 }) {
   const insets = useSafeAreaInsets()
-  const { tabBar } = useWindowLayout()
+  const { tabBar, railColumn } = useWindowLayout()
 
   if (tabBar !== 'bottom') {
     return (
-      <NavRail side={tabBar} action={action}>
+      <NavRail side={tabBar} column={railColumn} action={action}>
         {children}
       </NavRail>
     )
@@ -120,31 +120,49 @@ export function NavBar({
 }
 
 /**
- * The same tabs, stood on end in the column iOS keeps down the side of iPhone
- * Duo for the clock and the camera. Apple's own apps put their tab bar there,
- * below the status bar and against the bottom, and a bar across the bottom as
- * well would take a sixth of a screen that is already short.
+ * The same tabs, stood on end in a column down one side.
+ *
+ * On iPhone Duo that is the column iOS keeps for the clock and the camera.
+ * Apple's own apps put their tab bar there, below the status bar and against
+ * the bottom, and a bar across the bottom as well would take a sixth of a
+ * screen that is already short. The column is the side safe-area inset, so
+ * nothing in it overlaps the page.
+ *
+ * On an iPad it is a column of its own down the leading edge (`column`, which
+ * `Screen` keeps a tab's page clear of), with the rail at the top beside the
+ * page's title. Across the bottom, five tabs were spread over a metre of pill.
  *
  * The same pill, the same items and the same order, top to bottom for left to
- * right, so the app reads as one app open or closed. Centred in the column,
- * which is the side safe-area inset, so nothing in it overlaps the page.
+ * right, so the app reads as one app on every device.
  */
 function NavRail({
   side,
+  column: ownColumn,
   action,
   children,
 }: {
   side: Exclude<TabBarPlacement, 'bottom'>
+  /** The rail's own column beyond the safe area. Zero in iOS's column on iPhone Duo. */
+  column: number
   action?: ReactNode
   children: ReactNode
 }) {
   const insets = useSafeAreaInsets()
-  const column = side === 'right' ? insets.right : insets.left
+  const inset = side === 'right' ? insets.right : insets.left
+  const column = ownColumn || inset
+  const top = ownColumn > 0
 
   return (
     <View
-      className="absolute bottom-0 items-center gap-2.5"
-      style={{ [side]: 0, width: column, paddingBottom: insets.bottom || 12 }}
+      className={cn('absolute items-center gap-2.5', top ? 'top-0' : 'bottom-0')}
+      style={{
+        // Its own column starts past the safe area; iOS's is the safe area.
+        [side]: ownColumn ? inset : 0,
+        width: column,
+        ...(top
+          ? { paddingTop: insets.top + spacing.gutter }
+          : { paddingBottom: insets.bottom || 12 }),
+      }}
       pointerEvents="box-none"
     >
       <RailContext.Provider value>

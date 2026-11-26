@@ -29,12 +29,14 @@ import {
 import { usePushRegistration } from '@/lib/push'
 import {
   NavBar,
+  NavColumnProvider,
   NavInsetProvider,
   NavItem,
   ToastHost,
   useNavBarFootprint,
   useNavBarHeight,
   useOverlayInsets,
+  useWindowLayout,
 } from '@/ui'
 
 /**
@@ -179,21 +181,25 @@ function WithRunningWorkout({
   const onTabs = useSegments()[0] === '(tabs)'
   const running = useHasActiveWorkout(userId) && onTabs
   const navBarHeight = useNavBarHeight()
+  const { railColumn } = useWindowLayout()
 
   return (
     // The bar floats over the screens, so each one is told how much of its
-    // bottom the bar covers. See `useNavInset`.
-    <NavInsetProvider value={navFootprint + (running ? WORKOUT_BAR_SPACE : 0)}>
-      {children}
-      {running ? <RunningWorkout /> : null}
-      {/* The app's toasts clear the nav bar and not the workout bar over it,
+    // bottom the bar covers. See `useNavInset`. On an iPad the tabs are a rail
+    // down the leading edge instead, and each screen is told its width.
+    <NavColumnProvider value={railColumn}>
+      <NavInsetProvider value={navFootprint + (running ? WORKOUT_BAR_SPACE : 0)}>
+        {children}
+        {running ? <RunningWorkout /> : null}
+        {/* The app's toasts clear the nav bar and not the workout bar over it,
           so on the other tabs a toast covered "Resume". Today has a host of its
           own, above its add button, and the newest host draws, so this one
           stands aside there. */}
-      {running && pathname !== '/today' ? (
-        <ToastHost offset={navBarHeight + WORKOUT_BAR_SPACE} />
-      ) : null}
-    </NavInsetProvider>
+        {running && pathname !== '/today' ? (
+          <ToastHost offset={navBarHeight + WORKOUT_BAR_SPACE} />
+        ) : null}
+      </NavInsetProvider>
+    </NavColumnProvider>
   )
 }
 
