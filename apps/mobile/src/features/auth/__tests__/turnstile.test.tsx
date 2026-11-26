@@ -104,7 +104,37 @@ it('runs the widget again after one silent timeout instead of giving up', async 
   await act(async () => mockPost({ type: 'token', token: 'second-try' }))
 
   expect(outcome).toEqual({ done: true, token: 'second-try' })
-  expect(reportMessage).toHaveBeenCalledWith('[captcha] answered after a timeout retry')
+  // A sign-in that worked is not a failure, so nothing goes to error tracking.
+  expect(reportMessage).not.toHaveBeenCalled()
+})
+
+it('gives the second run the same allowance for retryable errors as the first', async () => {
+  const outcome = await ask(await ready())
+
+  // The first run spends its one retryable error, then goes quiet.
+  await act(async () => mockPost({ type: 'error', code: '300030' }))
+  await wait(20_000)
+  // The second run's first bot-score error is its own, not the second overall.
+  await act(async () => mockPost({ type: 'error', code: '300030' }))
+  expect(outcome.done).toBe(false)
+
+  await act(async () => mockPost({ type: 'token', token: 'cleared' }))
+  expect(outcome).toEqual({ done: true, token: 'cleared' })
+})
+
+it('runs only the live request once a slow widget becomes ready', async () => {
+  const { result } = await renderHook(() => useCaptchaToken(), { wrapper })
+  const first = await ask(result.current)
+  const second = await ask(result.current)
+  expect(first).toEqual({ done: true, token: undefined })
+  expect(executions()).toBe(0)
+
+  await act(async () => mockPost({ type: 'ready' }))
+  // One run, not two: the replaced request's reset would cancel the live one.
+  expect(executions()).toBe(1)
+
+  await act(async () => mockPost({ type: 'token', token: 'live' }))
+  expect(second).toEqual({ done: true, token: 'live' })
 })
 
 it('goes without a token after the retry also times out', async () => {

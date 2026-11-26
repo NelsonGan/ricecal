@@ -313,9 +313,6 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
           for (const run of queued.current.splice(0)) run()
           return
         case 'token':
-          // Filed so the retry can be measured: each of these is a sign-in the
-          // first timeout used to refuse.
-          if (pending.current?.timeouts) report('answered after a timeout retry')
           settle(payload.token)
           return
         case 'interactive': {
@@ -421,6 +418,8 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
         if (pending.current !== waiting) return
         if (waiting.timeouts < TIMEOUT_RETRIES) {
           waiting.timeouts += 1
+          // A fresh run gets the first one's allowance for retryable errors.
+          waiting.errors = 0
           console.warn('[captcha] turnstile timed out, trying once more')
           waiting.timer = setTimeout(onTimeout, TOKEN_TIMEOUT_MS)
           execute()
@@ -428,7 +427,9 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
         }
         // Ready, executed twice, and twenty seconds of silence each time: no
         // token, no error code, nothing to go on. Worth filing precisely
-        // because there is nothing else to file.
+        // because there is nothing else to file. Filed only after the retry,
+        // so its rate against the six weeks before this retry existed is the
+        // measure of what the retry saves.
         report('timed out with no answer')
         settle(undefined)
       }
@@ -436,7 +437,10 @@ export function CaptchaProvider({ children }: { children: ReactNode }) {
       pending.current = waiting
 
       if (ready.current) execute()
-      else queued.current.push(execute)
+      // Only the live request's run is queued. One left behind by a request this
+      // one replaced would execute too once the widget is ready, and its reset
+      // would throw away the run this request is waiting on.
+      else queued.current.splice(0, queued.current.length, execute)
     })
   }, [enabled, settle, giveUp])
 

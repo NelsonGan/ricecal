@@ -93,18 +93,41 @@ export default function AboutStep() {
   const targetRange = targetWeightRange(weightKg ?? 0)
 
   /**
-   * The target the screen will record: the one dragged to, or, untouched, the
-   * weight typed above it, which is "keep my weight".
+   * Whether the target is somebody's choice rather than this screen's default.
+   *
+   * A drag on this visit is a choice. So is a stored target that differs from
+   * the stored weight, since only a drag can produce one. A stored target EQUAL
+   * to the stored weight is the default Continue wrote last time (or a drag that
+   * landed on "keep my weight", which means the same), and it has to keep
+   * following the weight: kept as a number, correcting 65 kg to 80 on the way
+   * back here would quietly turn "keep my weight" into a plan to lose 15 kg.
+   */
+  const [dragged, setDragged] = useState(false)
+  const chosen = dragged || (targetWeightKg != null && targetWeightKg !== draft.weightKg)
+
+  /**
+   * The target the screen will record: the one chosen, or the weight typed
+   * above it, which is "keep my weight".
    *
    * Continue used to wait for a drag as well. The thumb already sits on the
    * current weight, so somebody happy there had to drag it away and back, and
    * people stalled on a screen that looked finished. The plan step names the
    * goal this produces and has a way back here, so the default is never silent.
    */
-  const target = targetWeightKg ?? (weightKg != null ? clamp(weightKg, targetRange) : undefined)
+  const followed = weightKg != null ? clamp(weightKg, targetRange) : undefined
+  const target = chosen ? targetWeightKg : followed
+
+  /**
+   * What the readout and thumb show. The default only once the typed weight is
+   * inside its range: `read` clamps on every keystroke, so the "6" on the way to
+   * "65" would otherwise flash the 20 kg floor. Continue still records the
+   * clamped value, which is also what the field settles to on blur.
+   */
+  const typedInRange = typedWeight != null && typedWeight === Number(fields.weight)
+  const shownTarget = chosen ? targetWeightKg : typedInRange ? followed : undefined
 
   /** Where the thumb sits, which needs a number even before there is a weight. */
-  const targetPreview = target ?? targetRange.min
+  const targetPreview = shownTarget ?? targetRange.min
 
   /** Blur is where the clamp becomes visible: "show me what you understood". */
   const settle = (key: keyof typeof fields, within: { min: number; max: number }) => () =>
@@ -276,8 +299,8 @@ export default function AboutStep() {
           value={
             <ReplayMask>
               <Text variant="bodyStrong">
-                {target != null
-                  ? `${fromKg(target, weightUnit).toFixed(1)} ${t(UNIT_KEY[weightUnit])}`
+                {shownTarget != null
+                  ? `${fromKg(shownTarget, weightUnit).toFixed(1)} ${t(UNIT_KEY[weightUnit])}`
                   : t('about.targetWeightUnset')}
               </Text>
             </ReplayMask>
@@ -289,7 +312,10 @@ export default function AboutStep() {
                   value={fromKg(targetPreview, weightUnit)}
                   // `Slider` reports every frame of a drag, which is why this
                   // writes to the draft and not to the network.
-                  onChange={(next) => patch({ targetWeightKg: toKg(next, weightUnit) })}
+                  onChange={(next) => {
+                    setDragged(true)
+                    patch({ targetWeightKg: toKg(next, weightUnit) })
+                  }}
                   min={fromKg(targetRange.min, weightUnit)}
                   max={fromKg(targetRange.max, weightUnit)}
                   // Half a kilogram is a scale's precision; half a pound is finer
@@ -305,7 +331,7 @@ export default function AboutStep() {
                   so; then, until it is dragged, that it can be. */}
               {weightKg == null ? (
                 <Text variant="meta">{t('about.targetWeightLocked')}</Text>
-              ) : targetWeightKg == null ? (
+              ) : !chosen ? (
                 <Text variant="meta">{t('about.targetWeightHint')}</Text>
               ) : null}
             </>

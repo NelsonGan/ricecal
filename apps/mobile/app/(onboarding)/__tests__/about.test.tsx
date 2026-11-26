@@ -197,7 +197,25 @@ it('records what was typed', async () => {
   await user.type(screen.getByLabelText('WEIGHT'), '.5')
   await continueOn()
 
-  expect(saved()).toEqual(expect.objectContaining({ weightKg: 65.5 }))
+  // The 60 kg target was dragged to, so a new weight leaves it where it is.
+  expect(saved()).toEqual(expect.objectContaining({ weightKg: 65.5, targetWeightKg: 60 }))
+})
+
+/**
+ * Continue records an untouched target as the weight. Coming back to correct the
+ * weight has to move that default with it, or "keep my weight" becomes a plan to
+ * lose or gain the difference without anybody choosing one.
+ */
+it('moves a default target with a corrected weight', async () => {
+  seed({ ...COMPLETE, weightKg: 65, targetWeightKg: 65 })
+  await render(<AboutStep />)
+
+  await user.type(screen.getByLabelText('WEIGHT'), '.5')
+  expect(screen.getByText('65.5 kg')).toBeOnTheScreen()
+  expect(screen.getByText('Slide to set the weight you are aiming for.')).toBeTruthy()
+
+  await continueOn()
+  expect(saved()).toEqual(expect.objectContaining({ weightKg: 65.5, targetWeightKg: 65.5 }))
 })
 
 it('accepts a body and target weight below 30 kg', async () => {

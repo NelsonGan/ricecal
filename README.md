@@ -1898,7 +1898,6 @@ is what separates them.
 | `unusable: 110100` / `110110` / `400020` / `400070` | wrong or disabled site key | the key, or the widget |
 | `gave up after N retryable errors` | scored a bot, twice | the widget's mode |
 | `timed out with no answer` | executed twice, twenty seconds of silence each time | usually the network |
-| `answered after a timeout retry` | not a failure: the first attempt timed out and the automatic second one worked | nothing; it counts the sign-ins the retry saved |
 
 **A silent timeout gets one automatic retry.** With the gate on, a request sent
 without a token is refused, so giving up after the first twenty seconds meant a
@@ -1906,7 +1905,9 @@ refused sign-up. Of 33 people who hit it in the six weeks to 2026-11-26, 24
 never got in and most of those tried once; the ones who recovered mostly tapped
 again within a minute. The provider now resets the widget and runs it once more
 before sending the request without a token, so the button can wait up to forty
-seconds.
+seconds. `timed out with no answer` is filed only after both attempts, so its
+rate against those six weeks (48 reports from 33 people) is what the retry
+saved; a success is not filed, since error tracking is for failures.
 
 **Nothing at all in error tracking, with sign-in still failing, is the sixth case: the
 secret.** It has to belong to the same widget as the site key. A mismatched pair
