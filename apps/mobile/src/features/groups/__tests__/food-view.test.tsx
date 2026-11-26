@@ -34,8 +34,8 @@ jest.mock('@/data/groups', () => ({
   // left disabled (a route restored without its params) never settles.
   useGroupFood: (groupId?: string, entryId?: string) =>
     groupId && entryId
-      ? { data: null, isError: false, fetchStatus: 'idle', refetch: jest.fn() }
-      : { data: undefined, isError: false, fetchStatus: 'idle', refetch: jest.fn() },
+      ? { data: null, isPending: false, isError: false, fetchStatus: 'idle', refetch: jest.fn() }
+      : { data: undefined, isPending: true, isError: false, fetchStatus: 'idle', refetch: jest.fn() },
 }))
 jest.mock('../parts', () => ({
   ...jest.requireActual('../parts'),
@@ -207,6 +207,8 @@ it('says a food opened without its group or entry is gone, rather than loading f
     </SafeAreaProvider>,
   )
   expect(screen.getByText('This is no longer available')).toBeTruthy()
+  // A retry would refetch a disabled query with no ids to ask for.
+  expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
 })
 
 it('gives the share eaten as the figure the diary holds, not the rounded parts times it', async () => {
