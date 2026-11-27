@@ -7374,16 +7374,24 @@ screen that can say which of the buttons under a thumb declined to work.
 the one place that decides. Showing a paywall to somebody who has already paid
 is the worst thing this app can do with a refusal.
 
-**Pro is also offered without being asked for, on a milestone.** `useProNudge`
-on Today, a beat after the diary appears, once when a free account reaches a
-seven day logging streak (`STREAK_MILESTONE_DAYS`) and once when a weigh-in
-first reaches the goal weight from the side the oldest reading started on, with
-a toast naming the milestone. It used to be a standing offer every two days,
-whatever the user was doing; people who have just built the habit convert far
-better. Both read queries Today and the widgets already hold, so it asks the
-server for nothing. Every paywall still resets a two-day clock, so the rule the
-user experiences is still "at most one paywall every two days", and a milestone
-reached inside it is offered on a later launch if it still holds.
+**Pro is also offered without being asked for, at most every two days.**
+`useProNudge` on Today, a beat after the diary appears, shows a free account the
+paywall whenever the two-day clock is due: the standing offer (`nudge`). A
+milestone takes its place on the launch it falls on, once per account each,
+with a toast naming it: a seven day logging streak (`STREAK_MILESTONE_DAYS`),
+and a weigh-in first reaching the goal weight from the side the oldest reading
+started on. Both read queries Today and the widgets already hold, so it asks the
+server for nothing. Every paywall resets the clock, so the rule the user
+experiences is "at most one paywall every two days", and a milestone reached
+inside it is offered on a later launch if it still holds.
+
+The milestones ran alone for November 2026 (#257), on the argument that people
+who have just built the habit convert better. The standing offer was half the
+yearly checkouts, though: 15 in the last week of October from the hard
+paywall's 30, against one to four a week from the milestones after it. Yearly
+trials fell from 14 to 17 a week to 4 to 8, so it came back beside them. Every
+other route waits to be refused, and without it a free account that never
+presses a gated button is never told the app has a paid tier.
 
 ### Photo retention
 
@@ -7648,9 +7656,10 @@ names the Apple Watch there and nowhere else: the watch app is iOS only.
   is read once per run of the app, not live: the tour's toast marks itself
   offered a second in, and a live read let the card cover it a tab switch
   later. A fresh sign-in on a new phone is such a launch.
-- **Never on top of the Pro nudge.** The milestone offer stands aside on any
-  launch where an announcement is due or up (`announcementHasTheFloor`): an
-  announcement is once per account and the milestone stays owed.
+- **Never on top of the Pro nudge.** The Pro offer stands aside on any launch
+  where an announcement is due or up (`announcementHasTheFloor`): an
+  announcement is once per account, the standing offer has its two-day clock,
+  and a milestone stays owed.
 - **Only while Today is on top, online, after a fresh read.** Leaving Today
   cancels the wait and focus is asked again after the read; the read is the
   profile within 30 seconds, so a card another phone has shown is not shown
@@ -8053,7 +8062,7 @@ events, 815 weekly users, 338 installs) ×4.3.
 | Groups (`Group Created`, `Joined`, `Invite Sent`, `Nudge Sent`, `Reaction Set`, `Message Sent`, and `Notification Opened` for a group push) | 15,000 | New with the Groups tab, so no history: assumes 300 people in groups, each reacting or chatting about once a day, plus rare creates, joins, invites and nudges (a nudge is capped by its hourly cooldown per meal). Chat messages push every other member with notifications on, so allow about one tapped chat push per member per day on top |
 | News (`Announcement Shown`, `CTA Tapped`, `Dismissed`, `Auto Post Toggled`) | 3,000 | One launch card per account per announcement (~1,500 monthly accounts, a shown and a close each), plus the News list and the rare switch on Edit profile |
 | Money2Time ad (`Money2Time Ad Opened`, `Store Opened`) | 500 | Free accounts tapping a card under Me; a few percent of ~1,500 monthly accounts, a handful of times each |
-| Photo removal warnings (`Notification Opened` with `photo_removals`, and the `Paywall Shown` its list opens) | 1,000 | At most one push and one Today notice per free account per six days, only while photos are due; a tap is a fraction of those. The milestone offers that replaced the two-day nudge show fewer paywalls than it did, which more than covers this |
+| Photo removal warnings (`Notification Opened` with `photo_removals`, and the `Paywall Shown` its list opens) | 1,000 | At most one push and one Today notice per free account per six days, only while photos are due; a tap is a fraction of those. The standing two-day offer's own paywalls (about 2,300 people a month at its October peak) were live in the Mixpanel week the decision events are measured from |
 | `Daily App Open` | 12,000 | One per active install per day (~400 daily installs) |
 | `First App Open` | 1,500 | ~340 installs a week |
 | Prompt fetches (`$llm_prompt_fetched`) | 25,000 at most | Logged by PostHog for each read of a hosted prompt. The functions fetch a prompt at most once per isolate per 30 minutes, and Supabase isolates are short-lived, so the ceiling is one per model call: the `$ai_generation` count below, less its retries |
@@ -8126,7 +8135,7 @@ This table is the source of truth for the tracking contract. Update it in the sa
 | Entry Refined | ricecal_entry_refined | outcome: 'applied' &#124; 'not_applied' &#124; 'failed' &#124; 'limit_reached' &#124; 'not_entitled'; from_chip: boolean; duration_ms: number | `src/data/scan.ts` | Refinement attempt reaches its outcome; each attempt, including refusal/failure and no applied change. |
 | Food Searched | ricecal_food_searched | results: number; query_length: number | `src/features/logging/FoodSearchPanel.tsx` | Catalogue query has a settled results/empty answer for 1,200 ms after the 140 ms input debounce; changed nonempty queries only. History/own-food filtering is excluded. |
 | Food Picked | ricecal_food_picked | position: number; results: number; source?: 'history' &#124; 'recipe' | `src/features/logging/FoodSearchPanel.tsx` | Catalogue, own recipe or history result is opened; each selection. Opening a result does not prove it was logged. |
-| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or eligible milestone offer requests navigation, or the intro paywall mounts; repeated visits count. A milestone offer (`nudge_streak`, `nudge_goal`) is once per account per milestone and waits out the two-day per-account paywall clock; account/entitlement changes cancel its pending timer and the clock is checked again before sending. |
+| Paywall Shown | ricecal_paywall_shown | screen: PaywallScreen; trigger: ProFeature &#124; ProOffer &#124; PaywallScreen | `src/data/refusals.ts`<br>`src/features/paywall/tracking.ts`<br>`src/features/paywall/useProNudge.ts`<br>`app/reviews/[id].tsx` | A Pro refusal/review redirect or the Pro offer requests navigation, or the intro paywall mounts; repeated visits count. The Pro offer is the standing offer (`nudge`) at most once per two-day per-account paywall clock, or in its place a milestone (`nudge_streak`, `nudge_goal`) once per account per milestone; account/entitlement changes cancel its pending timer and the clock is checked again before sending. |
 | Plan Selected | ricecal_plan_selected | screen: PaywallScreen; plan: Plan | `src/features/paywall/PaywallOffer.tsx` | Paywall plan changes; each change. The default selected plan emits nothing until changed. |
 | Purchase Started | ricecal_purchase_started | screen: PaywallScreen; plan: Plan | `src/features/paywall/tracking.ts` | An available checkout is requested; once per accepted attempt, before offering lookup/store call. A missing configuration warning emits nothing. |
 | Purchase Abandoned | ricecal_purchase_abandoned | screen: PaywallScreen; plan: Plan; reason: 'cancelled' &#124; 'unavailable' &#124; 'error' | `src/features/paywall/tracking.ts` | Checkout/entitlement-wait path throws; once per caught attempt. A post-purchase entitlement-wait error can also reach this event. |
@@ -8217,7 +8226,8 @@ user text. Extend the source type and these tables together when its domain chan
 | `method` / `LogMethod` | `camera`, `describe`, `search`, `barcode`, `recipe`, `quick_add`, `history` | `events.ts`; compare logging actions, not individual food components |
 | `method` / `SignInMethod` | `apple`, `google`, `email`, `password` | `email` means code/link. Failure coverage currently covers Apple/Google only |
 | `screen` / `PaywallScreen` | `hard`, `intro` | Paywall surfaces below; no generic screen-view event. `reminder` and `ended` appear only in data from app versions released before those two screens were deleted; no build ever navigated to them |
-| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `video_import`, `new_routine`, `new_group`, `group_icon`, `photo_retention`, `trend_range`, `workout_range`, `review`, `nudge_streak`, `nudge_goal` | Refused capability or milestone offer; trial expiration is a paywall screen value, not a feature. `nudge` (the two-day standing offer) appears only in data from app versions before the milestone offers; `suggest` only from versions released before "what to eat next" was removed |
+| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `video_import`, `new_routine`, `new_group`, `group_icon`, `photo_retention`, `trend_range`, `workout_range`, `review`, `nudge_streak`, `nudge_goal` | Refused capability or milestone offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only from versions released before "what to eat next" was removed |
+| `trigger` / `ProOffer` | `nudge` | The standing two-day offer, which refused nothing and so has no toast sentence. Sent by builds before the milestone offers and again from the build that restored it; the versions between send none |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |
 | `outcome` / `ImportOutcome` | `imported`, `existing`, `limit_reached`, `unsupported_link`, `unreadable`, `not_recipe`, `too_long`, `failed`, `busy`, `offline` | `data/recipes.ts` (`Recipe Imported`); `imported` and `existing` mean the server wrote a recipe to the shelf, the rest are its refusal codes, and `offline` is a request with no answer (after one quick retry, see `Recipe Imported`) |
@@ -8263,6 +8273,7 @@ user text. Extend the source type and these tables together when its domain chan
 | Share and subscription management | External handoff request or share helper result | A browser/store/share-sheet handoff does not prove a message, claim, cancellation or store review was completed |
 | Hard paywall `/paywall` | `Paywall Shown` with `screen: hard` and refused `ProFeature` | `data/refusals.ts` records before navigation; review redirects also record. Free camera allowance is three scans/day; a further refusal can reach camera trigger |
 | Intro paywall | `Paywall Shown` with `intro` as screen and trigger | `useTrackPaywallShown` records once per mounted presentation; revisits count again |
+| Standing Pro offer | `Paywall Shown`, `screen: hard`, `trigger: nudge` | At timer scheduling: no milestone due, the streak loaded, known free entitlement, tutorial already offered, profile loaded with no announcement due or claimed this launch, due per-account clock and not offered in this mounted launch. No toast. Account/entitlement changes cancel the timer; a newly eligible account schedules its own. Any recorded paywall restarts the two-day clock, which is rechecked when the timer fires |
 | Milestone Pro offer | `Paywall Shown`, `screen: hard`, `trigger: nudge_streak` or `nudge_goal` | At timer scheduling: a milestone not yet offered to this account (a 7 day logging streak, or the newest weigh-in reaching the goal weight from the side the oldest started on), known free entitlement, tutorial already offered, profile loaded with no announcement due or claimed this launch, due per-account clock and not offered in this mounted launch. Account/entitlement changes cancel the timer; a newly eligible account schedules its own. Any recorded paywall restarts the two-day clock, which is rechecked when the timer fires; a milestone reached inside it stays owed |
 | Checkout | Optional plan change, checkout attempt and caught cancellation/error | Default selection sends no Plan Selected. Purchase Started precedes offering lookup. Purchase Abandoned can include a post-purchase entitlement-wait error |
 | Restore | Returned restored/nothing or unavailable result | Restore Requested is a result event; thrown restores have no row. Restoration never adds settled revenue |
