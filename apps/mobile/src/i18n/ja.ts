@@ -1329,6 +1329,11 @@ export const ja = {
       lifetimeDetail: '一度の支払いで、ずっとあなたのもの',
     },
 
+    proof: {
+      usersChoice: 'ユーザーが選ぶ',
+      rated: '評価 {{rating}}（5点満点）',
+    },
+
     hard: {
       choosePlan: 'プランを選択',
       assurance: '縛りなし、いつでも解約できます',

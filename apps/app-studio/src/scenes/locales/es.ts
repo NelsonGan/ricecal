@@ -38,7 +38,7 @@ const es: LocaleModule = {
     panel: {
       title: "Cinco formas para\ncomida asiática",
       sub: "Puestos callejeros, cocina casera, paquetes de la tienda.",
-      stats: { usersChoice: 'La elección de 2K usuarios' },
+      stats: { usersChoice: 'La elección de 5K usuarios' },
       metrics: { calories: "Calorías", water: "Agua", weight: "Peso" },
       snap    : { t: "Fotografía el plato", b: "Cada plato queda nombrado, medido y contado." },
       describe: { t: "Di qué comiste", b: "\"Nasi lemak con pollo frito y un teh tarik.\"" },

@@ -103,8 +103,14 @@ export function FeatureRow({
 
 const STAR_PATH = 'M12 2 L14.9 8.6 L22 9.2 L16.6 13.9 L18.2 21 L12 17.3 L5.8 21 L7.4 13.9 L2 9.2 L9.1 8.6 Z';
 
-function RatingStar({ fill }: { fill: number }) {
-  const size = 50;
+/**
+ * The store rating and user count the gallery quotes. The website's reviews
+ * section and the app's paywall show the same two figures
+ * (`apps/web/src/components/home/reviews-data.ts`); change all three together.
+ */
+export const SOCIAL_PROOF = { rating: 4.8, users: '5K' };
+
+function RatingStar({ fill, size }: { fill: number; size: number }) {
   return (
     <div aria-hidden="true" style={{ position: 'relative', width: size, height: size }}>
       <svg viewBox="0 0 24 24" width={size} height={size} style={{ position: 'absolute', inset: 0 }}>
@@ -112,7 +118,7 @@ function RatingStar({ fill }: { fill: number }) {
       </svg>
       <div style={{ position: 'absolute', inset: 0, width: size * fill, overflow: 'hidden' }}>
         <svg viewBox="0 0 24 24" width={size} height={size} style={{ display: 'block', maxWidth: 'none' }}>
-          <path d={STAR_PATH} fill={C.kayaSlab} />
+          <path d={STAR_PATH} fill={C.kaya} />
         </svg>
       </div>
     </div>
@@ -130,9 +136,9 @@ const LAUREL_LEAVES = [
   [80, 10, 11, 5, -10],
 ];
 
-function LaurelWing({ flip = false }: { flip?: boolean }) {
+function LaurelWing({ height, flip = false }: { height: number; flip?: boolean }) {
   return (
-    <svg aria-hidden="true" width={110} height={260} viewBox="0 0 100 220" fill={C.kayaSlab}
+    <svg aria-hidden="true" width={height * 0.43} height={height} viewBox="0 0 100 220" fill={C.kayaSlab}
       style={{ flexShrink: 0, transform: flip ? 'scaleX(-1)' : undefined }}>
       {LAUREL_LEAVES.map(([cx, cy, rx, ry, angle], i) => (
         <ellipse key={i} cx={cx} cy={cy} rx={rx} ry={ry} transform={`rotate(${angle} ${cx} ${cy})`} />
@@ -141,35 +147,43 @@ function LaurelWing({ flip = false }: { flip?: boolean }) {
   );
 }
 
-/** The brief's rating and user choice, using Money2Time's laurel arrangement. */
-export function CommunityRating({ choice }: { choice: string }) {
-  const choiceRef = useFitText<HTMLDivElement>(42);
+/**
+ * The store rating over its stars, between a pair of laurel wings, with the
+ * user count under it: Money2Time's arrangement in RiceCal's palette.
+ * `users` is the translated "5K users" line, and `lang` its language, so the
+ * uppercase follows that language's rules (Turkish "tercihi" is "TERCİHİ").
+ */
+export function RatingCard({ users, lang }: { users: string; lang?: string }) {
+  const usersRef = useFitText<HTMLDivElement>(34, 0.6);
+  const { rating } = SOCIAL_PROOF;
   return (
     <div style={{
       width: 1140, boxSizing: 'border-box',
       background: C.surface,
       borderRadius: R.card * 2,
-      border: `2px solid ${C.kayaSoftLine}`,
-      padding: '42px 40px',
+      padding: '44px 40px',
       boxShadow: slab(C.lineStrong, 6),
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24,
+      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 36,
     }}>
-      <LaurelWing />
-      {/* Keep the wreath beside the rating, with room for translated copy. */}
-      <div style={{ width: 520, minWidth: 0, textAlign: 'center' }}>
+      <LaurelWing height={240} />
+      {/* Wide enough for the longest translation of the users line. */}
+      <div style={{ width: 520, minWidth: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{
-          fontFamily: DISPLAY_FONT, fontSize: 132, fontWeight: 800,
+          fontFamily: DISPLAY_FONT, fontSize: 140, fontWeight: 800,
           color: C.heading, letterSpacing: '-3px', lineHeight: 1,
-        }}>4.5</div>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginTop: 14 }}>
-          {[1, 1, 1, 1, 0.5].map((fill, i) => <RatingStar key={i} fill={fill} />)}
+        }}>{rating.toFixed(1)}</div>
+        <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <RatingStar key={i} size={50} fill={Math.min(1, Math.max(0, rating - i))} />
+          ))}
         </div>
-        <div ref={choiceRef} style={{
-          fontSize: 42, fontWeight: 800, color: C.body,
-          marginTop: 20, lineHeight: 1.25, whiteSpace: 'nowrap',
-        }}>{choice}</div>
+        <div ref={usersRef} lang={lang} style={{
+          width: '100%', textAlign: 'center', whiteSpace: 'nowrap',
+          fontSize: 34, fontWeight: 800, color: C.muted,
+          letterSpacing: '3px', textTransform: 'uppercase', lineHeight: 1.2, marginTop: 22,
+        }}>{users}</div>
       </div>
-      <LaurelWing flip />
+      <LaurelWing height={240} flip />
     </div>
   );
 }

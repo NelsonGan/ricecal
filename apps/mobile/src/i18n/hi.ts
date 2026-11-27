@@ -1321,6 +1321,11 @@ export const hi = {
       lifetimeDetail: 'एक बार भुगतान, हमेशा के लिए आपका',
     },
 
+    proof: {
+      usersChoice: 'उपयोगकर्ताओं की पसंद',
+      rated: '5 में से {{rating}} रेटिंग',
+    },
+
     hard: {
       choosePlan: 'अपना प्लान चुनें',
       assurance: 'कोई बंधन नहीं, कभी भी रद्द करें',

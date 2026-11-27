@@ -38,7 +38,7 @@ const da: LocaleModule = {
     panel: {
       title: "Fem måder til\nasiatisk mad",
       sub: "Gadekøkken, hjemmelavet, pakker fra butikken.",
-      stats: { usersChoice: '2K brugeres valg' },
+      stats: { usersChoice: '5K brugeres valg' },
       metrics: { calories: "Kalorier", water: "Vand", weight: "Vægt" },
       snap    : { t: "Tag et billede af tallerkenen", b: "Hver ret får navn, portion og kalorier." },
       describe: { t: "Sig hvad du spiste", b: "\"Nasi lemak med friteret kylling og en teh tarik.\"" },

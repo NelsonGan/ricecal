@@ -111,7 +111,7 @@ export const ANDROID_IMAGE_TYPES = {
 /**
  * Play accepts at most 8 screenshots per device type
  * (https://support.google.com/googleplay/android-developer/answer/9866151).
- * The phone set is 6 scenes so nothing is dropped today, but the cap is
+ * The phone set is 7 scenes so nothing is dropped today, but the cap is
  * enforced here rather than discovered mid-upload if a scene is ever added.
  * App Store Connect allows 10.
  */

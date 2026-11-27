@@ -83,6 +83,6 @@ export const IOS_BUNDLE_ID = "com.nelsongan.ricecal";
 export const ANDROID_PACKAGE = "com.nelsongan.ricecal";
 
 /** The date the legal pages last changed. Bump when you edit one. */
-export const LEGAL_LAST_UPDATED = "21 November 2026";
+export const LEGAL_LAST_UPDATED = "27 November 2026";
 
 export const COMPANY_NAME = "RiceCal";

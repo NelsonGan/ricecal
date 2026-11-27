@@ -1320,6 +1320,11 @@ export const zhHans = {
       lifetimeDetail: '一次付清，永远是你的',
     },
 
+    proof: {
+      usersChoice: '用户之选',
+      rated: '评分 {{rating}}，满分 5',
+    },
+
     hard: {
       choosePlan: '选择方案',
       assurance: '没有约束，随时可以取消',

@@ -1337,6 +1337,11 @@ export const id = {
       lifetimeDetail: 'Satu pembayaran, milikmu selamanya',
     },
 
+    proof: {
+      usersChoice: 'Pilihan pengguna',
+      rated: 'Rating {{rating}} dari 5',
+    },
+
     hard: {
       choosePlan: 'Pilih paketmu',
       assurance: 'Tanpa komitmen, batalkan kapan saja',

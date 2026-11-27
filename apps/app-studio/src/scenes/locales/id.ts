@@ -38,7 +38,7 @@ const id: LocaleModule = {
     panel: {
       title: "Lima cara catat\nmakanan Asia",
       sub: "Kaki lima, masakan rumah, kemasan dari toko.",
-      stats: { usersChoice: 'Pilihan 2K pengguna' },
+      stats: { usersChoice: 'Pilihan 5K pengguna' },
       metrics: { calories: "Kalori", water: "Air", weight: "Berat" },
       snap    : { t: "Foto piringmu", b: "Tiap hidangan dikenali, ditakar dan dihitung." },
       describe: { t: "Sebut apa yang kamu makan", b: "“Nasi goreng dengan telur dan ayam.”" },

@@ -38,7 +38,7 @@ const vi: LocaleModule = {
     panel: {
       title: "Năm cách\nghi món Á",
       sub: "Hàng rong, món nhà nấu, đồ đóng gói ngoài tiệm.",
-      stats: { usersChoice: 'Lựa chọn của 2K người dùng' },
+      stats: { usersChoice: 'Lựa chọn của 5K người dùng' },
       metrics: { calories: "Calo", water: "Nước", weight: "Cân nặng" },
       snap    : { t: "Chụp đĩa thức ăn", b: "Từng món trên đĩa được gọi tên, ước lượng và đếm." },
       describe: { t: "Nói bạn đã ăn gì", b: "“Một tô phở bò với rau thơm.”" },

@@ -135,7 +135,7 @@ const SECTIONS: LegalSection[] = [
       },
       {
         kind: "p",
-        text: "The app itself, its name, its mascot, its design system, the catalogue we assembled, and everything else we made, remain ours. You may not copy, resell, decompile, scrape or reverse engineer it, except where the law says you may.",
+        text: "The app itself, its name, its design system, the catalogue we assembled, and everything else we made, remain ours. You may not copy, resell, decompile, scrape or reverse engineer it, except where the law says you may.",
       },
       {
         kind: "p",

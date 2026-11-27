@@ -38,7 +38,7 @@ const de: LocaleModule = {
     panel: {
       title: "Fünf Wege für\nasiatisches Essen",
       sub: "Straßenküche, Hausmannskost, Packungen aus dem Laden.",
-      stats: { usersChoice: 'Die Wahl von 2K Nutzern' },
+      stats: { usersChoice: 'Die Wahl von 5K Nutzern' },
       metrics: { calories: "Kalorien", water: "Wasser", weight: "Gewicht" },
       snap    : { t: "Teller fotografieren", b: "Jedes Gericht darauf benannt, geschätzt und gezählt." },
       describe: { t: "Sag, was du gegessen hast", b: "„Nasi Lemak mit Brathähnchen und ein Teh Tarik.\"" },

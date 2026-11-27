@@ -1321,6 +1321,11 @@ export const ko = {
       lifetimeDetail: '한 번 결제로 계속 내 것',
     },
 
+    proof: {
+      usersChoice: '사용자의 선택',
+      rated: '평점 {{rating}}점(5점 만점)',
+    },
+
     hard: {
       choosePlan: '요금제를 선택하세요',
       assurance: '약정 없음, 언제든 해지',

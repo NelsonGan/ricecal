@@ -1,80 +1,116 @@
-export type AppReview = {
-  /** Apple's review ID, retained so the edited copy can be checked in the feed. */
+type ReviewBase = {
+  /** The store's own review ID, kept so the edited copy can be checked against it. */
   id: string;
   author: string;
-  title: string;
   body: string;
   rating: number;
   date: string;
-  country: "sg" | "my";
 };
 
+/** App Store reviews carry a title and a storefront; Google Play reviews have neither. */
+export type AppReview =
+  | (ReviewBase & { store: "appStore"; title: string; country: "sg" | "my" })
+  | (ReviewBase & { store: "playStore" });
+
 /**
- * Selected App Store reviews, read on 2 October 2026 from Apple's public feeds:
- * https://itunes.apple.com/sg/rss/customerreviews/id=6795558595/sortBy=mostRecent/json
- * https://itunes.apple.com/my/rss/customerreviews/id=6795558595/sortBy=mostRecent/json
+ * Selected store reviews, read on 27 November 2026: the App Store's through
+ * App Store Connect (`asc reviews list`), Google Play's from the listing.
  *
- * Bodies are excerpts in the reviewers' own words, with light punctuation and
- * grammar edits. Titles keep their wording, with capitalisation tidied.
- * Names and stars are unchanged.
- * Dates use the feed's UTC day, matching the dates shown on the store listings.
- * Keep the section's excerpt note when editing these, and never add a claim
- * the original reviewer did not make. These are baked in, not fetched on visits.
+ * Bodies are the reviewers' own words with light punctuation and grammar
+ * edits, and emoji dropped. Titles keep their wording, with capitalisation
+ * tidied. Names and stars are unchanged. Dates are the review's UTC day.
+ * Never add a claim the original reviewer did not make. These are baked in,
+ * not fetched on visits. The paywall quotes some of the same reviews
+ * (`apps/mobile/src/features/paywall/reviews.ts`), so refresh both together.
  */
 export const APP_REVIEWS: AppReview[] = [
   {
-    id: "14603488299",
+    id: "00000195-0bfe-c303-666f-8c2b00000000",
+    store: "appStore",
     author: "Zayydah",
     title: "Best cal tracker I've used!",
-    body: "The snap feature and AI capabilities make things so quick and intuitive. App design is really cute too.",
+    body: "I've tried many trackers before and they were all difficult in some way, but this app's UX is really smooth and adaptable! The snap feature and AI capabilities make things so quick and intuitive. App design is really cute too.",
     rating: 5,
     date: "2026-09-28",
     country: "sg",
   },
   {
-    id: "14520165459",
+    id: "00000195-0bfe-c303-71c8-4e9900000000",
+    store: "appStore",
+    author: "jamesgan99",
+    title: "All in one nutrition + fitness tracking",
+    body: "I love how integrated the different features in the app are. The only app I am using now to track nutrition and workouts!",
+    rating: 5,
+    date: "2026-11-15",
+    country: "my",
+  },
+  {
+    id: "00000195-0bfe-c303-63e1-949400000000",
+    store: "appStore",
+    author: "eggieeesss",
+    title: "Super handy calorie tracker!",
+    body: "I can log my daily meals effortlessly and check my full eating history easily. It works really well for local Asian food, which most calorie apps don't handle well.",
+    rating: 5,
+    date: "2026-09-17",
+    country: "sg",
+  },
+  {
+    id: "00000195-0bfe-c303-6178-245300000000",
+    store: "appStore",
     author: "minghui2103",
     title: "Easy to use",
-    body: "This app is really easy to use. It is able to detect a lot of the local food that I snap.",
+    body: "This app is really easy to use. I like that it is localised properly for Asian food, which other calorie tracking apps lack. It is able to detect a lot of the local food that I snap.",
     rating: 5,
     date: "2026-09-07",
     country: "my",
   },
   {
-    id: "14603693309",
+    id: "00000195-0bfe-c303-6672-acfd00000000",
+    store: "appStore",
     author: "Locards Principle",
     title: "Best calorie tracker",
-    body: "It also tracks my step count and updates my calorie limit, allowing me to eat a bit more.",
+    body: "Stumbled upon this app by chance, and it was so easy to get started with for my diet plan. It also tracks my step count and updates my calorie limit, allowing me to eat a bit more.",
     rating: 5,
     date: "2026-09-28",
     country: "sg",
   },
   {
-    id: "14578830549",
+    id: "7492ce82-6c25-473d-b235-cc0de2ad1d00",
+    store: "playStore",
+    author: "Chen Xin Lau",
+    body: "Good app. I can record my meals for more than a week without subscribing to any plan.",
+    rating: 5,
+    date: "2026-11-04",
+  },
+  {
+    id: "00000195-0bfe-c303-64f7-4cd500000000",
+    store: "appStore",
     author: "syk4321",
     title: "Good free calorie tracking app!",
-    body: "Good app, helps me keep track of my food calories. I also like that it integrates Apple Health.",
+    body: "Good app, it helps me keep track of my food calories and be healthy! I also like that it integrates Apple Health.",
     rating: 5,
     date: "2026-09-22",
     country: "my",
   },
   {
-    id: "14560629908",
-    author: "eggieeesss",
-    title: "Super handy calorie tracker!",
-    body: "It works really well for local Asian food, which most calorie apps don't handle well.",
+    id: "00000195-0bfe-c303-6919-d6ea00000000",
+    store: "appStore",
+    author: "Alexxxxxxxlllllll320",
+    title: "Good and simple!",
+    body: "Able to log in and navigate easily, and the interface is easy to understand.",
     rating: 5,
-    date: "2026-09-17",
-    country: "sg",
+    date: "2026-10-10",
+    country: "my",
   },
 ];
 
 /**
- * Supplied by the owner on 2 October 2026. The 4.5 is the worldwide App Store
- * rating confirmed from App Store Connect, not either storefront's average.
- * Reconfirm both figures with the owner when refreshing this snapshot.
+ * Supplied by the owner on 27 November 2026. The 4.8 matches the Google Play
+ * listing's rating that day. The app's paywall and the App Studio's gallery
+ * show the same two figures; change all three together, and reconfirm both
+ * with the owner when refreshing this snapshot.
  */
-export const REVIEW_SOCIAL_PROOF = { users: 2_000, rating: 4.5 };
+export const REVIEW_SOCIAL_PROOF = { users: 5_000, rating: 4.8 };
 
 export const REVIEW_STORES = {
   sg: {

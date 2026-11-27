@@ -38,7 +38,7 @@ const ko: LocaleModule = {
     panel: {
       title: "아시아 음식을\n남기는 다섯 가지",
       sub: "노점 음식, 집밥, 가게에서 산 포장 식품까지.",
-      stats: { usersChoice: '2K 사용자의 선택' },
+      stats: { usersChoice: '5K 사용자의 선택' },
       metrics: { calories: "칼로리", water: "물", weight: "체중" },
       snap    : { t: "접시를 찍기", b: "접시 위 음식마다 이름과 양, 칼로리까지." },
       describe: { t: "먹은 걸 말하기", b: "“달걀을 올린 비빔밥 한 그릇.”" },

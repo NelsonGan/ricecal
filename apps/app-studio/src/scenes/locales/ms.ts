@@ -38,7 +38,7 @@ const ms: LocaleModule = {
     panel: {
       title: "Lima cara catat\nmakanan Asia",
       sub: "Gerai tepi jalan, masakan rumah, bungkusan dari kedai.",
-      stats: { usersChoice: 'Pilihan 2K pengguna' },
+      stats: { usersChoice: 'Pilihan 5K pengguna' },
       metrics: { calories: "Kalori", water: "Air", weight: "Berat" },
       snap    : { t: "Ambil gambar pinggan", b: "Setiap hidangan dinamakan, disukat dan dikira." },
       describe: { t: "Sebut apa anda makan", b: "\"Nasi lemak dengan ayam goreng dan teh tarik.\"" },

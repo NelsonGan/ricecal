@@ -38,7 +38,7 @@ const fil: LocaleModule = {
     panel: {
       title: "Limang paraan sa\npagkaing Asyano",
       sub: "Karinderya, lutong bahay, nakabalot mula sa tindahan.",
-      stats: { usersChoice: 'Pinili ng 2K gumagamit' },
+      stats: { usersChoice: 'Pinili ng 5K gumagamit' },
       metrics: { calories: "Calories", water: "Tubig", weight: "Timbang" },
       snap    : { t: "Kunan ang plato", b: "Bawat putahe dito ay pinangalanan, sinukat at binilang." },
       describe: { t: "Sabihin ang kinain", b: "“Chicken adobo na may kanin.”" },

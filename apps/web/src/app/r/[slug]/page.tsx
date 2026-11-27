@@ -27,10 +27,10 @@ export default async function SharedFoodPage({
       <main className="flex flex-1 items-center justify-center px-5 pt-28 pb-20">
         <div className="w-full max-w-xl text-center">
           <Image
-            src="/mascot-192.png"
+            src="/rice-bowl-224.png"
             alt=""
-            width={192}
-            height={192}
+            width={224}
+            height={224}
             className="bob mx-auto h-28 w-28"
             priority
           />

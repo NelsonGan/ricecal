@@ -38,7 +38,7 @@ const sv: LocaleModule = {
     panel: {
       title: "Fem sätt för\nasiatisk mat",
       sub: "Gatukök, hemlagat, förpackningar från affären.",
-      stats: { usersChoice: '2K användares val' },
+      stats: { usersChoice: '5K användares val' },
       metrics: { calories: "Kalorier", water: "Vatten", weight: "Vikt" },
       snap    : { t: "Fotografera tallriken", b: "Varje rätt på den får namn, portion och kalorier." },
       describe: { t: "Säg vad du åt", b: "\"Nasi lemak med friterad kyckling och en teh tarik.\"" },

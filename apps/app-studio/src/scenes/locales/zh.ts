@@ -38,7 +38,7 @@ const zh: LocaleModule = {
     panel: {
       title: "五种方式\n记亚洲菜",
       sub: "小贩摊、家常菜，还有店里的包装食品。",
-      stats: { usersChoice: '2K 用户之选' },
+      stats: { usersChoice: '5K 用户之选' },
       metrics: { calories: "热量", water: "喝水", weight: "体重" },
       snap    : { t: "拍一张盘子", b: "盘里每道菜都被认出、估量并算清。" },
       describe: { t: "说出你吃了什么", b: "\"椰浆饭配炸鸡，再一杯拉茶。\"" },
