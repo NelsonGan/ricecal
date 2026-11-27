@@ -6,7 +6,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import '@/i18n'
 import { type OnboardingDraft, OnboardingDraftProvider } from '@/features/onboarding'
 import { ThemeProvider } from '@/theme/ThemeProvider'
-import { ToastProvider } from '@/ui'
 import HowStep from '../how'
 import SocialStep from '../social-showcase'
 import WorkoutsStep from '../workouts-showcase'
@@ -33,9 +32,7 @@ function Providers({ children }: { children: ReactNode }) {
       }}
     >
       <ThemeProvider>
-        <ToastProvider>
-          <OnboardingDraftProvider userId={null}>{children}</OnboardingDraftProvider>
-        </ToastProvider>
+        <OnboardingDraftProvider userId={null}>{children}</OnboardingDraftProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   )
@@ -83,14 +80,13 @@ it.each([
   ['how', <HowStep key="how" />],
   ['workouts', <WorkoutsStep key="workouts" />],
   ['social', <SocialStep key="social" />],
-])('labels the %s sample a preview, and says so when it is tapped', async (_name, ui) => {
+])('labels the %s sample a preview, and a tap on it goes nowhere', async (_name, ui) => {
   await render(ui)
 
   // The samples look like the real screens, and were tapped as if they were.
-  // A tap gets an answer instead of nothing, and moves nowhere.
+  expect(screen.getByText('Preview')).toBeTruthy()
   await user.press(screen.getByLabelText(/^Preview\. /))
 
-  expect(screen.getByText('Just a preview. Try it after setup.')).toBeTruthy()
   expect(mockPush).not.toHaveBeenCalled()
 })
 

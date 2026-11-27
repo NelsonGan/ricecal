@@ -505,7 +505,6 @@ export const ko = {
 
     preview: {
       badge: '미리보기',
-      tapped: '미리보기 화면이에요. 설정을 마치면 써 볼 수 있어요.',
     },
 
     workouts: {

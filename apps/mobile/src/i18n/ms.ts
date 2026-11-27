@@ -519,7 +519,6 @@ export const ms = {
 
     preview: {
       badge: 'Pratonton',
-      tapped: 'Ini pratonton sahaja. Cuba selepas persediaan.',
     },
 
     workouts: {

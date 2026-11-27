@@ -504,7 +504,6 @@ export const hi = {
 
     preview: {
       badge: 'झलक',
-      tapped: 'यह सिर्फ़ झलक है। सेटअप के बाद आज़माएँ।',
     },
 
     workouts: {

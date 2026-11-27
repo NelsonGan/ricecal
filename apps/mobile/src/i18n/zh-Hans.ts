@@ -508,7 +508,6 @@ export const zhHans = {
 
     preview: {
       badge: '预览',
-      tapped: '这只是预览，设置完成后即可试用。',
     },
 
     workouts: {

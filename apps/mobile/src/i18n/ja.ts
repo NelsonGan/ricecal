@@ -511,7 +511,6 @@ export const ja = {
 
     preview: {
       badge: 'プレビュー',
-      tapped: 'これはプレビューです。設定後に使えます。',
     },
 
     workouts: {

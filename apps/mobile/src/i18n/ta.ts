@@ -511,7 +511,6 @@ export const ta = {
 
     preview: {
       badge: 'முன்னோட்டம்',
-      tapped: 'இது முன்னோட்டம் மட்டுமே. அமைத்த பின் முயலுங்கள்.',
     },
 
     workouts: {

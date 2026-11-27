@@ -502,7 +502,6 @@ export const bn = {
 
     preview: {
       badge: 'প্রিভিউ',
-      tapped: 'এটি শুধু প্রিভিউ। সেটআপের পরে ব্যবহার করে দেখুন।',
     },
 
     workouts: {

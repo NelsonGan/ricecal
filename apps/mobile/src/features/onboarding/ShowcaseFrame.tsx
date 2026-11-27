@@ -12,7 +12,7 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { useThemeColors } from '@/theme/useTheme'
-import { cn, Icon, Text, useToast } from '@/ui'
+import { cn, Icon, Text } from '@/ui'
 
 export type ShowcaseFrameProps = {
   /** The sample, drawn the way the real screen draws it. */
@@ -33,8 +33,8 @@ export type ShowcaseFrameProps = {
  * "Preview", with the phone's lower half fading out the way a screenshot in a
  * store listing does. Nothing inside it takes a touch.
  *
- * A tap anyway still gets an answer: the pill nods and a toast says what this
- * is, rather than the silence that read as a bug.
+ * A tap anyway still gets an answer, a nod of the "Preview" pill, rather than
+ * the silence that read as a bug. No message: the pill already says it.
  *
  * No slab under the panel. A slab is what marks a control as pressable in this
  * app (see `Squish`), which is the one thing this must not look like.
@@ -42,20 +42,18 @@ export type ShowcaseFrameProps = {
 export function ShowcaseFrame({ children, accessibilityLabel, className }: ShowcaseFrameProps) {
   const { t } = useTranslation('onboarding')
   const colors = useThemeColors()
-  const toast = useToast()
   const still = useReducedMotion()
   const nod = useSharedValue(1)
   const pill = useAnimatedStyle(() => ({ transform: [{ scale: nod.value }] }))
 
-  const explain = () => {
+  const point = () => {
     void Haptics.selectionAsync().catch(() => {})
     if (!still) nod.value = withSequence(withTiming(1.12, { duration: 120 }), withSpring(1))
-    toast.show({ title: t('preview.tapped'), icon: { set: 'system', name: 'eye-show' } })
   }
 
   return (
     <Pressable
-      onPress={explain}
+      onPress={point}
       accessible
       accessibilityRole="image"
       accessibilityLabel={`${t('preview.badge')}. ${accessibilityLabel}`}

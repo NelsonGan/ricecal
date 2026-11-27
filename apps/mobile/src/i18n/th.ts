@@ -507,7 +507,6 @@ export const th = {
 
     preview: {
       badge: 'ตัวอย่าง',
-      tapped: 'นี่เป็นเพียงตัวอย่าง ลองใช้ได้หลังตั้งค่าเสร็จ',
     },
 
     workouts: {

@@ -508,7 +508,6 @@ export const vi = {
 
     preview: {
       badge: 'Xem trước',
-      tapped: 'Đây chỉ là bản xem trước. Dùng thử sau khi thiết lập.',
     },
 
     workouts: {

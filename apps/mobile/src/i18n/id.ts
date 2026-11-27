@@ -514,7 +514,6 @@ export const id = {
 
     preview: {
       badge: 'Pratinjau',
-      tapped: 'Ini hanya pratinjau. Coba setelah penyiapan.',
     },
 
     workouts: {

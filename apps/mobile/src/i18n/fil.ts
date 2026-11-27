@@ -520,7 +520,6 @@ export const fil = {
 
     preview: {
       badge: 'Preview',
-      tapped: 'Preview lang ito. Subukan pagkatapos ng setup.',
     },
 
     workouts: {

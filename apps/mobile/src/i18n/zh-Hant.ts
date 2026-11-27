@@ -508,7 +508,6 @@ export const zhHant = {
 
     preview: {
       badge: '預覽',
-      tapped: '這只是預覽，設定完成後即可試用。',
     },
 
     workouts: {

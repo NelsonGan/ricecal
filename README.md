@@ -1064,8 +1064,9 @@ silence as a broken flow. So nothing inside the frame looks pressable (the
 logger's filled tick box is a bare tick here, and the panel has no slab, which
 is what marks a control in this app). Each sample also moves on its own once: the
 ticks land in turn, a like lands on the post, the scan's entry rises over the
-photo. Something changing without a touch reads as a picture. A tap anyway gets
-a toast saying it is a preview. Reduce Motion skips the movement.
+photo. Something changing without a touch reads as a picture. A tap anyway only
+nods the "Preview" pill; there is deliberately no toast. Reduce Motion skips the
+movement.
 
 Two screens have left this list. "How do you usually makan" wrote a
 `profiles.food_styles` array that ranked nothing, since search is the Worker's

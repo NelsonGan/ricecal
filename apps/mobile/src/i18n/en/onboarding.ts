@@ -45,14 +45,9 @@ export const onboarding = {
     more: 'Or type it, search it, or scan a barcode.',
   },
 
-  /**
-   * The pill on every sample of the app in onboarding, and the toast a tap on
-   * one shows. The samples look like the real screens, so a tap is likely;
-   * the toast answers it instead of nothing happening.
-   */
+  /** The pill on every sample of the app in onboarding (`ShowcaseFrame`). */
   preview: {
     badge: 'Preview',
-    tapped: 'Just a preview. Try it after setup.',
   },
 
   /** A showcase between the questions: the workout logger. */
