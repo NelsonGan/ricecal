@@ -66,6 +66,10 @@
                     "message": "Import each function from its own path ('date-fns/format'). Metro does not tree-shake, so the index bundles all of date-fns.",
                     "allowImportNames": ["Locale"]
                   },
+                  "expo-keep-awake": {
+                    "message": "Use useScreenAwake from src/lib/keep-awake.ts. The bare hook leaves the release uncaught, which rejects on Android once the activity is gone.",
+                    "importNames": ["useKeepAwake"]
+                  },
                   "date-fns/locale": "Import each locale from its own path ('date-fns/locale/ja'). The index bundles every locale date-fns ships, about 1 MB.",
                   "zod": "zod is about 390 KB of the bundle. Write the check by hand, as src/lib/env.ts does."
                 },

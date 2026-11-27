@@ -1,3 +1,5 @@
+import path from 'node:path'
+
 import { render } from '@/test-utils'
 import { useScreenAwake } from '../keep-awake'
 
@@ -11,11 +13,16 @@ import { useScreenAwake } from '../keep-awake'
  * The real hook runs against a native module that refuses, so what reaches the
  * runtime is what reached it on the phone.
  */
-// The module object the library already holds (the package's exports map hides
-// the file, so it is reached by path). Its two calls are replaced in place.
+// The module object the library already holds, replaced in place. The
+// package's exports map hides the file, so it is reached by path from the
+// package root; a layout change fails here rather than as a stray TypeError.
 const native = require(
-  require.resolve('expo-keep-awake').replace(/index\.js$/, 'ExpoKeepAwake.js'),
+  path.join(
+    path.dirname(require.resolve('expo-keep-awake/package.json')),
+    'build/ExpoKeepAwake.js',
+  ),
 ).default
+if (!native) throw new Error('expo-keep-awake moved its native module')
 const mockActivate = jest.fn((_tag: string) => Promise.resolve())
 const mockDeactivate = jest.fn((_tag: string) =>
   Promise.reject(new Error('The current activity is no longer available')),

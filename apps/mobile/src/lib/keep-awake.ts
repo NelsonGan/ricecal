@@ -1,3 +1,4 @@
+// biome-ignore lint/style/noRestrictedImports: this is the one wrapper the rule points to
 import { useKeepAwake } from 'expo-keep-awake'
 
 /**
