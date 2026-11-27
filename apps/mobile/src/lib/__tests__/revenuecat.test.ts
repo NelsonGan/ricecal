@@ -378,8 +378,16 @@ it('reads the pro entitlement out of the store', async () => {
     expiresAt: '2027-01-01T00:00:00Z',
     trialStartedAt: null,
     productId: 'com.nelsongan.ricecal.pro.yearly',
+    willRenew: true,
     sandbox: false,
   })
+})
+
+it('says when a cancelled trial will not renew', () => {
+  const read = proEntitlementOf({
+    entitlements: { active: { pro: entitlement({ periodType: 'TRIAL', willRenew: false }) } },
+  })
+  expect(read).toMatchObject({ trial: true, willRenew: false })
 })
 
 it('reads a free trial as entitled, and says it is a trial', () => {

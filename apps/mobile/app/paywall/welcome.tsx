@@ -15,6 +15,7 @@ import Animated, {
 import { usePlanSummary } from '@/features/paywall'
 import { isTrialUnit, trialDurationText } from '@/features/paywall/trial'
 import { useEnterApp } from '@/lib/navigation'
+import { ensureNotificationPermission } from '@/lib/notificationPermission'
 import { SessionGate } from '@/lib/SessionGate'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, cn, Icon, type IconProps, Screen, Text } from '@/ui'
@@ -70,6 +71,22 @@ function WelcomeToPro() {
     isTrialUnit(trialUnit) && Number.isSafeInteger(count) && count > 0
       ? { unit: trialUnit, count }
       : undefined
+
+  /**
+   * The paywall's timeline promised a reminder before the first charge, and
+   * this is the moment that promise is collected on: asked here, after the
+   * trial has started, rather than at launch. The reminder itself is booked by
+   * `useTrialReminderSync` from the receipt. Asked after the mark has landed,
+   * so the system sheet does not cover the confirmation it follows.
+   */
+  const trial = state === 'trial'
+  useEffect(() => {
+    if (!trial) return
+    const timer = setTimeout(() => {
+      ensureNotificationPermission().catch(() => {})
+    }, 900)
+    return () => clearTimeout(timer)
+  }, [trial])
 
   /**
    * Land on Today, and stop there. It used to raise the log sheet as well, which

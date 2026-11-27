@@ -1,6 +1,12 @@
 import '@/i18n'
 import i18n, { SUPPORTED_LANGUAGES } from '@/i18n'
-import { trialDurationText, trialProgress } from '../trial'
+import {
+  trialDurationText,
+  trialEnd,
+  trialProgress,
+  trialReminderAt,
+  trialTimeline,
+} from '../trial'
 
 it('translates day and month trial periods without a seven-day assumption', () => {
   const t = i18n.getFixedT('en', 'paywall')
@@ -40,4 +46,38 @@ it('uses the purchased trial dates for its progress', () => {
     ),
   ).toBeCloseTo(1 / 14)
   expect(trialProgress(null, '2026-09-15T00:00:00Z')).toBeNull()
+})
+
+describe('the trial timeline', () => {
+  const now = new Date(2026, 10, 27, 15, 0)
+
+  it('reminds three days before a week-long trial turns into a charge', () => {
+    const timeline = trialTimeline({ unit: 'week', count: 1 }, now)
+    expect(timeline.endsAt).toEqual(new Date(2026, 11, 4, 15, 0))
+    expect(timeline.remindAt).toEqual(new Date(2026, 11, 1, 15, 0))
+    expect(timeline).toMatchObject({ leadDays: 3, remindDay: 4, endDay: 7 })
+  })
+
+  it('reminds sooner on a trial too short for three days, and not at all on one day', () => {
+    expect(trialTimeline({ unit: 'day', count: 3 }, now)).toMatchObject({
+      leadDays: 2,
+      remindDay: 1,
+      endDay: 3,
+    })
+    expect(trialTimeline({ unit: 'day', count: 1 }, now)).toMatchObject({
+      remindAt: null,
+      remindDay: null,
+      leadDays: 0,
+    })
+  })
+
+  it('counts months on the calendar, as the stores do', () => {
+    expect(trialEnd(new Date(2026, 0, 31), { unit: 'month', count: 1 }).getMonth()).toBe(2)
+    expect(trialEnd(now, { unit: 'year', count: 1 })).toEqual(new Date(2027, 10, 27, 15, 0))
+  })
+
+  it('books an unknown start as a full three days ahead', () => {
+    const end = new Date(2026, 11, 4, 15, 0)
+    expect(trialReminderAt(new Date(0), end)).toEqual(new Date(2026, 11, 1, 15, 0))
+  })
 })

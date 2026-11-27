@@ -3,6 +3,7 @@ import { AppState, Platform } from 'react-native'
 
 import type { MealTime, Settings } from '@/data/types'
 import {
+  bookTrialReminder,
   dismissGroupChatNotifications,
   type ReminderCopy,
   rescheduleReminders,
@@ -18,6 +19,7 @@ jest.mock('expo-notifications', () => ({
     WEEKLY: 'weekly',
     MONTHLY: 'monthly',
     TIME_INTERVAL: 'timeInterval',
+    DATE: 'date',
   },
   AndroidImportance: { DEFAULT: 3, HIGH: 4 },
   setNotificationHandler: jest.fn(),
@@ -250,5 +252,51 @@ describe("clearing a group's chat notifications", () => {
   it('says nothing when the list cannot be read', async () => {
     ;(Notifications.getPresentedNotificationsAsync as jest.Mock).mockRejectedValue(new Error('no'))
     await expect(dismissGroupChatNotifications('g1')).resolves.toBeUndefined()
+  })
+})
+
+describe('the trial reminder', () => {
+  const at = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true })
+  })
+
+  it('books one notification under a fixed id, replacing any earlier one', async () => {
+    await bookTrialReminder({ at, title: 'Ends in 3 days', body: 'Renews on 4 December' })
+    expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('trial-reminder')
+    expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith({
+      identifier: 'trial-reminder',
+      content: {
+        title: 'Ends in 3 days',
+        body: 'Renews on 4 December',
+        data: { kind: 'trial' },
+      },
+      trigger: expect.objectContaining({ type: 'date', date: at }),
+    })
+  })
+
+  it('takes it back when there is no trial to remind about, or the moment has passed', async () => {
+    await bookTrialReminder(null)
+    await bookTrialReminder({ at: new Date(Date.now() - 1000), title: 'x', body: 'x' })
+    expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledTimes(2)
+    expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled()
+  })
+
+  it('books nothing without permission', async () => {
+    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({ granted: false })
+    await bookTrialReminder({ at, title: 'x', body: 'x' })
+    expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled()
+  })
+
+  it('is left booked when the meal reminders are rewritten', async () => {
+    ;(Notifications.getAllScheduledNotificationsAsync as jest.Mock).mockResolvedValue([
+      { identifier: 'trial-reminder', content: { data: { kind: 'trial' } } },
+    ])
+    await rescheduleReminders(settings, [], copy)
+    expect(Notifications.cancelScheduledNotificationAsync).not.toHaveBeenCalledWith(
+      'trial-reminder',
+    )
   })
 })

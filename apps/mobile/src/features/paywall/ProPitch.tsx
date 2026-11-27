@@ -6,6 +6,7 @@ import { PlanPicker } from '@/features/shared'
 import { Text } from '@/ui'
 import { PlanTable } from './PlanTable'
 import { PurchaseTerms } from './PurchaseTerms'
+import { TrialTimeline } from './TrialTimeline'
 
 export type ProPitchProps = {
   plan: Plan
@@ -41,6 +42,10 @@ export function ProPlanChoice({
       </View>
 
       <PlanPicker showLifetime value={plan} onChange={onPlanChange} disabled={disabled} />
+
+      {/* Under the plans it is about, and in the same pane on iPhone Duo, so
+          switching to a plan without a trial takes the timeline with it. */}
+      <TrialTimeline plan={plan} />
     </View>
   )
 }

@@ -96,6 +96,14 @@ it('and the newest monthly one from a monthly report', async () => {
   unmount()
 })
 
+it('opens the plan page from the trial reminder', async () => {
+  const { unmount } = await mount()
+  mockListeners[0]?.(response('trial'))
+
+  expect(mockPush).toHaveBeenCalledWith('/settings/subscription')
+  unmount()
+})
+
 it('leaves every other notification alone', async () => {
   const { unmount } = await mount()
 

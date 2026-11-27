@@ -156,3 +156,25 @@ it('restores through the same guarded store flow', async () => {
   expect(mockAwaitEntitlement).toHaveBeenCalledTimes(1)
   expect(mockTrack).toHaveBeenCalledWith('Restore Requested', { outcome: 'restored' })
 })
+
+it('shows when the trial ends, when it reminds, and what it then charges', async () => {
+  await renderOffer({ screen: 'hard', onLater: jest.fn() })
+
+  expect(screen.getByText('How your free trial works')).toBeTruthy()
+  expect(screen.getByText('Today')).toBeTruthy()
+  // A three-day trial reminds two days before its end, on day 1.
+  expect(screen.getByText(/^Day 1, /)).toBeTruthy()
+  expect(screen.getByText('We remind you 2 days before it ends')).toBeTruthy()
+  expect(screen.getByText(/^Day 3, /)).toBeTruthy()
+  expect(screen.getByText('You pay RM99.90. Cancel before then to pay nothing.')).toBeTruthy()
+
+  // Monthly has no trial for this account, so there is no timeline to show.
+  await user.press(screen.getByText('Monthly'))
+  expect(screen.queryByText('How your free trial works')).toBeNull()
+})
+
+it('draws no timeline before the store has answered', async () => {
+  mockPrices = undefined
+  await renderOffer({ screen: 'hard', onLater: jest.fn() })
+  expect(screen.queryByText('How your free trial works')).toBeNull()
+})

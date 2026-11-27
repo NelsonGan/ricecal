@@ -7131,6 +7131,32 @@ period shown at checkout even if eligibility changes afterward. The trial
 progress bar follows the purchased period's start and end dates rather than
 today's offer duration.
 
+**A plan with a trial shows what happens after the button, by date.** Under the
+plans, `TrialTimeline` draws three steps for the selected plan: today everything
+unlocks, a reminder lands three days before the trial ends (fewer on a trial
+too short for that, none on a one-day trial), and on the last day the plan's
+price is charged unless it was cancelled. Each step names the trial day and the
+date ("Day 4, 1 Dec"), computed from the store's period and the plan's store
+price, so a plan without a trial for this account, or a store that has not
+answered, shows no timeline at all. This is the pattern Blinkist made standard:
+the charge people dispute is the one they did not see coming, and saying when it
+lands is what makes starting the trial feel safe.
+
+**The reminder is a promise, so the app keeps it.** `useTrialReminderSync`
+(mounted with the tabs) books one local notification, `trial-reminder`, from the
+store's receipt rather than from the purchase button: the trial's real end,
+whether the store will renew it (`willRenew` on the store entitlement, which a
+cancelled trial turns off and so unbooks the reminder), and the start for the
+lead time. Without a store SDK it falls back on the mirror's `trial` status and
+`trial_ends_at`. It is checked again whenever the app comes to the front, and it
+is not cancelled on sign out the way the meal reminders are: it is about money
+leaving the phone's store account, which signing out of RiceCal does not stop.
+The welcome screen after a trial purchase asks for notification permission,
+the one place outside the reminder settings that asks, because that is the
+moment the reminder was promised; returning from the system sheet books it.
+Tapping it opens **Me, RiceCal Pro**. Its copy is written when it is booked, so
+it fires in the language the app was in that day.
+
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the
 terms of use and the privacy policy. `PurchaseTerms` renders Terms and Privacy in

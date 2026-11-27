@@ -1382,6 +1382,20 @@ export const ms = {
       restored: 'Pembelian anda sudah kembali',
     },
 
+    timeline: {
+      title: 'Cara percubaan percuma anda berjalan',
+      today: 'Hari ini',
+      todayBody: 'Semua ciri Pro dibuka',
+      day: 'Hari {{day}}, {{date}}',
+      remindBody_one: 'Kami ingatkan anda sehari sebelum ia tamat',
+      remindBody_other: 'Kami ingatkan anda {{count}} hari sebelum ia tamat',
+      chargeBody: 'Anda bayar {{price}}. Batalkan sebelum itu untuk tidak membayar apa-apa.',
+    },
+    trialReminder: {
+      title_one: 'Percubaan percuma anda tamat esok',
+      title_other: 'Percubaan percuma anda tamat dalam {{count}} hari',
+      body: 'RiceCal Pro diperbaharui pada {{date}}. Batalkan sebelum itu untuk tidak membayar apa-apa.',
+    },
     table: {
       sectionTitle: 'Semua dalam Pro',
       sectionSubtitle: 'Lihat apa yang dibuka apabila anda menaik taraf',

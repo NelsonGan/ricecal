@@ -1351,6 +1351,20 @@ export const hi = {
       restored: 'आपकी ख़रीद वापस आ गई',
     },
 
+    timeline: {
+      title: 'मुफ़्त ट्रायल कैसे चलता है',
+      today: 'आज',
+      todayBody: 'Pro की हर सुविधा खुल जाती है',
+      day: 'दिन {{day}}, {{date}}',
+      remindBody_one: 'ख़त्म होने से एक दिन पहले हम याद दिलाएंगे',
+      remindBody_other: 'ख़त्म होने से {{count}} दिन पहले हम याद दिलाएंगे',
+      chargeBody: 'आप {{price}} चुकाएंगे। उससे पहले रद्द करें तो कुछ नहीं लगेगा।',
+    },
+    trialReminder: {
+      title_one: 'आपका मुफ़्त ट्रायल कल ख़त्म होगा',
+      title_other: 'आपका मुफ़्त ट्रायल {{count}} दिन में ख़त्म होगा',
+      body: 'RiceCal Pro {{date}} को रिन्यू होगा। उससे पहले रद्द करें तो कुछ नहीं लगेगा।',
+    },
     table: {
       sectionTitle: 'Pro में सब कुछ',
       sectionSubtitle: 'अपग्रेड करने पर क्या अनलॉक होगा, ठीक से देखें',

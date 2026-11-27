@@ -13,6 +13,7 @@ import {
 } from '@/data'
 import { useGroupInviteCount } from '@/data/groups'
 import { useAnalyticsIdentity } from '@/features/analytics'
+import { useTrialReminderSync } from '@/features/paywall/useTrialReminderSync'
 import { usePendingImport } from '@/features/recipes/pendingImport'
 import { useReminderSync, useReportLinks } from '@/features/settings'
 import {
@@ -99,6 +100,9 @@ function SignedInTabs() {
   // behind the same guard because the route it pushes reads the account.
   useReminderSync()
   useReportLinks()
+  // The reminder the paywall's trial timeline promises, booked from the
+  // store's receipt so a second phone or a reinstall gets it too.
+  useTrialReminderSync()
   // The third of the same kind: it keeps PostHog's picture of the account in
   // step with the profile, which matters most on a handset that never ran
   // onboarding — a reinstall, or signing in on a second phone.

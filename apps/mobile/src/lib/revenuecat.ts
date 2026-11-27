@@ -376,6 +376,12 @@ export type StoreEntitlement = {
   trialStartedAt: string | null
   productId: string | null
   /**
+   * Whether the store will charge at the end of this period. False once a
+   * trial is cancelled, which is when its reminder must stop: it would tell
+   * somebody who already cancelled that they are about to pay.
+   */
+  willRenew: boolean
+  /**
    * A sandbox purchase. Worth having on hand: the webhook deliberately refuses
    * to grant on one, so a tester whose store says yes and whose mirror says no
    * is looking at that rule rather than at a bug.
@@ -401,6 +407,7 @@ export function proEntitlementOf(info: StoreCustomerInfo): StoreEntitlement {
       expiresAt: null,
       trialStartedAt: null,
       productId: null,
+      willRenew: false,
       sandbox: false,
     }
   }
@@ -411,6 +418,7 @@ export function proEntitlementOf(info: StoreCustomerInfo): StoreEntitlement {
     expiresAt: pro.expirationDate ?? null,
     trialStartedAt: trial ? (pro.latestPurchaseDate ?? null) : null,
     productId: pro.productIdentifier ?? null,
+    willRenew: pro.willRenew === true,
     sandbox: pro.isSandbox === true,
   }
 }

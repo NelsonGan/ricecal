@@ -1349,6 +1349,20 @@ export const th = {
       restored: 'การซื้อของคุณกลับมาแล้ว',
     },
 
+    timeline: {
+      title: 'ทดลองใช้ฟรีทำงานอย่างไร',
+      today: 'วันนี้',
+      todayBody: 'ปลดล็อกทุกอย่างใน Pro',
+      day: 'วันที่ {{day}}, {{date}}',
+      remindBody_one: 'เราจะเตือนคุณหนึ่งวันก่อนหมดเวลา',
+      remindBody_other: 'เราจะเตือนคุณ {{count}} วันก่อนหมดเวลา',
+      chargeBody: 'คุณจ่าย {{price}} ยกเลิกก่อนวันนี้เพื่อไม่เสียเงิน',
+    },
+    trialReminder: {
+      title_one: 'การทดลองใช้ฟรีของคุณจะหมดพรุ่งนี้',
+      title_other: 'การทดลองใช้ฟรีของคุณจะหมดในอีก {{count}} วัน',
+      body: 'RiceCal Pro จะต่ออายุวันที่ {{date}} ยกเลิกก่อนวันนั้นเพื่อไม่เสียเงิน',
+    },
     table: {
       sectionTitle: 'ทุกอย่างใน Pro',
       sectionSubtitle: 'ดูว่ามีอะไรปลดล็อกเมื่อคุณอัปเกรด',

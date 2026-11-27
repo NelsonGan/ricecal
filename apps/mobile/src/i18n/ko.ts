@@ -1351,6 +1351,20 @@ export const ko = {
       restored: '구매를 복원했어요',
     },
 
+    timeline: {
+      title: '무료 체험 진행 방식',
+      today: '오늘',
+      todayBody: 'Pro의 모든 기능 잠금 해제',
+      day: '{{day}}일째, {{date}}',
+      remindBody_one: '끝나기 하루 전에 알려 드려요',
+      remindBody_other: '끝나기 {{count}}일 전에 알려 드려요',
+      chargeBody: '{{price}} 결제. 그 전에 해지하면 요금이 없어요.',
+    },
+    trialReminder: {
+      title_one: '무료 체험이 내일 끝나요',
+      title_other: '무료 체험이 {{count}}일 후에 끝나요',
+      body: 'RiceCal Pro가 {{date}}에 갱신돼요. 그 전에 해지하면 요금이 없어요.',
+    },
     table: {
       sectionTitle: 'Pro의 모든 기능',
       sectionSubtitle: '업그레이드하면 무엇이 열리는지 확인하세요',

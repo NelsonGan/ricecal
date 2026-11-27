@@ -1381,6 +1381,20 @@ export const fil = {
       restored: 'Nakabalik na ang binili mo',
     },
 
+    timeline: {
+      title: 'Paano gumagana ang libreng trial',
+      today: 'Ngayon',
+      todayBody: 'Bukas na ang lahat ng Pro',
+      day: 'Araw {{day}}, {{date}}',
+      remindBody_one: 'Paaalalahanan ka namin isang araw bago ito matapos',
+      remindBody_other: 'Paaalalahanan ka namin {{count}} araw bago ito matapos',
+      chargeBody: 'Magbabayad ka ng {{price}}. Kanselahin bago noon para walang bayad.',
+    },
+    trialReminder: {
+      title_one: 'Matatapos bukas ang libreng trial mo',
+      title_other: 'Matatapos sa loob ng {{count}} araw ang libreng trial mo',
+      body: 'Magre-renew ang RiceCal Pro sa {{date}}. Kanselahin bago noon para walang bayad.',
+    },
     table: {
       sectionTitle: 'Lahat sa Pro',
       sectionSubtitle: 'Tingnan kung ano ang maa-unlock kapag nag-upgrade ka',

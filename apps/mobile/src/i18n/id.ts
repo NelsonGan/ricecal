@@ -1367,6 +1367,20 @@ export const id = {
       restored: 'Pembelianmu sudah kembali',
     },
 
+    timeline: {
+      title: 'Cara kerja uji coba gratis',
+      today: 'Hari ini',
+      todayBody: 'Semua fitur Pro terbuka',
+      day: 'Hari ke-{{day}}, {{date}}',
+      remindBody_one: 'Kami ingatkan sehari sebelum berakhir',
+      remindBody_other: 'Kami ingatkan {{count}} hari sebelum berakhir',
+      chargeBody: 'Kamu membayar {{price}}. Batalkan sebelumnya agar tidak dikenai biaya.',
+    },
+    trialReminder: {
+      title_one: 'Uji coba gratismu berakhir besok',
+      title_other: 'Uji coba gratismu berakhir dalam {{count}} hari',
+      body: 'RiceCal Pro diperpanjang pada {{date}}. Batalkan sebelumnya agar tidak dikenai biaya.',
+    },
     table: {
       sectionTitle: 'Semua fitur Pro',
       sectionSubtitle: 'Lihat apa saja yang terbuka saat kamu upgrade',
