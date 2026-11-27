@@ -1359,6 +1359,29 @@ export const ja = {
       restored: '購入を復元しました',
     },
 
+    timeline: {
+      title: '無料トライアルの流れ',
+      today: '今日',
+      todayBody: 'Pro のすべてが使えるようになります',
+      remindBody_one: '終了の前日にお知らせします',
+      remindBody_other: '終了の{{count}}日前にお知らせします',
+      chargeBody: '{{price}} のお支払い。それまでに解約すれば料金はかかりません。',
+    },
+    trialReminder: {
+      title_one: '無料トライアルは明日で終了します',
+      title_other: '無料トライアルはあと{{count}}日で終了します',
+      body: 'RiceCal Pro は {{date}} に更新されます。それまでに解約すれば料金はかかりません。',
+    },
+    reminderOffer: {
+      title: 'お支払い前にお知らせしますか？',
+      body_one:
+        '無料トライアルは {{date}} に終了します。通知をオンにすると、前日にお知らせします。',
+      body_other:
+        '無料トライアルは {{date}} に終了します。通知をオンにすると、{{count}}日前にお知らせします。',
+      accept: '通知をオンにする',
+      openSettings: '設定を開く',
+      decline: '今はしない',
+    },
     table: {
       sectionTitle: 'Pro のすべて',
       sectionSubtitle: 'アップグレードで使える機能を確認',

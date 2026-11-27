@@ -83,6 +83,51 @@ export const paywall = {
   },
 
   /**
+   * What happens after "Start free trial", step by step, under the plans. Each
+   * step names a day and a date, because "free for 7 days" in small print is
+   * the line people miss and then dispute the charge over.
+   *
+   * The reminder is a promise the app keeps: `useTrialReminderSync` books it as
+   * a notification once the trial has started. Do not reword it into something
+   * the app does not do, such as an email.
+   */
+  timeline: {
+    title: 'How your free trial works',
+    today: 'Today',
+    todayBody: 'Everything in Pro unlocks',
+    remindBody_one: 'We remind you a day before it ends',
+    remindBody_other: 'We remind you {{count}} days before it ends',
+    chargeBody: 'You pay {{price}}. Cancel before then to pay nothing.',
+  },
+
+  /**
+   * The notification the timeline promises. Written when it is booked, so it
+   * fires in the language the app was in that day. No price: it is booked from
+   * the store's receipt, which says when the trial ends and not what it costs.
+   */
+  trialReminder: {
+    title_one: 'Your free trial ends tomorrow',
+    title_other: 'Your free trial ends in {{count}} days',
+    body: 'RiceCal Pro renews on {{date}}. Cancel before then to pay nothing.',
+  },
+
+  /**
+   * Put once per trial on Today to somebody whose notifications are off, so
+   * the reminder above can be sent. `openSettings` replaces `accept` once the
+   * system prompt has been refused, since iOS will not show it again.
+   */
+  reminderOffer: {
+    title: 'Want a reminder before you pay?',
+    body_one:
+      'Your free trial ends on {{date}}. Turn on notifications and we remind you a day before.',
+    body_other:
+      'Your free trial ends on {{date}}. Turn on notifications and we remind you {{count}} days before.',
+    accept: 'Turn on notifications',
+    openSettings: 'Open Settings',
+    decline: 'Not now',
+  },
+
+  /**
    * The comparison table, written as two answers per line rather than one
    * sentence with a "but" in it. A cell has room for about three words, and the
    * discipline keeps it honest: "3 a day" against "Unlimited" is a fact a reader

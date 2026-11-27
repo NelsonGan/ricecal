@@ -115,6 +115,12 @@ export function useReportLinks(): void {
         router.push('/settings/photos')
         return
       }
+      // The trial reminder opens the page where the plan is managed, which is
+      // where somebody who has decided not to keep it goes next.
+      if (kind === 'trial') {
+        router.push('/settings/subscription')
+        return
+      }
       if (!isReport(kind)) return
       // The weekly and monthly reports are the app's only unprompted way back
       // in — meal reminders say something and go, and there is no push at all —

@@ -3,6 +3,12 @@ import { AppState, Platform } from 'react-native'
 import type { MealTime, Settings } from '@/data/types'
 import { announceGroupChatPush } from './groupChatPushes'
 import { parseTime } from './meal-times'
+import { notificationsAllowed } from './notificationPermission'
+
+// Here so every existing caller keeps importing them from one place. They live
+// apart so a screen that only asks (the welcome after a trial) does not install
+// the notification handler below just by being imported.
+export { ensureNotificationPermission, notificationsAllowed } from './notificationPermission'
 
 /**
  * Local reminders, all scheduled on the device. A meal reminder is "every day at
@@ -138,50 +144,6 @@ Notifications.setNotificationHandler({
     }
   },
 })
-
-/**
- * Asks, once, and reports what the user said.
- *
- * Never called on launch. A notification the user never asked for on the day
- * they sign up is how an app gets its permission revoked — which is also why
- * every `reminder_enabled` starts false in the signup trigger. The ask happens
- * when they turn their first reminder on.
- */
-export async function ensureNotificationPermission(): Promise<boolean> {
-  const existing = await Notifications.getPermissionsAsync()
-  if (existing.granted) return true
-
-  // `canAskAgain` false means they said no already. Asking again is a no-op
-  // that returns denied, so the caller needs to send them to Settings instead.
-  if (!existing.canAskAgain) return false
-
-  try {
-    const request = await Notifications.requestPermissionsAsync()
-    return request.granted
-  } catch (error) {
-    /**
-     * The request can reject AFTER the user has already tapped Allow.
-     *
-     * expo-notifications stores its server registration in the keychain once
-     * permission is granted, and on a build with no entitlements that write
-     * throws — so the OS has the permission and the SDK reports failure.
-     * Asking the OS directly is what tells those two cases apart; without it
-     * the switch the user just turned on quietly turns itself back off.
-     */
-    const granted = await notificationsAllowed()
-    if (!granted) throw error
-    console.warn('[notifications] permission granted, but the SDK could not record it', error)
-    return true
-  }
-}
-
-export async function notificationsAllowed(): Promise<boolean> {
-  try {
-    return (await Notifications.getPermissionsAsync()).granted
-  } catch {
-    return false
-  }
-}
 
 /** Android needs a channel before anything will show. iOS ignores this. */
 async function ensureChannel(): Promise<void> {
@@ -518,4 +480,68 @@ export async function cancelNotice(kind: keyof typeof WORKOUT_NOTICE): Promise<v
     Notifications.cancelScheduledNotificationAsync(id),
     Notifications.dismissNotificationAsync(id),
   ])
+}
+
+/**
+ * The reminder the paywall's trial timeline promises: one notification, a few
+ * days before a free trial turns into a charge. One fixed identifier, so
+ * booking it again moves it rather than adding a second.
+ *
+ * Not one of `REMINDER_KINDS`. Those are the signed-in account's habits and go
+ * with it; this is about money leaving the phone's store account, which signing
+ * out of RiceCal does not stop.
+ */
+const TRIAL_REMINDER = 'trial-reminder'
+
+export type TrialReminder = { at: Date; title: string; body: string }
+
+/**
+ * The booking in flight. Calls run one after another: a launch books from the
+ * persisted receipt and then unbooks from the fresh one a moment later, and
+ * run side by side the first one's schedule could land after the second one's
+ * cancel, leaving a cancelled trial its "you will be charged".
+ */
+let trialBooking: Promise<void> = Promise.resolve()
+
+/**
+ * Books `reminder` for the account `owner`, or takes back that account's own
+ * reminder when it is null. Best effort: without permission there is nothing
+ * to book, and a failure must not reach whatever screen happened to be syncing.
+ *
+ * Taking back is per account because the store answers per account while the
+ * charge lands on the phone's store account: signing in as somebody without a
+ * trial would otherwise unbook the reminder for a trial still running.
+ */
+export function bookTrialReminder(owner: string, reminder: TrialReminder | null): Promise<void> {
+  trialBooking = trialBooking.then(() => writeTrialReminder(owner, reminder))
+  return trialBooking
+}
+
+async function writeTrialReminder(owner: string, reminder: TrialReminder | null): Promise<void> {
+  try {
+    if (!reminder) {
+      const booked = (await Notifications.getAllScheduledNotificationsAsync()).find(
+        (entry) => entry.identifier === TRIAL_REMINDER,
+      )
+      if (booked && booked.content.data?.owner === owner) {
+        await Notifications.cancelScheduledNotificationAsync(TRIAL_REMINDER)
+      }
+      return
+    }
+    await Notifications.cancelScheduledNotificationAsync(TRIAL_REMINDER)
+    if (reminder.at.getTime() <= Date.now()) return
+    if (!(await notificationsAllowed())) return
+    await ensureChannel()
+    await Notifications.scheduleNotificationAsync({
+      identifier: TRIAL_REMINDER,
+      content: { title: reminder.title, body: reminder.body, data: { kind: 'trial', owner } },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: reminder.at,
+        channelId: CHANNEL,
+      },
+    })
+  } catch (error) {
+    console.warn('[notifications] could not book the trial reminder', error)
+  }
 }

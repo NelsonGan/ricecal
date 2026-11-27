@@ -13,6 +13,7 @@ export { PLAN_FEATURES, type PlanFeature, PlanTable } from './PlanTable'
 export { ProWordmark, type ProWordmarkProps } from './ProWordmark'
 export { PurchaseTerms } from './PurchaseTerms'
 export { type PlanSummary, planOfProduct, usePlanSummary } from './plan'
+export { TrialTimeline } from './TrialTimeline'
 export {
   trackPurchaseAbandoned,
   trackPurchaseStarted,

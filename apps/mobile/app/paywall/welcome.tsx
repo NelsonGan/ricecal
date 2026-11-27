@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import Animated, {
@@ -12,9 +12,12 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
+import { useSession, useStoreEntitlement } from '@/data'
 import { usePlanSummary } from '@/features/paywall'
 import { isTrialUnit, trialDurationText } from '@/features/paywall/trial'
+import { markTrialReminderOffered } from '@/features/paywall/trialReminderOffered'
 import { useEnterApp } from '@/lib/navigation'
+import { ensureNotificationPermission } from '@/lib/notificationPermission'
 import { SessionGate } from '@/lib/SessionGate'
 import { useThemeColors } from '@/theme/useTheme'
 import { Button, cn, Icon, type IconProps, Screen, Text } from '@/ui'
@@ -72,6 +75,31 @@ function WelcomeToPro() {
       : undefined
 
   /**
+   * The paywall's timeline promised a reminder before the first charge, and
+   * this is the moment that promise is collected on: asked here, after the
+   * trial has started, rather than at launch. The reminder itself is booked by
+   * `useTrialReminderSync` from the receipt. Asked after the mark has landed,
+   * so the system sheet does not cover the confirmation it follows.
+   */
+  const trial = state === 'trial'
+  const { userId } = useSession()
+  const { data: store } = useStoreEntitlement()
+  const trialEndsAt = store?.trial ? store.expiresAt : null
+  const asked = useRef(false)
+  const askForReminder = useCallback(() => {
+    if (asked.current) return
+    asked.current = true
+    // Asked here, so Today's offer does not ask again a moment later.
+    if (userId && trialEndsAt) markTrialReminderOffered(userId, new Date(trialEndsAt))
+    ensureNotificationPermission().catch(() => {})
+  }, [userId, trialEndsAt])
+  useEffect(() => {
+    if (!trial) return
+    const timer = setTimeout(askForReminder, 900)
+    return () => clearTimeout(timer)
+  }, [trial, askForReminder])
+
+  /**
    * Land on Today, and stop there. It used to raise the log sheet as well, which
    * put a camera in front of somebody who had just paid: `/log` with no `panel`
    * falls through to the viewfinder, and whatever the user was doing when they
@@ -81,7 +109,12 @@ function WelcomeToPro() {
    * onboarding as often as it is a purchase, and a replace leaves every screen
    * the user walked through standing under the diary. See `useEnterApp`.
    */
-  const goToDiary = () => enterApp()
+  const goToDiary = () => {
+    // Somebody who taps on before the ask has come up is still asked, or the
+    // reminder the paywall promised them is never booked.
+    if (trial) askForReminder()
+    enterApp()
+  }
 
   return (
     <Screen

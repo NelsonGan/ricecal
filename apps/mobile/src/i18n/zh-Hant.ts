@@ -1350,6 +1350,27 @@ export const zhHant = {
       restored: '已恢復你的購買',
     },
 
+    timeline: {
+      title: '免費試用怎麼算',
+      today: '今天',
+      todayBody: '解鎖全部 Pro 功能',
+      remindBody_one: '結束前一天提醒你',
+      remindBody_other: '結束前 {{count}} 天提醒你',
+      chargeBody: '扣款 {{price}}。在此之前取消就不收費。',
+    },
+    trialReminder: {
+      title_one: '你的免費試用明天結束',
+      title_other: '你的免費試用將在 {{count}} 天後結束',
+      body: 'RiceCal Pro 將於 {{date}} 續訂。在此之前取消就不收費。',
+    },
+    reminderOffer: {
+      title: '扣款前要提醒你嗎？',
+      body_one: '你的免費試用將於 {{date}} 結束。開啟通知，我們會提前一天提醒你。',
+      body_other: '你的免費試用將於 {{date}} 結束。開啟通知，我們會提前 {{count}} 天提醒你。',
+      accept: '開啟通知',
+      openSettings: '打開設定',
+      decline: '暫不',
+    },
     table: {
       sectionTitle: 'Pro 的完整功能',
       sectionSubtitle: '看看升級後會解鎖哪些功能',

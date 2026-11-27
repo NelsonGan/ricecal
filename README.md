@@ -7131,6 +7131,58 @@ period shown at checkout even if eligibility changes afterward. The trial
 progress bar follows the purchased period's start and end dates rather than
 today's offer duration.
 
+**A plan with a trial shows what happens after the button, by date.** Under the
+plans, `TrialTimeline` draws three steps for the selected plan: today everything
+unlocks, a reminder lands three days before the trial ends (fewer on a trial
+too short for that, none on a one-day trial), and on the last day the plan's
+price is charged unless it was cancelled. Each step is headed by its date alone,
+written as the Today title writes a day ("Tue 1 Dec"; a trial-day count in front
+of it, "Day 4, 1 Dec", read as two answers to one question), computed from the store's period and the plan's store
+price, so a plan without a trial for this account, or a store that has not
+answered, shows no timeline at all. This is the pattern Blinkist made standard:
+the charge people dispute is the one they did not see coming, and saying when it
+lands is what makes starting the trial feel safe.
+
+**The reminder is a promise, so the app keeps it.** `useTrialReminderSync`
+(mounted with the tabs) books one local notification, `trial-reminder`, from the
+store's receipt rather than from the purchase button: the trial's real end,
+whether the store will renew it (`willRenew` on the store entitlement, which a
+cancelled trial turns off and so unbooks the reminder), and the start for the
+lead time. It books from the store alone. The `subscriptions` mirror cannot say
+whether a trial was cancelled (the webhook keeps a cancelled trial at `trial`
+until it runs out), so with no store answer nothing is booked or taken back.
+It is checked again whenever the app comes to the front or a permission ask
+ends in a yes. It is not cancelled on sign out the way the meal reminders are,
+and an account only ever takes back the reminder it booked itself (the
+booking carries its user id): it is about money leaving the phone's store
+account, which signing out of RiceCal, or in as somebody else, does not stop.
+The one gap left is a trial cancelled while its account is signed out, whose
+reminder still fires. Bookings run one after another, so a launch that books
+from the persisted receipt and unbooks from the fresh one a moment later
+cannot leave the first schedule standing. The welcome screen after a trial
+purchase asks for notification permission, the one place outside the reminder
+settings that asks, because that is the moment the reminder was promised; it
+asks on the Continue tap too if somebody leaves before the ask has come up.
+Tapping the reminder opens **Me, RiceCal Pro**. Its copy is written when it is
+booked, so it fires in the language the app was in that day.
+
+**Somebody on a trial with notifications off is asked once per trial.**
+`TrialReminderOffer`, a sheet on Today beside the Locations offer, catches
+everybody the welcome screen did not: a trial started on an older version, on
+another phone, before a reinstall, or somebody who tapped past the ask. It goes
+up when the store says the trial will renew, the reminder's moment is still
+ahead, notifications are off, and this account has not been asked about this
+trial on this phone (`trialReminderOffered`, keyed by the trial's end day; the
+welcome screen marks it too when it asks). It asks in the app first, because
+iOS shows its own prompt once and a prompt with no reason in front of it is the
+one people refuse; after a refusal the system never asks again, so the button
+becomes **Open Settings**. It takes turns like the Locations offer: not while a
+news card has the floor, not while the rating ask is booked or another sheet
+holds the floor (`lib/floor.ts`), and only while Today is on top. The answer is
+stored before the sheet is on screen, so a kill while it is up never brings it
+back. Returning from Settings or the prompt books the reminder through
+`useTrialReminderSync`.
+
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the
 terms of use and the privacy policy. `PurchaseTerms` renders Terms and Privacy in
