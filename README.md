@@ -10006,7 +10006,8 @@ card, so none covers Today. The workout capture starts a session part way throug
 app's own store, with a heart rate reading as a paired Apple Watch would stream
 it, and clears it once captured. That branch's README section "Localized
 screenshot fixtures" covers the scripts. The current sets were captured on 27 November 2026. `capture.json` records the language, market, screen,
-date, app source revision, verified route and simulator for all 78 images,
+date, app source revision, verified route and simulator for each set's 78 images
+(234 across the iPhone, iPhone Duo and iPad sets),
 without account details. Run `pnpm check:screenshots` after replacing a capture set; it checks
 every file's dimensions, recorded checksum, duplicate captures, image provenance and store mappings.
 A recapture comes from a Simlock pool lease, which `capture.json` records by its
@@ -10080,7 +10081,9 @@ native capture, where RiceCal shows its tab rail and two panes.
   slot; the same scenes go to Play's tablet gallery. The captures in
   `public/assets/screenshots-ipad/<app-code>/` are a 13-inch iPad Pro's own
   2752 × 2064, with the iPhone set's filenames, and the frame keeps that aspect.
-- Captured on a leased `iPad Pro 13-inch (M4)` with the same skill and branch.
+- Captured on a leased 13-inch iPad Pro with the same skill and branch: the
+  pool's `iPad Pro 13-inch (M5)`, or the M4 (same 2752 × 2064 screen) while the
+  M5 seed will not clone, as on 2026-11-27.
   The capture script turns it on its side, and the simulator is set to Full
   Screen Apps first (Settings, Multitasking & Gestures), or iPadOS draws its
   window grip in a corner of every shot. Social shows Discover beside the

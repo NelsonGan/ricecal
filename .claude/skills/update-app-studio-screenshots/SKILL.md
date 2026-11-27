@@ -75,11 +75,11 @@ Lease with the T3 Code device tools (`device_open`, host `simlock-mac-mini`).
 | ---------- | -------------------------------- | ---------------------------------------------------------------------------------------- |
 | iPhone     | `simlock:ios:iPhone 18 Pro Max`  | 1320 × 2868 at 3x. Not a pre-baked pool model: install the dev client first (below).     |
 | iPhone Duo | `simlock:ios:iPhone Duo`         | Captured open, on its side. The script unfolds it.                                      |
-| iPad       | `simlock:ios:iPad Pro 13-inch (M4)` | 2752 × 2064 on its side. Not pre-baked. The script turns it; set Full Screen Apps first (below). |
+| iPad       | `simlock:ios:iPad Pro 13-inch (M5)` | 2752 × 2064 on its side. The script turns it; set Full Screen Apps first (below). If the lease fails to boot, use `iPad Pro 13-inch (M4)`, same screen. |
 
-The Pro Max and iPad leases start with no apps. (The M5 13-inch iPad seed
-failed to clone on 2026-11-27, on a dangling lock symlink in its data; the M4
-has the same screen.) From the worktree `device_open` names,
+The Pro Max lease, and an M4 iPad, start with no apps. (The M5 13-inch iPad
+seed failed to clone on 2026-11-27, on a dangling `atomic_instance_latest.locker`
+symlink in its data, and the set was taken on the M4.) From the worktree `device_open` names,
 install the shared dev client, then run the seed branch on it:
 
 ```bash

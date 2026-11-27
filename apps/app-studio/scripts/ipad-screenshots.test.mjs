@@ -19,6 +19,10 @@ test('the iPad scenes are the iPhone Duo gallery around native iPad captures', a
 test('the iPad frame keeps the captures at their own aspect', async () => {
   const frame = await read('../src/components/IPadScreenshotScene.tsx');
   assert.match(frame, /SCREEN_W \* \(2064 \/ 2752\)/);
+  // The screen ends inside the 2048 px canvas: only the bezel runs off it.
+  const num = (name) => Number(frame.match(new RegExp(`const ${name} = (\\d+);`))[1]);
+  const screenBottom = num('FRAME_TOP') + num('RIM') + num('BEZEL') + Math.round(num('SCREEN_W') * (2064 / 2752));
+  assert(screenBottom <= 2048, `the screen ends at ${screenBottom}, past the canvas`);
   const capture = JSON.parse(await read('../public/assets/screenshots-ipad/capture.json'));
   for (const record of capture.captures) {
     assert.equal(record.width, 2752);

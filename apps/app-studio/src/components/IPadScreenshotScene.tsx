@@ -12,12 +12,18 @@ interface Props {
 const W = IPAD_EXPORT_WIDTH;
 const H = IPAD_EXPORT_HEIGHT;
 
-/** The screen, at the captures' own 2752 × 2064 aspect so the frame crops nothing. */
-const SCREEN_W = 2120;
+/**
+ * The screen, at the captures' own 2752 × 2064 aspect. Sized so it ends inside
+ * the canvas: FRAME_TOP + RIM + BEZEL + SCREEN_H stays under 2048, and only the
+ * lower bezel and rim leave it.
+ */
+const SCREEN_W = 2040;
 const SCREEN_H = Math.round(SCREEN_W * (2064 / 2752));
 const BEZEL = 34;
 const RIM = 8;
 const FRAME_W = SCREEN_W + (BEZEL + RIM) * 2;
+/** The Duo canvas the shared planting is laid out on (`duoSceneData.tsx`). */
+const DUO_W = 2853;
 /** The device starts under the headline and only its lower bezel leaves the canvas. */
 const FRAME_TOP = 470;
 
@@ -88,7 +94,12 @@ export const IPadScreenshotScene = forwardRef<HTMLDivElement, Props>(
           <IPadFrame screenshot={scene.screenshot} />
         </div>
 
-        {scene.decorations}
+        {/* The planting is placed for the wider Duo canvas, so it is scaled to
+            this one rather than left to hang off the right edge. */}
+        <div style={{ position: 'absolute', left: 0, top: 0, width: DUO_W, height: H * (DUO_W / W),
+          transform: `scale(${W / DUO_W})`, transformOrigin: '0 0', pointerEvents: 'none' }}>
+          {scene.decorations}
+        </div>
       </SceneCanvas>
     );
   },
