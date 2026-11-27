@@ -13,6 +13,7 @@
 // The names come from `icons.generated.ts`, written by the same script that
 
 import { ICON_NAMES } from './icons.generated.ts'
+import { INGREDIENT_DRAWINGS } from './ingredient-icons.ts'
 
 /** 'dishes' | 'food' — the two `icon_set` values a plate can be drawn from. */
 export type IconSet = keyof typeof ICON_NAMES
@@ -104,6 +105,11 @@ const SET_OF = new Map<string, IconSet>()
 for (const set of Object.keys(ICON_NAMES) as IconSet[]) {
   for (const name of ICON_NAMES[set]) {
     if (NOT_A_MEAL.has(name)) continue
+    // The cooking ingredients drawn for recipe lines: star anise, belacan, a
+    // carton of stock. Not a meal either, and 275 more names on every typed
+    // meal's prompt would double the list for drawings a plate never wants.
+    // `ingredientIconFor` is the only thing that picks them.
+    if (Object.hasOwn(INGREDIENT_DRAWINGS, name)) continue
     // `dishes` is read first and wins, though nothing collides today: the two
     // sets have no name in common, which is the reason the model is asked for
     // a bare name rather than a set-and-name pair. Half the tokens, and one

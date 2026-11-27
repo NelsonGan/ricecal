@@ -273,6 +273,11 @@ export type RecipeIngredient = {
   perUnit: Macros
   macros: Macros
   position: number
+  /**
+   * Its drawing, from the stored name (`ingredientIcon`), so a translated name
+   * shown in its place keeps the picture the English one has.
+   */
+  icon?: IconRef
 }
 
 /**

@@ -43,6 +43,8 @@ export type PartRowProps = {
    * than nudged by eye the way a plate's are.
    */
   inline?: boolean
+  /** Before the name on an `inline` row: a recipe line's drawing. */
+  leading?: ReactNode
 }
 
 /**
@@ -69,6 +71,7 @@ export function PartRow({
   joined = false,
   detail,
   inline = false,
+  leading,
 }: PartRowProps) {
   const { t } = useTranslation(['logging', 'common'])
   const colors = useThemeColors()
@@ -100,6 +103,7 @@ export function PartRow({
         // As two lines with a full-width pill, seven ingredients filled two
         // screens of the recipe form.
         <View className="flex-row items-center gap-3 bg-surface px-card py-3">
+          {leading}
           <View className="min-w-0 flex-1">
             {title}
             <Text variant="meta">

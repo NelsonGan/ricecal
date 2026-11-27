@@ -115,3 +115,12 @@ Deno.test('knownIcon is not filtered down to meals', () => {
   eq(knownIcon('food', 'empty-plate')?.name, 'empty-plate', 'offered to nobody, drawn all the same')
   eq(guessIcon('empty plate'), null, 'and still unreachable from a name')
 })
+
+// The recipe drawings are raw ingredients (a bowl of cumin, a carton of stock)
+// and the list is paid for on every typed meal, so none of them is offered.
+Deno.test('the cooking ingredients drawn for recipes are not offered for a meal', () => {
+  for (const name of ['star-anise', 'broth-carton', 'belacan', 'chicken-breast', 'eggs']) {
+    eq(resolveIcon(name), null, `${name} is for recipe lines`)
+    eq(ICON_LIST.split(', ').includes(name), false, `${name} is not in the prompt`)
+  }
+})

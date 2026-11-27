@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
-import type { RecipeIngredient } from '@/data'
+import type { IconRef, RecipeIngredient } from '@/data'
 import { cn, Divider, Icon, Tappable, Text } from '@/ui'
 import { scaleIngredient } from './cooking'
 import { useIngredientMeasure } from './useIngredientMeasure'
@@ -14,6 +14,27 @@ export type IngredientChecklistProps = {
   cooking: number
   ticked: ReadonlySet<string>
   onToggle: (id: string) => void
+}
+
+/** How big a line's drawing is: the name's two lines tall, inside the 48pt row. */
+export const INGREDIENT_ICON = 36
+
+/**
+ * The ingredient's drawing, or the space it would take, so the names down the
+ * list start in one column whether or not each line has a picture. Faded with
+ * the name once it is ticked, so the lines still to go are the bright ones.
+ */
+export function IngredientDrawing({ icon, done = false }: { icon?: IconRef; done?: boolean }) {
+  return (
+    <View
+      className={cn('items-center justify-center', done && 'opacity-40')}
+      style={{ width: INGREDIENT_ICON, height: INGREDIENT_ICON }}
+      importantForAccessibility="no-hide-descendants"
+      accessibilityElementsHidden
+    >
+      {icon ? <Icon {...icon} size={INGREDIENT_ICON} /> : null}
+    </View>
+  )
 }
 
 /**
@@ -48,6 +69,7 @@ export function IngredientChecklist({
               accessibilityLabel={`${t('detail.tick', { name: item.name })}, ${amount}`}
             >
               <Icon set="ui" name={done ? 'checkbox-checked' : 'checkbox-empty'} size={24} />
+              <IngredientDrawing icon={item.icon} done={done} />
               <Text
                 variant="bodyStrong"
                 className={cn('min-w-0 flex-1', done && 'text-faint line-through')}
