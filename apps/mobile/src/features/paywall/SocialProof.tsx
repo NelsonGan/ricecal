@@ -193,8 +193,8 @@ function ReviewCarousel() {
           snapToInterval={interval}
           disableIntervalMomentum
           contentOffset={{ x: n * interval, y: 0 }}
-          // The cards' slab sits below them; room for it, or the ScrollView clips it.
-          contentContainerStyle={{ paddingHorizontal: PEEK - GAP / 2, paddingBottom: 6 }}
+          // No bottom padding for the cards' slab: `Card` reserves its own.
+          contentContainerStyle={{ paddingHorizontal: PEEK - GAP / 2 }}
           // `contentOffset` places the first paint on iOS; Android ignores it.
           onContentSizeChange={() => {
             if (indexRef.current === n) goTo(n, false)
