@@ -178,7 +178,6 @@ export function Reviews() {
               >
                 {review.body}
               </blockquote>
-              <p className="mt-2 text-[11px] text-muted">Review excerpt</p>
               <figcaption className="mt-5 flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-t border-line pt-4">
                 <span className="min-w-0 break-words text-[13px] font-extrabold text-ink">
                   {review.author}

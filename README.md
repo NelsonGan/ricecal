@@ -9639,8 +9639,8 @@ the App Store's through App Store Connect (`asc reviews list --app
 6795558595`, which sees every storefront, where Apple's public RSS feed had
 gone empty), Google Play's from the listing (the Play API returns only the
 last week's reviews). Bodies are the reviewers' own words with light
-punctuation and grammar edits and emoji dropped. Each card is labelled as an
-excerpt. App Store titles keep their original wording with capitalisation
+punctuation and grammar edits and emoji dropped; the cards carry no excerpt
+label. App Store titles keep their original wording with capitalisation
 tidied; Play reviews have no title. Reviewer names, individual stars and dates
 (the review's UTC day) are preserved. An App Store card links to its source
 storefront and shows that country's flag; a Play card links to the Play
