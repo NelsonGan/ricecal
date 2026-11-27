@@ -49,13 +49,12 @@ A day over budget gets "a bit over today, tomorrow is a new count." Never a tell
 Terms of Use: https://ricecal.app/terms
 Privacy Policy: https://ricecal.app/privacy
 Contact: https://ricecal.app/contact`,
-    whatsNew: `- Added recipe import from cooking videos
-- Added macros for each ingredient in a meal
-- Revamped the daily summary
-- Revamped the recipe form
-- Fixed a food map crash with far apart places
+    whatsNew: `- Added a layout made for iPad
+- Added full details for a friend's food or workout
+- Added a reminder before a free trial ends
+- Fixed meals taken offline not being saved
 
-Every great cook started by watching.`,
+A bigger screen means a bigger plate.`,
   },
 
   ms: {
@@ -84,13 +83,12 @@ Hari yang terlebih sedikit dapat "lebih sedikit hari ini, esok kiraan baharu." B
 Terma Penggunaan: https://ricecal.app/terms
 Dasar Privasi: https://ricecal.app/privacy
 Hubungi kami: https://ricecal.app/contact`,
-    whatsNew: `- Menambah import resipi daripada video masakan
-- Menambah makro bagi setiap bahan dalam hidangan
-- Memperbaharui ringkasan harian
-- Memperbaharui borang resipi
-- Membaiki peta makanan yang ranap apabila tempat berjauhan
+    whatsNew: `- Menambah reka letak khas untuk iPad
+- Menambah butiran penuh makanan atau senaman rakan
+- Menambah peringatan sebelum percubaan percuma tamat
+- Membaiki hidangan luar talian yang tidak disimpan
 
-Setiap tukang masak yang hebat bermula dengan memerhati.`,
+Skrin lebih besar bermakna pinggan lebih besar.`,
   },
 
   zh: {
@@ -119,13 +117,12 @@ Setiap tukang masak yang hebat bermula dengan memerhati.`,
 使用条款：https://ricecal.app/terms
 隐私政策：https://ricecal.app/privacy
 联系我们：https://ricecal.app/contact`,
-    whatsNew: `- 新增了从烹饪视频导入食谱
-- 新增了一餐中每种食材的三大营养素
-- 重新设计了每日摘要
-- 重新设计了食谱表单
-- 修复了地点相距很远时美食地图崩溃的问题
+    whatsNew: `- 新增了专为 iPad 设计的布局
+- 新增了好友食物或训练的完整详情
+- 新增了免费试用结束前的提醒
+- 修复了离线时记录的餐食没有保存的问题
 
-每位好厨师都是从看别人做菜开始的。`,
+屏幕更大，盘子也更大。`,
   },
 
   id: {
@@ -154,13 +151,12 @@ Hari yang lewat sedikit dapat "hari ini sedikit lebih, besok hitungan baru." Buk
 Ketentuan Penggunaan: https://ricecal.app/terms
 Kebijakan Privasi: https://ricecal.app/privacy
 Kontak: https://ricecal.app/contact`,
-    whatsNew: `- Menambahkan impor resep dari video masak
-- Menambahkan makro untuk setiap bahan dalam makanan
-- Memperbarui ringkasan harian
-- Memperbarui formulir resep
-- Memperbaiki peta makan yang crash saat lokasi berjauhan
+    whatsNew: `- Menambahkan tata letak khusus untuk iPad
+- Menambahkan detail lengkap makanan atau latihan teman
+- Menambahkan pengingat sebelum uji coba gratis berakhir
+- Memperbaiki makanan yang dicatat saat offline tidak tersimpan
 
-Setiap koki hebat berawal dari menonton.`,
+Layar lebih besar berarti piring lebih besar.`,
   },
 
   th: {
@@ -189,13 +185,12 @@ Setiap koki hebat berawal dari menonton.`,
 ข้อกำหนดการใช้งาน: https://ricecal.app/terms
 นโยบายความเป็นส่วนตัว: https://ricecal.app/privacy
 ติดต่อเรา: https://ricecal.app/contact`,
-    whatsNew: `- เพิ่มการนำเข้าสูตรอาหารจากวิดีโอทำอาหาร
-- เพิ่มสารอาหารหลักของแต่ละส่วนประกอบในมื้ออาหาร
-- ปรับโฉมสรุปประจำวัน
-- ปรับโฉมแบบฟอร์มสูตรอาหาร
-- แก้ไขปัญหาแผนที่อาหารแครชเมื่อสถานที่อยู่ห่างกัน
+    whatsNew: `- เพิ่มเลย์เอาต์สำหรับ iPad โดยเฉพาะ
+- เพิ่มรายละเอียดเต็มของอาหารหรือการออกกำลังกายของเพื่อน
+- เพิ่มการแจ้งเตือนก่อนการทดลองใช้ฟรีสิ้นสุด
+- แก้ไขปัญหามื้ออาหารที่ถ่ายตอนออฟไลน์หายไป
 
-พ่อครัวเก่งทุกคนเริ่มจากการดู`,
+จอใหญ่ขึ้น จานก็ใหญ่ขึ้น`,
   },
 
   vi: {
@@ -224,13 +219,12 @@ Ngày quá một chút sẽ nhận được "hôm nay hơi quá, mai đếm lạ
 Điều khoản sử dụng: https://ricecal.app/terms
 Chính sách bảo mật: https://ricecal.app/privacy
 Liên hệ: https://ricecal.app/contact`,
-    whatsNew: `- Thêm nhập công thức từ video nấu ăn
-- Thêm dưỡng chất chính cho từng nguyên liệu trong bữa ăn
-- Làm mới bản tóm tắt trong ngày
-- Làm mới biểu mẫu công thức
-- Khắc phục lỗi bản đồ ẩm thực bị văng khi các nơi cách xa nhau
+    whatsNew: `- Thêm bố cục dành riêng cho iPad
+- Thêm chi tiết đầy đủ về món ăn hoặc buổi tập của bạn bè
+- Thêm lời nhắc trước khi bản dùng thử miễn phí kết thúc
+- Khắc phục lỗi bữa ăn ghi khi ngoại tuyến không được lưu
 
-Đầu bếp giỏi nào cũng bắt đầu từ việc quan sát.`,
+Màn hình lớn hơn, đĩa ăn cũng lớn hơn.`,
   },
 
   ja: {
@@ -259,13 +253,12 @@ Apple Health または Health Connect をつなぐと、消費した分が食べ
 利用規約：https://ricecal.app/terms
 プライバシーポリシー：https://ricecal.app/privacy
 お問い合わせ：https://ricecal.app/contact`,
-    whatsNew: `- 料理動画からのレシピ読み込みを追加しました
-- 食事の材料ごとのマクロを追加しました
-- 1日のまとめを刷新しました
-- レシピの入力フォームを刷新しました
-- 場所が離れているとフードマップが落ちる問題を修正しました
+    whatsNew: `- iPad向けのレイアウトを追加しました
+- 友達の食事やワークアウトの詳細を追加しました
+- 無料期間が終わる前のリマインダーを追加しました
+- オフラインで記録した食事が保存されない問題を修正しました
 
-料理上手はみんな見ることから始まる。`,
+画面が大きければ、お皿も大きく。`,
   },
 
   ko: {
@@ -294,13 +287,12 @@ Apple Health나 Health Connect를 연결하면 소모한 칼로리가 먹을 수
 이용약관: https://ricecal.app/terms
 개인정보처리방침: https://ricecal.app/privacy
 문의: https://ricecal.app/contact`,
-    whatsNew: `- 요리 영상에서 레시피 가져오기를 추가했습니다
-- 식사의 재료별 영양소를 추가했습니다
-- 하루 요약을 새롭게 개편했습니다
-- 레시피 입력 양식을 새롭게 개편했습니다
-- 장소가 멀리 떨어지면 푸드 맵이 종료되던 문제를 수정했습니다
+    whatsNew: `- iPad 전용 레이아웃을 추가했습니다
+- 친구의 음식이나 운동 상세 정보를 추가했습니다
+- 무료 체험이 끝나기 전 알림을 추가했습니다
+- 오프라인에서 기록한 식사가 저장되지 않던 문제를 수정했습니다
 
-훌륭한 요리사는 모두 보는 것에서 시작합니다.`,
+화면이 커지면 접시도 커집니다.`,
   },
 
   hi: {
@@ -329,13 +321,12 @@ Apple Health या Health Connect जोड़िए और जो कैलो
 उपयोग की शर्तें: https://ricecal.app/terms
 गोपनीयता नीति: https://ricecal.app/privacy
 संपर्क: https://ricecal.app/contact`,
-    whatsNew: `- कुकिंग वीडियो से रेसिपी आयात करना जोड़ा गया
-- भोजन की हर सामग्री के मैक्रो जोड़े गए
-- दैनिक सारांश को नया रूप दिया गया
-- रेसिपी फ़ॉर्म को नया रूप दिया गया
-- जगहें दूर होने पर फ़ूड मैप के क्रैश होने की समस्या ठीक की गई
+    whatsNew: `- iPad के लिए ख़ास लेआउट जोड़ा गया
+- दोस्त के खाने या वर्कआउट की पूरी जानकारी जोड़ी गई
+- फ़्री ट्रायल ख़त्म होने से पहले रिमाइंडर जोड़ा गया
+- ऑफ़लाइन लिए गए भोजन के सेव न होने की समस्या ठीक की गई
 
-हर अच्छा रसोइया देखकर ही सीखता है।`,
+बड़ी स्क्रीन यानी बड़ी थाली।`,
   },
 
   ta: {
@@ -364,13 +355,12 @@ Apple Health அல்லது Health Connect உடன் இணைத்த�
 பயன்பாட்டு விதிமுறைகள்: https://ricecal.app/terms
 தனியுரிமைக் கொள்கை: https://ricecal.app/privacy
 தொடர்புக்கு: https://ricecal.app/contact`,
-    whatsNew: `- சமையல் வீடியோக்களிலிருந்து செய்முறை இறக்குமதி சேர்க்கப்பட்டது
-- உணவின் ஒவ்வொரு பொருளுக்கும் மேக்ரோக்கள் சேர்க்கப்பட்டன
-- தினசரி சுருக்கம் புதுப்பிக்கப்பட்டது
-- செய்முறைப் படிவம் புதுப்பிக்கப்பட்டது
-- இடங்கள் தொலைவில் இருக்கும்போது உணவு வரைபடம் செயலிழப்பது சரிசெய்யப்பட்டது
+    whatsNew: `- iPad-க்கான தனி வடிவமைப்பு சேர்க்கப்பட்டது
+- நண்பரின் உணவு அல்லது உடற்பயிற்சியின் முழு விவரங்கள் சேர்க்கப்பட்டன
+- இலவச சோதனை முடிவதற்கு முன் நினைவூட்டல் சேர்க்கப்பட்டது
+- ஆஃப்லைனில் பதிவு செய்த உணவு சேமிக்கப்படாதது சரிசெய்யப்பட்டது
 
-ஒவ்வொரு சிறந்த சமையல்காரரும் பார்த்தே கற்றுக்கொண்டார்.`,
+பெரிய திரை என்றால் பெரிய தட்டு.`,
   },
 
   bn: {
@@ -399,13 +389,12 @@ Apple Health বা Health Connect যুক্ত করলে শরীরচ�
 ব্যবহারের শর্তাবলি: https://ricecal.app/terms
 গোপনীয়তার নীতি: https://ricecal.app/privacy
 যোগাযোগ: https://ricecal.app/contact`,
-    whatsNew: `- রান্নার ভিডিও থেকে রেসিপি ইমপোর্ট যোগ করা হয়েছে
-- খাবারের প্রতিটি উপকরণের ম্যাক্রো যোগ করা হয়েছে
-- দৈনিক সারাংশ নতুন করে সাজানো হয়েছে
-- রেসিপি ফর্ম নতুন করে সাজানো হয়েছে
-- জায়গা দূরে থাকলে খাবারের ম্যাপ ক্র্যাশ করা ঠিক করা হয়েছে
+    whatsNew: `- iPad-এর জন্য আলাদা লেআউট যোগ করা হয়েছে
+- বন্ধুর খাবার বা ওয়ার্কআউটের পুরো বিবরণ যোগ করা হয়েছে
+- ফ্রি ট্রায়াল শেষ হওয়ার আগে রিমাইন্ডার যোগ করা হয়েছে
+- অফলাইনে নেওয়া খাবার সেভ না হওয়া ঠিক করা হয়েছে
 
-প্রত্যেক ভালো রাঁধুনি দেখেই শুরু করেছেন।`,
+বড় স্ক্রিন মানে বড় থালা।`,
   },
 
   fil: {
@@ -434,13 +423,12 @@ Ang araw na lumagpas nang kaunti ay makakakuha ng "medyo lumagpas ngayon, bukas 
 Mga Tuntunin ng Paggamit: https://ricecal.app/terms
 Patakaran sa Privacy: https://ricecal.app/privacy
 Kontak: https://ricecal.app/contact`,
-    whatsNew: `- Nagdagdag ng pag-import ng recipe mula sa mga cooking video
-- Nagdagdag ng macros ng bawat sangkap sa isang pagkain
-- Pinabago ang buod ng araw
-- Pinabago ang form ng recipe
-- Inayos ang pag-crash ng mapa ng pagkain kapag magkakalayo ang mga lugar
+    whatsNew: `- Nagdagdag ng layout na para sa iPad
+- Nagdagdag ng buong detalye ng pagkain o workout ng kaibigan
+- Nagdagdag ng paalala bago matapos ang libreng trial
+- Inayos ang mga pagkaing kinuha nang offline na hindi nase-save
 
-Bawat magaling na kusinero ay nagsimula sa panonood.`,
+Mas malaking screen, mas malaking plato.`,
   },
 
   es: {
@@ -469,13 +457,12 @@ Un día pasado de la cuenta recibe "hoy te has pasado un poco, mañana se cuenta
 Términos de uso: https://ricecal.app/terms
 Política de privacidad: https://ricecal.app/privacy
 Contacto: https://ricecal.app/contact`,
-    whatsNew: `- Se añadió la importación de recetas desde videos de cocina
-- Se añadieron los macros de cada ingrediente de una comida
-- Se renovó el resumen diario
-- Se renovó el formulario de recetas
-- Se corrigió un cierre del mapa de comidas con lugares lejanos
+    whatsNew: `- Se añadió un diseño pensado para iPad
+- Se añadieron los detalles completos de la comida o el entrenamiento de un amigo
+- Se añadió un recordatorio antes de que termine la prueba gratuita
+- Se corrigió que no se guardaran las comidas registradas sin conexión
 
-Todo buen cocinero empezó mirando.`,
+Pantalla más grande, plato más grande.`,
   },
 
   fr: {
@@ -504,13 +491,12 @@ Une journée un peu au-dessus reçoit « un peu trop aujourd’hui, demain on re
 Conditions d’utilisation: https://ricecal.app/terms
 Politique de confidentialité: https://ricecal.app/privacy
 Contact: https://ricecal.app/contact`,
-    whatsNew: `- Ajout de l'import de recettes depuis des vidéos de cuisine
-- Ajout des macros de chaque ingrédient d'un repas
-- Refonte du résumé du jour
-- Refonte du formulaire de recette
-- Correction d'un plantage de la carte des repas avec des lieux éloignés
+    whatsNew: `- Ajout d'une mise en page pensée pour l'iPad
+- Ajout des détails complets du repas ou de l'entraînement d'un ami
+- Ajout d'un rappel avant la fin de l'essai gratuit
+- Correction des repas enregistrés hors ligne qui n'étaient pas sauvegardés
 
-Tout bon cuisinier a commencé par regarder.`,
+Plus grand écran, plus grande assiette.`,
   },
 
   de: {
@@ -539,13 +525,12 @@ Ein Tag über dem Budget bekommt „heute ein bisschen drüber, morgen wird neu 
 Nutzungsbedingungen: https://ricecal.app/terms
 Datenschutzrichtlinie: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Rezeptimport aus Kochvideos hinzugefügt
-- Makros für jede Zutat einer Mahlzeit hinzugefügt
-- Tagesübersicht überarbeitet
-- Rezeptformular überarbeitet
-- Absturz der Essenskarte bei weit entfernten Orten behoben
+    whatsNew: `- Eigenes Layout für das iPad hinzugefügt
+- Vollständige Details zum Essen oder Training von Freunden hinzugefügt
+- Erinnerung vor dem Ende der kostenlosen Testphase hinzugefügt
+- Verlust offline erfasster Mahlzeiten behoben
 
-Jeder gute Koch hat mit Zuschauen angefangen.`,
+Größerer Bildschirm, größerer Teller.`,
   },
 
   pt: {
@@ -574,13 +559,12 @@ Um dia acima da meta recebe "passou um pouco hoje, amanhã a conta recomeça." N
 Termos de Uso: https://ricecal.app/terms
 Política de Privacidade: https://ricecal.app/privacy
 Contato: https://ricecal.app/contact`,
-    whatsNew: `- Adicionada a importação de receitas de vídeos de culinária
-- Adicionados os macros de cada ingrediente de uma refeição
-- Renovado o resumo diário
-- Renovado o formulário de receitas
-- Corrigido um travamento do mapa de comidas com locais distantes
+    whatsNew: `- Adicionado um layout feito para iPad
+- Adicionados os detalhes completos da comida ou do treino de um amigo
+- Adicionado um lembrete antes do fim do teste grátis
+- Corrigidas refeições registradas offline que não eram salvas
 
-Todo bom cozinheiro começou observando.`,
+Tela maior, prato maior.`,
   },
 
   it: {
@@ -609,13 +593,12 @@ Una giornata sopra la soglia riceve "oggi un po’ oltre, domani si riconta." Ma
 Termini di utilizzo: https://ricecal.app/terms
 Informativa sulla privacy: https://ricecal.app/privacy
 Contatti: https://ricecal.app/contact`,
-    whatsNew: `- Aggiunta l'importazione di ricette dai video di cucina
-- Aggiunti i macro di ogni ingrediente di un pasto
-- Rinnovato il riepilogo giornaliero
-- Rinnovato il modulo delle ricette
-- Risolto un arresto della mappa del cibo con luoghi lontani
+    whatsNew: `- Aggiunto un layout pensato per iPad
+- Aggiunti i dettagli completi del cibo o dell'allenamento di un amico
+- Aggiunto un promemoria prima della fine della prova gratuita
+- Risolto il mancato salvataggio dei pasti registrati offline
 
-Ogni bravo cuoco ha iniziato guardando.`,
+Schermo più grande, piatto più grande.`,
   },
 
   nl: {
@@ -644,13 +627,12 @@ Een dag boven het budget krijgt "vandaag een beetje eroverheen, morgen telt opni
 Gebruiksvoorwaarden: https://ricecal.app/terms
 Privacybeleid: https://ricecal.app/privacy
 Contact: https://ricecal.app/contact`,
-    whatsNew: `- Recepten importeren uit kookvideo's toegevoegd
-- Macro's per ingrediënt van een maaltijd toegevoegd
-- Dagoverzicht vernieuwd
-- Receptformulier vernieuwd
-- Crash van de eetkaart bij ver uiteen liggende plekken opgelost
+    whatsNew: `- Indeling speciaal voor iPad toegevoegd
+- Volledige details van het eten of de training van een vriend toegevoegd
+- Herinnering voor het einde van de gratis proefperiode toegevoegd
+- Verlies van offline vastgelegde maaltijden opgelost
 
-Elke goede kok begon met kijken.`,
+Groter scherm, groter bord.`,
   },
 
   ru: {
@@ -679,13 +661,12 @@ Elke goede kok begon met kijken.`,
 Условия использования: https://ricecal.app/terms
 Политика конфиденциальности: https://ricecal.app/privacy
 Связаться с нами: https://ricecal.app/contact`,
-    whatsNew: `- Добавлен импорт рецептов из кулинарных видео
-- Добавлены БЖУ каждого ингредиента в приёме пищи
-- Обновлена сводка за день
-- Обновлена форма рецепта
-- Исправлен вылет карты еды при далёких друг от друга местах
+    whatsNew: `- Добавлен макет для iPad
+- Добавлены полные сведения о еде или тренировке друга
+- Добавлено напоминание до конца бесплатного пробного периода
+- Исправлена потеря приёмов пищи без сети
 
-Любой хороший повар начинал с наблюдения.`,
+Больше экран, больше тарелка.`,
   },
 
   tr: {
@@ -714,13 +695,12 @@ Bütçeyi biraz aşan gün "bugün biraz fazla oldu, yarın sayım yeniden başl
 Kullanım Koşulları: https://ricecal.app/terms
 Gizlilik Politikası: https://ricecal.app/privacy
 İletişim: https://ricecal.app/contact`,
-    whatsNew: `- Yemek videolarından tarif içe aktarma eklendi
-- Bir öğündeki her malzemenin makroları eklendi
-- Günlük özet yenilendi
-- Tarif formu yenilendi
-- Yerler birbirinden uzakken yemek haritasının çökmesi düzeltildi
+    whatsNew: `- iPad için özel düzen eklendi
+- Bir arkadaşın yemeğinin veya antrenmanının tüm ayrıntıları eklendi
+- Ücretsiz deneme bitmeden önce hatırlatma eklendi
+- Çevrimdışı kaydedilen öğünlerin kaybolması düzeltildi
 
-Her iyi aşçı izleyerek başladı.`,
+Daha büyük ekran, daha büyük tabak.`,
   },
 
   pl: {
@@ -749,13 +729,12 @@ Dzień ponad limit dostaje „dziś trochę więcej, jutro liczymy od nowa." Nig
 Warunki korzystania: https://ricecal.app/terms
 Polityka prywatności: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Dodano import przepisów z filmów kulinarnych
-- Dodano makro każdego składnika posiłku
-- Odświeżono podsumowanie dnia
-- Odświeżono formularz przepisu
-- Naprawiono awarię mapy jedzenia przy odległych miejscach
+    whatsNew: `- Dodano układ przygotowany dla iPada
+- Dodano pełne szczegóły jedzenia lub treningu znajomego
+- Dodano przypomnienie przed końcem darmowego okresu próbnego
+- Naprawiono utratę posiłków zapisanych offline
 
-Każdy dobry kucharz zaczynał od patrzenia.`,
+Większy ekran to większy talerz.`,
   },
 
   uk: {
@@ -784,13 +763,12 @@ Każdy dobry kucharz zaczynał od patrzenia.`,
 Умови використання: https://ricecal.app/terms
 Політика конфіденційності: https://ricecal.app/privacy
 Зв’язатися з нами: https://ricecal.app/contact`,
-    whatsNew: `- Додано імпорт рецептів із кулінарних відео
-- Додано БЖВ кожного інгредієнта в прийомі їжі
-- Оновлено підсумок дня
-- Оновлено форму рецепта
-- Виправлено збій мапи їжі для віддалених місць
+    whatsNew: `- Додано макет для iPad
+- Додано повні відомості про їжу чи тренування друга
+- Додано нагадування до кінця безкоштовного пробного періоду
+- Виправлено втрату офлайн-записів їжі
 
-Кожен добрий кухар починав зі спостереження.`,
+Більший екран, більша тарілка.`,
   },
 
   sv: {
@@ -819,13 +797,12 @@ En dag över budget får "lite över idag, imorgon räknas det om." Aldrig en ti
 Användarvillkor: https://ricecal.app/terms
 Integritetspolicy: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Lade till import av recept från matlagningsvideor
-- Lade till makron för varje ingrediens i en måltid
-- Förnyade dagens sammanfattning
-- Förnyade receptformuläret
-- Åtgärdade en krasch i matkartan med platser långt isär
+    whatsNew: `- Lade till en layout gjord för iPad
+- Lade till alla detaljer om en väns mat eller träningspass
+- Lade till en påminnelse innan gratisperioden tar slut
+- Åtgärdade att måltider loggade offline inte sparades
 
-Varje bra kock började med att titta.`,
+Större skärm, större tallrik.`,
   },
 
   nb: {
@@ -854,13 +831,12 @@ En dag over budsjett får "litt over i dag, i morgen telles det på nytt." Aldri
 Bruksvilkår: https://ricecal.app/terms
 Personvernerklæring: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- La til import av oppskrifter fra matlagingsvideoer
-- La til makroer for hver ingrediens i et måltid
-- Fornyet dagsoppsummeringen
-- Fornyet oppskriftsskjemaet
-- Rettet en krasj i matkartet med steder langt fra hverandre
+    whatsNew: `- La til et oppsett laget for iPad
+- La til alle detaljer om en venns mat eller treningsøkt
+- La til en påminnelse før gratisperioden slutter
+- Rettet at måltider logget uten nett ikke ble lagret
 
-Hver god kokk begynte med å se på.`,
+Større skjerm, større tallerken.`,
   },
 
   da: {
@@ -889,13 +865,12 @@ En dag over budgettet får "lidt over i dag, i morgen tælles der forfra." Aldri
 Brugsvilkår: https://ricecal.app/terms
 Privatlivspolitik: https://ricecal.app/privacy
 Kontakt: https://ricecal.app/contact`,
-    whatsNew: `- Tilføjede import af opskrifter fra madlavningsvideoer
-- Tilføjede makroer for hver ingrediens i et måltid
-- Fornyede dagens oversigt
-- Fornyede opskriftsformularen
-- Rettede et nedbrud i madkortet med steder langt fra hinanden
+    whatsNew: `- Tilføjede et layout lavet til iPad
+- Tilføjede alle detaljer om en vens mad eller træning
+- Tilføjede en påmindelse før den gratis prøveperiode slutter
+- Rettede at måltider logget offline ikke blev gemt
 
-Enhver god kok begyndte med at kigge.`,
+Større skærm, større tallerken.`,
   },
 };
 
