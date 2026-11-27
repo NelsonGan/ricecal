@@ -6,7 +6,7 @@ import { track } from '@/lib/analytics'
 import type { MeasureUnit } from '@/lib/measures'
 import { supabase } from '@/lib/supabase'
 import { unwrap, unwrapMaybe, unwrapOne } from './client'
-import { keys } from './keys'
+import { invalidateGroupBoards, keys } from './keys'
 import { displayUnitOf, toIcon, toRecipe, toRecipeIngredient } from './mappers'
 import { removeMealPhoto } from './photos'
 import { refusalFrom, ScanLimitError } from './refusals'
@@ -447,6 +447,9 @@ export function useSaveRecipe() {
       queryClient.invalidateQueries({ queryKey: RECIPE_INGREDIENTS_PREFIX })
       queryClient.invalidateQueries({ queryKey: keys.recipe(recipeId) })
       queryClient.invalidateQueries({ queryKey: keys.recipeIngredients(recipeId) })
+      // A recipe shared into a group's chat is drawn there as it is now, its
+      // card and its message's "(520 kcal)" both.
+      if (input.id) invalidateGroupBoards(queryClient, userId)
     },
   })
 }
@@ -531,6 +534,8 @@ export function useDeleteRecipe() {
       // "not found" branch and unmount the sheet before `onDismiss` fires.
       queryClient.invalidateQueries({ queryKey: RECIPE_PREFIX, refetchType: 'none' })
       queryClient.invalidateQueries({ queryKey: RECIPE_INGREDIENTS_PREFIX, refetchType: 'none' })
+      // A chat that shared it drops its card for the message alone.
+      invalidateGroupBoards(queryClient, userId)
     },
   })
 }

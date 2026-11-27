@@ -564,7 +564,7 @@ export function mergeCatchUp(
  * without saying so. Each refetch reads only the newest page; `loadOlder`
  * reads the page before the oldest held, as the viewer scrolls up.
  */
-export function useGroupThread(groupId: string, live: boolean) {
+export function useGroupThread(groupId: string, live: boolean, shown = true) {
   const userId = useUserId()
   const client = useQueryClient()
   const key = messagesKey(userId, groupId)
@@ -592,7 +592,19 @@ export function useGroupThread(groupId: string, live: boolean) {
     // refetching on focus as well read the thread twice.
     refetchOnWindowFocus: false,
     ...SHORT,
+    // Behind another screen (the meal opened from a card), a write that
+    // changes a card only marks the thread stale, and it reads again once,
+    // here, when it is shown (`invalidateGroupBoards`).
+    meta: { shown },
   })
+  const { refetch } = thread
+  useEffect(() => {
+    // Joining a read already on its way (a mount refetches a stale thread
+    // too) rather than cancelling it to start again.
+    if (shown && client.getQueryState(messagesKey(userId, groupId))?.isInvalidated) {
+      void refetch({ cancelRefetch: false })
+    }
+  }, [shown, client, userId, groupId, refetch])
   const [loadingOlder, setLoadingOlder] = useState(false)
   const loading = useRef(false)
   const loadOlder = useCallback(async () => {

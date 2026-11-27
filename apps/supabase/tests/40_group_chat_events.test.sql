@@ -259,6 +259,21 @@ set local role authenticated;
 select is((select count(*)::int from jsonb_array_elements(public.group_messages((select id from g))) e
   where e->'recipe' <> 'null'), 0, 'a food the viewer reported is not drawn as a card');
 reset role;
+update public.recipes set name = 'Renamed after the report' where id = :'recipe';
+create temp table recipe_msg as select id from public.group_messages
+  where request_id = 'a4040000-0000-4000-8000-000000000004';
+grant select on recipe_msg to authenticated;
+set local role authenticated;
+select is((select e->>'body' from jsonb_array_elements(public.group_messages((select id from g))) e
+    where e->>'id' = (select id::text from recipe_msg)),
+  'Ayam masak merah (500 kcal)', 'nor read again for what its message says');
+reset role;
+select is((select private.group_message_body(m, :'ben') from public.group_messages m
+    where m.request_id = 'a4040000-0000-4000-8000-000000000004'),
+  'Ayam masak merah (500 kcal)', 'in a reply''s quote or the chat bar either');
+select is((select private.group_message_body(m, :'ana') from public.group_messages m
+    where m.request_id = 'a4040000-0000-4000-8000-000000000004'),
+  'Renamed after the report (500 kcal)', 'while everyone else reads it as it is now');
 delete from public.recipes where id = :'recipe';
 select is((select count(*)::int from public.group_messages where request_id = 'a4040000-0000-4000-8000-000000000004'), 0,
   'deleting the food takes its message with it');

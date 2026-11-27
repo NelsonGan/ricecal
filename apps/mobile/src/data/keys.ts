@@ -280,13 +280,18 @@ export function invalidateEatenTotals(queryClient: QueryClient, userId: string):
 const ENTRY_POST_READS = new Set(['social_profile_posts', 'social_post', 'entry'])
 
 /**
- * Whether a feed is behind another tab. Its hook says so on each of its
- * observers (`meta.shown`, in `useSocialPages`); a read that says nothing is
- * taken to be in front.
+ * Whether every screen reading a query is behind another one. A hook says so
+ * on each of its observers (`meta.shown`: the feed in `useSocialPages`, a
+ * chat in `useGroupThread`); a read that says nothing is taken to be in front.
  */
-const feedBehindAnotherTab = (query: Query): boolean =>
-  query.queryKey[2] === 'social_feed' &&
+const behindAnotherScreen = (query: Query): boolean =>
   query.observers.every((observer) => observer.options.meta?.shown === false)
+
+const feedBehindAnotherTab = (query: Query): boolean =>
+  query.queryKey[2] === 'social_feed' && behindAnotherScreen(query)
+
+const chatBehindAnotherScreen = (query: Query): boolean =>
+  query.queryKey[2] === 'group_messages' && behindAnotherScreen(query)
 
 /**
  * A meal was logged or changed, and its post on the feed, if it has one, with
@@ -315,11 +320,28 @@ export function invalidateEntryPosts(queryClient: QueryClient, userId: string): 
 }
 
 /**
+ * The group reads drawn from the diary, the workouts and the recipes as they
+ * are now, the chat's + picker of the viewer's own food posts among them.
+ */
+const GROUP_LIVE_READS = new Set([
+  'group_board',
+  'group_messages',
+  'group_chat_summary',
+  'recent_food_posts',
+])
+
+/**
  * A group board reads the diary and the workouts live, so a meal or a workout
  * logged, edited or deleted, a synced health workout or a repriced recipe
  * shows on the viewer's own row without waiting for the board's next poll.
- * Only the boards on screen refetch; the rest are marked stale. `lists` also
- * refreshes the group list, whose "logged today" counts food and nothing else.
+ * The chat's cards, and what a shared thing's message says (a reply's quote,
+ * the chat bar), read them live too. Only the reads on screen refetch; the
+ * rest are marked stale. A chat under the meal opened from its card is only
+ * marked stale and reads again when it is shown (`useGroupThread`): left to its
+ * three-minute poll it came back with the figure from before the edit, and
+ * refetched on each write it reread its page once per portion tap. `lists`
+ * also refreshes the group list, whose "logged today" counts food and nothing
+ * else.
  */
 export function invalidateGroupBoards(
   queryClient: QueryClient,
@@ -328,7 +350,13 @@ export function invalidateGroupBoards(
 ): void {
   queryClient.invalidateQueries({
     queryKey: keys.groups(userId),
+    predicate: chatBehindAnotherScreen,
+    refetchType: 'none',
+  })
+  queryClient.invalidateQueries({
+    queryKey: keys.groups(userId),
     predicate: (query) =>
-      query.queryKey[2] === 'group_board' || (lists && query.queryKey[2] === 'my_groups'),
+      (GROUP_LIVE_READS.has(String(query.queryKey[2])) && !chatBehindAnotherScreen(query)) ||
+      (lists && query.queryKey[2] === 'my_groups'),
   })
 }

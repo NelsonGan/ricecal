@@ -228,6 +228,9 @@ select is((select automatic from public.group_messages where request_id = 'a3730
 -- A tap on the card opens the meal as a page: the portion, every nutrient and
 -- the parts on the plate, never the owner's note.
 reset role;
+create temp table hand_share as select id from public.group_messages
+  where request_id = 'a3730000-0000-4000-8000-000000000006';
+grant select on hand_share to authenticated;
 update public.food_logs set note = 'Ate it in the car', plate_quantity = 1.5 where id = :'meal';
 insert into public.food_log_ingredients (food_log_id, item_name, base_kcal, base_carbs_g, base_protein_g,
   base_fat_g, serving_label, serving_factor, grams, position)
@@ -245,7 +248,33 @@ select is(jsonb_path_query_array(public.group_entry_detail((select id from g), :
   '["Coconut rice", "Sambal"]'::jsonb, 'and every part on the plate, in order');
 select ok(public.group_entry_detail((select id from g), :'meal')::text not like '%in the car%',
   'but never the owner''s note');
+-- The portion changed after the meal was shared: what its message says follows
+-- the card, so a reply does not quote the old calories beside the new ones.
+select lives_ok(format('select public.send_group_message(%L, %L, %L, %L)', (select id from g),
+  'that''s a lot', 'a3730000-0000-4000-8000-000000000107', (select id from hand_share)),
+  'Ben answers the shared food');
+select is((select e->>'body' from jsonb_array_elements(public.group_messages((select id from g))) e
+    where e->>'id' = (select id::text from hand_share)),
+  'Nasi lemak (630 kcal)', 'a shared food''s message says its calories as they are now');
+select is((select e->'reply_to'->>'body' from jsonb_array_elements(public.group_messages((select id from g))) e
+    where e->'reply_to'->>'id' = (select id::text from hand_share)),
+  'Nasi lemak (630 kcal)', 'and so does a reply''s quote of it');
 reset role;
+select is((select body from public.group_messages where id = (select id from hand_share)),
+  'Nasi lemak (640 kcal)', 'while the stored body keeps what was sent, for an older app');
+select is((select private.group_message_body(m, :'ben') from public.group_messages m
+    where m.id = (select id from hand_share)), 'Nasi lemak (630 kcal)',
+  'the chat bar and the update push read it as it is now');
+select is(private.group_share_body('look at this', '{"name": "Laksa", "kcal": 500}', null, null),
+  'look at this', 'words sent with a share are never written over');
+select is(private.group_share_body('Laksa (480 kcal)', null, null, null), 'Laksa (480 kcal)',
+  'and a share whose thing is gone keeps what it said');
+select is(private.group_share_body('Push day (40 min)', null,
+    '{"name": "Push day", "kind": "strength", "duration_s": 3000}', null),
+  'Push day (50 min)', 'a workout''s message follows its length');
+select is(private.group_share_body('Ayam masak merah (520 kcal)', null, null,
+    '{"name": "Ayam masak merah", "kcal": 410}'),
+  'Ayam masak merah (410 kcal)', 'and one of a member''s own foods follows its recipe');
 update public.food_logs set log_date = public.local_today(:'ana') - 90 where id = :'meal';
 set local role authenticated;
 select is(public.group_entry_detail((select id from g), :'meal')->'entry'->>'name', 'Nasi lemak',

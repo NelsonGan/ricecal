@@ -292,7 +292,8 @@ begin
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
       limit 100) u),
     'last', (
-      select jsonb_build_object('author', private.group_person(m.author_id), 'body', m.body)
+      select jsonb_build_object('author', private.group_person(m.author_id),
+        'body', private.group_message_body(m, v_user))
       from public.group_messages m
       where m.group_id = p_group_id and not m.quarantined and m.event is null
         and not private.social_pair_blocked(m.author_id)
@@ -358,16 +359,6 @@ returns jsonb language sql stable security definer set search_path = '' as $$
   group by p.source_entry_id;
 $$;
 
--- What a food message's body says: "Nasi lemak (640 kcal)". Not translated,
--- since one row is read by every member in their own language; a name and a
--- number read in any of them.
-create or replace function private.group_food_label(p_post_id uuid)
-returns text language sql stable security definer set search_path = '' as $$
-  select left(f ->> 'name', 160) || ' (' || round((f ->> 'kcal')::numeric)::text || ' kcal)'
-  from (select private.group_post_food(p_post_id) as f) x
-  where f is not null;
-$$;
-
 -- One of a member's own foods (a recipe) shared into the chat, as its card
 -- draws it: read live, so a corrected recipe shows corrected. The share slug
 -- is what opens it, and lets a member keep a copy (save_shared_recipe_copy):
@@ -388,15 +379,6 @@ returns jsonb language sql stable security definer set search_path = '' as $$
     from public.recipe_ingredients i where i.recipe_id = r.id
   ) t on true
   where r.id = p_recipe_id;
-$$;
-
--- What a recipe message's body says, as for food: "Ayam masak merah (520 kcal)",
--- per serving.
-create or replace function private.group_recipe_label(p_recipe_id uuid)
-returns text language sql stable security definer set search_path = '' as $$
-  select left(f ->> 'name', 160) || ' (' || (f ->> 'kcal') || ' kcal)'
-  from (select private.group_recipe(p_recipe_id) as f) x
-  where f is not null;
 $$;
 
 -- A workout shared into the chat as its card draws it, read live: a workout
@@ -431,6 +413,72 @@ returns text language sql immutable set search_path = '' as $$
       initcap(regexp_replace(replace(p_workout ->> 'kind', '_', ' '), '([a-z])([A-Z])', '\1 \2', 'g'))), 160)
     || ' (' || greatest(1, round((p_workout ->> 'duration_s')::numeric / 60))::text || ' min)'
   where p_workout is not null;
+$$;
+
+-- What a shared thing's message says, from its card: "Nasi lemak (640 kcal)",
+-- "Push day (45 min)", "Ayam masak merah (520 kcal)" (a recipe per serving).
+-- Not translated, since one row is read by every member in their own
+-- language; a name and a number read in any of them. Null with no card.
+create or replace function private.group_share_label(p_food jsonb, p_workout jsonb, p_recipe jsonb)
+returns text language sql immutable set search_path = '' as $$
+  select coalesce(
+    left(p_food ->> 'name', 160) || ' (' || round((p_food ->> 'kcal')::numeric)::text || ' kcal)',
+    private.group_workout_label(p_workout),
+    left(p_recipe ->> 'name', 160) || ' (' || (p_recipe ->> 'kcal') || ' kcal)');
+$$;
+
+-- The body a food or a recipe message is written with.
+create or replace function private.group_food_label(p_post_id uuid)
+returns text language sql stable security definer set search_path = '' as $$
+  select private.group_share_label(private.group_post_food(p_post_id), null, null);
+$$;
+
+create or replace function private.group_recipe_label(p_recipe_id uuid)
+returns text language sql stable security definer set search_path = '' as $$
+  select private.group_share_label(null, null, private.group_recipe(p_recipe_id));
+$$;
+
+-- What a message says now, given its cards as read now. A shared thing's body
+-- is its label as it stood when it was shared, written once for a push and an
+-- app from before cards, while its card reads the thing live: a portion
+-- corrected after a meal went to the chat left a reply's quote, the chat bar
+-- and the update push saying "593 kcal" beside a card saying 723. So the label
+-- is worked out again from the card. The stored body stands when the thing is
+-- gone, and when it does not end the way group_share_label ends one: the app
+-- sends a share with no words, and words sent with one by hand are kept
+-- unless they happen to end like a label.
+create or replace function private.group_share_body(p_body text, p_food jsonb, p_workout jsonb,
+  p_recipe jsonb)
+returns text language sql immutable set search_path = '' as $$
+  select case when p_body ~ ' \(\d+ (kcal|min)\)$'
+    then coalesce(private.group_share_label(p_food, p_workout, p_recipe), p_body)
+    else p_body end;
+$$;
+
+-- The cards a message carries, as `p_viewer` reads them: the food, the
+-- workout or the recipe it shares, read once for both the card and what its
+-- message says. A recipe the viewer reported is left out: its link would
+-- answer nothing, and its message still says what it was rather than what it
+-- was renamed to. Only ever called from the definer functions below.
+create or replace function private.group_message_cards(p_post_id uuid, p_workout_id uuid,
+  p_activity_id uuid, p_recipe_id uuid, p_viewer uuid)
+returns table (food jsonb, workout jsonb, recipe jsonb)
+language sql stable set search_path = '' as $$
+  select
+    case when p_post_id is not null then private.group_post_food(p_post_id) end,
+    case when p_workout_id is not null then private.group_workout(p_workout_id)
+         when p_activity_id is not null then private.group_activity(p_activity_id) end,
+    case when p_recipe_id is not null and not exists (
+        select 1 from public.recipe_reports x where x.recipe_id = p_recipe_id and x.reporter_id = p_viewer)
+      then private.group_recipe(p_recipe_id) end;
+$$;
+
+-- What one stored message says now to `p_viewer`: the message a reply quotes,
+-- the chat bar's last message, an update push.
+create or replace function private.group_message_body(m public.group_messages, p_viewer uuid)
+returns text language sql stable security definer set search_path = '' as $$
+  select private.group_share_body(m.body, c.food, c.workout, c.recipe)
+  from private.group_message_cards(m.post_id, m.workout_id, m.activity_id, m.recipe_id, p_viewer) c;
 $$;
 
 -- One workout of a fellow member's, as its detail page draws it: from the
@@ -559,10 +607,12 @@ declare v_user uuid := private.group_require_member(p_group_id);
 begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
-      'id', m.id, 'author', private.group_person(m.author_id), 'body', m.body,
+      'id', m.id, 'author', private.group_person(m.author_id),
+      'body', private.group_share_body(m.body, c.food, c.workout, c.recipe),
       'created_at', m.created_at, 'mine', m.author_id = v_user,
       'reply_to', (
-        select jsonb_build_object('id', r.id, 'author', private.group_person(r.author_id), 'body', r.body,
+        select jsonb_build_object('id', r.id, 'author', private.group_person(r.author_id),
+          'body', private.group_message_body(r, v_user),
           'is_food', r.post_id is not null, 'is_workout', num_nonnulls(r.workout_id, r.activity_id) > 0,
           'is_recipe', r.recipe_id is not null)
         from public.group_messages r
@@ -572,15 +622,11 @@ begin
       ),
       -- The food's own fields, then its thumbs (appended, so an older app reads
       -- the card unchanged). A withdrawn post stays null either way.
-      'food', case when m.post_id is not null then private.group_post_food(m.post_id)
+      'food', case when m.post_id is not null then c.food
         || coalesce(private.group_food_reactions(m.post_id, p_group_id, v_user), '{}'::jsonb) end,
-      'workout', case when m.workout_id is not null then private.group_workout(m.workout_id)
-                      when m.activity_id is not null then private.group_activity(m.activity_id) end,
-      -- Not one the viewer reported: its link would answer nothing, and the
-      -- body still says what it was.
-      'recipe', case when m.recipe_id is not null and not exists (
-          select 1 from public.recipe_reports x where x.recipe_id = m.recipe_id and x.reporter_id = v_user)
-        then private.group_recipe(m.recipe_id) end,
+      'workout', c.workout,
+      -- Not one the viewer reported (private.group_message_cards).
+      'recipe', c.recipe,
       -- Only asked for by an app that draws them (`p_events`), so only ever
       -- present for one. A like or a dislike names the food and whose it is,
       -- read live, with the photo or drawing the board shows for it so the
@@ -624,6 +670,9 @@ begin
         and not exists (select 1 from public.group_message_reports r where r.message_id = m.id and r.reporter_id = v_user)
       order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100))
     ) m
+    -- Each shared thing read once, for its card and for the body it says now.
+    cross join lateral private.group_message_cards(m.post_id, m.workout_id, m.activity_id,
+      m.recipe_id, v_user) c
   ), '[]'::jsonb);
 end;
 $$;
@@ -784,7 +833,8 @@ revoke execute on function private.group_size_for_join from public, anon;
 grant execute on function private.group_size_for_join to authenticated, service_role;
 revoke execute on function private.group_post_food, private.group_food_label, private.group_workout,
   private.group_activity, private.group_workout_label, private.group_food_reactions,
-  private.group_recipe, private.group_recipe_label
+  private.group_recipe, private.group_recipe_label, private.group_share_label,
+  private.group_share_body, private.group_message_cards, private.group_message_body
   from public, anon, authenticated;
 revoke execute on function private.group_photo_claims, private.group_person from public, anon;
 -- Only the board and settings read it, both as definer.

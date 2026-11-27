@@ -4327,6 +4327,20 @@ meal share a tile and swipe sideways inside it.
   line of text. Replies, food and reactions are extra fields beside the old
   ones, and `send_group_message` takes the reply and the post as trailing
   arguments with defaults, so the three-argument call of 1.0 still resolves.
+- **A shared thing's body is read as it is now.** The stored body is the
+  label as it stood when it was shared, while the card reads the meal, workout
+  or recipe live, so a portion corrected after a meal reached the chat left the
+  swipe-to-reply composer, a reply's quote, the chat bar and the update push
+  saying "593 kcal" beside a card saying 723. `group_messages`,
+  `group_chat_summary` and `group_update_digests` hand out the label worked out
+  again from the card (`private.group_share_body`, with the one label format in
+  `private.group_share_label`, which also writes the stored bodies). The stored
+  body stands once the thing is gone, for a recipe the viewer reported, and
+  when it does not end like a label ("(640 kcal)", "(45 min)"); the app sends a
+  share with no words, so only words sent by hand that end that way would be
+  replaced. A meal, workout or recipe write refreshes the chat on screen; a
+  chat behind the meal opened from its card is marked stale and reads once when
+  it is shown again (`useGroupThread`), rather than once per portion tap.
 - **A public group's name** is read by strangers, so it can be reported too, by a
   long press in the public list: it leaves the reporter's list at once and
   everyone's at three reports. Renaming the group clears the reports; saving

@@ -200,7 +200,7 @@ export function ChatScreen({
   const colors = useThemeColors()
   const online = useGroupChatPresence(groupId, focused)
   const live = useGroupChatLive(groupId)
-  const { thread, loadOlder, loadingOlder } = useGroupThread(groupId, live)
+  const { thread, loadOlder, loadingOlder } = useGroupThread(groupId, live, focused)
   const messages = thread.data?.messages
   const task = useGroupTask()
   // The emoji bar a long press opens over the thread, and the sheet its ⋯ opens.
@@ -211,7 +211,14 @@ export function ChatScreen({
   // The ⋯ sheet waits for the dimmed layer to finish closing: two native
   // modals at once is one too many on iOS.
   const menuNext = useRef<GroupMessage | null>(null)
-  const [replying, setReplying] = useState<GroupMessage | null>(null)
+  // The message being answered, drawn from the thread as it is now rather
+  // than as it was swiped: a shared food's portion corrected meanwhile is
+  // quoted corrected, as its card already shows it.
+  const [answering, setAnswering] = useState<GroupMessage | null>(null)
+  const replying = useMemo(
+    () => (answering && messages?.find((message) => message.id === answering.id)) ?? answering,
+    [answering, messages],
+  )
   const [picking, setPicking] = useState(false)
   const block = useBlockAuthor()
   const field = useRef<React.ComponentRef<typeof TextInput>>(null)
@@ -343,7 +350,7 @@ export function ChatScreen({
   const sendText = useCallback(
     (body: string) => {
       send(body, replying ? { replyTo: quoteOf(replying) } : undefined)
-      setReplying(null)
+      setAnswering(null)
       toNewest()
     },
     [send, replying, toNewest],
@@ -356,7 +363,7 @@ export function ChatScreen({
     (shared: Pick<SendMeta, 'food' | 'workout' | 'recipe'>) => {
       setPicking(false)
       send('', { ...shared, ...(replying ? { replyTo: quoteOf(replying) } : {}) })
-      setReplying(null)
+      setAnswering(null)
       toNewest()
     },
     [send, replying, toNewest],
@@ -366,9 +373,9 @@ export function ChatScreen({
   const sendRecipe = useCallback((recipe: Recipe) => share({ recipe: recipeOf(recipe) }), [share])
 
   const openPicker = useCallback(() => setPicking(true), [])
-  const cancelReply = useCallback(() => setReplying(null), [])
+  const cancelReply = useCallback(() => setAnswering(null), [])
   const startReply = useCallback((message: GroupMessage) => {
-    setReplying(message)
+    setAnswering(message)
     field.current?.focus()
   }, [])
   const react = useCallback(

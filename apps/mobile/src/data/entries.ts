@@ -385,14 +385,20 @@ export function useUpdateEntry() {
         queryClient.invalidateQueries({ queryKey: keys.streak(userId) })
       }
       invalidateEatenTotals(queryClient, userId)
-      // The search panel's "My foods" tab, and only for the two fields it shows.
-      // A portion tap is deliberately not on that list: the stepper is debounced
-      // to one write and is still the most frequent patch there is, and
-      // re-reading two hundred rows for a number the list does not print would be
-      // a refetch per edit for nothing.
-      if (patch.name !== undefined || patch.icon !== undefined) {
-        queryClient.invalidateQueries({ queryKey: keys.recentFoods(userId) })
-      }
+      // The search panel's "Past" tab, which draws each dish's name, picture
+      // and calories, and logs it again at the portion it was last eaten at.
+      // A rename or a new picture is read now. Any other edit (a portion, typed
+      // figures) only marks it stale for the next time the panel opens: the
+      // stepper is debounced to one write and is still the most frequent patch
+      // there is, and re-reading two hundred rows on each would be a refetch
+      // per tap. Left fresh, the tab offered the meal at its old calories.
+      queryClient.invalidateQueries({
+        queryKey: keys.recentFoods(userId),
+        refetchType:
+          patch.name !== undefined || patch.icon !== undefined || patch.photoPath !== undefined
+            ? 'active'
+            : 'none',
+      })
       // A photo taken off or replaced is no longer one the sweep is about to take.
       if (patch.photoPath !== undefined) {
         queryClient.invalidateQueries({ queryKey: keys.photoRemovals(userId) })
