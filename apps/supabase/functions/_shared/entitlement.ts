@@ -455,8 +455,8 @@ export async function claimScan(db: SupabaseClient, userId: string): Promise<voi
   // Refused at the free ceiling, on an account the row thinks is free: the one
   // refusal here that might be about a lost webhook, and the only path to the
   // model that skips `isEntitled`, since photographing a plate is free. Without
-  // it, a Pro account whose webhook never landed is silently capped at three
-  // photographs a day.
+  // it, a Pro account whose webhook never landed is silently capped at the free
+  // ceiling (three photographs a day, or two in the free-scan experiment).
   //
   // Once, and only in this direction: `reconcileEntitlement` writes nothing
   // unless RevenueCat says the account is paid.

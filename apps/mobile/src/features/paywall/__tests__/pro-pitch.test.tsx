@@ -20,9 +20,11 @@ const mockPlanPrices = {
   yearlySavingPercent: 35,
 }
 let mockPrices: typeof mockPlanPrices | undefined = mockPlanPrices
+let mockFreeScans: number | null = 3
 
 jest.mock('@/data', () => ({
   usePlanPrices: () => ({ data: mockPrices }),
+  useFreeDailyScans: () => mockFreeScans,
 }))
 
 jest.mock('@/lib/legal', () => ({
@@ -36,6 +38,24 @@ const user = userEvent.setup()
 beforeEach(() => {
   jest.clearAllMocks()
   mockPrices = mockPlanPrices
+  mockFreeScans = 3
+})
+
+it("states the account's own free scan allowance, which is two in the experiment's two arm", async () => {
+  await render(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={jest.fn()} />)
+  expect(screen.getByText('3/day')).toBeOnTheScreen()
+
+  mockFreeScans = 2
+  await screen.rerender(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={jest.fn()} />)
+  expect(screen.getByText('2/day')).toBeOnTheScreen()
+  expect(screen.queryByText('3/day')).toBeNull()
+})
+
+it('shows a dash, not a guessed three, until the server says which allowance applies', async () => {
+  mockFreeScans = null
+  await render(<ProPitch plan="yearly" onPlanChange={jest.fn()} onRestore={jest.fn()} />)
+  expect(screen.getByText('—/day')).toBeOnTheScreen()
+  expect(screen.queryByText('3/day')).toBeNull()
 })
 
 it('shows one selected-plan offer with the comparison beneath it', async () => {

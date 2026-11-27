@@ -17,6 +17,10 @@ import { useRegion } from "@/lib/use-region";
  * How many plates a free account may photograph in a day. A copy of the app's
  * `FREE_DAILY_SCANS`, which Postgres enforces; `PlanComparison` holds the
  * other copy on this site and all three have to move together.
+ *
+ * Printed as "up to" while the free-scan experiment runs: half the accounts
+ * made in its window get two (`scan_experiment_arm` in Postgres), and a page
+ * promising three to them would be wrong. Drop the "up to" when it ends.
  */
 const FREE_DAILY_SCANS = 3;
 
@@ -176,7 +180,7 @@ export function Pricing() {
               was half of is `PlanComparison` below. It names the daily figure,
               because "log your meals" reads as no limit at all. */}
           <p className={BLURB}>
-            {FREE_DAILY_SCANS} photo meals a day, the barcode scanner and the
+            Up to {FREE_DAILY_SCANS} photo meals a day, the barcode scanner and the
             whole catalogue.
           </p>
 

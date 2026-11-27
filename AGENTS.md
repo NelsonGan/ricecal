@@ -208,8 +208,9 @@ with nothing broken. Stop the daemons afterwards (`./gradlew --stop`, then
 `pkill -f GradleDaemon`, `pkill -f kotlin-daemon`).
 
 **A fresh local account is a free account.** `handle_new_user` writes no
-`subscriptions` row, so the fourth scan of the day fails and describe, refine and
-the recipe reader all answer 402. That reads as a broken pipeline. The README has
+`subscriptions` row, so the fourth scan of the day fails (the third, for an
+account in the free-scan experiment's `two` arm) and describe, refine and the
+recipe reader all answer 402. That reads as a broken pipeline. The README has
 the one-row fix.
 
 **Adding or renaming an edge function** needs a full stop and start of the local

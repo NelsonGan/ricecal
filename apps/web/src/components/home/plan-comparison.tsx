@@ -9,6 +9,8 @@ import { Eyebrow } from "@/components/section";
  * and Postgres' `free_daily_scans()` enforces it. This site cannot import
  * either, so the three have to be changed together — a page promising three a
  * day while the database allows five is a support thread.
+ *
+ * "Up to" while the free-scan experiment runs, for the reason `Pricing` gives.
  */
 const FREE_DAILY_SCANS = 3;
 
@@ -41,7 +43,7 @@ const ROWS: { free: Cell; label: string; pro: Cell }[] = [
   // Text on both sides: three a day against unlimited is the whole offer, and a
   // tick in both columns would hide it.
   {
-    free: text(`${FREE_DAILY_SCANS}/day`),
+    free: text(`Up to ${FREE_DAILY_SCANS}/day`),
     label: "Snap a plate",
     pro: text("Unlimited"),
   },

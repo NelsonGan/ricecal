@@ -1,9 +1,9 @@
-import { FREE_DAILY_SCANS, FREE_RECIPES } from '@ricecal/shared'
+import { FREE_RECIPES } from '@ricecal/shared'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
-import { useEntitlement, usePlanPrices } from '@/data'
+import { useEntitlement, useFreeDailyScans, usePlanPrices } from '@/data'
 import { openManageSubscriptions } from '@/data/purchases'
 import { PLAN_FEATURES, usePlanSummary } from '@/features/paywall'
 import { trialProgress } from '@/features/paywall/trial'
@@ -17,6 +17,8 @@ export default function SubscriptionScreen() {
   const router = useRouter()
   const goBack = useBack('/me')
   const { data: prices } = usePlanPrices()
+  // A dash until the server answers: see `useFreeDailyScans`.
+  const freeDailyScans = useFreeDailyScans() ?? '—'
   const [confirmCancel, setConfirmCancel] = useState(false)
 
   // `usePlanSummary`, not the column. It reads the store's answer as well as
@@ -172,7 +174,7 @@ export default function SubscriptionScreen() {
         ) : (
           <Text variant="meta">
             {t('profile:subscription.freeBody', {
-              scans: FREE_DAILY_SCANS,
+              scans: freeDailyScans,
               recipes: FREE_RECIPES,
             })}
           </Text>

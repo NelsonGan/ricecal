@@ -44,6 +44,7 @@ export const keys = {
    * today goes stale at the wrong midnight for anybody who has flown.
    */
   scanQuota: (userId: string) => ['scan-quota', userId] as const,
+  scanExperiment: (userId: string) => ['scan-experiment', userId] as const,
   /**
    * What each plan costs, as the store reports it.
    *

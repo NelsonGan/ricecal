@@ -172,11 +172,14 @@ export {
 } from './snapshot'
 export {
   type Entitlement,
+  type ScanExperiment,
   type ScanQuota,
   useAwaitEntitlement,
   useEntitlement,
   useEntitlementSync,
+  useFreeDailyScans,
   usePlanPrices,
+  useScanExperiment,
   useScanQuota,
   useStoreEntitlement,
   useSubscription,

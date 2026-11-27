@@ -2,7 +2,7 @@ import Constants from 'expo-constants'
 import { PostHog, type PostHogOptions } from 'posthog-react-native'
 import { createMMKV } from 'react-native-mmkv'
 
-import type { AnalyticsClient } from './analytics'
+import type { AnalyticsClient, PersonProps } from './analytics'
 import { env } from './env'
 import type { ErrorReporter } from './errors'
 import type { FeatureFlagSource } from './feature-flags'
@@ -198,18 +198,24 @@ function personRecord(userId: string): PersonRecord {
   return { userId, values: {} }
 }
 
-/** Every person property the plan sets, for clearing them on account deletion. */
-const PERSON_PROPERTIES = [
-  'email',
-  'onboarded',
-  'onboarded_at',
-  'plan_direction',
-  'activity_level',
-  'referral_source',
-  'health_provider',
-  'meal_reminders',
-  'widgets_installed',
-]
+/**
+ * Every person property the plan sets, for clearing them on account deletion.
+ * A record keyed by `PersonProps` rather than a list, so a property added there
+ * does not typecheck until it is cleared here too.
+ */
+const PERSON_PROPERTY_KEYS: Record<keyof PersonProps, true> = {
+  email: true,
+  onboarded: true,
+  onboarded_at: true,
+  plan_direction: true,
+  activity_level: true,
+  referral_source: true,
+  health_provider: true,
+  meal_reminders: true,
+  widgets_installed: true,
+  scan_experiment: true,
+}
+const PERSON_PROPERTIES = Object.keys(PERSON_PROPERTY_KEYS)
 
 /** The provider-neutral surface `providers.ts` fans out to. */
 export function postHogAnalytics(posthog: PostHog): AnalyticsClient {

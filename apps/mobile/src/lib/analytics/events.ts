@@ -91,10 +91,16 @@ export type ProFeature =
   /**
    * The offers on a milestone, which no button refused: a seven day logging
    * streak, and the first time a weigh-in reaches the goal weight. See
-   * `useProNudge`. They replaced `nudge`, a standing offer every two days.
+   * `useProNudge`, which also makes the standing offer (`ProOffer`).
    */
   | 'nudge_streak'
   | 'nudge_goal'
+
+/**
+ * The standing offer, the paywall every two days on Today. A trigger but not a
+ * `ProFeature`: nothing was refused, so it has no sentence to toast.
+ */
+export type ProOffer = 'nudge'
 
 /**
  * How an import of a cooking video ended, as `Recipe Imported` reports it.
@@ -331,7 +337,7 @@ export type Events = {
    * for the other three. There is no `Paywall Dismissed`: a paywall shown and
    * not followed by a purchase is the dismissal.
    */
-  'Paywall Shown': { screen: PaywallScreen; trigger: ProFeature | PaywallScreen }
+  'Paywall Shown': { screen: PaywallScreen; trigger: ProFeature | ProOffer | PaywallScreen }
 
   'Plan Selected': { screen: PaywallScreen; plan: Plan }
   /** The store sheet was asked for. RevenueCat reports what happened after. */
@@ -657,6 +663,13 @@ export type PersonProps = {
    * Written whenever the app comes forward and the set has changed.
    */
   widgets_installed?: number
+  /**
+   * The free-scan experiment's arm: `two` gets two free scans a day, `control`
+   * keeps three. Absent for accounts made outside the enrolment window. Decided
+   * by the server (`scan_experiment_arm`) and never changes, so it is sent once
+   * per account and install. This is the breakdown the experiment is read by.
+   */
+  scan_experiment?: 'two' | 'control'
 }
 
 /**

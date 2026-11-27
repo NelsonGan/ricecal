@@ -41,6 +41,7 @@ jest.mock('expo-router', () => ({
 
 jest.mock('@/data', () => ({
   useEntitlement: () => ({ entitled: mockEntitled }),
+  useFreeDailyScans: () => 3,
   usePlanPrices: () => ({
     data: { yearly: { priceString: 'RM99.90' }, monthly: { priceString: 'RM19.90' } },
   }),

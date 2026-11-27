@@ -24,6 +24,11 @@ select plan(16);
 \set user_a '11111111-1111-1111-1111-111111111111'
 \set user_b '22222222-2222-2222-2222-222222222222'
 
+-- The free-scan experiment would put `user_b` (an even last digit) on two
+-- scans. This file is about the ceiling itself, so it closes the window;
+-- `46_free_scan_experiment` is about the arms.
+delete from public.scan_experiment_window;
+
 insert into auth.users (id, instance_id, aud, role, email, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
 values
   (:'user_a', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'a@example.test', '{}'::jsonb, '{}'::jsonb, now(), now()),

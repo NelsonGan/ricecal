@@ -1,3 +1,4 @@
+import { FREE_DAILY_SCANS } from '@ricecal/shared'
 import { type QueryClient, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect } from 'react'
 
@@ -281,6 +282,56 @@ export function useScanQuota() {
     // a free user told they have three left as they spend their last.
     staleTime: 30 * 1000,
   })
+}
+
+/**
+ * The free-scan experiment's arm, and the free ceiling that comes with it.
+ *
+ * The server decides both (`scan_experiment_arm` in Postgres), because the
+ * ceiling is what `claim_scan` enforces: accounts made in the enrolment window
+ * are split in half, and `two` gets two free scans a day instead of three.
+ * `arm` is null for everyone outside the window.
+ *
+ * Read for the copy that states the ceiling before anything is refused, and by
+ * `useAnalyticsIdentity` to file the arm on the PostHog person. An account's arm
+ * never changes, so it is read once a day at most.
+ */
+export type ScanExperiment = {
+  arm: 'two' | 'control' | null
+  freeDailyScans: number
+}
+
+export function useScanExperiment() {
+  // `useSession` rather than `useUserId`: the paywall's plan table reads this,
+  // and a screen that can be reached signed out must not throw for it.
+  const { userId } = useSession()
+
+  return useQuery({
+    queryKey: keys.scanExperiment(userId ?? ''),
+    enabled: Boolean(userId),
+    queryFn: async (): Promise<ScanExperiment> => {
+      const row = unwrapOne(await supabase.rpc('scan_experiment').maybeSingle())
+      return {
+        arm: row.arm === 'two' || row.arm === 'control' ? row.arm : null,
+        freeDailyScans: row.free_daily_scans,
+      }
+    },
+    staleTime: 24 * 60 * 60 * 1000,
+  })
+}
+
+/**
+ * How many free scans a day this account gets, for copy, or null until the
+ * server has answered. Not the shared constant in the meantime: three is wrong
+ * for half of the experiment's accounts, and a table promising three to
+ * somebody the server refuses at two is the one thing this exists to prevent.
+ * Signed out, nobody is in the experiment, so it is the constant.
+ */
+export function useFreeDailyScans(): number | null {
+  const { userId } = useSession()
+  const { data } = useScanExperiment()
+  if (!userId) return FREE_DAILY_SCANS
+  return data?.freeDailyScans ?? null
 }
 
 /**
