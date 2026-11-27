@@ -3118,7 +3118,9 @@ rows of tags and two lines per ingredient, which put seven ingredients across
 three screens.
 
 **Cook mode**, `/recipe/cook?id=&servings=&date=`, pages the method one step at
-a time in large type with the screen kept awake (`useKeepAwake`). Tapping the
+a time in large type with the screen kept awake (`useScreenAwake`, never the
+bare `useKeepAwake`, whose release rejects uncaught on Android once the
+activity is gone; biome refuses the import). Tapping the
 step moves on, for hands too messy for the button, and each new step is
 announced to VoiceOver, which ignores a live region on iOS. Where the cook is
 lives beside the ticks (`useCookStep` in `cookSession.ts`), so closing cook mode

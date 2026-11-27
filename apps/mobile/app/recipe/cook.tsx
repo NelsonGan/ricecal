@@ -1,4 +1,3 @@
-import { useKeepAwake } from 'expo-keep-awake'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -18,6 +17,7 @@ import {
   useRecipeLogDate,
   useTickedIngredients,
 } from '@/features/recipes'
+import { useScreenAwake } from '@/lib/keep-awake'
 import { useBack, useCloseStack } from '@/lib/navigation'
 import {
   AppBar,
@@ -46,7 +46,7 @@ import {
  * much was eaten, which is the moment the meal actually happens.
  */
 export default function CookModeScreen() {
-  useKeepAwake('recipe-cook')
+  useScreenAwake('recipe-cook')
   const { t } = useTranslation(['recipes', 'common'])
   const router = useRouter()
   const params = useLocalSearchParams<{ id: string; servings?: string; date?: string }>()
