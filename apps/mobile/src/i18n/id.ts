@@ -512,6 +512,11 @@ export const id = {
       more: 'Atau ketik, cari, atau pindai barkode.',
     },
 
+    preview: {
+      badge: 'Pratinjau',
+      tapped: 'Ini hanya pratinjau. Coba setelah penyiapan.',
+    },
+
     workouts: {
       title: 'Catat latihanmu juga',
       subtitle:

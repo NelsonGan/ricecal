@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 
 import '@/i18n'
 import { ThemeProvider } from '@/theme/ThemeProvider'
+import { ToastProvider } from '@/ui'
 import Welcome from '../welcome'
 
 /**
@@ -41,7 +42,9 @@ function Providers({ children }: { children: ReactNode }) {
         insets: { top: 47, left: 0, right: 0, bottom: 34 },
       }}
     >
-      <ThemeProvider>{children}</ThemeProvider>
+      <ThemeProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   )
 }

@@ -1,9 +1,11 @@
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import Animated, { useReducedMotion, ZoomIn } from 'react-native-reanimated'
 
-import { ONBOARDING_ART, OnboardingStep } from '@/features/onboarding'
+import { ONBOARDING_ART, OnboardingStep, ShowcaseFrame } from '@/features/onboarding'
 import { Avatar, AvatarGroup, Icon, Text } from '@/ui'
 
 /**
@@ -11,6 +13,9 @@ import { Avatar, AvatarGroup, Icon, Text } from '@/ui'
  * written here rather than in a bundle.
  */
 const POST = { author: 'Lina', dish: 'Laksa', kcal: 482, likes: 12 }
+/** When a friend's like lands on the sample post, after the screen has settled. */
+const LIKE_AT_MS = 900
+
 const MEMBERS = ['Aisyah', 'Wei Ling', 'Priya', 'Daniel', 'Hafiz', 'Mei', 'Arun', 'Siti']
 
 /**
@@ -23,6 +28,7 @@ const MEMBERS = ['Aisyah', 'Wei Ling', 'Priya', 'Daniel', 'Hafiz', 'Mei', 'Arun'
 export default function SocialStep() {
   const { t } = useTranslation(['onboarding', 'groups', 'common'])
   const router = useRouter()
+  const likes = useLikeLanding()
 
   return (
     <OnboardingStep
@@ -34,17 +40,15 @@ export default function SocialStep() {
       primaryLabel={t('common:action.continue')}
       onPrimary={() => router.push('/(onboarding)/source')}
     >
-      <View
-        className="gap-3 rounded-tile border-2 border-line bg-surface p-3.5"
-        accessible
-        accessibilityLabel={`${POST.author}, ${POST.dish}, ${POST.kcal} ${t('common:unit.kcal')}`}
+      <ShowcaseFrame
+        accessibilityLabel={`${POST.author}, ${POST.dish}, ${POST.kcal} ${t('common:unit.kcal')}. ${t('social.group')}`}
       >
         <View className="flex-row items-center gap-2.5">
           <Avatar name={POST.author} fallback="initial" size="xs" tone="pandan" />
           <Text variant="bodyStrong">{POST.author}</Text>
         </View>
 
-        <View className="h-[170px] overflow-hidden rounded-tile">
+        <View className="h-[150px] overflow-hidden rounded-tile">
           <Image
             source={ONBOARDING_ART.laksa}
             style={{ flex: 1 }}
@@ -66,23 +70,41 @@ export default function SocialStep() {
         </View>
 
         <View className="flex-row items-center gap-1.5">
-          <Icon set="system" name="heart-filled" size={20} />
-          <Text variant="meta">{POST.likes}</Text>
+          {/* Keyed on the count, so the heart pops when the like lands. */}
+          <Animated.View key={likes} entering={likes === POST.likes ? ZoomIn : undefined}>
+            <Icon set="system" name="heart-filled" size={20} />
+          </Animated.View>
+          <Text variant="meta">{likes}</Text>
         </View>
-      </View>
 
-      <View
-        className="flex-row items-center gap-3 rounded-tile border-2 border-line bg-surface p-3.5"
-        accessible
-      >
-        <View className="min-w-0 flex-1 gap-0.5">
-          <Text variant="bodyStrong" numberOfLines={1}>
-            {t('social.group')}
-          </Text>
-          <Text variant="meta">{t('groups:members', { count: MEMBERS.length })}</Text>
+        <View className="h-0.5 bg-line" />
+
+        <View className="flex-row items-center gap-3">
+          <View className="min-w-0 flex-1 gap-0.5">
+            <Text variant="bodyStrong" numberOfLines={1}>
+              {t('social.group')}
+            </Text>
+            <Text variant="meta">{t('groups:members', { count: MEMBERS.length })}</Text>
+          </View>
+          <AvatarGroup names={MEMBERS} total={MEMBERS.length} max={3} size="xs" />
         </View>
-        <AvatarGroup names={MEMBERS} total={MEMBERS.length} max={3} size="xs" />
-      </View>
+      </ShowcaseFrame>
     </OnboardingStep>
   )
+}
+
+/**
+ * The sample post's like count: one short of the figure, then a friend's like
+ * lands. Something changing on its own is what tells a picture from a control
+ * waiting for a tap. Under Reduce Motion it starts at the final count.
+ */
+function useLikeLanding(): number {
+  const still = useReducedMotion()
+  const [likes, setLikes] = useState(still ? POST.likes : POST.likes - 1)
+  useEffect(() => {
+    if (still) return
+    const timer = setTimeout(() => setLikes(POST.likes), LIKE_AT_MS)
+    return () => clearTimeout(timer)
+  }, [still])
+  return likes
 }

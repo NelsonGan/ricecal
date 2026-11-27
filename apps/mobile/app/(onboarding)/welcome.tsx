@@ -6,7 +6,7 @@ import { View } from 'react-native'
 // The small module rather than the feature's barrel, which reaches the whole
 // data layer and its notification handler on the first screen of the app.
 import { duration } from '@/features/activity/format'
-import { ONBOARDING_ART } from '@/features/onboarding'
+import { ONBOARDING_ART, ShowcaseFrame } from '@/features/onboarding'
 import { track } from '@/lib/analytics'
 import { Button, CalorieRing, Icon, Screen, Text } from '@/ui'
 
@@ -112,9 +112,8 @@ export default function Welcome() {
         </Text>
       </View>
 
-      <View
-        className="mt-6 gap-3 rounded-tile border-2 border-line bg-surface p-4"
-        accessible
+      <ShowcaseFrame
+        className="mt-6"
         accessibilityLabel={`${t('common:date.today')}: ${MEALS.map((meal) => `${meal.name}, ${meal.kcal} ${t('common:unit.kcal')}`).join('; ')}; ${t('workouts.routine')}, ${workoutLine}. ${(BUDGET - EATEN).toLocaleString()} ${t('logging:today.kcalLeft')}`}
       >
         <View className="flex-row items-center gap-4">
@@ -178,7 +177,7 @@ export default function Welcome() {
             ))}
           </View>
         </View>
-      </View>
+      </ShowcaseFrame>
     </Screen>
   )
 }

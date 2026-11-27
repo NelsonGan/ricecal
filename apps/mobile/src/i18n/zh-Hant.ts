@@ -506,6 +506,11 @@ export const zhHant = {
       more: '也可以輸入、搜尋或掃描條碼。',
     },
 
+    preview: {
+      badge: '預覽',
+      tapped: '這只是預覽，設定完成後即可試用。',
+    },
+
     workouts: {
       title: '運動也能記錄',
       subtitle: '組數、次數和休息計時。每組旁邊都顯示你上次的重量。',

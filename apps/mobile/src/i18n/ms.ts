@@ -517,6 +517,11 @@ export const ms = {
       more: 'Atau taip, cari, atau imbas barkod.',
     },
 
+    preview: {
+      badge: 'Pratonton',
+      tapped: 'Ini pratonton sahaja. Cuba selepas persediaan.',
+    },
+
     workouts: {
       title: 'Rekod senaman juga',
       subtitle:

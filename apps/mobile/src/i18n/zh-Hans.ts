@@ -506,6 +506,11 @@ export const zhHans = {
       more: '也可以输入、搜索或扫描条形码。',
     },
 
+    preview: {
+      badge: '预览',
+      tapped: '这只是预览，设置完成后即可试用。',
+    },
+
     workouts: {
       title: '运动也能记录',
       subtitle: '组数、次数和休息计时。每组旁边都显示你上次的重量。',

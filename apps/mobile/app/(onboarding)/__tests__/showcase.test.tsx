@@ -1,4 +1,4 @@
-import { render as rntlRender, screen, userEvent } from '@testing-library/react-native'
+import { act, render as rntlRender, screen, userEvent } from '@testing-library/react-native'
 import type { ReactElement, ReactNode } from 'react'
 import { createMMKV } from 'react-native-mmkv'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import '@/i18n'
 import { type OnboardingDraft, OnboardingDraftProvider } from '@/features/onboarding'
 import { ThemeProvider } from '@/theme/ThemeProvider'
+import { ToastProvider } from '@/ui'
 import HowStep from '../how'
 import SocialStep from '../social-showcase'
 import WorkoutsStep from '../workouts-showcase'
@@ -32,7 +33,9 @@ function Providers({ children }: { children: ReactNode }) {
       }}
     >
       <ThemeProvider>
-        <OnboardingDraftProvider userId={null}>{children}</OnboardingDraftProvider>
+        <ToastProvider>
+          <OnboardingDraftProvider userId={null}>{children}</OnboardingDraftProvider>
+        </ToastProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   )
@@ -74,4 +77,33 @@ it('shows the sample workout in the units chosen on setup', async () => {
   // 42.5 kg on the bar, to the nearest five pounds.
   expect(screen.getAllByText('95 lb')).toHaveLength(3)
   expect(screen.queryByText(/ kg$/)).toBeNull()
+})
+
+it.each([
+  ['how', <HowStep key="how" />],
+  ['workouts', <WorkoutsStep key="workouts" />],
+  ['social', <SocialStep key="social" />],
+])('labels the %s sample a preview, and says so when it is tapped', async (_name, ui) => {
+  await render(ui)
+
+  // The samples look like the real screens, and were tapped as if they were.
+  // A tap gets an answer instead of nothing, and moves nowhere.
+  await user.press(screen.getByLabelText(/^Preview\. /))
+
+  expect(screen.getByText('Just a preview. Try it after setup.')).toBeTruthy()
+  expect(mockPush).not.toHaveBeenCalled()
+})
+
+it('lands a like on the sample post', async () => {
+  jest.useFakeTimers()
+  try {
+    await render(<SocialStep />)
+    expect(screen.getByText('11')).toBeTruthy()
+
+    await act(() => jest.advanceTimersByTime(1000))
+
+    expect(screen.getByText('12')).toBeTruthy()
+  } finally {
+    jest.useRealTimers()
+  }
 })
