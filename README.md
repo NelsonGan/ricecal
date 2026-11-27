@@ -1056,6 +1056,17 @@ needs a permission this flow has not asked for, and a feed needs an account.
 Food, exercise and people's names on them are written in the component in the
 catalogue's spelling, because food is never translated.
 
+**Each sample sits in a `ShowcaseFrame`** (`features/onboarding/ShowcaseFrame.tsx`):
+a small phone on a pandan panel, labelled "Preview", its lower edge fading out.
+Drawn bare, the samples were taken for controls: users tapped the set ticks, the
+heart and the scan card, between screens that did want a tap, and read the
+silence as a broken flow. So nothing inside the frame looks pressable (the
+logger's filled tick box is a bare tick here, and the panel has no slab, which
+is what marks a control in this app). Each sample also moves on its own once: the
+ticks land in turn, a like lands on the post, the scan's entry rises over the
+photo. Something changing without a touch reads as a picture. A tap anyway gets
+a toast saying it is a preview. Reduce Motion skips the movement.
+
 Two screens have left this list. "How do you usually makan" wrote a
 `profiles.food_styles` array that ranked nothing, since search is the Worker's
 and its prior is locale, popularity and verification. And the **tour** is no

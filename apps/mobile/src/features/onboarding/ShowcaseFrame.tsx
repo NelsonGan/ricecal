@@ -59,7 +59,7 @@ export function ShowcaseFrame({ children, accessibilityLabel, className }: Showc
       accessible
       accessibilityRole="image"
       accessibilityLabel={`${t('preview.badge')}. ${accessibilityLabel}`}
-      className={cn('overflow-hidden rounded-card bg-pandan-soft px-4 pt-3.5', className)}
+      className={cn('overflow-hidden rounded-card bg-pandan-soft px-3 pt-3', className)}
     >
       <Animated.View
         style={pill}
@@ -75,7 +75,7 @@ export function ShowcaseFrame({ children, accessibilityLabel, className }: Showc
           off the panel rather than ending like a card. */}
       <View
         pointerEvents="none"
-        className="mx-3 gap-3.5 rounded-t-[30px] border-x-[3px] border-t-[3px] border-ink bg-surface px-3.5 pb-9 pt-4"
+        className="mx-2 gap-3.5 rounded-t-[30px] border-x-2 border-t-2 border-heading bg-surface px-3 pb-9 pt-4"
       >
         {children}
       </View>
