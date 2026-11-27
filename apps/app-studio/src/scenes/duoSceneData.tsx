@@ -82,10 +82,14 @@ function FloraTrends() {
   );
 }
 
-export function getDuoScenes(locale: string): DuoSceneConfig[] {
+/**
+ * The six scenes of a landscape gallery. The iPad set (`ipadSceneData.tsx`) is
+ * the same story around its own captures, so it passes its folder here.
+ */
+export function getDuoScenes(locale: string, folder = 'screenshots-iphone-duo'): DuoSceneConfig[] {
   const t: PhoneStrings = PHONE_STRINGS[locale] ?? PHONE_STRINGS.en;
   const creative = APP_STORE_COPY[locale] ?? APP_STORE_COPY.en;
-  const p = `/assets/screenshots-iphone-duo/${screenshotLocale(locale)}`;
+  const p = `/assets/${folder}/${screenshotLocale(locale)}`;
 
   const base = {
     gradientFrom: C.canvas,

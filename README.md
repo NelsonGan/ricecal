@@ -9851,7 +9851,7 @@ same way before recording its checksum: `oxipng -o 4 --nc --strip safe <file>`.
 | iPhone Duo      | 2853 × 2007 | 6 scenes   | all 26  |
 | App Store Header | 3840 × 1646 | 1          | all 26  |
 | Search Results   | 1920 × 1280 MP4 | 1          | all 26  |
-| iPad 12.9"      | 2732 × 2048 | 5 scenes   | all 26  |
+| iPad 12.9"      | 2732 × 2048 | 6 scenes   | all 26  |
 | Apple Watch     | 416 × 496   | 5 captures | English |
 | Feature Graphic | 1024 × 500  | 1          | all 26  |
 | Landing Card    | 1200 × 1200 | 1          | all 26  |
@@ -9946,8 +9946,8 @@ do not fit in the space English does, so
 [`useFitText`](apps/app-studio/src/components/useFitText.ts) measures the widest authored line
 with wrapping switched off and scales the type by whatever ratio makes it fit,
 rather than letting a translation soft-wrap into a third line and run into the
-device. The iPad scenes and the landing card do keep a supporting line, and
-`useFitLines` caps those at two. All of it is checked across the 26 frame languages
+device. The landing card does keep a supporting line, and `useFitLines` caps it
+at two. All of it is checked across the 26 frame languages
 before a copy change ships.
 
 Every phone sits at the same crop, so the six read as one set.
@@ -10072,11 +10072,14 @@ branch (`main` plus the screenshot tooling, never merged), which seeds one
 fictional account per app language on the local Supabase stack, with eight
 weeks of workout history for the logger's PREVIOUS column and record trophies,
 and captures the six screens on Simlock pool devices (`iPhone 18 Pro Max` for
-the iPhone set). The workout capture starts a session part way through in the
+the iPhone set). Each account is in one group with the two cooks it follows,
+so Social opens on that group's day above the feed, and has seen every news
+card, so none covers Today. The workout capture starts a session part way through in the
 app's own store, with a heart rate reading as a paired Apple Watch would stream
 it, and clears it once captured. That branch's README section "Localized
-screenshot fixtures" covers the scripts. The current set was captured on 17 October 2026. `capture.json` records the language, market, screen,
-date, app source revision, verified route and simulator for all 78 images,
+screenshot fixtures" covers the scripts. The current sets were captured on 27 November 2026. `capture.json` records the language, market, screen,
+date, app source revision, verified route and simulator for each set's 78 images
+(234 across the iPhone, iPhone Duo and iPad sets),
 without account details. Run `pnpm check:screenshots` after replacing a capture set; it checks
 every file's dimensions, recorded checksum, duplicate captures, image provenance and store mappings.
 A recapture comes from a Simlock pool lease, which `capture.json` records by its
@@ -10140,10 +10143,24 @@ and Apple shows watch screenshots bare.
 - Upload them to the first version whose build contains the watch app. An
   earlier version has no watch app to show them for.
 
-There are no native iPad captures yet, so the iPad scenes pair a headline with
-two phone screens on a wide canvas instead of faking a tablet layout. Its third
-frame introduces Feed. Swap in real iPad PNGs and point `shots` at them once
-there is a tablet build worth showing.
+### The iPad set
+
+The **iPad 12.9"** view is the iPhone Duo gallery for the iPad: the same six
+headlines, order and planting, each over an iPad Pro on its side showing a
+native capture, where RiceCal shows its tab rail and two panes.
+
+- The scenes are 2732 × 2048, the landscape size of the `APP_IPAD_PRO_3GEN_129`
+  slot; the same scenes go to Play's tablet gallery. The captures in
+  `public/assets/screenshots-ipad/<app-code>/` are a 13-inch iPad Pro's own
+  2752 × 2064, with the iPhone set's filenames, and the frame keeps that aspect.
+- Captured on a leased 13-inch iPad Pro with the same skill and branch: the
+  pool's `iPad Pro 13-inch (M5)`, or the M4 (same 2752 × 2064 screen) while the
+  M5 seed will not clone, as on 2026-11-27.
+  The capture script turns it on its side, and the simulator is set to Full
+  Screen Apps first (Settings, Multitasking & Gestures), or iPadOS draws its
+  window grip in a corner of every shot. Social shows Discover beside the
+  group and Following, so it relies on the same per-language cook as the Duo.
+- `pnpm check:screenshots` checks it with the other two sets.
 
 ### Store uploads
 

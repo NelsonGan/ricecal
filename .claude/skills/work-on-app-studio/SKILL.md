@@ -43,7 +43,7 @@ and it has no linter of its own. Stop the server when you are done
 | Store descriptions and What's New | `src/data/appDescriptions.ts` (What's New: `update-whats-new`) |
 | Names, subtitles, keywords, URLs | `src/components/DescriptionsView.tsx` |
 | Palette | `src/components/tokens.ts`, copied from `apps/mobile/global.css` |
-| App captures | `public/assets/screenshots-iphone{,-duo}/<lang>/`, `public/assets/screenshots-watch/en/` |
+| App captures | `public/assets/screenshots-{iphone,iphone-duo,ipad}/<lang>/`, `public/assets/screenshots-watch/en/` |
 | Play listing icon | `public/assets/icons/play_store_512.png` |
 
 - **Copy follows the app's rules.** Two lines per headline, split with `\n`,
@@ -76,8 +76,8 @@ shrinks a headline rather than letting it wrap into the phone.
 
 ## Replacing captures
 
-Captures are native screenshots of the app, 1320 × 2868 for iPhone and
-2853 × 2007 for iPhone Duo, with fixed filenames (`01-today.png` …
+Captures are native screenshots of the app, 1320 × 2868 for iPhone,
+2853 × 2007 for iPhone Duo and 2752 × 2064 for iPad, with fixed filenames (`01-today.png` …
 `06-recipes.png`). The [update-app-studio-screenshots](../update-app-studio-screenshots/SKILL.md)
 skill recaptures them: it seeds local Supabase with each language's account and
 food from the `app-studio-seed-data` branch (never merged) and captures them on

@@ -11,15 +11,17 @@ const routes = {
   '02-workout': '/workout/active',
   '03-dish': '/log/food/entry',
   '04-trends': '/trends',
-  '05-feed': '/feed',
-  '06-recipes': '/settings/foods',
+  '05-feed': '/social',
+  '06-recipes': '/recipes',
 };
-// The iPhone set and the iPhone Duo set, open on its side, are captured
-// separately from the same fixtures and food images. `devices` names the
-// retired simulator that took each set in the repo; see `capturedOnAllowedDevice`.
+// The iPhone set, the iPhone Duo set open on its side and the 13-inch iPad set
+// on its side are captured separately from the same fixtures and food images.
+// `devices` names the retired simulator that took a set; see
+// `capturedOnAllowedDevice`. The iPad set has only ever come from pool leases.
 const sets = [
   { folder: 'screenshots-iphone', devices: ['RiceCal Screenshots'], width: 1320, height: 2868 },
   { folder: 'screenshots-iphone-duo', devices: ['RiceCal iPhone Duo'], width: 2853, height: 2007 },
+  { folder: 'screenshots-ipad', devices: [], width: 2752, height: 2064 },
 ];
 const hashes = new Set();
 const manifests = [];
@@ -62,7 +64,7 @@ for (const set of sets) {
     }
   }
 }
-assert(manifests.every((bytes) => bytes.equals(manifests[0])), 'The iPhone and iPhone Duo sets show different food images');
+assert(manifests.every((bytes) => bytes.equals(manifests[0])), 'The iPhone, iPhone Duo and iPad sets show different food images');
 const manifestBytes = manifests[0];
 const photos = JSON.parse(manifestBytes);
 assert.equal(photos.length, 60);
@@ -86,4 +88,4 @@ assert.deepEqual(ANDROID_LOCALE_MAP.ta, ['ta-IN']);
 assert.deepEqual(ANDROID_LOCALE_MAP.bn, ['bn-BD']);
 assert.deepEqual(IOS_METADATA_LOCALE_MAP.zh, ['zh-Hans', 'zh-Hant']);
 assert.deepEqual(ANDROID_METADATA_LOCALE_MAP.zh, ['zh-CN', 'zh-TW', 'zh-HK']);
-console.log(`Verified ${hashes.size} distinct app captures (iPhone and iPhone Duo) in ${locales.length} languages, generated photo provenance and store mappings.`);
+console.log(`Verified ${hashes.size} distinct app captures (iPhone, iPhone Duo and iPad) in ${locales.length} languages, generated photo provenance and store mappings.`);
