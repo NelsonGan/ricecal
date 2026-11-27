@@ -1317,6 +1317,11 @@ export const bn = {
       lifetimeDetail: 'একবার দিন, চিরকাল আপনার',
     },
 
+    proof: {
+      usersChoice: 'ব্যবহারকারীদের পছন্দ',
+      rated: '৫-এর মধ্যে {{rating}} রেটিং',
+    },
+
     hard: {
       choosePlan: 'আপনার প্ল্যান বেছে নিন',
       assurance: 'কোনো বাধ্যবাধকতা নেই, যেকোনো সময় বাতিল',

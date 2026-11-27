@@ -1320,6 +1320,11 @@ export const zhHant = {
       lifetimeDetail: '一次付清，永遠是你的',
     },
 
+    proof: {
+      usersChoice: '用戶之選',
+      rated: '評分 {{rating}}，滿分 5',
+    },
+
     hard: {
       choosePlan: '選擇方案',
       assurance: '沒有綁約，隨時可以取消',

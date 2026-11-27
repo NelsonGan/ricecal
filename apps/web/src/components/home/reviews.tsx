@@ -6,6 +6,7 @@ import {
   REVIEW_STORES,
 } from "@/components/home/reviews-data";
 import { SectionIntro } from "@/components/section";
+import { PLAY_STORE_URL } from "@/lib/site";
 
 const STAR = "M12 2.5 14.9 8.4 21.4 9.4 16.7 14 17.8 20.5 12 17.4 6.2 20.5 7.3 14 2.6 9.4 9.1 8.4Z";
 
@@ -137,24 +138,44 @@ export function Reviews() {
 
       <div className="mt-8 gap-5 sm:columns-2 lg:columns-3 [&>*]:mb-5">
         {APP_REVIEWS.map((review) => {
-          const store = REVIEW_STORES[review.country];
+          const store =
+            review.store === "appStore"
+              ? {
+                  label: "App Store",
+                  flag: REVIEW_STORES[review.country].flag,
+                  url: REVIEW_STORES[review.country].url,
+                  aria: `View ${REVIEW_STORES[review.country].name} App Store reviews`,
+                }
+              : {
+                  label: "Google Play",
+                  flag: null,
+                  url: PLAY_STORE_URL,
+                  aria: "View Google Play reviews",
+                };
           return (
             <figure key={review.id} className="card break-inside-avoid p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Stars rating={review.rating} />
                 <a
                   href={store.url}
-                  aria-label={`View ${store.name} App Store reviews`}
+                  aria-label={store.aria}
                   className="inline-flex items-center gap-1.5 rounded-sm text-[11px] font-bold text-muted transition-colors hover:text-pandan focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pandan"
                 >
-                  App Store
-                  <span aria-hidden="true" className="text-[14px] leading-none">
-                    {store.flag}
-                  </span>
+                  {store.label}
+                  {store.flag ? (
+                    <span aria-hidden="true" className="text-[14px] leading-none">
+                      {store.flag}
+                    </span>
+                  ) : null}
                 </a>
               </div>
-              <h3 className="mt-4 text-[21px]">{review.title}</h3>
-              <blockquote cite={store.url} className="mt-2 text-[15px] leading-[1.65] text-body">
+              {review.store === "appStore" ? (
+                <h3 className="mt-4 text-[21px]">{review.title}</h3>
+              ) : null}
+              <blockquote
+                cite={store.url}
+                className={`${review.store === "appStore" ? "mt-2" : "mt-4"} text-[15px] leading-[1.65] text-body`}
+              >
                 {review.body}
               </blockquote>
               <p className="mt-2 text-[11px] text-muted">Review excerpt</p>

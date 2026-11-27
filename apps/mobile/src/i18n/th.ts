@@ -1319,6 +1319,11 @@ export const th = {
       lifetimeDetail: 'จ่ายครั้งเดียว เป็นของคุณตลอดไป',
     },
 
+    proof: {
+      usersChoice: 'ผู้ใช้เลือก',
+      rated: 'คะแนน {{rating}} จาก 5',
+    },
+
     hard: {
       choosePlan: 'เลือกแผนของคุณ',
       assurance: 'ไม่มีข้อผูกมัด ยกเลิกได้ทุกเมื่อ',

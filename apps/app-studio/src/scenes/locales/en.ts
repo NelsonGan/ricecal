@@ -41,7 +41,7 @@ const en: LocaleModule = {
     panel: {
       title: "Five ways to\nlog Asian food",
       sub: "Hawker stalls, home cooking, packets from the shop.",
-      stats: { usersChoice: '2K users’ choice' },
+      stats: { usersChoice: '5K users’ choice' },
       metrics: { calories: 'Calories', water: 'Water', weight: 'Weight' },
       snap:     { t: 'Snap a plate',        b: 'Every dish on it named, sized and counted.' },
       describe: { t: 'Say what you ate',    b: '"Nasi lemak with fried chicken and a teh tarik."' },

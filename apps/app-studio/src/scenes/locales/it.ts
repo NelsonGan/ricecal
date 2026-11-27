@@ -38,7 +38,7 @@ const it: LocaleModule = {
     panel: {
       title: "Cinque modi per\nla cucina asiatica",
       sub: "Cibo di strada, cucina di casa, confezioni del negozio.",
-      stats: { usersChoice: 'La scelta di 2K utenti' },
+      stats: { usersChoice: 'La scelta di 5K utenti' },
       metrics: { calories: "Calorie", water: "Acqua", weight: "Peso" },
       snap    : { t: "Fotografa il piatto", b: "Ogni piatto viene riconosciuto, misurato e contato." },
       describe: { t: "Di’ che cosa hai mangiato", b: "\"Nasi lemak con pollo fritto e un teh tarik.\"" },

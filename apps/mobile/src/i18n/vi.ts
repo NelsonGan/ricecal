@@ -1332,6 +1332,11 @@ export const vi = {
       lifetimeDetail: 'Trả một lần, của bạn mãi mãi',
     },
 
+    proof: {
+      usersChoice: 'Người dùng tin chọn',
+      rated: 'Đánh giá {{rating}} trên 5',
+    },
+
     hard: {
       choosePlan: 'Chọn gói của bạn',
       assurance: 'Không ràng buộc, huỷ bất cứ lúc nào',

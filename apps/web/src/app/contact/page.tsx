@@ -46,10 +46,10 @@ export default function Contact() {
         <div className="mx-auto max-w-3xl px-5 sm:px-6">
           <div className="text-center">
             <Image
-              src="/mascot-192.png"
+              src="/rice-bowl-224.png"
               alt=""
-              width={192}
-              height={192}
+              width={224}
+              height={224}
               className="bob mx-auto h-20 w-20"
             />
             <h1 className="mt-4 text-[34px] sm:text-[44px]">Talk to us</h1>

@@ -38,7 +38,7 @@ const tr: LocaleModule = {
     panel: {
       title: "Asya yemekleri için\nbeş yol",
       sub: "Sokak lezzetleri, ev yemeği, marketten paketli.",
-      stats: { usersChoice: '2K kullanıcının tercihi' },
+      stats: { usersChoice: '5K kullanıcının tercihi' },
       metrics: { calories: "Kalori", water: "Su", weight: "Kilo" },
       snap    : { t: "Tabağın fotoğrafını çek", b: "Tabaktaki her yemek adlandırılır, ölçülür ve sayılır." },
       describe: { t: "Ne yediğini söyle", b: "\"Kızarmış tavuklu nasi lemak ve bir teh tarik.\"" },

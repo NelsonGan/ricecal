@@ -38,7 +38,7 @@ const pl: LocaleModule = {
     panel: {
       title: "Pięć sposobów na\nkuchnię azjatycką",
       sub: "Kuchnia uliczna, domowe gotowanie, paczki ze sklepu.",
-      stats: { usersChoice: 'Wybór 2K użytkowników' },
+      stats: { usersChoice: 'Wybór 5K użytkowników' },
       metrics: { calories: "Kalorie", water: "Woda", weight: "Waga" },
       snap    : { t: "Zrób zdjęcie talerza", b: "Każde danie zostaje nazwane, zmierzone i policzone." },
       describe: { t: "Powiedz, co zjadłeś", b: "„Nasi lemak ze smażonym kurczakiem i teh tarik.\"" },

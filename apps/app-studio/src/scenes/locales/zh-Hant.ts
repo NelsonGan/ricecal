@@ -19,7 +19,7 @@ const zhHant: LocaleModule = {
     recipes: { h: '做一次，\n以後一點就好', hl: '以後一點就好', sub: '寫清用了什麼、夠幾個人吃。之後一點即可。' },
     panel: {
       title: '五種方式\n記亞洲菜', sub: '小販攤、家常菜，還有店裡的包裝食品。',
-      stats: { usersChoice: '2K 用戶之選' },
+      stats: { usersChoice: '5K 用戶之選' },
       metrics: { calories: '熱量', water: '喝水', weight: '體重' },
       snap: { t: '拍一張盤子', b: '盤裡每道菜都被認出、估量並算清。' },
       describe: { t: '說出你吃了什麼', b: '「椰漿飯配炸雞，再一杯拉茶。」' },

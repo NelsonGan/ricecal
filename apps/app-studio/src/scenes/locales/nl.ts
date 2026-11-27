@@ -38,7 +38,7 @@ const nl: LocaleModule = {
     panel: {
       title: "Vijf manieren voor\nAziatisch eten",
       sub: "Straatkeuken, thuis gekookt, pakjes uit de winkel.",
-      stats: { usersChoice: 'De keuze van 2K gebruikers' },
+      stats: { usersChoice: 'De keuze van 5K gebruikers' },
       metrics: { calories: "Calorieën", water: "Water", weight: "Gewicht" },
       snap    : { t: "Fotografeer je bord", b: "Elk gerecht erop krijgt een naam, een portie en een telling." },
       describe: { t: "Zeg wat je gegeten hebt", b: "\"Nasi lemak met gebakken kip en een teh tarik.\"" },

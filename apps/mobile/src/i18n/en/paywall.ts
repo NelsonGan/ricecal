@@ -31,6 +31,17 @@ export const paywall = {
     lifetimeDetail: 'One payment, yours for good',
   },
 
+  /**
+   * The laurels between the plans and the comparison. The figures themselves
+   * (4.8, 5K) are not copy; they live in `features/paywall/reviews.ts`.
+   */
+  proof: {
+    /** Under "5K" in the second laurel. Kept short: it shares a laurel with the figure. */
+    usersChoice: "Users' choice",
+    /** What a screen reader says for a row of stars. */
+    rated: 'Rated {{rating}} out of 5',
+  },
+
   hard: {
     choosePlan: 'Choose your plan',
     assurance: 'No commitment, cancel any time',

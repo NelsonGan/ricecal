@@ -38,7 +38,7 @@ const ja: LocaleModule = {
     panel: {
       title: "アジアの料理を\n記録する五通り",
       sub: "屋台の料理も、家の料理も、店の袋菓子も。",
-      stats: { usersChoice: '2K人のユーザーが選ぶ' },
+      stats: { usersChoice: '5K人のユーザーが選ぶ' },
       metrics: { calories: "カロリー", water: "水分", weight: "体重" },
       snap    : { t: "皿を撮る", b: "皿の上の料理を一品ずつ、名前と量とカロリーに。" },
       describe: { t: "食べたものを言う", b: "「鮭おにぎりと味噌汁」" },

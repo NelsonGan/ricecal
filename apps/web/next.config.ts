@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
    * That makes the export size load-bearing. `icon.png` is 1024px for the
    * manifest and the JSON-LD, and an optimizer had been hiding the fact that
    * the header drew the same file at 25px — a quarter of a megabyte per
-   * request. Hence the sized copies: `icon-128.png` and `mascot-192.png` for
+   * request. Hence the sized copies: `icon-128.png` and `rice-bowl-224.png` for
    * where they are drawn, the originals for the machines that want the big
    * one. Adding a picture means exporting it at its display size.
    */

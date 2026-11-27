@@ -1351,6 +1351,11 @@ export const fil = {
       lifetimeDetail: 'Isang bayad, sa iyo habambuhay',
     },
 
+    proof: {
+      usersChoice: 'Pinili ng mga gumagamit',
+      rated: 'Rating na {{rating}} sa 5',
+    },
+
     hard: {
       choosePlan: 'Piliin ang iyong plano',
       assurance: 'Walang commitment, kanselahin anumang oras',

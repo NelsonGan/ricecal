@@ -7143,6 +7143,19 @@ answered, shows no timeline at all. This is the pattern Blinkist made standard:
 the charge people dispute is the one they did not see coming, and saying when it
 lands is what makes starting the trial feel safe.
 
+**Between the plans and the comparison, what other people thought.**
+`PaywallSocialProof` (`src/features/paywall/SocialProof.tsx`) draws the store
+rating and user count in kaya laurels, then real App Store reviews in a
+carousel that moves on every five seconds, unless the reader asked for less
+motion, and loops without a rewind (the list is tripled and the reader kept in
+the middle copy, as Money2Time's paywall does). It sits first in `ProDetails`,
+so on iPhone Duo it opens the pane beside the plans. The figures and quotes
+are in `reviews.ts`: the quotes stay in English in every language, since a
+review is quoted as it was written, and the website and the App Studio's brand
+panel show the same two figures, so the three change together. The laurel is
+the website's, rasterised to `assets/paywall/laurel.png` and tinted, because
+the app has no SVG renderer.
+
 **The reminder is a promise, so the app keeps it.** `useTrialReminderSync`
 (mounted with the tabs) books one local notification, `trial-reminder`, from the
 store's receipt rather than from the purchase button: the trial's real end,
@@ -9613,26 +9626,32 @@ to correct when a screen changes.
   region, so it names the region's food and leaves each market's own words
   to that market's page — and to the dish marquee, which localises itself.
 
-#### App Store reviews
+#### Store reviews
 
 `src/components/home/reviews.tsx` draws the Money2Time-style laurel badges and
 review wall before "Counted across Asia" on `/` and every `/{code}`. The cards
 use RiceCal's existing surface, type and dark-mode tokens. The header links to
 `/#reviews`.
 
-The five selected reviews in `reviews-data.ts` were read from Apple's public
-Singapore and Malaysia customer-review feeds on 2 October 2026. Bodies are
-excerpts in the reviewers' own words, with light punctuation and grammar edits.
-Each card is labelled as an excerpt. Titles keep their original wording with
-capitalisation tidied; reviewer names, individual stars and dates are preserved.
-Each card links to its source storefront and shows that country's flag. Apple's
-review IDs stay in the data for checking the originals. The reviews are baked
-in, so a visit makes no new request to Apple.
+The eight selected reviews in `reviews-data.ts` were read on 27 November 2026:
+the App Store's through App Store Connect (`asc reviews list --app
+6795558595`, which sees every storefront, where Apple's public RSS feed had
+gone empty), Google Play's from the listing (the Play API returns only the
+last week's reviews). Bodies are the reviewers' own words with light
+punctuation and grammar edits and emoji dropped. Each card is labelled as an
+excerpt. App Store titles keep their original wording with capitalisation
+tidied; Play reviews have no title. Reviewer names, individual stars and dates
+(the review's UTC day) are preserved. An App Store card links to its source
+storefront and shows that country's flag; a Play card links to the Play
+listing. The store's review IDs stay in the data for checking the originals.
+The reviews are baked in, so a visit makes no new request to either store.
 
-The **2K users** figure and **4.5 worldwide App Store rating** were supplied and
-confirmed by the owner on the same date. The worldwide rating is distinct from
-either storefront's average. Refresh these figures from App Store Connect when
-updating the snapshot; selected five-star reviews are not an overall rating.
+The **5K users** figure and **4.8 rating** were supplied by the owner on the
+same date. The 4.8 is the Google Play listing's rating that day; the App Store's
+was 4.5 across 37 ratings. The app's paywall (`src/features/paywall/reviews.ts`)
+and the App Studio's brand panel show the same two figures, so change all three
+together, and reconfirm both with the owner when refreshing the snapshot.
+Selected five-star reviews are not an overall rating.
 The section adds no `aggregateRating` structured data.
 
 ### Country pages, and how the SEO is arranged
@@ -9840,8 +9859,8 @@ in the dark section comes out dark green on dark. Keep element defaults inside
   hard-codes a price (it takes the store's own localised `priceString`), a
   marketing page cannot, so the snapshot has to be re-read by hand.
 - The reviews snapshot in `src/components/home/reviews-data.ts`, and the user
-  count and worldwide rating beside it. Refresh them together from the App
-  Store feeds and App Store Connect.
+  count and rating beside it. Refresh them together from App Store Connect and
+  the Play listing, with the paywall's and the App Studio's copies.
 - `LEGAL_LAST_UPDATED`: bump it whenever a legal page changes.
 - `src/lib/catalogue.ts` and `src/lib/catalogue-static.ts` when the catalogue
   changes: rerun `node scripts/catalogue.mjs` from `apps/web`.
@@ -9899,7 +9918,7 @@ same way before recording its checksum: `oxipng -o 4 --nc --strip safe <file>`.
 
 | View            | Dimensions  | Count      | Locales |
 | --------------- | ----------- | ---------- | ------- |
-| iPhone 6.9"     | 1290 × 2796 | 6 scenes   | all 26  |
+| iPhone 6.9"     | 1290 × 2796 | 7 scenes   | all 26  |
 | iPhone Duo      | 2853 × 2007 | 6 scenes   | all 26  |
 | App Store Header | 3840 × 1646 | 1          | all 26  |
 | Search Results   | 1920 × 1280 MP4 | 1          | all 26  |
@@ -9961,13 +9980,22 @@ images or incomplete scene sets report an error instead of creating a partial ZI
 English is the source. Existing gallery copy lives in `src/scenes/locales/en.ts`.
 Header and search messages have separate localized copy in
 `src/scenes/appStoreCopy.ts`. The first gallery frame now names the category:
-a calorie diary for Asian food. The opening sequence shows Today, the workout
-logger and portion details, followed by Feed, saved foods and trends. The iPad
-gallery puts the workout second too. Numbered export filenames preserve that
-order when the store uploader sorts the files. Neither gallery has a frame for
-describing a meal in words or for exercise added to the day.
-Every frame uses a real app screen; the old five-feature/rating panel is no
-longer included in the gallery.
+a calorie diary for Asian food. The opening sequence shows Today, the brand
+panel and the workout logger, followed by portion details, Feed, saved foods
+and trends. The iPhone Duo and iPad galleries have no brand panel and put the
+workout second. Numbered export filenames preserve that order when the store
+uploader sorts the files. Neither gallery has a frame for describing a meal
+in words or for exercise added to the day.
+
+The brand panel (scene 02, [`BrandPanel`](apps/app-studio/src/components/BrandPanel.tsx))
+is the one frame without a phone, laid out like Money2Time's second frame: the
+headline beside the app's rice bowl, the store rating and user count in
+laurels, and a card for each of the five ways to log. The two figures are
+`SOCIAL_PROOF` in `decorations.tsx`; the website's reviews section and the
+app's paywall show the same ones, so change all three together. The user
+count's label is translated (`panel.stats.usersChoice`) with the number inside
+it, so each language keeps its own word order. RiceCal has no mascot; do not
+bring one into a frame.
 
 Price and trial length are absent: the store prints both on the same page,
 and a listing that repeats them is wrong the day either changes.
@@ -10002,13 +10030,13 @@ device. The landing card does keep a supporting line, and `useFitLines` caps it
 at two. All of it is checked across the 26 frame languages
 before a copy change ships.
 
-Every phone sits at the same crop, so the six read as one set.
+Every phone sits at the same crop, so the six phone frames read as one set.
 
 Scenes 01 to 03 share one continuous 3870 × 2796 panorama cut into three
 panels ([`src/components/triptych.tsx`](apps/app-studio/src/components/triptych.tsx)), so the
 wash and the pandan blades line up across the cuts when the three sit side by
 side in a store gallery. Each opening frame works independently: Today, the
-workout logger and meal details.
+brand panel and the workout logger.
 
 ### App Store header and search creative
 

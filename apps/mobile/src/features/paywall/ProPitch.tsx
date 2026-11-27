@@ -6,6 +6,7 @@ import { PlanPicker } from '@/features/shared'
 import { Text } from '@/ui'
 import { PlanTable } from './PlanTable'
 import { PurchaseTerms } from './PurchaseTerms'
+import { PaywallSocialProof } from './SocialProof'
 import { TrialTimeline } from './TrialTimeline'
 
 export type ProPitchProps = {
@@ -56,6 +57,11 @@ export function ProDetails({
 }: Pick<ProPitchProps, 'onRestore' | 'disabled'>) {
   return (
     <>
+      {/* The rating and real reviews, read on the way from the plans to the
+          comparison. First in this pane, so on iPhone Duo it opens the pane
+          beside the plans rather than following the long table. */}
+      <PaywallSocialProof />
+
       {/* What each tier gets, side by side. A reader whose barcode scanner
           already works needs to know which lines actually change with Pro. */}
       <View className="mt-md">

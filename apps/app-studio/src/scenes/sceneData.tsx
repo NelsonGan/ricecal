@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { BrandPanel } from '../components/BrandPanel';
 import { Blob, Pandan, Grains } from '../components/flora';
 import { C } from '../components/tokens';
 import { PHONE_STRINGS, screenshotLocale } from './locales';
@@ -41,6 +42,16 @@ function FloraTrends() {
       <Blob x={-190} y={620} size={460} color={C.water} opacity={0.14} rotate={18} />
       <Pandan x={1000} y={1500} size={420} color={C.pandanSoftLine} opacity={0.85} rotate={20} flip />
       <Grains x={-40} y={1240} size={190} color={C.waterSoftLine} opacity={0.95} rotate={26} />
+    </>
+  );
+}
+
+function FloraDish() {
+  return (
+    <>
+      <Blob x={-200} y={520} size={450} color={C.kaya} opacity={0.12} rotate={-12} />
+      <Pandan x={-170} y={1500} size={440} color={C.pandanSoftLine} opacity={0.85} rotate={-20} />
+      <Grains x={1070} y={1260} size={190} color={C.kayaSoftLine} opacity={0.95} rotate={-14} />
     </>
   );
 }
@@ -94,35 +105,48 @@ export function getScenes(locale: string): SceneConfig[] {
       panorama: { panel: 0 },
     },
 
-    /* ── TRIPTYCH 2/3 — WORKOUT ──────────────────────────────────────────────
+    /* ── TRIPTYCH 2/3 — BRAND PANEL ──────────────────────────────────────────
+       The one frame without a phone, as Money2Time's second frame is: the
+       store rating and user count, then the five ways to log. It draws its
+       own header, so the scene has no headline. */
+    {
+      id: '02-panel',
+      headline: '',
+      screenshot: '',
+      ...base,
+      decorations: <BrandPanel t={t.panel} />,
+      panorama: { panel: 1 },
+    },
+
+    /* ── TRIPTYCH 3/3 — WORKOUT ──────────────────────────────────────────────
        The logger part way through a session: last time's numbers beside each
        set, a record already marked, and the watch's heart rate in the strip. */
     {
-      id: '02-workout',
+      id: '03-workout',
       headline: t.workout.h,
       highlight: t.workout.hl,
       screenshot: `${basePath}/02-workout.png`,
       ...base,
       accentColor: C.waterSlab,
       gradientTo: C.waterSoft,
-      panorama: { panel: 1 },
+      panorama: { panel: 2 },
     },
 
-    /* ── TRIPTYCH 3/3 — PORTION DETAILS ───────────────────────────────────── */
+    /* ── 04 — PORTION DETAILS ─────────────────────────────────────────────── */
     {
-      id: '03-dish',
+      id: '04-dish',
       headline: t.dish.h,
       highlight: t.dish.hl,
       screenshot: `${basePath}/03-dish.png`,
       ...base,
       accentColor: C.pandanSlab,
       gradientTo: C.kayaSoft,
-      panorama: { panel: 2 },
+      decorations: <FloraDish />,
     },
 
-    /* ── 04 — FEED ────────────────────────────────────────────────────────── */
+    /* ── 05 — FEED ────────────────────────────────────────────────────────── */
     {
-      id: '04-feed',
+      id: '05-feed',
       headline: t.feed.h,
       highlight: t.feed.hl,
       screenshot: `${basePath}/05-feed.png`,
@@ -132,9 +156,9 @@ export function getScenes(locale: string): SceneConfig[] {
       decorations: <FloraFeed />,
     },
 
-    /* ── 05 — RECIPES ─────────────────────────────────────────────────────── */
+    /* ── 06 — RECIPES ─────────────────────────────────────────────────────── */
     {
-      id: '05-recipes',
+      id: '06-recipes',
       headline: t.recipes.h,
       highlight: t.recipes.hl,
       screenshot: `${basePath}/06-recipes.png`,
@@ -144,9 +168,9 @@ export function getScenes(locale: string): SceneConfig[] {
       decorations: <FloraRecipes />,
     },
 
-    /* ── 06 — TRENDS ──────────────────────────────────────────────────────── */
+    /* ── 07 — TRENDS ──────────────────────────────────────────────────────── */
     {
-      id: '06-trends',
+      id: '07-trends',
       headline: t.trends.h,
       highlight: t.trends.hl,
       screenshot: `${basePath}/04-trends.png`,

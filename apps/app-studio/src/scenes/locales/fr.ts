@@ -38,7 +38,7 @@ const fr: LocaleModule = {
     panel: {
       title: "Cinq façons pour\nla cuisine asiatique",
       sub: "Cuisine de rue, plats maison, paquets du magasin.",
-      stats: { usersChoice: 'Le choix de 2K utilisateurs' },
+      stats: { usersChoice: 'Le choix de 5K utilisateurs' },
       metrics: { calories: "Calories", water: "Eau", weight: "Poids" },
       snap    : { t: "Photographiez l’assiette", b: "Chaque plat est nommé, mesuré et compté." },
       describe: { t: "Dites ce que vous avez mangé", b: "« Nasi lemak avec du poulet frit et un teh tarik. »" },

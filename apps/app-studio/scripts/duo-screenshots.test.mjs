@@ -21,10 +21,11 @@ test('the iPhone Duo scenes export at the open display size, from their own capt
   // The Duo gallery takes that default; only the iPad passes its own folder.
   const page = await read('../src/app/page.tsx');
   assert.match(page, /getDuoScenes\(locale\);/);
-  // The gallery's order matches the iPhone set's, scene for scene.
+  // The gallery's order matches the iPhone set's, scene for scene, except the
+  // iPhone's brand panel: it is drawn for a portrait canvas and the Duo has none.
   const phone = await read('../src/scenes/sceneData.tsx');
-  const ids = (source) => [...source.matchAll(/^\s+id: '([^']+)'/gm)].map((m) => m[1]);
-  assert.deepEqual(ids(scenes), ids(phone));
+  const names = (source) => [...source.matchAll(/^\s+id: '\d+-([^']+)'/gm)].map((m) => m[1]);
+  assert.deepEqual(names(scenes), names(phone).filter((name) => name !== 'panel'));
 });
 
 test('the upload modal offers iPhone Duo to the App Store only', async () => {

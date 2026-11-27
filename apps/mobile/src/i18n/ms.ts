@@ -1352,6 +1352,11 @@ export const ms = {
       lifetimeDetail: 'Satu bayaran, milik anda selamanya',
     },
 
+    proof: {
+      usersChoice: 'Pilihan pengguna',
+      rated: 'Penilaian {{rating}} daripada 5',
+    },
+
     hard: {
       choosePlan: 'Pilih pelan anda',
       assurance: 'Tiada komitmen, batal bila-bila masa',
