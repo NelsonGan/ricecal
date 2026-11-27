@@ -28,6 +28,7 @@ const clearedUserProperties: Record<Exclude<keyof PersonProps, 'email'> | keyof 
     health_provider: null,
     meal_reminders: null,
     widgets_installed: null,
+    scan_experiment: null,
     entitled: null,
   }
 

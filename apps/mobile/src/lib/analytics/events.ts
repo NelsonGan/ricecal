@@ -663,6 +663,13 @@ export type PersonProps = {
    * Written whenever the app comes forward and the set has changed.
    */
   widgets_installed?: number
+  /**
+   * The free-scan experiment's arm: `two` gets two free scans a day, `control`
+   * keeps three. Absent for accounts made outside the enrolment window. Decided
+   * by the server (`scan_experiment_arm`) and never changes, so it is sent once
+   * per account and install. This is the breakdown the experiment is read by.
+   */
+  scan_experiment?: 'two' | 'control'
 }
 
 /**

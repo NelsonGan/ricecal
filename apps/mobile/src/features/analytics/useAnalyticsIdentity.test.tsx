@@ -7,6 +7,7 @@ const mockAccount = {
   profile: { onboarded_at: '2026-09-01', activity_level: 'light', referral_source: 'friend' },
   reminders: [{ reminder_enabled: true }],
   entitlement: { entitled: true, loading: false, unknown: false },
+  arm: null as 'two' | 'control' | null,
 }
 
 jest.mock('@/data', () => ({
@@ -14,6 +15,9 @@ jest.mock('@/data', () => ({
   useProfile: () => ({ data: mockAccount.profile }),
   useMealTimes: () => ({ data: mockAccount.reminders }),
   useEntitlement: () => mockAccount.entitlement,
+  useScanExperiment: () => ({
+    data: { arm: mockAccount.arm, freeDailyScans: mockAccount.arm === 'two' ? 2 : 3 },
+  }),
   fromDbActivity: (value: string) => value,
 }))
 jest.mock('@/lib/analytics', () => ({ setPersonProps: jest.fn(), setSuperProps: jest.fn() }))
@@ -27,6 +31,22 @@ beforeEach(() => {
   jest.clearAllMocks()
   mockAccount.userId = 'first'
   mockAccount.entitlement = { entitled: true, loading: false, unknown: false }
+  mockAccount.arm = null
+})
+
+it('files the free-scan arm once, and nothing outside the experiment', async () => {
+  const view = await render(<Probe />)
+  expect(setPersonProps).not.toHaveBeenCalledWith(
+    expect.objectContaining({ scan_experiment: expect.anything() }),
+  )
+
+  mockAccount.arm = 'two'
+  await view.rerender(<Probe />)
+  await view.rerender(<Probe />)
+  const sent = (setPersonProps as jest.Mock).mock.calls.filter(
+    ([props]) => 'scan_experiment' in props,
+  )
+  expect(sent).toEqual([[{ scan_experiment: 'two' }]])
 })
 
 it('writes profile, reminders and known entitlement for a new account with identical answers', async () => {

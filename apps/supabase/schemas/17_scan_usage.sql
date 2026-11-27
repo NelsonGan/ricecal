@@ -98,6 +98,92 @@ revoke execute on function public.pro_daily_scans from public, anon;
 grant execute on function public.pro_daily_scans to authenticated, service_role;
 
 -- ---------------------------------------------------------------------------
+-- The free-scan experiment: does a free allowance of two scans a day sell more
+-- Pro than three, and what does it cost in people who stay?
+--
+-- Accounts created inside the enrolment window are split in half, and the half
+-- in `two` gets two free scans a day. Everyone else, inside the window or not,
+-- keeps three. An account's arm never changes: it follows from when the account
+-- was made and from its id, both fixed, so nothing is written and nothing can
+-- drift.
+--
+-- Decided here rather than by a feature flag on the phone, because this is the
+-- number `claim_scan` enforces. A flag read on the phone is not known to the
+-- server, is not read at all by the builds already in the stores, and is not
+-- loaded yet on the first launch, which is when a new account scans first.
+--
+-- The split is the parity of the id's last hex digit. GoTrue's ids are random,
+-- so it halves the window's accounts, and anyone holding an id can repeat it:
+-- PostHog's distinct id and RevenueCat's app user id are both this uuid, so a
+-- report can be split by arm without the app having said anything.
+--
+-- To end the experiment, change this function: return null for everyone to put
+-- the `two` arm back on three, or keep the arms and move the window's end.
+-- ---------------------------------------------------------------------------
+create or replace function public.scan_experiment_arm(p_user uuid)
+returns text
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case
+    when u.created_at <  timestamptz '2026-12-01 00:00:00+08'
+      or u.created_at >= timestamptz '2027-02-01 00:00:00+08'
+      then null
+    when right(u.id::text, 1) in ('0', '2', '4', '6', '8', 'a', 'c', 'e')
+      then 'two'
+    else 'control'
+  end
+  from auth.users u
+  where u.id = p_user;
+$$;
+
+-- Takes a uuid, so not for the client: `scan_experiment()` below answers for
+-- the caller alone.
+revoke execute on function public.scan_experiment_arm from public, anon, authenticated;
+grant execute on function public.scan_experiment_arm to service_role;
+
+-- The free ceiling for one account: three, or two in the experiment's `two` arm.
+create or replace function public.free_daily_scans_for(p_user uuid)
+returns integer
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case
+    when public.scan_experiment_arm(p_user) = 'two' then 2
+    else public.free_daily_scans()
+  end;
+$$;
+
+revoke execute on function public.free_daily_scans_for from public, anon, authenticated;
+grant execute on function public.free_daily_scans_for to service_role;
+
+-- The caller's arm and free ceiling, for the copy that states the ceiling
+-- before anything is refused (the plan table, the subscription screen) and for
+-- the analytics that split reports by arm. `arm` is null outside the
+-- experiment. One row always, like `scan_usage_today`.
+create or replace function public.scan_experiment()
+returns table (
+  arm              text,
+  free_daily_scans integer
+)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    public.scan_experiment_arm((select auth.uid())),
+    public.free_daily_scans_for((select auth.uid()));
+$$;
+
+revoke execute on function public.scan_experiment from public, anon;
+grant execute on function public.scan_experiment to authenticated, service_role;
+
+-- ---------------------------------------------------------------------------
 -- Which ceiling applies to this account.
 -- ---------------------------------------------------------------------------
 create or replace function public.scan_daily_limit(p_user uuid)
@@ -109,7 +195,7 @@ set search_path = ''
 as $$
   select case
     when public.is_entitled(p_user) then public.pro_daily_scans()
-    else public.free_daily_scans()
+    else public.free_daily_scans_for(p_user)
   end;
 $$;
 
@@ -155,7 +241,7 @@ declare
   v_entitled boolean := public.is_entitled(p_user);
   v_limit    integer := case
                           when v_entitled then public.pro_daily_scans()
-                          else public.free_daily_scans()
+                          else public.free_daily_scans_for(p_user)
                         end;
   v_date     date    := public.local_today(p_user);
   v_used     integer;

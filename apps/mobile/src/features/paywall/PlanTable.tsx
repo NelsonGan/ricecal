@@ -1,5 +1,4 @@
 import {
-  FREE_DAILY_SCANS,
   FREE_GROUPS,
   FREE_PHOTO_RETENTION_DAYS,
   FREE_RECIPES,
@@ -9,6 +8,7 @@ import {
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 
+import { useFreeDailyScans } from '@/data'
 import { useThemeColors } from '@/theme/useTheme'
 import { Card, Divider, Icon, Text } from '@/ui'
 
@@ -65,6 +65,9 @@ const COLUMN = 78
 export function PlanTable() {
   const { t } = useTranslation('paywall')
   const colors = useThemeColors()
+  // The server's figure: two for an account in the free-scan experiment's
+  // `two` arm, three for everyone else.
+  const freeDailyScans = useFreeDailyScans()
 
   /**
    * Handed to every row, whether or not its copy has a slot for them.
@@ -74,7 +77,7 @@ export function PlanTable() {
    * getting it wrong is a cell reading "{{scans}} a day" on a paywall.
    */
   const limits = {
-    scans: FREE_DAILY_SCANS,
+    scans: freeDailyScans,
     recipes: FREE_RECIPES,
     imports: FREE_VIDEO_IMPORTS,
     routines: FREE_ROUTINES,

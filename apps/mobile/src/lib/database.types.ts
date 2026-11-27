@@ -3899,6 +3899,7 @@ export type Database = {
       }
       forget_push_tokens: { Args: { p_tokens: string[] }; Returns: undefined }
       free_daily_scans: { Args: never; Returns: number }
+      free_daily_scans_for: { Args: { p_user: string }; Returns: number }
       free_group_icons: { Args: never; Returns: string[] }
       free_group_limit: { Args: never; Returns: number }
       free_monthly_imports: { Args: never; Returns: number }
@@ -4398,6 +4399,14 @@ export type Database = {
       save_workout: { Args: { p_workout: Json }; Returns: string }
       save_workout_heart_rate: { Args: { p_trace: Json }; Returns: string }
       scan_daily_limit: { Args: { p_user: string }; Returns: number }
+      scan_experiment: {
+        Args: never
+        Returns: {
+          arm: string
+          free_daily_scans: number
+        }[]
+      }
+      scan_experiment_arm: { Args: { p_user: string }; Returns: string }
       scan_usage_today: {
         Args: never
         Returns: {

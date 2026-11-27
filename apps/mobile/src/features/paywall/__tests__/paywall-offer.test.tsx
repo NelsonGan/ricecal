@@ -34,6 +34,7 @@ jest.mock('expo-router', () => ({
 jest.mock('@/data', () => ({
   useAwaitEntitlement: () => mockAwaitEntitlement,
   usePlanPrices: () => ({ data: mockPrices }),
+  useFreeDailyScans: () => 3,
 }))
 
 jest.mock('@/data/purchases', () => ({

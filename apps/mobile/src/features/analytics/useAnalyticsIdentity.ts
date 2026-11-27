@@ -1,6 +1,13 @@
 import { useEffect, useRef } from 'react'
 
-import { fromDbActivity, useEntitlement, useMealTimes, useProfile, useSession } from '@/data'
+import {
+  fromDbActivity,
+  useEntitlement,
+  useMealTimes,
+  useProfile,
+  useScanExperiment,
+  useSession,
+} from '@/data'
 import { setPersonProps, setSuperProps } from '@/lib/analytics'
 
 /**
@@ -24,6 +31,7 @@ export function useAnalyticsIdentity(): void {
   const { data: profile } = useProfile()
   const { data: mealTimes } = useMealTimes()
   const { entitled, loading, unknown } = useEntitlement()
+  const { data: experiment } = useScanExperiment()
 
   /**
    * What was last sent, so an unchanged profile refetching does not resend it.
@@ -77,6 +85,22 @@ export function useAnalyticsIdentity(): void {
     lastReminders.current = signature
     setPersonProps({ meal_reminders: count })
   }, [mealTimes, userId])
+
+  /**
+   * The free-scan experiment's arm, the cut its report is read by. Nothing is
+   * sent outside the experiment, so the property means "enrolled" wherever it
+   * is set.
+   */
+  const lastArm = useRef<string | undefined>(undefined)
+  const arm = experiment?.arm
+
+  useEffect(() => {
+    if (!userId || !arm) return
+    const signature = JSON.stringify([userId, arm])
+    if (lastArm.current === signature) return
+    lastArm.current = signature
+    setPersonProps({ scan_experiment: arm })
+  }, [arm, userId])
 
   /**
    * The one super property, stamped on every event from here on.

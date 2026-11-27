@@ -7133,7 +7133,7 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 
 | | Free | Pro |
 |---|---|---|
-| photographed plate | 3 a day | 100 a day, sold as unlimited |
+| photographed plate | 3 a day (2 for the free-scan experiment's `two` arm) | 100 a day, sold as unlimited |
 | barcode, search, quick add, logging a saved recipe | yes | yes |
 | a meal typed in words | no | yes |
 | a meal corrected in words | no | yes |
@@ -7151,7 +7151,8 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | budget, health sync, reminders, the whole catalogue | yes | yes |
 
 Six of those numbers live in `packages/shared` for the copy to interpolate,
-and all six are enforced in Postgres: `free_daily_scans()`,
+and all six are enforced in Postgres: `free_daily_scans()` (through
+`free_daily_scans_for(user)`, which applies the experiment below),
 `free_recipe_limit()`, `free_monthly_imports()`, `free_routine_limit()`,
 `free_group_limit()`, `free_photo_retention_days()`.
 A seventh,
@@ -7181,6 +7182,42 @@ One scan is one user-initiated pass at the model, claimed **once**, at the top
 of the endpoint, before the photo is read and before the first model call.
 `Meter` is still threaded down to `chatJSON` and still required, but it only
 counts: what it records is what a scan cost us.
+
+**The free-scan experiment: two scans a day against three.** Running out of
+scans is the paywall that sells best (8.8% of those who see it start a
+checkout, against 2.5% to 4.3% for the others, October and November 2026), so
+the question is whether a smaller allowance sells more Pro than it costs in
+people who stop logging. Accounts created from 1 December 2026 to 31 January
+2027 (Malaysia time) are split in half by the parity of their id's last hex
+digit: `two` gets two free scans a day, `control` keeps three. Everybody else
+keeps three.
+
+- **Postgres decides, not a feature flag.** `scan_experiment_arm(user)` is the
+  arm, `free_daily_scans_for(user)` the ceiling, and `claim_scan` and
+  `scan_usage_today` both read it, so the meter, the refusal and the limit
+  agree. A flag on the phone could not set a ceiling the server enforces, is
+  not read by the builds already in the stores, and has not loaded on the first
+  launch, when a new account first scans.
+- **Nothing is stored.** The arm follows from the account's creation time and
+  id, so it never changes and needs no write. Anyone holding the id can repeat
+  it: PostHog's distinct id and RevenueCat's app user id are the same uuid.
+- **The app is told** by `scan_experiment()`, which answers the caller's arm and
+  free ceiling. `useFreeDailyScans` puts the figure in the plan table and the
+  subscription screen; the refusal toast and the camera's meter already used
+  the server's. Builds before this one print three in the plan table whatever
+  the arm, but are refused at two.
+- **It is read** by the `scan_experiment` person property in PostHog (set only
+  for enrolled accounts) and, for money, by joining `subscriptions` to
+  `scan_experiment_arm` in SQL. Compare the arms on trial starts and paid
+  conversions (RevenueCat's events in PostHog), and on retention (`Daily App
+  Open` and meals logged in weeks 1 and 4). Between 1,000 and 1,900 accounts
+  a month were made from September to November 2026, so two months gives
+  roughly 1,000 to 1,700 an arm (the split put 49 to 52% of each of those
+  months in `two`). Trials run around 2 to 3% of new accounts, which is enough
+  to see a large effect on trials and not a small one.
+- **To end it**, edit `scan_experiment_arm`: return null for everybody to put
+  `two` back on three, or keep the arms and move the window. Either is a
+  migration, and accounts already in `two` keep two until it changes.
 
 ### The webhook
 
@@ -8744,6 +8781,7 @@ revenue owner.
 | `health_provider` | Person provider or null | GA4 string or null | Successful granted connection; null clears it on disconnect. Background imports are not connection decisions |
 | `meal_reminders` | Person count | GA4 user-property string | Number of enabled meal reminders; hook writes on mount, account change or changed count, not every refetch |
 | `widgets_installed` | Person count | GA4 user-property string | Current handset widget-kind count; first valid poll for each signed-in account and detected changes, including zero |
+| `scan_experiment` | Person `two` or `control` | GA4 user-property string; not sent to RevenueCat | `useAnalyticsIdentity`, from `scan_experiment()` (the server's arm). Sent once per account and install, only for accounts in the free-scan experiment, so its presence means enrolled. Firebase clears it at an account switch |
 | `entitled` | Super property on every custom event | GA4 user property | After a real entitlement answer for the current account; account switches clear the preceding answer. No false value while offline with unknown status |
 | `app_variant` | Super property | Not sent | Registered at client start and after every reset, from the build (`production`, `preview`, `simulator`, `development`) |
 | `revenuecat_revenue_enabled` | Not sent | Firebase default event parameter, 0 or 1 | Starts at 0; set to 1 only after HTTP 200 acknowledges this account's current installation attribute |
