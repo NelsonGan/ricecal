@@ -22,7 +22,7 @@ import {
   useGroupThread,
   useReadAsItArrives,
 } from '../groups'
-import { keys } from '../keys'
+import { invalidateGroupBoards, keys } from '../keys'
 
 const mockRpc = jest.fn()
 const mockInvoke = jest.fn()
@@ -456,6 +456,25 @@ describe('one thread, a page at a time', () => {
     await waitFor(() => expect(ids(client)?.[0]).toBe('m90'))
     expect(client.getQueryData<GroupThread>(messagesKey)?.more).toBe(false)
     expect(ids(client)).toHaveLength(THREAD_PAGE + 10)
+  })
+
+  it('reads once on coming back to a chat a meal edit marked stale while it was behind', async () => {
+    const { client, wrapper } = setup()
+    client.setQueryData(messagesKey, { messages: run(100, 3), more: false })
+    const { rerender } = await renderHook(
+      ({ shown }: { shown: boolean }) => useGroupThread('g1', true, shown),
+      { wrapper, initialProps: { shown: false } },
+    )
+    // Two portion taps on the meal opened from its card.
+    invalidateGroupBoards(client, 'viewer')
+    invalidateGroupBoards(client, 'viewer')
+    await act(async () => {})
+    expect(mockRpc).not.toHaveBeenCalled()
+
+    mockRpc.mockReturnValueOnce(response(run(100, 3)))
+    await rerender({ shown: true })
+    await waitFor(() => expect(mockRpc).toHaveBeenCalledTimes(1))
+    expect(client.getQueryState(messagesKey)?.isInvalidated).toBe(false)
   })
 })
 

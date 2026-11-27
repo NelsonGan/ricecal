@@ -139,6 +139,22 @@ describe('a meal written', () => {
     for (const query of [board, thread, bar, details]) query.stop()
   })
 
+  it('only marks a chat behind another screen stale, rather than rereading it per portion tap', async () => {
+    const { client } = setup()
+    // As `useGroupThread` marks a chat under the meal opened from its card.
+    const thread = watched(client, keys.groupsRead(USER, 'group_messages', { groupId: 'g' }), {
+      shown: false,
+    })
+
+    invalidateEatenTotals(client, USER)
+    invalidateEatenTotals(client, USER)
+    await settle()
+
+    expect(thread.fetches.count).toBe(0)
+    expect(thread.stale()).toBe(true)
+    thread.stop()
+  })
+
   it('marks the mounted Feed tab stale instead of refetching it', async () => {
     const { client } = setup()
     // As `useSocialFeed` marks a feed whose tab is behind another.

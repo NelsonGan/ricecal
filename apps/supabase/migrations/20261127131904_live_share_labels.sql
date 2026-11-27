@@ -4,8 +4,8 @@
 
 SET check_function_bodies = false;
 
-CREATE FUNCTION private.group_message_body (
-  p_message_id uuid
+CREATE OR REPLACE FUNCTION private.group_food_label (
+  p_post_id uuid
 )
   RETURNS text
   LANGUAGE sql
@@ -13,12 +13,58 @@ CREATE FUNCTION private.group_message_body (
   SECURITY DEFINER
   SET search_path TO ''
   AS $function$
-  select private.group_share_body(m.body,
-    case when m.post_id is not null then private.group_post_food(m.post_id) end,
-    case when m.workout_id is not null then private.group_workout(m.workout_id)
-         when m.activity_id is not null then private.group_activity(m.activity_id) end,
-    case when m.recipe_id is not null then private.group_recipe(m.recipe_id) end)
-  from public.group_messages m where m.id = p_message_id;
+  select private.group_share_label(private.group_post_food(p_post_id), null, null);
+$function$;
+
+CREATE FUNCTION private.group_message_body (
+  m        public.group_messages,
+  p_viewer uuid
+)
+  RETURNS text
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+  select private.group_share_body(m.body, c.food, c.workout, c.recipe)
+  from private.group_message_cards(m.post_id, m.workout_id, m.activity_id, m.recipe_id, p_viewer) c;
+$function$;
+
+CREATE FUNCTION private.group_message_cards (
+  p_post_id     uuid,
+  p_workout_id  uuid,
+  p_activity_id uuid,
+  p_recipe_id   uuid,
+  p_viewer      uuid
+)
+  RETURNS TABLE (
+    food    jsonb,
+    workout jsonb,
+    recipe  jsonb
+  )
+  LANGUAGE sql
+  STABLE
+  SET search_path TO ''
+  AS $function$
+  select
+    case when p_post_id is not null then private.group_post_food(p_post_id) end,
+    case when p_workout_id is not null then private.group_workout(p_workout_id)
+         when p_activity_id is not null then private.group_activity(p_activity_id) end,
+    case when p_recipe_id is not null and not exists (
+        select 1 from public.recipe_reports x where x.recipe_id = p_recipe_id and x.reporter_id = p_viewer)
+      then private.group_recipe(p_recipe_id) end;
+$function$;
+
+CREATE OR REPLACE FUNCTION private.group_recipe_label (
+  p_recipe_id uuid
+)
+  RETURNS text
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+  select private.group_share_label(null, null, private.group_recipe(p_recipe_id));
 $function$;
 
 CREATE FUNCTION private.group_share_body (
@@ -32,12 +78,25 @@ CREATE FUNCTION private.group_share_body (
   IMMUTABLE
   SET search_path TO ''
   AS $function$
-  select case when p_body ~ ' \(\d+ (kcal|min)\)$' then coalesce(
-      left(p_food ->> 'name', 160) || ' (' || round((p_food ->> 'kcal')::numeric)::text || ' kcal)',
-      private.group_workout_label(p_workout),
-      left(p_recipe ->> 'name', 160) || ' (' || (p_recipe ->> 'kcal') || ' kcal)',
-      p_body)
+  select case when p_body ~ ' \(\d+ (kcal|min)\)$'
+    then coalesce(private.group_share_label(p_food, p_workout, p_recipe), p_body)
     else p_body end;
+$function$;
+
+CREATE FUNCTION private.group_share_label (
+  p_food    jsonb,
+  p_workout jsonb,
+  p_recipe  jsonb
+)
+  RETURNS text
+  LANGUAGE sql
+  IMMUTABLE
+  SET search_path TO ''
+  AS $function$
+  select coalesce(
+    left(p_food ->> 'name', 160) || ' (' || round((p_food ->> 'kcal')::numeric)::text || ' kcal)',
+    private.group_workout_label(p_workout),
+    left(p_recipe ->> 'name', 160) || ' (' || (p_recipe ->> 'kcal') || ' kcal)');
 $function$;
 
 CREATE OR REPLACE FUNCTION public.group_chat_summary (
@@ -63,7 +122,7 @@ begin
       limit 100) u),
     'last', (
       select jsonb_build_object('author', private.group_person(m.author_id),
-        'body', private.group_message_body(m.id))
+        'body', private.group_message_body(m, v_user))
       from public.group_messages m
       where m.group_id = p_group_id and not m.quarantined and m.event is null
         and not private.social_pair_blocked(m.author_id)
@@ -97,7 +156,7 @@ begin
       'created_at', m.created_at, 'mine', m.author_id = v_user,
       'reply_to', (
         select jsonb_build_object('id', r.id, 'author', private.group_person(r.author_id),
-          'body', private.group_message_body(r.id),
+          'body', private.group_message_body(r, v_user),
           'is_food', r.post_id is not null, 'is_workout', num_nonnulls(r.workout_id, r.activity_id) > 0,
           'is_recipe', r.recipe_id is not null)
         from public.group_messages r
@@ -110,11 +169,8 @@ begin
       'food', case when m.post_id is not null then c.food
         || coalesce(private.group_food_reactions(m.post_id, p_group_id, v_user), '{}'::jsonb) end,
       'workout', c.workout,
-      -- Not one the viewer reported: its link would answer nothing, and the
-      -- body still says what it was.
-      'recipe', case when not exists (
-          select 1 from public.recipe_reports x where x.recipe_id = m.recipe_id and x.reporter_id = v_user)
-        then c.recipe end,
+      -- Not one the viewer reported (private.group_message_cards).
+      'recipe', c.recipe,
       -- Only asked for by an app that draws them (`p_events`), so only ever
       -- present for one. A like or a dislike names the food and whose it is,
       -- read live, with the photo or drawing the board shows for it so the
@@ -159,11 +215,8 @@ begin
       order by m.created_at desc, m.id desc limit greatest(1, least(coalesce(p_limit, 50), 100))
     ) m
     -- Each shared thing read once, for its card and for the body it says now.
-    cross join lateral (select
-      case when m.post_id is not null then private.group_post_food(m.post_id) end as food,
-      case when m.workout_id is not null then private.group_workout(m.workout_id)
-           when m.activity_id is not null then private.group_activity(m.activity_id) end as workout,
-      case when m.recipe_id is not null then private.group_recipe(m.recipe_id) end as recipe) c
+    cross join lateral private.group_message_cards(m.post_id, m.workout_id, m.activity_id,
+      m.recipe_id, v_user) c
   ), '[]'::jsonb);
 end;
 $function$;
@@ -193,7 +246,7 @@ CREATE OR REPLACE FUNCTION public.group_update_digests (
     pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtext('group_update_digests'))::text, true);
 
   with copy as (
-    select m.user_id, s.group_id, s.author_id, s.id as message_id, s.body, s.created_at, m.chat_read_at,
+    select m.user_id, s.group_id, s.author_id, s.id as message_id, s.created_at, m.chat_read_at,
       m.updates_told_until, coalesce(s.post_id, s.workout_id, s.activity_id, s.id) as thing
     from public.group_messages s
     join public.group_members m on m.group_id = s.group_id and m.user_id <> s.author_id
@@ -241,7 +294,7 @@ CREATE OR REPLACE FUNCTION public.group_update_digests (
   ),
   -- The group of the newest pending share, and how many more it has.
   due as (
-    select n.user_id, n.group_id, n.author_id, n.message_id, n.body, n.created_at,
+    select n.user_id, n.group_id, n.author_id, n.message_id, n.created_at,
       (select count(*) from pending q where q.user_id = n.user_id and q.group_id = n.group_id)::integer - 1
         as more
     from (
@@ -264,8 +317,9 @@ CREATE OR REPLACE FUNCTION public.group_update_digests (
     coalesce(nullif(btrim(a.display_name), ''), a.handle),
     -- What the share says now: a portion corrected between the share and its
     -- push is pushed corrected, as its card already shows it.
-    coalesce(private.group_message_body(d.message_id), d.body), d.more
+    private.group_message_body(s, d.user_id), d.more
   from due d
+  join public.group_messages s on s.id = d.message_id
   join public.push_tokens t on t.user_id = d.user_id
   join public.groups g on g.id = d.group_id
   join public.profiles a on a.id = d.author_id
@@ -275,5 +329,5 @@ $function$;
 
 -- A diff carries the functions' bodies, not the revokes that shaped them
 -- (README, "Things a diff cannot see").
-revoke execute on function private.group_share_body, private.group_message_body
-  from public, anon, authenticated;
+revoke execute on function private.group_share_label, private.group_share_body,
+  private.group_message_cards, private.group_message_body from public, anon, authenticated;

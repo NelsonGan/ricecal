@@ -534,6 +534,8 @@ export function useDeleteRecipe() {
       // "not found" branch and unmount the sheet before `onDismiss` fires.
       queryClient.invalidateQueries({ queryKey: RECIPE_PREFIX, refetchType: 'none' })
       queryClient.invalidateQueries({ queryKey: RECIPE_INGREDIENTS_PREFIX, refetchType: 'none' })
+      // A chat that shared it drops its card for the message alone.
+      invalidateGroupBoards(queryClient, userId)
     },
   })
 }

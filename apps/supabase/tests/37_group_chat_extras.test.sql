@@ -262,7 +262,8 @@ select is((select e->'reply_to'->>'body' from jsonb_array_elements(public.group_
 reset role;
 select is((select body from public.group_messages where id = (select id from hand_share)),
   'Nasi lemak (640 kcal)', 'while the stored body keeps what was sent, for an older app');
-select is(private.group_message_body((select id from hand_share)), 'Nasi lemak (630 kcal)',
+select is((select private.group_message_body(m, :'ben') from public.group_messages m
+    where m.id = (select id from hand_share)), 'Nasi lemak (630 kcal)',
   'the chat bar and the update push read it as it is now');
 select is(private.group_share_body('look at this', '{"name": "Laksa", "kcal": 500}', null, null),
   'look at this', 'words sent with a share are never written over');
