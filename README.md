@@ -9289,7 +9289,9 @@ them:
 - **They are drawn for recipes only.** `ingredientIconFor` reads a recipe line:
   the recipe phrases laid over `icon-match.ts`'s `TABLE`, longest phrase first,
   then `iconFor` for anything they do not know (another script, a catalogue
-  name). It also reads some existing drawings differently, because a pot is not
+  name). Two phrases of the same length are settled by the name's own word
+  order, the later one winning, since an English name ends on what the thing
+  is: "dried chilli paste" is a paste, not dried chillies. It also reads some existing drawings differently, because a pot is not
   a plate: `rice` is the raw grain, `salt` the shaker, `water` a glass.
   `iconFor` itself is unchanged, so a scan, a barcode and the retention sweep
   draw what they drew before. Pointing the catalogue at the new drawings is a
@@ -9298,9 +9300,11 @@ them:
   out of `ICON_LIST`, which is paid for on every typed meal, and a raw
   ingredient is never what a plate should be drawn as.
 
-The app imports `ingredient-icons.ts` straight out of `apps/supabase` (mobile's
+The app loads `ingredient-icons.ts` straight out of `apps/supabase` (mobile's
 `tsconfig` allows the `.ts` extensions Deno needs), as the jobs Worker imports
-`icon-match.ts`, so there is one table. Adding a recipe drawing is the sheet,
+`icon-match.ts`, so there is one table. It is required on the first recipe line
+rather than at launch, and builds its phrase list on that first lookup, so a
+launch that never opens a recipe pays nothing for it. Adding a recipe drawing is the sheet,
 `sync-icons.mjs --registry-only`, and an entry in `INGREDIENT_DRAWINGS`;
 `ingredient-icons.test.ts` fails on a drawing no phrase reaches.
 

@@ -3,7 +3,7 @@
 import { assertEquals as eq } from 'jsr:@std/assert@1'
 import { iconFor } from './icon-match.ts'
 import { ICON_NAMES } from './icons.generated.ts'
-import { INGREDIENT_DRAWINGS, ingredientIconFor, RECIPE_TABLE } from './ingredient-icons.ts'
+import { INGREDIENT_DRAWINGS, ingredientIconFor, recipeTable } from './ingredient-icons.ts'
 
 const drawn = (name: string) => ingredientIconFor(name)?.name ?? null
 
@@ -15,7 +15,7 @@ Deno.test('every recipe drawing is a file in food, and every phrase names one', 
     if (!food.has(icon)) throw new Error(`${icon} is not in assets/icons/food`)
   }
   const known = new Set<string>(Object.values(ICON_NAMES).flat())
-  for (const [phrase, icon] of Object.entries(RECIPE_TABLE)) {
+  for (const [phrase, icon] of Object.entries(recipeTable())) {
     if (icon !== null && !known.has(icon)) throw new Error(`"${phrase}" -> "${icon}"`)
   }
 })
@@ -23,7 +23,7 @@ Deno.test('every recipe drawing is a file in food, and every phrase names one', 
 // Phrases are matched against a normalised name, so one with a capital, an
 // accent or punctuation in it could never match anything.
 Deno.test('every phrase is already in the form it is matched in', () => {
-  for (const phrase of Object.keys(RECIPE_TABLE)) {
+  for (const phrase of Object.keys(recipeTable())) {
     if (!/^[a-z0-9]+( [a-z0-9]+)*$/.test(phrase)) throw new Error(`"${phrase}" can never match`)
   }
 })
@@ -102,6 +102,34 @@ Deno.test('anything the recipe table does not know falls back to iconFor', () =>
   eq(drawn('Kellogg s Corn Flakes'), iconFor('Kellogg s Corn Flakes')?.name ?? null)
   eq(drawn('炒饭'), iconFor('炒饭')?.name ?? null)
   eq(drawn(''), null)
+})
+
+// Two phrases of the same words and length used to be settled by which was
+// written first in the table. The name's own word order settles it now.
+Deno.test('a tie goes to the phrase further along the name', () => {
+  eq(drawn('Dried chilli paste'), 'chilli-paste')
+  eq(drawn('Boneless chicken thighs'), 'chicken-thigh')
+})
+
+// Each of these drew something else before the review that added them.
+Deno.test('lines a catalogue phrase used to steal', () => {
+  eq(drawn('Wholegrain mustard'), 'mustard')
+  eq(drawn('Mee hoon'), 'rice-vermicelli')
+  eq(drawn('Fish balls'), 'fish-ball')
+  eq(drawn('Beef balls'), 'meatball')
+  eq(drawn('Stock powder'), 'stock-cube')
+})
+
+// A phrase listed under two drawings is decided by object order, silently.
+Deno.test('no phrase is listed under two drawings', () => {
+  const seen = new Map<string, string>()
+  for (const [icon, phrases] of Object.entries(INGREDIENT_DRAWINGS)) {
+    for (const phrase of phrases) {
+      const other = seen.get(phrase)
+      if (other) throw new Error(`"${phrase}" is under both ${other} and ${icon}`)
+      seen.set(phrase, icon)
+    }
+  }
 })
 
 // The catalogue's own matcher is untouched: a scan of "Turkey sandwich" still

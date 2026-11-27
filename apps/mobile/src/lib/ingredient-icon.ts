@@ -1,8 +1,17 @@
 import type { IconRef } from '@/data/types'
-// The edge functions' own matcher, imported rather than copied, the way the jobs
-// Worker imports `icon-match.ts`: one table of phrases, so a recipe line drawn
-// here and a name drawn on the server cannot disagree.
-import { ingredientIconFor } from '../../../supabase/functions/_shared/ingredient-icons.ts'
+
+/**
+ * The edge functions' own matcher, imported rather than copied, the way the jobs
+ * Worker imports `icon-match.ts`: one table of phrases, so a recipe line drawn
+ * here and a name drawn on the server cannot disagree.
+ *
+ * Required on first use rather than imported, because `data/mappers.ts` imports
+ * this file and the app loads that at launch: the catalogue's matcher sorts its
+ * whole table when it loads, and a launch that never opens a recipe should not
+ * pay for it.
+ */
+type Matcher = typeof import('../../../supabase/functions/_shared/ingredient-icons.ts')
+let matcher: Matcher['ingredientIconFor'] | undefined
 
 /**
  * The drawing for one ingredient line of a recipe, from its name.
@@ -19,7 +28,9 @@ const cache = new Map<string, IconRef | undefined>()
 
 export function ingredientIcon(name: string): IconRef | undefined {
   if (cache.has(name)) return cache.get(name)
-  const found = ingredientIconFor(name)
+  matcher ??= (require('../../../supabase/functions/_shared/ingredient-icons.ts') as Matcher)
+    .ingredientIconFor
+  const found = matcher(name)
   // `ICON_NAMES` on the server is written from the same files as the app's
   // registry, so a name it answers with is a drawing the app has.
   const icon = found ? ({ set: found.set, name: found.name } as IconRef) : undefined

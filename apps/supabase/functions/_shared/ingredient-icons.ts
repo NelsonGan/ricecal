@@ -187,6 +187,7 @@ export const INGREDIENT_DRAWINGS: Record<string, readonly string[]> = {
     'cooking wine',
     'rice wine',
     'hua tiao',
+    'sake',
   ],
   mirin: ['mirin'],
   'worcestershire-sauce': ['worcestershire', 'worcestershire sauce', 'lea perrins'],
@@ -229,6 +230,8 @@ export const INGREDIENT_DRAWINGS: Record<string, readonly string[]> = {
     'tom yum paste',
     'tom yam paste',
     'laksa paste',
+    'masala paste',
+    'tikka masala paste',
     'rendang paste',
     'rempah',
   ],
@@ -454,13 +457,7 @@ export const INGREDIENT_DRAWINGS: Record<string, readonly string[]> = {
   'beef-tripe': ['tripe', 'beef tripe', 'perut lembu', 'babat'],
   'pork-mince': ['pork mince', 'minced pork', 'ground pork', 'babi cincang'],
   'luncheon-meat': ['luncheon meat', 'spam', 'canned ham'],
-  'chicken-cubes': [
-    'diced chicken',
-    'chicken pieces',
-    'chicken chunks',
-    'chicken cubes',
-    'boneless chicken',
-  ],
+  'chicken-cubes': ['diced chicken', 'chicken pieces', 'chicken chunks', 'chicken cubes'],
 
   // -- Seafood ----------------------------------------------------------------
   'salmon-fillet': ['salmon', 'salmon fillet', 'salmon fillets', 'ikan salmon'],
@@ -734,6 +731,22 @@ const RECIPE_READINGS: Record<string, string | null> = {
   'palm oil': 'cooking-oil',
   'neutral oil': 'cooking-oil',
   'stock cube': 'stock-cube',
+  'stock powder': 'stock-cube',
+  'stock granules': 'stock-cube',
+  'fish balls': 'fish-ball',
+  'fish ball': 'fish-ball',
+  'beef balls': 'meatball',
+  'beef ball': 'meatball',
+  meatballs: 'meatball',
+  'bebola daging': 'meatball',
+  'bebola ikan': 'fish-ball',
+  'mee hoon': 'rice-vermicelli',
+  'bee hoon': 'rice-vermicelli',
+  beehoon: 'rice-vermicelli',
+  'wholegrain mustard': 'mustard',
+  'dijon mustard': 'mustard',
+  dijon: 'mustard',
+  'english mustard': 'mustard',
   'stock cubes': 'stock-cube',
   'chicken stock cube': 'stock-cube',
   'chicken stock powder': 'stock-cube',
@@ -821,12 +834,24 @@ const RECIPE_READINGS: Record<string, string | null> = {
 /**
  * Every phrase the recipe reading knows, the catalogue's own table underneath
  * and the two above laid over it. A phrase both name takes the recipe's answer.
+ *
+ * Built on the first lookup rather than at import. The app imports this on the
+ * way to a recipe, and every edge function that imports `icons.ts` loads it for
+ * `INGREDIENT_DRAWINGS` alone; sorting two thousand phrases is wasted on both.
  */
-export const RECIPE_TABLE: Record<string, string | null> = { ...TABLE }
-for (const [icon, phrases] of Object.entries(INGREDIENT_DRAWINGS)) {
-  for (const phrase of phrases) RECIPE_TABLE[phrase] = icon
+type Phrase = { text: string; words: number; weak: boolean }
+let table: Record<string, string | null> | undefined
+let phrases: Phrase[] | undefined
+
+export function recipeTable(): Record<string, string | null> {
+  if (table) return table
+  const built: Record<string, string | null> = { ...TABLE }
+  for (const [icon, names] of Object.entries(INGREDIENT_DRAWINGS)) {
+    for (const phrase of names) built[phrase] = icon
+  }
+  table = Object.assign(built, RECIPE_READINGS)
+  return table
 }
-Object.assign(RECIPE_TABLE, RECIPE_READINGS)
 
 /**
  * Longest first, word count before length, as in `icon-match.ts`: "sweet chilli
@@ -834,19 +859,18 @@ Object.assign(RECIPE_TABLE, RECIPE_READINGS)
  * flavour on a packet more often than the food in it) still go last, so "honey
  * soy chicken" is a chicken.
  */
-const WEAK = new Set(WEAK_PHRASES)
-const bySpecificity = (a: string, b: string): number => {
-  const words = b.split(' ').length - a.split(' ').length
-  return words !== 0 ? words : b.length - a.length
+function recipePhrases(): Phrase[] {
+  if (phrases) return phrases
+  const weak = new Set(WEAK_PHRASES)
+  phrases = Object.keys(recipeTable())
+    .map((text) => ({ text, words: text.split(' ').length, weak: weak.has(text) }))
+    .sort((a, b) =>
+      a.weak !== b.weak
+        ? Number(a.weak) - Number(b.weak)
+        : b.words - a.words || b.text.length - a.text.length,
+    )
+  return phrases
 }
-const RECIPE_PHRASES = [
-  ...Object.keys(RECIPE_TABLE)
-    .filter((p) => !WEAK.has(p))
-    .sort(bySpecificity),
-  ...Object.keys(RECIPE_TABLE)
-    .filter((p) => WEAK.has(p))
-    .sort(bySpecificity),
-]
 
 const SET_OF = new Map<string, IconSet>()
 for (const set of Object.keys(ICON_NAMES) as IconSet[]) {
@@ -856,17 +880,35 @@ for (const set of Object.keys(ICON_NAMES) as IconSet[]) {
 /**
  * The drawing for one line of a recipe, or null.
  *
- * Latin names go through the recipe table and stop at the first phrase, null
- * included, since a null there has already decided. A name in another script
- * finds nothing in it and falls through to `iconFor`, whose script table reads
- * Thai, Chinese and Japanese.
+ * Latin names go through the recipe table and stop at the most specific phrase,
+ * null included, since a null there has already decided. Two phrases of the
+ * same words and length are a tie that the order of the table used to settle,
+ * which drew "dried chilli paste" as dried chillies; the one further along the
+ * name wins instead, because an English name ends on what the thing is.
+ *
+ * A name in another script finds nothing here and falls through to `iconFor`,
+ * whose script table reads Thai, Chinese and Japanese.
  */
 export function ingredientIconFor(name: unknown): IconChoice | null {
   const text = normaliseName(name)
   if (text.trim().length > 0) {
-    for (const phrase of RECIPE_PHRASES) {
-      if (!text.includes(` ${phrase} `)) continue
-      const icon = RECIPE_TABLE[phrase]
+    const all = recipePhrases()
+    for (let i = 0; i < all.length; i++) {
+      let best = all[i]
+      let end = text.lastIndexOf(` ${best.text} `)
+      if (end < 0) continue
+      end += best.text.length
+      for (let j = i + 1; j < all.length; j++) {
+        const next = all[j]
+        if (next.weak !== best.weak || next.words !== best.words) break
+        if (next.text.length !== best.text.length) break
+        const at = text.lastIndexOf(` ${next.text} `)
+        if (at >= 0 && at + next.text.length > end) {
+          best = next
+          end = at + next.text.length
+        }
+      }
+      const icon = recipeTable()[best.text]
       const set = icon ? SET_OF.get(icon) : undefined
       return icon && set ? { set, name: icon } : null
     }
