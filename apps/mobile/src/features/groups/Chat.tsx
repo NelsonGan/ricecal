@@ -211,7 +211,14 @@ export function ChatScreen({
   // The ⋯ sheet waits for the dimmed layer to finish closing: two native
   // modals at once is one too many on iOS.
   const menuNext = useRef<GroupMessage | null>(null)
-  const [replying, setReplying] = useState<GroupMessage | null>(null)
+  // The message being answered, drawn from the thread as it is now rather
+  // than as it was swiped: a shared food's portion corrected meanwhile is
+  // quoted corrected, as its card already shows it.
+  const [answering, setReplying] = useState<GroupMessage | null>(null)
+  const replying = useMemo(
+    () => (answering && messages?.find((message) => message.id === answering.id)) ?? answering,
+    [answering, messages],
+  )
   const [picking, setPicking] = useState(false)
   const block = useBlockAuthor()
   const field = useRef<React.ComponentRef<typeof TextInput>>(null)

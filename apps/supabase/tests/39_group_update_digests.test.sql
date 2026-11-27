@@ -81,9 +81,12 @@ select pg_temp.workout(:'ana', 'a3920000-0000-4000-8000-000000000003', 'Arms', i
 select is((select count(*)::int from public.group_update_digests()), 0,
   'nobody is pushed twice within ten minutes');
 select pg_temp.later();
+-- Renamed while it waited: the push says what its card now says.
+update public.workouts set name = 'Arms and back' where id = 'a3920000-0000-4000-8000-000000000003';
 create temp table run2 as select * from public.group_update_digests();
 select is((select array[body, more::text] from run2 where user_id = :'cai'),
-  array['Arms (45 min)', '1'], 'once the spacing passes, one push names the newest and counts the rest');
+  array['Arms and back (45 min)', '1'],
+  'once the spacing passes, one push names the newest as it is now and counts the rest');
 
 -- Too fresh to push: someone may be watching it land.
 select pg_temp.later();

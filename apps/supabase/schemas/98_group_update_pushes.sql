@@ -51,7 +51,7 @@ language sql security definer set search_path = '' as $$
     pg_catalog.pg_try_advisory_xact_lock(pg_catalog.hashtext('group_update_digests'))::text, true);
 
   with copy as (
-    select m.user_id, s.group_id, s.author_id, s.body, s.created_at, m.chat_read_at,
+    select m.user_id, s.group_id, s.author_id, s.id as message_id, s.body, s.created_at, m.chat_read_at,
       m.updates_told_until, coalesce(s.post_id, s.workout_id, s.activity_id, s.id) as thing
     from public.group_messages s
     join public.group_members m on m.group_id = s.group_id and m.user_id <> s.author_id
@@ -99,7 +99,7 @@ language sql security definer set search_path = '' as $$
   ),
   -- The group of the newest pending share, and how many more it has.
   due as (
-    select n.user_id, n.group_id, n.author_id, n.body, n.created_at,
+    select n.user_id, n.group_id, n.author_id, n.message_id, n.body, n.created_at,
       (select count(*) from pending q where q.user_id = n.user_id and q.group_id = n.group_id)::integer - 1
         as more
     from (
@@ -119,7 +119,10 @@ language sql security definer set search_path = '' as $$
     where m.user_id = d.user_id and m.group_id = d.group_id
   )
   select d.user_id, t.token, coalesce(st.language, 'en'), d.group_id, g.name,
-    coalesce(nullif(btrim(a.display_name), ''), a.handle), d.body, d.more
+    coalesce(nullif(btrim(a.display_name), ''), a.handle),
+    -- What the share says now: a portion corrected between the share and its
+    -- push is pushed corrected, as its card already shows it.
+    coalesce(private.group_message_body(d.message_id), d.body), d.more
   from due d
   join public.push_tokens t on t.user_id = d.user_id
   join public.groups g on g.id = d.group_id

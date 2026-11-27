@@ -315,11 +315,26 @@ export function invalidateEntryPosts(queryClient: QueryClient, userId: string): 
 }
 
 /**
+ * The group reads drawn from the diary, the workouts and the recipes as they
+ * are now, the chat's + picker of the viewer's own food posts among them.
+ */
+const GROUP_LIVE_READS = new Set([
+  'group_board',
+  'group_messages',
+  'group_chat_summary',
+  'recent_food_posts',
+])
+
+/**
  * A group board reads the diary and the workouts live, so a meal or a workout
  * logged, edited or deleted, a synced health workout or a repriced recipe
  * shows on the viewer's own row without waiting for the board's next poll.
- * Only the boards on screen refetch; the rest are marked stale. `lists` also
- * refreshes the group list, whose "logged today" counts food and nothing else.
+ * The chat's cards, and what a shared thing's message says (a reply's quote,
+ * the chat bar), read them live too, and a chat stays mounted under the meal
+ * opened from its card: left to its three-minute poll, it came back showing
+ * the figure from before the edit. Only the reads on screen
+ * refetch; the rest are marked stale. `lists` also refreshes the group list,
+ * whose "logged today" counts food and nothing else.
  */
 export function invalidateGroupBoards(
   queryClient: QueryClient,
@@ -329,6 +344,7 @@ export function invalidateGroupBoards(
   queryClient.invalidateQueries({
     queryKey: keys.groups(userId),
     predicate: (query) =>
-      query.queryKey[2] === 'group_board' || (lists && query.queryKey[2] === 'my_groups'),
+      GROUP_LIVE_READS.has(String(query.queryKey[2])) ||
+      (lists && query.queryKey[2] === 'my_groups'),
   })
 }
