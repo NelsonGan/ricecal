@@ -114,7 +114,7 @@ export function getScenes(locale: string): SceneConfig[] {
       headline: '',
       screenshot: '',
       ...base,
-      decorations: <BrandPanel t={t.panel} />,
+      decorations: <BrandPanel t={t.panel} lang={locale} />,
       panorama: { panel: 1 },
     },
 

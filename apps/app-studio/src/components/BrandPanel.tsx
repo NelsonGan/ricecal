@@ -14,7 +14,7 @@ import { FeatureRow, RatingCard } from './decorations';
 import { useFitText } from './useFitText';
 import type { PhoneStrings } from '../scenes/locales';
 
-export function BrandPanel({ t }: { t: PhoneStrings['panel'] }) {
+export function BrandPanel({ t, lang }: { t: PhoneStrings['panel']; lang: string }) {
   const headlineRef = useFitText<HTMLHeadingElement>(118, 0.55);
   // Every locale writes the title as two lines; the second takes the accent.
   const highlight = t.title.split('\n')[1];
@@ -45,7 +45,7 @@ export function BrandPanel({ t }: { t: PhoneStrings['panel'] }) {
       </div>
 
       <div style={{ marginTop: 36 }}>
-        <RatingCard users={t.stats.usersChoice} />
+        <RatingCard users={t.stats.usersChoice} lang={lang} />
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 30, marginTop: 44 }}>

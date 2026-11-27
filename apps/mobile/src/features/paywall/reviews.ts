@@ -46,7 +46,7 @@ export const PAYWALL_REVIEWS: readonly PaywallReview[] = [
     stars: 5,
   },
   {
-    quote: 'It was so easy to get started and use for my diet plan.',
+    quote: 'It was so easy to get started with for my diet plan.',
     author: 'Locards Principle',
     stars: 5,
   },

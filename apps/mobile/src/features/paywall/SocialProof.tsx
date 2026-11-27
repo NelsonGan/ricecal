@@ -133,12 +133,16 @@ function ReviewCarousel() {
   const loop = useMemo(
     () =>
       [0, 1, 2].flatMap((copy) =>
-        PAYWALL_REVIEWS.map((review) => ({ review, key: `${copy}-${review.author}` })),
+        PAYWALL_REVIEWS.map((review) => ({ review, copy, key: `${copy}-${review.author}` })),
       ),
     [],
   )
   const indexRef = useRef(n)
   const recenterTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // A finger on the carousel holds the autoplay, and a card the reader swiped
+  // to stays at least one full turn, rather than being taken away a moment later.
+  const dragging = useRef(false)
+  const lastDragEnd = useRef(0)
 
   const itemWidth = Math.max(0, width - PEEK * 2)
   const interval = itemWidth + GAP
@@ -169,6 +173,7 @@ function ReviewCarousel() {
   useEffect(() => {
     if (width === 0 || reduceMotion) return
     const id = setInterval(() => {
+      if (dragging.current || Date.now() - lastDragEnd.current < ADVANCE_MS) return
       clearRecenter()
       const next = indexRef.current + 1
       indexRef.current = next
@@ -196,17 +201,32 @@ function ReviewCarousel() {
           // No bottom padding for the cards' slab: `Card` reserves its own.
           contentContainerStyle={{ paddingHorizontal: PEEK - GAP / 2 }}
           // `contentOffset` places the first paint on iOS; Android ignores it.
-          onContentSizeChange={() => {
-            if (indexRef.current === n) goTo(n, false)
+          // Realigned on every size change too: unfolding an iPhone Duo or
+          // rotating an iPad resizes the cards under an offset that no longer
+          // lands on one.
+          onContentSizeChange={() => goTo(indexRef.current, false)}
+          onScrollBeginDrag={() => {
+            dragging.current = true
+            clearRecenter()
           }}
-          onScrollBeginDrag={clearRecenter}
+          onScrollEndDrag={() => {
+            dragging.current = false
+            lastDragEnd.current = Date.now()
+          }}
           onMomentumScrollEnd={(event) => {
             clearRecenter()
             recenter(Math.round(event.nativeEvent.contentOffset.x / interval))
           }}
         >
-          {loop.map(({ review, key }) => (
-            <View key={key} style={{ width: itemWidth, marginHorizontal: GAP / 2 }}>
+          {loop.map(({ review, copy, key }) => (
+            <View
+              key={key}
+              style={{ width: itemWidth, marginHorizontal: GAP / 2 }}
+              // The outer copies exist only for the loop; a screen reader
+              // hears each review once.
+              accessibilityElementsHidden={copy !== 1}
+              importantForAccessibility={copy !== 1 ? 'no-hide-descendants' : 'auto'}
+            >
               <ReviewCard review={review} />
             </View>
           ))}

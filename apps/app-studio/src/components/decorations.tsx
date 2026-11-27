@@ -150,9 +150,10 @@ function LaurelWing({ height, flip = false }: { height: number; flip?: boolean }
 /**
  * The store rating over its stars, between a pair of laurel wings, with the
  * user count under it: Money2Time's arrangement in RiceCal's palette.
- * `users` is the translated "5K users" line.
+ * `users` is the translated "5K users" line, and `lang` its language, so the
+ * uppercase follows that language's rules (Turkish "tercihi" is "TERCİHİ").
  */
-export function RatingCard({ users }: { users: string }) {
+export function RatingCard({ users, lang }: { users: string; lang?: string }) {
   const usersRef = useFitText<HTMLDivElement>(34, 0.6);
   const { rating } = SOCIAL_PROOF;
   return (
@@ -176,7 +177,7 @@ export function RatingCard({ users }: { users: string }) {
             <RatingStar key={i} size={50} fill={Math.min(1, Math.max(0, rating - i))} />
           ))}
         </div>
-        <div ref={usersRef} style={{
+        <div ref={usersRef} lang={lang} style={{
           width: '100%', textAlign: 'center', whiteSpace: 'nowrap',
           fontSize: 34, fontWeight: 800, color: C.muted,
           letterSpacing: '3px', textTransform: 'uppercase', lineHeight: 1.2, marginTop: 22,

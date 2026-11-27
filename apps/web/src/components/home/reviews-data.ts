@@ -1,4 +1,3 @@
-
 type ReviewBase = {
   /** The store's own review ID, kept so the edited copy can be checked against it. */
   id: string;
