@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react';
 import { APP_DESCRIPTIONS, DESCRIPTION_LOCALE_CODES } from '../data/appDescriptions';
 import { LOCALE_META } from '../scenes/locales';
+import {
+  APP_NAME, SUBTITLES, KEYWORDS, PLAY_SHORT_DESCRIPTIONS,
+  IOS_STORE_OVERRIDES, ANDROID_STORE_OVERRIDES,
+} from '../data/listingCopy.mjs';
+import { IOS_METADATA_LOCALE_MAP, ANDROID_METADATA_LOCALE_MAP } from '../data/storeLocales.mjs';
 
 type UploadPlatform = 'ios' | 'android';
 type LogType = 'info' | 'success' | 'error';
@@ -11,7 +16,10 @@ interface LogLine { text: string; type: LogType }
 
 interface StoreMetadata {
   name: string;
-  /** App Store subtitle and Play short description come from the same line. */
+  /**
+   * The App Store subtitle, and Play's short description for a language that
+   * has none of its own in `PLAY_SHORT_DESCRIPTIONS`.
+   */
   subtitle: string;
   privacyPolicyUrl: string;
   privacyChoicesUrl: string;
@@ -22,74 +30,24 @@ interface StoreMetadata {
   whatsNew: string;
 }
 
-/**
- * The name the app is already registered under in App Store Connect and Play,
- * 29 characters, inside the 30 both stores allow. It is sent on every full
- * upload, so it has to match what is live — a different string here silently
- * renames the app in every listing locale.
- */
-const APP_NAME = 'RiceCal: Asia Calorie Tracker';
 const PRIVACY_POLICY_URL = 'https://ricecal.app/privacy';
 const SUPPORT_URL = 'https://ricecal.app/contact';
 const MARKETING_URL = 'https://ricecal.app';
 
-/** App Store caps the subtitle at 30 characters; Play's short description at 80. */
-const SUBTITLES: Record<string, string> = {
-  en:  'Calorie & Workout Tracker',
-  ms:  'Penjejak Kalori & Senaman',
-  zh:  '热量与健身记录',
-  id:  'Pelacak Kalori & Latihan',
-  th:  'แคลอรีและการออกกำลังกาย',
-  vi:  'Theo dõi calo & tập luyện',
-  ja:  'カロリー＆筋トレ記録',
-  ko:  '칼로리 & 운동 기록',
-  hi:  'कैलोरी और वर्कआउट ट्रैकर',
-  ta:  'கலோரி & உடற்பயிற்சி',
-  bn:  'ক্যালোরি ও ওয়ার্কআউট',
-  fil: 'Calorie at Workout Tracker',
-  es:  'Calorías y entrenamientos',
-  fr:  'Calories et entraînement',
-  de:  'Kalorien- & Trainingstracker',
-  pt:  'Calorias e treinos',
-  it:  'Calorie e allenamenti',
-  nl:  'Calorieën en training',
-  ru:  'Калории и тренировки',
-  tr:  'Kalori ve Antrenman Takibi',
-  pl:  'Kalorie i treningi',
-  uk:  'Калорії та тренування',
-  sv:  'Kalorier och träning',
-  nb:  'Kalorier og trening',
-  da:  'Kalorier og træning',
-};
-
-/** App Store keywords: 100 characters total, comma separated, no spaces. */
-const KEYWORDS: Record<string, string> = {
-  en:  'calorie,counter,food,diary,macro,tracker,nutrition,barcode,recipe,asian,workout,gym',
-  ms:  'kalori,makanan,diari,makro,penjejak,nutrisi,barkod,resipi,asia,berat,senaman,gim',
-  zh:  '热量,卡路里,饮食,记录,营养,宏量,条码,食谱,亚洲,体重,健身,训练',
-  id:  'kalori,makanan,catatan,makro,pelacak,nutrisi,barcode,resep,asia,berat,latihan,gym',
-  th:  'แคลอรี,อาหาร,บันทึก,มาโคร,ติดตาม,โภชนาการ,บาร์โค้ด,สูตร,เอเชีย,น้ำหนัก,ออกกำลังกาย,ฟิตเนส',
-  vi:  'calo,thuc pham,nhat ky,macro,theo doi,dinh duong,ma vach,cong thuc,chau a,tap luyen,gym',
-  ja:  'カロリー,食事,記録,マクロ,栄養,バーコード,レシピ,アジア,体重,ダイエット,筋トレ,ワークアウト',
-  ko:  '칼로리,식단,기록,매크로,영양,바코드,레시피,아시아,체중,다이어트,운동,헬스',
-  hi:  'कैलोरी,भोजन,डायरी,मैक्रो,ट्रैकर,पोषण,बारकोड,रेसिपी,एशिया,वज़न,वर्कआउट,जिम',
-  ta:  'கலோரி,உணவு,எடை,ஆசிய,பார்கோடு,உடற்பயிற்சி,ஜிம்',
-  bn:  'ক্যালোরি,খাবার,ওজন,এশীয়,বারকোড,ওয়ার্কআউট,জিম',
-  fil: 'calorie,pagkain,diary,macro,tracker,nutrisyon,barcode,recipe,asya,timbang,workout,gym',
-  es:  'calorias,contador,comida,diario,macros,nutricion,codigo,receta,asiatica,entrenamiento,gym',
-  fr:  'calories,compteur,repas,journal,macros,nutrition,code barres,recette,asie,musculation,sport',
-  de:  'kalorien,zaehler,essen,tagebuch,makros,ernaehrung,barcode,rezept,asien,training,fitness',
-  pt:  'calorias,contador,comida,diario,macros,nutricao,codigo,receita,asiatica,treino,academia',
-  it:  'calorie,contatore,cibo,diario,macro,nutrizione,codice,ricetta,asiatica,allenamento,palestra',
-  nl:  'calorieen,teller,eten,dagboek,macros,voeding,streepjescode,recept,azie,training,sportschool',
-  ru:  'калории,счетчик,еда,дневник,макросы,питание,штрихкод,рецепт,азия,вес,тренировки,спортзал',
-  tr:  'kalori,sayac,yemek,gunluk,makro,beslenme,barkod,tarif,asya,kilo,antrenman,spor',
-  pl:  'kalorie,licznik,jedzenie,dziennik,makro,zywienie,kod kreskowy,przepis,azja,trening,silownia',
-  uk:  'калорії,лічильник,їжа,щоденник,макроси,харчування,штрихкод,рецепт,азія,тренування,спортзал',
-  sv:  'kalorier,raknare,mat,dagbok,makros,naring,streckkod,recept,asiatisk,vikt,traning,gym',
-  nb:  'kalorier,teller,mat,dagbok,makroer,ernaering,strekkode,oppskrift,asiatisk,trening,treningssenter',
-  da:  'kalorier,taeller,mad,dagbog,makroer,ernaering,stregkode,opskrift,asiatisk,traening,fitness',
-};
+/**
+ * The store locales of one language that must not get its shared copy, as
+ * `{ storeLocales: { 'en-GB': { keywords } } }`. The upload lays each store
+ * locale's entry over the language's copy (`storeUpload.mjs`), so these are
+ * not editable here: they are not a translation of the field above them.
+ */
+function storeLocaleOverrides(platform: UploadPlatform, locale: string) {
+  const map = platform === 'ios' ? IOS_METADATA_LOCALE_MAP : ANDROID_METADATA_LOCALE_MAP;
+  const overrides: Record<string, object> = platform === 'ios' ? IOS_STORE_OVERRIDES : ANDROID_STORE_OVERRIDES;
+  const storeLocales = Object.fromEntries(
+    (map[locale] ?? []).filter(l => overrides[l]).map(l => [l, overrides[l]]),
+  );
+  return Object.keys(storeLocales).length ? { storeLocales } : {};
+}
 
 function getPrivacyPolicyText(description: string): string {
   return description
@@ -234,13 +192,16 @@ export function DescriptionsView() {
     setUploading(true);
     setLog([]);
 
-    const localizations: Record<string, Record<string, string>> = {};
+    const localizations: Record<string, Record<string, unknown>> = {};
     for (const locale of DESCRIPTION_LOCALE_CODES) {
       const m = metadata[locale] ?? DEFAULTS[locale];
       localizations[locale] = {
         description: APP_DESCRIPTIONS[locale].description,
         name: m.name,
         subtitle: m.subtitle,
+        ...(platform === 'android' && PLAY_SHORT_DESCRIPTIONS[locale]
+          ? { shortDescription: PLAY_SHORT_DESCRIPTIONS[locale] } : {}),
+        ...storeLocaleOverrides(platform, locale),
         ...(platform === 'ios' ? {
           privacyPolicyUrl: m.privacyPolicyUrl,
           privacyChoicesUrl: m.privacyChoicesUrl,

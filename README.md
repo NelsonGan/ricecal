@@ -9386,7 +9386,7 @@ and an RSC file in the Worker version's Static Assets, under
   `fetch(new URL(..., import.meta.url)).then((res) => res.arrayBuffer())`, a
   shape vinext recognises and inlines into the bundle at build time, because a
   Worker has no filesystem to read `public/` from.
-- **`/r/{slug}` and `/download` render per request** and are never stored.
+- **`/r/{slug}`, `/download` and `/xhs` render per request** and are never stored.
   `/r/{slug}` 404s unless the slug is 32 hex characters.
 - **What each response tells caches.** Prerendered pages send
   `s-maxage=31536000, stale-while-revalidate`, which only shared caches read
@@ -9549,6 +9549,7 @@ login`) or `CLOUDFLARE_API_TOKEN`.
 | `/food/{slug}` | one dish, its calories and macros — 52,000 of them |
 | `/r/{slug}` | opens one private food share in the app, without exposing its contents on the web |
 | `/download` | redirects to the App Store or Play, by user agent |
+| `/xhs` | the same, for XiaoHongShu posts: an App Store custom product page and Play UTM link |
 | `/privacy` | Privacy Policy |
 | `/terms` | Terms of Use |
 | `/data-deletion` | account and data deletion, the route Google Play asks for |
@@ -9817,8 +9818,31 @@ decides.
   the redirect, the badge, `operatingSystem` and the JSON-LD on together, so
   launching or pulling a store is a one-line change.
 
-`/download` is the site's one route handler, and it is not in the sitemap: it
-is a redirector, not a page.
+### `/xhs`, the address a XiaoHongShu post carries
+
+XiaoHongShu is where most new users hear about RiceCal (about half answer it
+in onboarding), and a post cannot hold a store link, so they searched the
+store by name and arrived uncounted. `/xhs` is short enough to type, and it
+picks a store the way `/download` does but lands on links that say where the
+reader came from:
+
+- **iPhone:** the App Store custom product page "XHS Malaysia, food first"
+  (`ppid`), with campaign tokens `pt=128646860&ct=xhs`. App Store Connect
+  counts it under Acquisition > Campaigns, and shows a campaign only once it
+  has five first-time downloads, so there is one token for the channel rather
+  than one per post. Until the custom page is approved, the `ppid` falls back
+  to the default page and the campaign still counts.
+- **Android:** Google Play with `listing=xhs` and a UTM referrer
+  (`utm_source=xiaohongshu`, `utm_campaign=xhs`), which Play Console reports by
+  source and campaign. `listing=xhs` selects a custom store listing of that
+  name, made in Play Console (there is no API for one); without it Play shows
+  the default listing.
+
+It sends no analytics event, for the same reason as `/download`, and
+`robots.txt` disallows it beside `/download`.
+
+`/download` and `/xhs` are the site's route handlers, and neither is in the
+sitemap: they are redirectors, not pages.
 
 ### Analytics
 
@@ -9954,7 +9978,8 @@ images or incomplete scene sets report an error instead of creating a partial ZI
 | iPhone Duo scenes | [`src/scenes/duoSceneData.tsx`](apps/app-studio/src/scenes/duoSceneData.tsx) |
 | Headlines and panel copy, 26 languages | [`src/scenes/locales/`](apps/app-studio/src/scenes/locales) |
 | Store descriptions and release notes | [`src/data/appDescriptions.ts`](apps/app-studio/src/data/appDescriptions.ts) |
-| Names, subtitles, keywords, URLs | [`src/components/DescriptionsView.tsx`](apps/app-studio/src/components/DescriptionsView.tsx) |
+| Names, subtitles, keywords, Play short descriptions | [`src/data/listingCopy.mjs`](apps/app-studio/src/data/listingCopy.mjs) |
+| Listing URLs | [`src/components/DescriptionsView.tsx`](apps/app-studio/src/components/DescriptionsView.tsx) |
 | The palette, lifted from the app's own tokens | [`src/components/tokens.ts`](apps/app-studio/src/components/tokens.ts) |
 | The Play listing icon, copied from `apps/mobile` | [`public/assets/icons/play_store_512.png`](apps/app-studio/public/assets/icons/play_store_512.png) |
 
@@ -10355,6 +10380,36 @@ locale, and Play truncates past 500 characters so the text is cut there.
 Writing to a track uses `gplay tracks patch` rather than `update`: a release
 carries its version codes and rollout state, and a PUT assembled from release
 notes alone would drop them.
+
+#### Copy that differs inside one language
+
+One language fans out to several store locales, so by default `en` writes the
+same keywords to `en-US`, `en-GB`, `en-AU` and `en-CA`, and `zh` writes the
+same Simplified text to `zh-Hans`, `zh-Hant`, `zh-TW` and `zh-HK`.
+`IOS_STORE_OVERRIDES` and `ANDROID_STORE_OVERRIDES` in
+[`listingCopy.mjs`](apps/app-studio/src/data/listingCopy.mjs) name the store
+locales that get their own fields, and the upload lays them over the language's
+copy (`copyForStoreLocale`). The Descriptions view does not show them as
+editable fields, because they are not translations of the field above them.
+
+- **`en-GB` is Southeast Asia's English listing.** Malaysia, Singapore and Hong
+  Kong search it, so its keywords name the region and its dishes.
+- **`ms` carries Chinese keywords.** Malaysia's storefront searches only the
+  Malay and English (U.K.) fields, never Simplified Chinese, so a Malaysian
+  searching 卡路里 could not find the app (it did not rank at all there, against
+  #60 in Singapore). Almost no phone displays the Malay listing, so its keyword
+  field costs nothing to spend on them.
+- **Traditional Chinese gets its own subtitle, keywords, Play title and short
+  description.** It used to get the Simplified ones, so 熱量 matched nothing.
+- **Play's short description is separate from the App Store subtitle**
+  (`PLAY_SHORT_DESCRIPTIONS`). Play has no keyword field, so after the title it
+  is the text Play search reads most, and a 30 character subtitle left 50 of its
+  80 characters unused. A language without one still falls back to its subtitle.
+
+`scripts/listing-copy.test.mjs` holds the limits, the long-dash rule and, for
+the Southeast Asian listings, the rule that a keyword never repeats a word from
+the name or subtitle. App Store keywords change only with a new App Store
+version; Play listing text changes when it is published.
 
 The 25 source languages map to 31 locales on each store, including English
 variants and the shared Chinese translation. Filipino goes to Play only.

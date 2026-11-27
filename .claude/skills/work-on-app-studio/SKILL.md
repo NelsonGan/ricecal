@@ -41,7 +41,8 @@ and it has no linter of its own. Stop the server when you are done
 | Header and search creative copy | `src/scenes/appStoreCopy.ts` |
 | Scene order and layout | `src/scenes/sceneData.tsx`, `ipadSceneData.tsx`, `duoSceneData.tsx` |
 | Store descriptions and What's New | `src/data/appDescriptions.ts` (What's New: `update-whats-new`) |
-| Names, subtitles, keywords, URLs | `src/components/DescriptionsView.tsx` |
+| Names, subtitles, keywords, Play short descriptions | `src/data/listingCopy.mjs` (README: *Copy that differs inside one language*) |
+| Listing URLs | `src/components/DescriptionsView.tsx` |
 | Palette | `src/components/tokens.ts`, copied from `apps/mobile/global.css` |
 | App captures | `public/assets/screenshots-{iphone,iphone-duo,ipad}/<lang>/`, `public/assets/screenshots-watch/en/` |
 | Play listing icon | `public/assets/icons/play_store_512.png` |

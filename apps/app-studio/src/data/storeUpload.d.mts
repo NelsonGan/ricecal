@@ -73,13 +73,22 @@ export interface IOSDescriptionCopy {
   privacyPolicyUrl?: string;
   privacyChoicesUrl?: string;
   privacyPolicyText?: string;
+  /** Store locales whose copy differs from the language's, laid over it. */
+  storeLocales?: Record<string, Partial<Omit<IOSDescriptionCopy, 'storeLocales'>>>;
 }
 
 export interface AndroidDescriptionCopy {
   name?: string;
+  /** The App Store subtitle, and the short description when there is none. */
   subtitle?: string;
+  shortDescription?: string;
   description?: string;
+  storeLocales?: Record<string, Partial<Omit<AndroidDescriptionCopy, 'storeLocales'>>>;
 }
+
+export declare function copyForStoreLocale<T extends { storeLocales?: Record<string, Partial<T>> }>(
+  copy: T, storeLocale: string,
+): Omit<T, 'storeLocales'>;
 
 export interface Screenshot {
   filename: string;
