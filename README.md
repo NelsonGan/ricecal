@@ -2984,6 +2984,15 @@ What that costs is the property people expect: correcting a recipe no longer
 moves last week's diary. It is the same trade the diary makes with the catalogue
 at large.
 
+**Every ingredient line has its drawing**, on the recipe, in cook mode and in
+the form, beside the name (`IngredientDrawing`). Nothing is stored for it: the
+app works it out from the line's stored name (`ingredientIcon`, see
+[Icons](#icons)), so recipes written before the drawings existed, community
+recipes, a typed line and a draft read from a photo, a description or a video
+are all drawn the same way, and a translated name keeps the English name's
+picture. A line nothing matches keeps the drawing's space, so the names start in
+one column.
+
 **Ingredients are stored per unit.** `kcal_per_unit` is what one gram, one
 millilitre or one of the thing costs, and `amount` is how many went in. That is
 what survives the amount being corrected: 400 ml of santan changed to 250
@@ -9206,7 +9215,7 @@ working.
 
 ### Icons
 
-593 illustrated icons across six sets (`ui`, `system`, `body`, `food`, `dishes`,
+882 illustrated icons across six sets (`ui`, `system`, `body`, `food`, `dishes`,
 `scenes`) in `assets/icons`, with a generated require map in
 `icons.generated.ts`.
 
@@ -9266,6 +9275,34 @@ in.
 Naming follows the set already in `assets/icons`: kebab-case, with `dishes` for
 prepared Malaysian and regional food and `food` for ingredients, packaged goods
 and drinks.
+
+**275 of the `food` drawings are cooking ingredients, drawn for recipe lines**
+(November 2026): shallots and galangal, star anise and candlenuts, belacan,
+oyster sauce, a carton of stock, raw cuts of meat, fish and vegetables. They were
+generated as eleven 5 x 5 sheets in the existing clay style, with existing icons
+as the style reference, and cut with `slice-icon-sheet.py`, so they share the
+192 px canvas and the 172 px content edge with the rest of the set.
+`_shared/ingredient-icons.ts` lists each one with the phrases that name it
+(`INGREDIENT_DRAWINGS`), in English, Malay and Indonesian. Two rules come with
+them:
+
+- **They are drawn for recipes only.** `ingredientIconFor` reads a recipe line:
+  the recipe phrases laid over `icon-match.ts`'s `TABLE`, longest phrase first,
+  then `iconFor` for anything they do not know (another script, a catalogue
+  name). It also reads some existing drawings differently, because a pot is not
+  a plate: `rice` is the raw grain, `salt` the shaker, `water` a glass.
+  `iconFor` itself is unchanged, so a scan, a barcode and the retention sweep
+  draw what they drew before. Pointing the catalogue at the new drawings is a
+  separate change, with its own check that no catalogue row's drawing gets worse.
+- **They are not in the model's list.** `icons.ts` leaves `INGREDIENT_DRAWINGS`
+  out of `ICON_LIST`, which is paid for on every typed meal, and a raw
+  ingredient is never what a plate should be drawn as.
+
+The app imports `ingredient-icons.ts` straight out of `apps/supabase` (mobile's
+`tsconfig` allows the `.ts` extensions Deno needs), as the jobs Worker imports
+`icon-match.ts`, so there is one table. Adding a recipe drawing is the sheet,
+`sync-icons.mjs --registry-only`, and an entry in `INGREDIENT_DRAWINGS`;
+`ingredient-icons.test.ts` fails on a drawing no phrase reaches.
 
 **Coverage is 73.5%**, 35,259 of 47,940 catalogue rows, after a round of 100
 icons in August 2026 took it from 61.1%. The 12,681 rows with no drawing mostly

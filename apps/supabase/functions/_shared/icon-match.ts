@@ -1310,7 +1310,8 @@ const FORM_HEADS = new Set([
   'dumplings',
 ])
 
-function normaliseName(name: unknown): string {
+/** Lower case, accents off, anything not a letter or digit a space, padded. */
+export function normaliseName(name: unknown): string {
   return ` ${String(name ?? '')
     .toLowerCase()
     .normalize('NFD')

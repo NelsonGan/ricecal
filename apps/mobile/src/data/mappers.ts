@@ -1,4 +1,5 @@
 import { isLanguage } from '@/i18n/languages'
+import { ingredientIcon } from '@/lib/ingredient-icon'
 import { isMeasureUnit, MEASURES, type MeasureUnit } from '@/lib/measures'
 import type {
   Entry,
@@ -263,6 +264,7 @@ export function toRecipeIngredient(row: RecipeIngredientRow): RecipeIngredient {
       fat: Number(row.fat_g ?? 0),
     },
     position: row.position ?? 0,
+    icon: ingredientIcon(row.name ?? ''),
   }
 }
 

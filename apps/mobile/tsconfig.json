@@ -2,6 +2,9 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    // Lets `src/lib/ingredient-icon.ts` import the edge functions' matcher, whose
+    // own imports carry their `.ts` extension as Deno needs them to.
+    "allowImportingTsExtensions": true,
     "types": ["jest", "node"],
     "paths": {
       "@/*": ["./src/*"],

@@ -11,6 +11,7 @@ import {
 } from '@/features/shared/MeasurePicker'
 import { PartRow } from '@/features/shared/PartRow'
 import { measureFigure, useMeasureText } from '@/features/shared/useMeasureText'
+import { ingredientIcon } from '@/lib/ingredient-icon'
 import { type MeasureUnit, roundedFor } from '@/lib/measures'
 import { formatPortion } from '@/lib/portions'
 import { useThemeColors } from '@/theme/useTheme'
@@ -24,6 +25,7 @@ import {
   shownAmount,
   storedFrom,
 } from './basis'
+import { IngredientDrawing } from './IngredientChecklist'
 import { useUnitName } from './UnitGroups'
 import { useIngredientMeasure } from './useIngredientMeasure'
 
@@ -224,6 +226,7 @@ export function RecipeIngredientEditor({
               onReplace={() => onReplace(ingredient)}
               onRemove={() => onRemove(ingredient)}
               inline
+              leading={<IngredientDrawing icon={ingredientIcon(ingredient.name)} />}
             >
               {/* The figure and its unit as one soft pill, so the rows' amounts
                   line up down the right edge whatever unit each is in. */}
