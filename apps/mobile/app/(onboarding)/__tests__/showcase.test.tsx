@@ -1,4 +1,5 @@
 import { act, render as rntlRender, screen, userEvent } from '@testing-library/react-native'
+import * as Haptics from 'expo-haptics'
 import type { ReactElement, ReactNode } from 'react'
 import { createMMKV } from 'react-native-mmkv'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -87,7 +88,16 @@ it.each([
   expect(screen.getByText('Preview')).toBeTruthy()
   await user.press(screen.getByLabelText(/^Preview\. /))
 
+  // Felt, like any tap in the app, but it goes nowhere.
+  expect(Haptics.impactAsync).toHaveBeenCalled()
   expect(mockPush).not.toHaveBeenCalled()
+})
+
+it('reads the whole social sample to a screen reader', async () => {
+  await render(<SocialStep />)
+
+  // The frame is one image, so the group's size has to be in its label.
+  expect(screen.getByLabelText(/Lunch club, 8 members$/)).toBeTruthy()
 })
 
 it('lands a like on the sample post', async () => {

@@ -1,7 +1,6 @@
-import * as Haptics from 'expo-haptics'
 import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -12,12 +11,16 @@ import Animated, {
 } from 'react-native-reanimated'
 
 import { useThemeColors } from '@/theme/useTheme'
-import { cn, Icon, Text } from '@/ui'
+import { cn, Icon, Tappable, Text } from '@/ui'
 
 export type ShowcaseFrameProps = {
   /** The sample, drawn the way the real screen draws it. */
   children: ReactNode
-  /** What the sample shows, for VoiceOver. "Preview" is put in front of it. */
+  /**
+   * Everything the sample says, for VoiceOver and TalkBack. The frame reads as
+   * one image, so a figure missing here is a figure a screen reader never hears.
+   * "Preview" is put in front of it.
+   */
   accessibilityLabel: string
   className?: string
 }
@@ -36,6 +39,10 @@ export type ShowcaseFrameProps = {
  * A tap anyway still gets an answer, a nod of the "Preview" pill, rather than
  * the silence that read as a bug. No message: the pill already says it.
  *
+ * The tap target is invisible to assistive tech. The image inside it carries
+ * the label, so a screen reader announces a picture rather than an image with
+ * "double-tap to activate", the same false promise this frame exists to remove.
+ *
  * No slab under the panel. A slab is what marks a control as pressable in this
  * app (see `Squish`), which is the one thing this must not look like.
  */
@@ -47,35 +54,41 @@ export function ShowcaseFrame({ children, accessibilityLabel, className }: Showc
   const pill = useAnimatedStyle(() => ({ transform: [{ scale: nod.value }] }))
 
   const point = () => {
-    void Haptics.selectionAsync().catch(() => {})
     if (!still) nod.value = withSequence(withTiming(1.12, { duration: 120 }), withSpring(1))
   }
 
   return (
-    <Pressable
+    <Tappable
       onPress={point}
-      accessible
-      accessibilityRole="image"
-      accessibilityLabel={`${t('preview.badge')}. ${accessibilityLabel}`}
-      className={cn('overflow-hidden rounded-card bg-pandan-soft px-3 pt-3', className)}
+      accessible={false}
+      className={cn('overflow-hidden rounded-card bg-pandan-soft', className)}
     >
-      <Animated.View
-        style={pill}
-        className="mb-3 flex-row items-center gap-1.5 self-start rounded-full bg-surface px-3 py-1.5"
-      >
-        <Icon set="system" name="eye-show" size={16} />
-        <Text variant="caption" className="text-pandan-ink">
-          {t('preview.badge')}
-        </Text>
-      </Animated.View>
-
-      {/* The phone: a bezel on three sides and none at the foot, so it runs
-          off the panel rather than ending like a card. */}
       <View
-        pointerEvents="none"
-        className="mx-2 gap-3.5 rounded-t-[30px] border-x-2 border-t-2 border-heading bg-surface px-3 pb-9 pt-4"
+        accessible
+        accessibilityRole="image"
+        accessibilityLabel={`${t('preview.badge')}. ${accessibilityLabel}`}
+        className="px-3 pt-3"
       >
-        {children}
+        <Animated.View
+          style={pill}
+          className="mb-3 flex-row items-center gap-1.5 self-start rounded-full bg-surface px-3 py-1.5"
+        >
+          <Icon set="system" name="eye-show" size={16} />
+          <Text variant="caption" className="text-pandan-ink">
+            {t('preview.badge')}
+          </Text>
+        </Animated.View>
+
+        {/* The phone: a bezel on three sides and none at the foot, so it runs
+            off the panel rather than ending like a card. Its bottom padding is
+            the fade's height, so the fade crosses the bezel and not the last
+            row of the sample. */}
+        <View
+          pointerEvents="none"
+          className="mx-2 gap-3.5 rounded-t-[30px] border-x-2 border-t-2 border-heading bg-surface px-3 pb-14 pt-4"
+        >
+          {children}
+        </View>
       </View>
 
       <View
@@ -85,15 +98,16 @@ export function ShowcaseFrame({ children, accessibilityLabel, className }: Showc
           experimental_backgroundImage: `linear-gradient(to bottom, ${transparent(colors.pandanSoft)}, ${colors.pandanSoft})`,
         }}
       />
-    </Pressable>
+    </Tappable>
   )
 }
 
 /**
- * The panel's own colour at zero alpha. Fading to `transparent` goes through
+ * The panel's own colour at zero alpha. Fading from `transparent` goes through
  * grey on iOS (it is transparent BLACK), which shows as a dirty band in light
- * mode.
+ * mode. The tokens are `#RRGGBB`; anything else falls back to `transparent`
+ * rather than building an invalid colour that breaks the gradient outright.
  */
-function transparent(hex: string): string {
-  return `${hex.slice(0, 7)}00`
+export function transparent(hex: string): string {
+  return /^#[0-9a-f]{6}([0-9a-f]{2})?$/i.test(hex) ? `${hex.slice(0, 7)}00` : 'transparent'
 }

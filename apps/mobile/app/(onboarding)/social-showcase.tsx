@@ -26,7 +26,7 @@ const MEMBERS = ['Aisyah', 'Wei Ling', 'Priya', 'Daniel', 'Hafiz', 'Mei', 'Arun'
  * "Friend or family", so the question lands just after the reason to bring one.
  */
 export default function SocialStep() {
-  const { t } = useTranslation(['onboarding', 'groups', 'common'])
+  const { t } = useTranslation(['onboarding', 'groups', 'social', 'common'])
   const router = useRouter()
   const likes = useLikeLanding()
 
@@ -41,7 +41,7 @@ export default function SocialStep() {
       onPrimary={() => router.push('/(onboarding)/source')}
     >
       <ShowcaseFrame
-        accessibilityLabel={`${POST.author}, ${POST.dish}, ${POST.kcal} ${t('common:unit.kcal')}. ${t('social.group')}`}
+        accessibilityLabel={`${POST.author}, ${POST.dish}, ${POST.kcal} ${t('common:unit.kcal')}, ${t('social:likes', { count: likes })}. ${t('social.group')}, ${t('groups:members', { count: MEMBERS.length })}`}
       >
         <View className="flex-row items-center gap-2.5">
           <Avatar name={POST.author} fallback="initial" size="xs" tone="pandan" />
