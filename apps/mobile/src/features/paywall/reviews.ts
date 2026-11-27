@@ -18,7 +18,9 @@ export type PaywallReview = {
 /**
  * Real five-star App Store reviews, read through App Store Connect on
  * 27 November 2026. Each quote is the reviewer's own words, cut to a sentence
- * or two with light grammar edits; never add a claim they did not make. Not
+ * or two with light grammar edits; never add a claim they did not make. Kept to
+ * about three lines on a phone: the cards share the tallest one's height, so a
+ * long quote leaves the short ones with a gap above the name. Not
  * translated: a review is quoted in the language it was written in. The
  * website quotes the fuller text of the same reviews.
  */
@@ -29,26 +31,22 @@ export const PAYWALL_REVIEWS: readonly PaywallReview[] = [
     stars: 5,
   },
   {
-    quote:
-      'The snap feature and AI capabilities make things so quick and intuitive. App design is really cute too.',
+    quote: 'The snap feature and AI capabilities make things so quick and intuitive.',
     author: 'Zayydah',
     stars: 5,
   },
   {
-    quote:
-      'I love how integrated the different features in the app are. The only app I am using now to track nutrition and workouts!',
+    quote: 'The only app I am using now to track nutrition and workouts!',
     author: 'jamesgan99',
     stars: 5,
   },
   {
-    quote:
-      'I like that it is localised properly for Asian food, which other calorie tracking apps lack. It detects a lot of the local food that I snap.',
+    quote: 'It is able to detect a lot of the local food that I snap.',
     author: 'minghui2103',
     stars: 5,
   },
   {
-    quote:
-      'It was so easy to get started and use for my diet plan. They also offer a lifetime plan, which is rather affordable compared to other apps I have used.',
+    quote: 'It was so easy to get started and use for my diet plan.',
     author: 'Locards Principle',
     stars: 5,
   },

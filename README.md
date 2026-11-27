@@ -7145,8 +7145,9 @@ lands is what makes starting the trial feel safe.
 
 **Between the plans and the comparison, what other people thought.**
 `PaywallSocialProof` (`src/features/paywall/SocialProof.tsx`) draws the store
-rating and user count in kaya laurels, then real App Store reviews in a
-carousel that moves on every five seconds, unless the reader asked for less
+rating and user count in kaya laurels, then real App Store reviews in an
+edge-to-edge carousel, the card in front centred with a neighbour peeking in
+on each side. It moves on every five seconds, unless the reader asked for less
 motion, and loops without a rewind (the list is tripled and the reader kept in
 the middle copy, as Money2Time's paywall does). It sits first in `ProDetails`,
 so on iPhone Duo it opens the pane beside the plans. The figures and quotes

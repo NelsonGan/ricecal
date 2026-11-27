@@ -73,7 +73,9 @@ function LaurelStat({ value, children }: { value: string; children: ReactNode })
   return (
     <View className="flex-row items-center gap-1">
       <LaurelWing height={58} color={colors.kayaSlab} />
-      <View className="min-w-[84px] items-center">
+      {/* Each wreath hugs its own figure, as the website's do: a shared width
+          left "4.8" floating loose between leaves sized for "USERS' CHOICE". */}
+      <View className="items-center px-0.5">
         <Text variant="displayMd">{value}</Text>
         {children}
       </View>
@@ -84,15 +86,18 @@ function LaurelStat({ value, children }: { value: string; children: ReactNode })
 
 function ReviewCard({ review }: { review: PaywallReview }) {
   return (
-    <Card className="flex-1" contentClassName="flex-1 justify-between p-5">
-      <View className="flex-row gap-2">
-        <Text className="flex-1 font-body-bold text-[16px] leading-[23px] text-ink">
-          {review.quote}
-        </Text>
-        <Text aria-hidden className="font-display text-[44px] leading-[44px] text-pandan-soft-line">
-          ”
-        </Text>
-      </View>
+    <Card className="flex-1" contentClassName="flex-1 justify-between gap-4 p-5">
+      {/* In the corner rather than beside the quote, so the quote keeps the
+          card's whole width and wraps to fewer lines. */}
+      <Text
+        aria-hidden
+        className="absolute right-4 top-2 font-display text-[44px] leading-[60px] text-pandan-soft-line"
+      >
+        ”
+      </Text>
+      <Text className="pr-6 font-body-bold text-[16px] leading-[23px] text-ink">
+        {review.quote}
+      </Text>
       <View className="flex-row items-center justify-between gap-3">
         <Text variant="meta" numberOfLines={1} className="shrink">
           {review.author}
@@ -103,8 +108,12 @@ function ReviewCard({ review }: { review: PaywallReview }) {
   )
 }
 
-/** How much of the next card shows at the right edge, and the gap before it. */
-const PEEK = 28
+/**
+ * The carousel runs edge to edge, and the card in front sits in the middle
+ * with this much of the screen either side of it, so the previous and next
+ * cards both show at the edges. Their visible slivers are `PEEK - GAP` wide.
+ */
+const PEEK = 30
 const GAP = 12
 /** Long enough to read the longest quote twice over. */
 const ADVANCE_MS = 5000
@@ -112,8 +121,8 @@ const ADVANCE_MS = 5000
 const n = PAYWALL_REVIEWS.length
 
 /**
- * The reviews, one card at a time with the next peeking in, moving on by
- * itself unless the reader asked for less motion. Built as Money2Time's is:
+ * The reviews, one card at a time in the middle with a neighbour peeking in on
+ * each side, moving on by itself unless the reader asked for less motion. Built as Money2Time's is:
  * the list is tripled and the active card kept in the middle copy, so it loops
  * forever in both directions without a visible rewind.
  */
@@ -131,7 +140,7 @@ function ReviewCarousel() {
   const indexRef = useRef(n)
   const recenterTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const itemWidth = Math.max(0, width - PEEK - GAP)
+  const itemWidth = Math.max(0, width - PEEK * 2)
   const interval = itemWidth + GAP
 
   const clearRecenter = useCallback(() => {
@@ -173,7 +182,8 @@ function ReviewCarousel() {
   }, [width, reduceMotion, goTo, recenter, clearRecenter])
 
   return (
-    <View onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
+    // Out through the screen gutter, so the neighbours peek in from the edges.
+    <View className="-mx-gutter" onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
       {width > 0 ? (
         <ScrollView
           ref={scrollRef}
@@ -184,7 +194,7 @@ function ReviewCarousel() {
           disableIntervalMomentum
           contentOffset={{ x: n * interval, y: 0 }}
           // The cards' slab sits below them; room for it, or the ScrollView clips it.
-          contentContainerStyle={{ paddingBottom: 6 }}
+          contentContainerStyle={{ paddingHorizontal: PEEK - GAP / 2, paddingBottom: 6 }}
           // `contentOffset` places the first paint on iOS; Android ignores it.
           onContentSizeChange={() => {
             if (indexRef.current === n) goTo(n, false)
@@ -196,7 +206,7 @@ function ReviewCarousel() {
           }}
         >
           {loop.map(({ review, key }) => (
-            <View key={key} style={{ width: itemWidth, marginRight: GAP }}>
+            <View key={key} style={{ width: itemWidth, marginHorizontal: GAP / 2 }}>
               <ReviewCard review={review} />
             </View>
           ))}
@@ -214,8 +224,8 @@ function ReviewCarousel() {
 export function PaywallSocialProof() {
   const { t } = useTranslation('paywall')
   return (
-    <View className="mt-md gap-4">
-      <View className="flex-row flex-wrap items-center justify-center gap-x-6 gap-y-3">
+    <View className="mt-md gap-3">
+      <View className="flex-row flex-wrap items-center justify-center gap-x-8 gap-y-3">
         <LaurelStat value={SOCIAL_PROOF.rating.toFixed(1)}>
           <StarRow rating={SOCIAL_PROOF.rating} size={13} />
         </LaurelStat>
