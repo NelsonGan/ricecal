@@ -13,30 +13,21 @@ const store = (overrides: Partial<StoreEntitlement>): StoreEntitlement => ({
 })
 
 it('reminds about a trial the store will charge for', () => {
-  expect(trialToRemind(store({}), undefined)).toEqual({
+  expect(trialToRemind(store({}))).toEqual({
     start: new Date('2026-11-27T07:00:00Z'),
     end: new Date('2026-12-04T07:00:00Z'),
   })
 })
 
 it('stops once the trial is cancelled, paid for, or gone', () => {
-  expect(trialToRemind(store({ willRenew: false }), undefined)).toBeNull()
-  expect(trialToRemind(store({ trial: false }), undefined)).toBeNull()
-  expect(trialToRemind(store({ active: false }), undefined)).toBeNull()
+  expect(trialToRemind(store({ willRenew: false }))).toBeNull()
+  expect(trialToRemind(store({ trial: false }))).toBeNull()
+  expect(trialToRemind(store({ active: false }))).toBeNull()
 })
 
-it('falls back on the mirror when there is no store to ask', () => {
-  expect(trialToRemind(null, { status: 'trial', trial_ends_at: '2026-12-04T07:00:00Z' })).toEqual({
-    start: null,
-    end: new Date('2026-12-04T07:00:00Z'),
-  })
-  expect(
-    trialToRemind(null, { status: 'cancelled', trial_ends_at: '2026-12-04T07:00:00Z' }),
-  ).toBeNull()
-  expect(trialToRemind(null, null)).toBeNull()
-})
-
-it('decides nothing until both sources have answered', () => {
-  expect(trialToRemind(undefined, null)).toBeUndefined()
-  expect(trialToRemind(null, undefined)).toBeUndefined()
+it('decides nothing without an answer from the store', () => {
+  // Our mirror keeps a cancelled trial at `trial` until it runs out, so it is
+  // never used to book a "you will be charged".
+  expect(trialToRemind(undefined)).toBeUndefined()
+  expect(trialToRemind(null)).toBeUndefined()
 })

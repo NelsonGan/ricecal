@@ -36,7 +36,10 @@ export function trialEnd(start: Date, duration: TrialDuration): Date {
  * trial starts reminds nobody of anything. Zero means no reminder at all.
  */
 export function reminderLeadDays(start: Date, end: Date): number {
-  const days = Math.floor((end.getTime() - start.getTime()) / DAY_MS)
+  // Rounded, not floored: a three-day trial is 71 hours across a spring DST
+  // change, and a receipt's purchase time can trail the trial's start by
+  // seconds. Floored, either one cost the reminder a day the paywall promised.
+  const days = Math.round((end.getTime() - start.getTime()) / DAY_MS)
   return Math.max(0, Math.min(TRIAL_REMINDER_DAYS, days - 1))
 }
 
@@ -59,33 +62,26 @@ export function trialTimeline(duration: TrialDuration, now = new Date()): TrialT
   return { endsAt, remindAt: trialReminderAt(now, endsAt), leadDays: reminderLeadDays(now, endsAt) }
 }
 
-type Mirror = { status: string; trial_ends_at: string | null } | null | undefined
-
 /**
- * The trial to remind somebody about, if any. `undefined` while neither source
- * has answered, so a launch does not cancel a booked reminder only to book it
- * again a second later.
+ * The trial to remind somebody about, if any, from the store's answer alone.
+ * `undefined` when there is no answer (still loading, or no store SDK to ask),
+ * which decides nothing: a booked reminder is left as it is rather than
+ * cancelled on a guess.
  *
- * The store first, because only it knows whether the trial was cancelled
- * (`willRenew`), and a reminder that "you will be charged" sent to somebody who
- * cancelled is the opposite of what it was promised as. The mirror stands in
- * on a build with no store SDK; it has no will-renew, but a cancelled trial is
- * written there as `cancelled` rather than `trial`.
+ * Only the store, because only it knows whether the trial was cancelled
+ * (`willRenew`). Our mirror cannot say: the webhook keeps a cancelled trial at
+ * `trial` until it runs out, so booking from it would tell somebody who
+ * cancelled that they are about to be charged.
  */
 export function trialToRemind(
   store: StoreEntitlement | null | undefined,
-  mirror: Mirror,
 ): { start: Date | null; end: Date } | null | undefined {
-  if (store) {
-    if (!store.active || !store.trial || !store.willRenew || !store.expiresAt) return null
-    return {
-      start: store.trialStartedAt ? new Date(store.trialStartedAt) : null,
-      end: new Date(store.expiresAt),
-    }
+  if (!store) return undefined
+  if (!store.active || !store.trial || !store.willRenew || !store.expiresAt) return null
+  return {
+    start: store.trialStartedAt ? new Date(store.trialStartedAt) : null,
+    end: new Date(store.expiresAt),
   }
-  if (store === undefined || mirror === undefined) return undefined
-  if (mirror?.status !== 'trial' || !mirror.trial_ends_at) return null
-  return { start: null, end: new Date(mirror.trial_ends_at) }
 }
 
 /** The bar follows the purchased trial's dates, even if the store changes its offer later. */

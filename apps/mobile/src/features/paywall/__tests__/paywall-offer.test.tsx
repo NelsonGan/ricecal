@@ -1,5 +1,4 @@
 import '@/i18n'
-import { format } from 'date-fns/format'
 import type { ComponentProps } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { render, screen, userEvent } from '@/test-utils'
@@ -159,24 +158,44 @@ it('restores through the same guarded store flow', async () => {
 })
 
 it('shows when the trial ends, when it reminds, and what it then charges', async () => {
-  await renderOffer({ screen: 'hard', onLater: jest.fn() })
+  // Only the clock is faked, so the dates are fixed and `userEvent` keeps its
+  // real timers. Midday, well away from midnight and any DST change.
+  jest.useFakeTimers({
+    now: new Date(2026, 10, 27, 12, 0),
+    doNotFake: [
+      'hrtime',
+      'nextTick',
+      'performance',
+      'queueMicrotask',
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'requestIdleCallback',
+      'cancelIdleCallback',
+      'setImmediate',
+      'clearImmediate',
+      'setInterval',
+      'clearInterval',
+      'setTimeout',
+      'clearTimeout',
+    ],
+  })
+  try {
+    await renderOffer({ screen: 'hard', onLater: jest.fn() })
 
-  expect(screen.getByText('How your free trial works')).toBeTruthy()
-  expect(screen.getByText('Today')).toBeTruthy()
-  // A three-day trial reminds two days before its end, which is tomorrow.
-  const day = (offset: number) => {
-    const date = new Date()
-    date.setDate(date.getDate() + offset)
-    return format(date, 'EEE d MMM')
+    expect(screen.getByText('How your free trial works')).toBeTruthy()
+    expect(screen.getByText('Today')).toBeTruthy()
+    // A three-day trial reminds two days before its end, which is tomorrow.
+    expect(screen.getByText('Sat 28 Nov')).toBeTruthy()
+    expect(screen.getByText('We remind you 2 days before it ends')).toBeTruthy()
+    expect(screen.getByText('Mon 30 Nov')).toBeTruthy()
+    expect(screen.getByText('You pay RM99.90. Cancel before then to pay nothing.')).toBeTruthy()
+
+    // Monthly has no trial for this account, so there is no timeline to show.
+    await user.press(screen.getByText('Monthly'))
+    expect(screen.queryByText('How your free trial works')).toBeNull()
+  } finally {
+    jest.useRealTimers()
   }
-  expect(screen.getByText(day(1))).toBeTruthy()
-  expect(screen.getByText('We remind you 2 days before it ends')).toBeTruthy()
-  expect(screen.getByText(day(3))).toBeTruthy()
-  expect(screen.getByText('You pay RM99.90. Cancel before then to pay nothing.')).toBeTruthy()
-
-  // Monthly has no trial for this account, so there is no timeline to show.
-  await user.press(screen.getByText('Monthly'))
-  expect(screen.queryByText('How your free trial works')).toBeNull()
 })
 
 it('draws no timeline before the store has answered', async () => {

@@ -496,19 +496,45 @@ const TRIAL_REMINDER = 'trial-reminder'
 export type TrialReminder = { at: Date; title: string; body: string }
 
 /**
- * Books `reminder`, or takes it back when it is null. Best effort: without
- * permission there is nothing to book, and a failure must not reach whatever
- * screen happened to be syncing.
+ * The booking in flight. Calls run one after another: a launch books from the
+ * persisted receipt and then unbooks from the fresh one a moment later, and
+ * run side by side the first one's schedule could land after the second one's
+ * cancel, leaving a cancelled trial its "you will be charged".
  */
-export async function bookTrialReminder(reminder: TrialReminder | null): Promise<void> {
+let trialBooking: Promise<void> = Promise.resolve()
+
+/**
+ * Books `reminder` for the account `owner`, or takes back that account's own
+ * reminder when it is null. Best effort: without permission there is nothing
+ * to book, and a failure must not reach whatever screen happened to be syncing.
+ *
+ * Taking back is per account because the store answers per account while the
+ * charge lands on the phone's store account: signing in as somebody without a
+ * trial would otherwise unbook the reminder for a trial still running.
+ */
+export function bookTrialReminder(owner: string, reminder: TrialReminder | null): Promise<void> {
+  trialBooking = trialBooking.then(() => writeTrialReminder(owner, reminder))
+  return trialBooking
+}
+
+async function writeTrialReminder(owner: string, reminder: TrialReminder | null): Promise<void> {
   try {
+    if (!reminder) {
+      const booked = (await Notifications.getAllScheduledNotificationsAsync()).find(
+        (entry) => entry.identifier === TRIAL_REMINDER,
+      )
+      if (booked && booked.content.data?.owner === owner) {
+        await Notifications.cancelScheduledNotificationAsync(TRIAL_REMINDER)
+      }
+      return
+    }
     await Notifications.cancelScheduledNotificationAsync(TRIAL_REMINDER)
-    if (!reminder || reminder.at.getTime() <= Date.now()) return
+    if (reminder.at.getTime() <= Date.now()) return
     if (!(await notificationsAllowed())) return
     await ensureChannel()
     await Notifications.scheduleNotificationAsync({
       identifier: TRIAL_REMINDER,
-      content: { title: reminder.title, body: reminder.body, data: { kind: 'trial' } },
+      content: { title: reminder.title, body: reminder.body, data: { kind: 'trial', owner } },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: reminder.at,

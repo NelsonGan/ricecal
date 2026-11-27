@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router'
-import { useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
 import Animated, {
@@ -80,13 +80,17 @@ function WelcomeToPro() {
    * so the system sheet does not cover the confirmation it follows.
    */
   const trial = state === 'trial'
+  const asked = useRef(false)
+  const askForReminder = useCallback(() => {
+    if (asked.current) return
+    asked.current = true
+    ensureNotificationPermission().catch(() => {})
+  }, [])
   useEffect(() => {
     if (!trial) return
-    const timer = setTimeout(() => {
-      ensureNotificationPermission().catch(() => {})
-    }, 900)
+    const timer = setTimeout(askForReminder, 900)
     return () => clearTimeout(timer)
-  }, [trial])
+  }, [trial, askForReminder])
 
   /**
    * Land on Today, and stop there. It used to raise the log sheet as well, which
@@ -98,7 +102,12 @@ function WelcomeToPro() {
    * onboarding as often as it is a purchase, and a replace leaves every screen
    * the user walked through standing under the diary. See `useEnterApp`.
    */
-  const goToDiary = () => enterApp()
+  const goToDiary = () => {
+    // Somebody who taps on before the ask has come up is still asked, or the
+    // reminder the paywall promised them is never booked.
+    if (trial) askForReminder()
+    enterApp()
+  }
 
   return (
     <Screen

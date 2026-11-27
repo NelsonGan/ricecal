@@ -257,43 +257,67 @@ describe("clearing a group's chat notifications", () => {
 
 describe('the trial reminder', () => {
   const at = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+  const booked = (owner: string) => [
+    { identifier: 'trial-reminder', content: { data: { kind: 'trial', owner } } },
+  ]
 
   beforeEach(() => {
     jest.clearAllMocks()
     ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({ granted: true })
+    ;(Notifications.getAllScheduledNotificationsAsync as jest.Mock).mockResolvedValue([])
   })
 
   it('books one notification under a fixed id, replacing any earlier one', async () => {
-    await bookTrialReminder({ at, title: 'Ends in 3 days', body: 'Renews on 4 December' })
+    await bookTrialReminder('a', { at, title: 'Ends in 3 days', body: 'Renews on 4 December' })
     expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('trial-reminder')
     expect(Notifications.scheduleNotificationAsync).toHaveBeenCalledWith({
       identifier: 'trial-reminder',
       content: {
         title: 'Ends in 3 days',
         body: 'Renews on 4 December',
-        data: { kind: 'trial' },
+        data: { kind: 'trial', owner: 'a' },
       },
       trigger: expect.objectContaining({ type: 'date', date: at }),
     })
   })
 
-  it('takes it back when there is no trial to remind about, or the moment has passed', async () => {
-    await bookTrialReminder(null)
-    await bookTrialReminder({ at: new Date(Date.now() - 1000), title: 'x', body: 'x' })
-    expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledTimes(2)
+  it("takes back the account's own reminder when its trial is over or cancelled", async () => {
+    ;(Notifications.getAllScheduledNotificationsAsync as jest.Mock).mockResolvedValue(booked('a'))
+    await bookTrialReminder('a', null)
+    expect(Notifications.cancelScheduledNotificationAsync).toHaveBeenCalledWith('trial-reminder')
+  })
+
+  it("leaves another account's reminder: the charge is on the phone's store account", async () => {
+    ;(Notifications.getAllScheduledNotificationsAsync as jest.Mock).mockResolvedValue(booked('a'))
+    await bookTrialReminder('b', null)
+    expect(Notifications.cancelScheduledNotificationAsync).not.toHaveBeenCalled()
+  })
+
+  it('books nothing for a moment already past, or without permission', async () => {
+    await bookTrialReminder('a', { at: new Date(Date.now() - 1000), title: 'x', body: 'x' })
+    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({ granted: false })
+    await bookTrialReminder('a', { at, title: 'x', body: 'x' })
     expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled()
   })
 
-  it('books nothing without permission', async () => {
-    ;(Notifications.getPermissionsAsync as jest.Mock).mockResolvedValue({ granted: false })
-    await bookTrialReminder({ at, title: 'x', body: 'x' })
-    expect(Notifications.scheduleNotificationAsync).not.toHaveBeenCalled()
+  it('runs one booking after another, so a later cancel always wins', async () => {
+    ;(Notifications.getAllScheduledNotificationsAsync as jest.Mock).mockResolvedValue(booked('a'))
+    const order: string[] = []
+    ;(Notifications.scheduleNotificationAsync as jest.Mock).mockImplementation(async () => {
+      order.push('schedule')
+    })
+    ;(Notifications.cancelScheduledNotificationAsync as jest.Mock).mockImplementation(async () => {
+      order.push('cancel')
+    })
+    await Promise.all([
+      bookTrialReminder('a', { at, title: 'x', body: 'x' }),
+      bookTrialReminder('a', null),
+    ])
+    expect(order).toEqual(['cancel', 'schedule', 'cancel'])
   })
 
   it('is left booked when the meal reminders are rewritten', async () => {
-    ;(Notifications.getAllScheduledNotificationsAsync as jest.Mock).mockResolvedValue([
-      { identifier: 'trial-reminder', content: { data: { kind: 'trial' } } },
-    ])
+    ;(Notifications.getAllScheduledNotificationsAsync as jest.Mock).mockResolvedValue(booked('a'))
     await rescheduleReminders(settings, [], copy)
     expect(Notifications.cancelScheduledNotificationAsync).not.toHaveBeenCalledWith(
       'trial-reminder',

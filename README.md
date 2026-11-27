@@ -7148,15 +7148,23 @@ lands is what makes starting the trial feel safe.
 store's receipt rather than from the purchase button: the trial's real end,
 whether the store will renew it (`willRenew` on the store entitlement, which a
 cancelled trial turns off and so unbooks the reminder), and the start for the
-lead time. Without a store SDK it falls back on the mirror's `trial` status and
-`trial_ends_at`. It is checked again whenever the app comes to the front, and it
-is not cancelled on sign out the way the meal reminders are: it is about money
-leaving the phone's store account, which signing out of RiceCal does not stop.
-The welcome screen after a trial purchase asks for notification permission,
-the one place outside the reminder settings that asks, because that is the
-moment the reminder was promised; returning from the system sheet books it.
-Tapping it opens **Me, RiceCal Pro**. Its copy is written when it is booked, so
-it fires in the language the app was in that day.
+lead time. It books from the store alone. The `subscriptions` mirror cannot say
+whether a trial was cancelled (the webhook keeps a cancelled trial at `trial`
+until it runs out), so with no store answer nothing is booked or taken back.
+It is checked again whenever the app comes to the front or a permission ask
+ends in a yes. It is not cancelled on sign out the way the meal reminders are,
+and an account only ever takes back the reminder it booked itself (the
+booking carries its user id): it is about money leaving the phone's store
+account, which signing out of RiceCal, or in as somebody else, does not stop.
+The one gap left is a trial cancelled while its account is signed out, whose
+reminder still fires. Bookings run one after another, so a launch that books
+from the persisted receipt and unbooks from the fresh one a moment later
+cannot leave the first schedule standing. The welcome screen after a trial
+purchase asks for notification permission, the one place outside the reminder
+settings that asks, because that is the moment the reminder was promised; it
+asks on the Continue tap too if somebody leaves before the ask has come up.
+Tapping the reminder opens **Me, RiceCal Pro**. Its copy is written when it is
+booked, so it fires in the language the app was in that day.
 
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the

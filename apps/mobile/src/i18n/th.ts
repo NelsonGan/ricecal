@@ -1355,7 +1355,7 @@ export const th = {
       todayBody: 'ปลดล็อกทุกอย่างใน Pro',
       remindBody_one: 'เราจะเตือนคุณหนึ่งวันก่อนหมดเวลา',
       remindBody_other: 'เราจะเตือนคุณ {{count}} วันก่อนหมดเวลา',
-      chargeBody: 'คุณจ่าย {{price}} ยกเลิกก่อนวันนี้เพื่อไม่เสียเงิน',
+      chargeBody: 'คุณจ่าย {{price}} ยกเลิกก่อนวันนั้นเพื่อไม่เสียเงิน',
     },
     trialReminder: {
       title_one: 'การทดลองใช้ฟรีของคุณจะหมดพรุ่งนี้',
