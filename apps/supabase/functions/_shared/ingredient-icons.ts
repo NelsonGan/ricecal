@@ -730,19 +730,6 @@ const RECIPE_READINGS: Record<string, string | null> = {
   'peanut oil': 'cooking-oil',
   'palm oil': 'cooking-oil',
   'neutral oil': 'cooking-oil',
-  // Named for its source, which has a drawing of its own and a longer name
-  // than "oil", so without these the line drew the corn, rice or chicken.
-  'corn oil': 'cooking-oil',
-  'rice bran oil': 'cooking-oil',
-  'soybean oil': 'cooking-oil',
-  'soya bean oil': 'cooking-oil',
-  'avocado oil': 'cooking-oil',
-  'mustard oil': 'cooking-oil',
-  'chicken oil': 'cooking-oil',
-  'garlic oil': 'cooking-oil',
-  'shallot oil': 'cooking-oil',
-  'scallion oil': 'cooking-oil',
-  'spring onion oil': 'cooking-oil',
   'stock cube': 'stock-cube',
   'stock powder': 'stock-cube',
   'stock granules': 'stock-cube',
@@ -905,26 +892,65 @@ for (const set of Object.keys(ICON_NAMES) as IconSet[]) {
 export function ingredientIconFor(name: unknown): IconChoice | null {
   const text = normaliseName(name)
   if (text.trim().length > 0) {
-    const all = recipePhrases()
-    for (let i = 0; i < all.length; i++) {
-      let best = all[i]
-      let end = text.lastIndexOf(` ${best.text} `)
-      if (end < 0) continue
-      end += best.text.length
-      for (let j = i + 1; j < all.length; j++) {
-        const next = all[j]
-        if (next.weak !== best.weak || next.words !== best.words) break
-        if (next.text.length !== best.text.length) break
-        const at = text.lastIndexOf(` ${next.text} `)
-        if (at >= 0 && at + next.text.length > end) {
-          best = next
-          end = at + next.text.length
-        }
-      }
-      const icon = recipeTable()[best.text]
+    // "Sardines in soybean oil": what sits in the oil is the line's ingredient,
+    // when the words before "in" name something.
+    const cut = text.indexOf(' in ')
+    const head = cut > 0 && text.indexOf(' oil ', cut) > 0 ? text.slice(0, cut + 1) : null
+    const found = (head !== null ? recipeMatch(head) : null) ?? recipeMatch(text)
+    if (found) {
+      const read = head !== null && found.within === head ? head : text
+      // An oil named for its source is a bottle of oil, not the source: "corn
+      // oil", "rice bran oil for frying", "minyak jagung". On length alone the
+      // source's phrase beat "oil" and drew a corn cob or a sack of rice.
+      const icon =
+        found.icon !== null &&
+        !oilDrawings().has(found.icon) &&
+        (read.indexOf(' oil ', found.end) >= 0 || read.startsWith(' minyak '))
+          ? 'cooking-oil'
+          : found.icon
       const set = icon ? SET_OF.get(icon) : undefined
       return icon && set ? { set, name: icon } : null
     }
   }
   return iconFor(name)
+}
+
+/**
+ * The most specific recipe phrase in `text`, with where it ends, or null when
+ * none is there. The icon is null when the table decided a phrase has no
+ * drawing.
+ */
+function recipeMatch(text: string): { icon: string | null; end: number; within: string } | null {
+  const all = recipePhrases()
+  for (let i = 0; i < all.length; i++) {
+    let best = all[i]
+    let at = text.lastIndexOf(` ${best.text} `)
+    if (at < 0) continue
+    for (let j = i + 1; j < all.length; j++) {
+      const next = all[j]
+      if (next.weak !== best.weak || next.words !== best.words) break
+      if (next.text.length !== best.text.length) break
+      const later = text.lastIndexOf(` ${next.text} `)
+      if (later > at) {
+        best = next
+        at = later
+      }
+    }
+    // `end` is the space after the phrase, where a following word starts.
+    return { icon: recipeTable()[best.text] ?? null, end: at + best.text.length + 1, within: text }
+  }
+  return null
+}
+
+/** Every drawing an oil's own name reaches ("sesame oil", "minyak sapi"): left as they are. */
+let oils: Set<string> | undefined
+function oilDrawings(): Set<string> {
+  if (oils) return oils
+  oils = new Set<string>()
+  for (const [phrase, icon] of Object.entries(recipeTable())) {
+    if (icon && (phrase === 'oil' || phrase.endsWith(' oil') || phrase.startsWith('minyak '))) {
+      oils.add(icon)
+    }
+  }
+  return oils
 }

@@ -94,22 +94,36 @@ Deno.test('an oil named for its source is drawn as oil', () => {
   for (const name of [
     'Corn oil',
     '2 tbsp rice bran oil',
+    'Corn oil, for frying',
     'Soybean oil',
-    'Soya bean oil',
+    'Soy bean oil',
+    'Soya oil',
     'Avocado oil',
-    'Mustard oil',
+    'Pumpkin seed oil',
     'Chicken oil',
-    'Garlic oil',
-    'Shallot oil',
-    'Scallion oil',
-    'Spring onion oil',
+    'Prawn oil',
+    'Garlic-infused oil',
+    'Shallots oil',
+    'Green onion oil',
+    'Scallion ginger oil',
+    'Minyak jagung',
+    'Minyak bawang',
+    'Minyak kacang soya',
   ]) {
     eq([name, drawn(name)], [name, 'cooking-oil'])
   }
-  // Oil that comes with something is still that thing.
-  eq(drawn('Tuna in oil'), 'tuna-can')
+  // An oil with a drawing of its own keeps it.
   eq(drawn('Sesame oil'), 'sesame-oil')
+  eq(drawn('Chilli oil'), 'chilli-oil')
+  eq(drawn('Minyak bijan'), 'sesame-oil')
+  eq(drawn('Minyak sapi'), 'ghee')
+  // What sits in the oil is still that thing, whatever the oil is called.
+  eq(drawn('Tuna in oil'), 'tuna-can')
+  eq(drawn('Sardines in soybean oil'), 'sardines')
+  eq(drawn('Minced garlic in corn oil'), 'garlic')
+  // And a food that only sounds like a source is untouched.
   eq(drawn('Sweet corn'), 'corn')
+  eq(drawn('Chicken in soy sauce'), 'soy-sauce')
 })
 
 // A flavour does not outrank what it flavours, as in the catalogue.
