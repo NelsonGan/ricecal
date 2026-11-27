@@ -8,10 +8,11 @@ description: Recapture the RiceCal App Studio store screenshots (iPhone and iPho
 App Studio (`apps/app-studio`, see [work-on-app-studio](../work-on-app-studio/SKILL.md))
 frames real captures of the app: six screens per language in
 `public/assets/screenshots-iphone/<lang>/` (1320 × 2868) and
-`public/assets/screenshots-iphone-duo/<lang>/` (2853 × 2007), named `01-today`,
-`02-workout`, `03-dish`, `04-trends`, `05-feed`, `06-recipes`, with a
-`capture.json` and `photo-provenance.json` beside them. The iPad and Play sets
-reuse the iPhone captures. Each language is captured from its own fictional
+`public/assets/screenshots-iphone-duo/<lang>/` (2853 × 2007) and
+`public/assets/screenshots-ipad/<lang>/` (2752 × 2064), named `01-today`,
+`02-workout`, `03-dish`, `04-trends`, `05-feed` (Social), `06-recipes`, with a
+`capture.json` and `photo-provenance.json` beside them. The Play phone set
+reuses the iPhone captures, and Play's tablet set the iPad scenes. Each language is captured from its own fictional
 account, seeded with that market's food, so a Japanese shot shows Japanese
 dishes and the Japanese UI.
 
@@ -74,8 +75,11 @@ Lease with the T3 Code device tools (`device_open`, host `simlock-mac-mini`).
 | ---------- | -------------------------------- | ---------------------------------------------------------------------------------------- |
 | iPhone     | `simlock:ios:iPhone 18 Pro Max`  | 1320 × 2868 at 3x. Not a pre-baked pool model: install the dev client first (below).     |
 | iPhone Duo | `simlock:ios:iPhone Duo`         | Captured open, on its side. The script unfolds it.                                      |
+| iPad       | `simlock:ios:iPad Pro 13-inch (M4)` | 2752 × 2064 on its side. Not pre-baked. The script turns it; set Full Screen Apps first (below). |
 
-The Pro Max lease starts with no apps. From the worktree `device_open` names,
+The Pro Max and iPad leases start with no apps. (The M5 13-inch iPad seed
+failed to clone on 2026-11-27, on a dangling lock symlink in its data; the M4
+has the same screen.) From the worktree `device_open` names,
 install the shared dev client, then run the seed branch on it:
 
 ```bash
@@ -83,6 +87,15 @@ install the shared dev client, then run the seed branch on it:
 cd ~/.t3/worktrees/ricecal/app-studio-seed-data
 simlock-metro <device id> <agent-device>     # prints the Metro port
 ```
+
+On the iPad, open Settings with the `agent-device` command, then Multitasking &
+Gestures, and choose Full Screen Apps; under the default Windowed Apps iPadOS
+draws its window grip in the bottom corner of every shot. Relaunch RiceCal
+afterwards so the status bar loses its "Settings" back link.
+
+A leased dev client has no keychain, so the app keeps its session in memory and
+logs keychain errors; the capture script tolerates the first sign-out and hides
+the LogBox banner those errors raise.
 
 A dev client built from an older `main` refuses a bundle with another runtime
 version (an empty red box): build this checkout's with `simlock-build ios
@@ -107,18 +120,20 @@ pnpm screenshots:capture --udid $U --agent-device <agent-device> --port <metro p
   --output <checkout you will commit from>/apps/app-studio/public/assets/screenshots-iphone
 ```
 
-Use `screenshots-iphone-duo` as the output on the Duo. `--locale ja,ko`
-recaptures a subset and keeps the other records. With two devices on one
-Metro, add `--target <text>` (part of the device's `deviceName` in
-`curl -s http://127.0.0.1:<port>/json/list`).
+Use `screenshots-iphone-duo` as the output on the Duo and `screenshots-ipad`
+on the iPad. `--locale ja,ko`
+recaptures a subset and keeps the other records. Two devices can share one Metro: the
+script picks the debugger target named after the simulator (`--target <text>`
+overrides it). The Duo and the iPad show Discover, which the script reorders
+per language, so do not capture those two at the same time.
 
 For each language the script signs out, marks the tour as offered, sets the
 language, signs into that language's account, then visits the six screens
 through the router, checking each route and that every active query
 succeeded, and dismissing toasts. It starts a workout part way through (with a
-watch heart rate) for `02-workout`, captures it last and clears it. On the Duo
-it moves that language's unfollowed cook to the top of Discover before the
-Feed. It pins the status bar (9:41, Wi-Fi, full battery) and light appearance.
+watch heart rate) for `02-workout`, captures it last and clears it. Before Social
+it moves that language's unfollowed cook to the top of Discover, which the Duo
+and the iPad show beside the group and Following. It pins the status bar (9:41, Wi-Fi, full battery) and light appearance.
 Shots are staged and only replace the set when every one passed; duplicate
 pixels or failed data abort the run.
 

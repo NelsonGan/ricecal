@@ -1,10 +1,6 @@
 import { forwardRef } from 'react';
-import { DeviceFrame } from './DeviceFrame';
-import { SceneCanvas, SceneGlows, renderHeadline, DISPLAY_FONT } from './sceneParts';
-import { DsIcon } from './decorations';
-import { useFitText, useFitLines } from './useFitText';
-import { C, R, slab } from './tokens';
-import { Blob, Pandan } from './flora';
+import { SceneCanvas, SceneGlows, renderHeadline, DeviceScreen, DISPLAY_FONT } from './sceneParts';
+import { useFitText } from './useFitText';
 import type { IPadSceneConfig } from '../scenes/ipadSceneData';
 import { IPAD_EXPORT_WIDTH, IPAD_EXPORT_HEIGHT } from '../utils/export';
 
@@ -16,10 +12,47 @@ interface Props {
 const W = IPAD_EXPORT_WIDTH;
 const H = IPAD_EXPORT_HEIGHT;
 
+/** The screen, at the captures' own 2752 × 2064 aspect so the frame crops nothing. */
+const SCREEN_W = 2120;
+const SCREEN_H = Math.round(SCREEN_W * (2064 / 2752));
+const BEZEL = 34;
+const RIM = 8;
+const FRAME_W = SCREEN_W + (BEZEL + RIM) * 2;
+/** The device starts under the headline and only its lower bezel leaves the canvas. */
+const FRAME_TOP = 470;
+
+/** An iPad Pro on its side: an even bezel all round, the camera on the top edge. */
+function IPadFrame({ screenshot }: { screenshot: string }) {
+  const radius = 40;
+  return (
+    <div style={{
+      position: 'relative',
+      width: SCREEN_W + BEZEL * 2,
+      height: SCREEN_H + BEZEL * 2,
+      padding: RIM,
+      borderRadius: radius + BEZEL + RIM,
+      background: 'linear-gradient(150deg, #6e6e73 0%, #2c2c2e 30%, #48484d 55%, #1c1c1e 80%, #5a5a5f 100%)',
+      boxShadow: '0 90px 200px rgba(20,45,32,0.28), 0 28px 64px rgba(20,45,32,0.16)',
+      boxSizing: 'content-box',
+    }}>
+      <div style={{
+        position: 'relative',
+        width: '100%', height: '100%', padding: BEZEL, boxSizing: 'border-box',
+        borderRadius: radius + BEZEL, background: '#0a0a0c',
+      }}>
+        <div style={{
+          position: 'absolute', top: (BEZEL - 12) / 2, left: '50%', width: 12, height: 12,
+          transform: 'translateX(-50%)', borderRadius: 6, background: '#1f2a33',
+        }} />
+        <DeviceScreen screenshot={screenshot} width={SCREEN_W} height={SCREEN_H} borderRadius={radius} />
+      </div>
+    </div>
+  );
+}
+
 export const IPadScreenshotScene = forwardRef<HTMLDivElement, Props>(
   ({ scene, previewScale = 0.17 }, ref) => {
-    const headlineRef = useFitText<HTMLHeadingElement>(136, 0.55);
-    const subRef = useFitLines<HTMLParagraphElement>(52, 2);
+    const headlineRef = useFitText<HTMLHeadingElement>(128);
 
     return (
       <SceneCanvas
@@ -27,68 +60,35 @@ export const IPadScreenshotScene = forwardRef<HTMLDivElement, Props>(
         width={W}
         height={H}
         previewScale={previewScale}
-        background={`linear-gradient(122deg, ${scene.gradientFrom}, ${scene.gradientTo})`}
+        background={`linear-gradient(160deg, ${scene.gradientFrom}, ${scene.gradientTo})`}
       >
         <SceneGlows
           accent={scene.accentColor}
           top={{ inset: 420, size: 1500 }}
           bottom={{ bottomInset: 380, leftInset: 420, size: 1300 }}
         />
-        <Pandan x={-160} y={1320} size={520} color={C.pandanSoftLine} opacity={0.75} rotate={-20} />
-        <Blob x={2320} y={-180} size={620} color={scene.accentColor} opacity={0.09} rotate={18} />
 
-        {/* Left column — headline, one line of body, three short proofs */}
-        <div style={{
-          position: 'absolute', left: 132, top: 0, bottom: 0, width: 1130,
-          display: 'flex', flexDirection: 'column', justifyContent: 'center',
-          zIndex: 6,
+        <div style={{ position: 'absolute', top: 60, left: (W - FRAME_W) / 2, zIndex: 7,
+          color: scene.textColor, opacity: 0.7, fontSize: 40, fontWeight: 800,
+          fontFamily: DISPLAY_FONT, letterSpacing: '-0.5px' }}>RiceCal</div>
+
+        <h1 ref={headlineRef} style={{
+          position: 'absolute', top: 136, left: (W - FRAME_W) / 2, right: (W - FRAME_W) / 2,
+          zIndex: 7, margin: 0,
+          fontFamily: DISPLAY_FONT, fontSize: 128, fontWeight: 800, color: scene.textColor,
+          lineHeight: 1.06, whiteSpace: 'pre-line', letterSpacing: '-1.5px',
         }}>
-          <h1 ref={headlineRef} style={{
-            fontFamily: DISPLAY_FONT,
-            fontSize: 136, fontWeight: 800, color: scene.textColor,
-            lineHeight: 1.06, margin: 0, whiteSpace: 'pre-line',
-            letterSpacing: '-2px',
-          }}>
-            {renderHeadline(scene.headline, scene.highlight, scene.accentColor)}
-          </h1>
-          <p ref={subRef} style={{
-            fontSize: 52, fontWeight: 600, color: scene.subColor,
-            lineHeight: 1.35, margin: '38px 0 0', maxWidth: 1030,
-          }}>{scene.subheadline}</p>
+          {renderHeadline(scene.headline, scene.highlight, scene.accentColor)}
+        </h1>
 
-          {scene.bullets.length > 0 ? <div style={{ display: 'flex', flexDirection: 'column', gap: 20, marginTop: 60 }}>
-            {scene.bullets.map((b) => (
-              <div key={b.text} style={{
-                display: 'flex', alignItems: 'center', gap: 26,
-                alignSelf: 'flex-start',
-                background: C.surface, borderRadius: R.full,
-                padding: '20px 44px 20px 22px',
-                boxShadow: slab(C.lineStrong, 7),
-                maxWidth: 1030,
-              }}>
-                <DsIcon name={b.icon} size={72} />
-                <span style={{
-                  fontFamily: DISPLAY_FONT, fontSize: 46, fontWeight: 800,
-                  color: C.heading, lineHeight: 1.15,
-                }}>{b.text}</span>
-              </div>
-            ))}
-          </div> : null}
+        <div style={{
+          position: 'absolute', top: FRAME_TOP, left: '50%',
+          transform: 'translateX(-50%)', zIndex: 4,
+        }}>
+          <IPadFrame screenshot={scene.screenshot} />
         </div>
 
-        {/* Right — two phones, the front one overlapping */}
-        <div style={{
-          position: 'absolute', right: -60, top: 96, zIndex: 4,
-          transform: 'rotate(-7deg)',
-        }}>
-          <DeviceFrame screenshot={scene.shots[0]} scale={2.5} />
-        </div>
-        <div style={{
-          position: 'absolute', right: 630, top: 210, zIndex: 5,
-          transform: 'rotate(4deg)',
-        }}>
-          <DeviceFrame screenshot={scene.shots[1]} scale={2.5} />
-        </div>
+        {scene.decorations}
       </SceneCanvas>
     );
   },

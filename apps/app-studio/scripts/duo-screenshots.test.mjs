@@ -17,7 +17,7 @@ test('the iPhone Duo scenes export at the open display size, from their own capt
   const scenes = await read('../src/scenes/duoSceneData.tsx');
   const shots = [...scenes.matchAll(/screenshot: `\$\{p\}\/([^`]+)`/g)].map((m) => m[1]);
   assert.deepEqual(shots, ['01-today.png', '02-workout.png', '03-dish.png', '05-feed.png', '06-recipes.png', '04-trends.png']);
-  assert.match(scenes, /\/assets\/screenshots-iphone-duo\//);
+  assert.match(scenes, /folder = 'screenshots-iphone-duo'/);
   // The gallery's order matches the iPhone set's, scene for scene.
   const phone = await read('../src/scenes/sceneData.tsx');
   const ids = (source) => [...source.matchAll(/^\s+id: '([^']+)'/gm)].map((m) => m[1]);
