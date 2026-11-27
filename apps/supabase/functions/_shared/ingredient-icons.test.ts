@@ -87,6 +87,31 @@ Deno.test('the more specific phrase wins', () => {
   eq(drawn('Coconut'), 'coconut')
 })
 
+// An oil named for what it is pressed or fried from is still a bottle of oil:
+// the name before "oil" is longer than "oil", so on length alone it drew a corn
+// cob, a sack of rice or a whole chicken on the line.
+Deno.test('an oil named for its source is drawn as oil', () => {
+  for (const name of [
+    'Corn oil',
+    '2 tbsp rice bran oil',
+    'Soybean oil',
+    'Soya bean oil',
+    'Avocado oil',
+    'Mustard oil',
+    'Chicken oil',
+    'Garlic oil',
+    'Shallot oil',
+    'Scallion oil',
+    'Spring onion oil',
+  ]) {
+    eq([name, drawn(name)], [name, 'cooking-oil'])
+  }
+  // Oil that comes with something is still that thing.
+  eq(drawn('Tuna in oil'), 'tuna-can')
+  eq(drawn('Sesame oil'), 'sesame-oil')
+  eq(drawn('Sweet corn'), 'corn')
+})
+
 // A flavour does not outrank what it flavours, as in the catalogue.
 Deno.test('a weak word still goes last', () => {
   eq(drawn('Honey'), 'honey')
