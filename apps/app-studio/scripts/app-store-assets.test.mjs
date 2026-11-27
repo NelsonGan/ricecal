@@ -48,7 +48,10 @@ test('each locale has one canonical food with a recorded generation prompt and i
   assert.equal(catalog.locales.en.search, 'Count calories\nthe asian way');
   assert.equal(catalog.locales.en.foodId, 'nasi-lemak');
   assert.equal(catalog.locales.ms.foodId, 'nasi-lemak');
-  assert.equal(foods.size, 25);
+  // Simplified Chinese readers are mostly Malaysian, not in China: no "the Chinese way".
+  assert.equal(catalog.locales.zh.search, '用亚洲方式\n计算热量');
+  assert.equal(catalog.locales.zh.foodId, 'nasi-lemak');
+  assert.equal(foods.size, Object.keys(catalog.foods).length, 'a catalog food no locale uses');
   for (const id of foods) {
     const food = catalog.foods[id];
     const bytes = await readFile(new URL(`../public${food.image}`, import.meta.url));

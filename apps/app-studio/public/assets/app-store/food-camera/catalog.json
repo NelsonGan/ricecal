@@ -1,5 +1,5 @@
 {
-  "description": "One canonical Search creative per Studio locale. Countries are representative defaults for language locales, not a definitive consumption ranking. English retains the selected Nasi Lemak and the asian way headline. Preview, downloads and uploads all resolve this catalog.",
+  "description": "One canonical Search creative per Studio locale. Countries are representative defaults for language locales, not a definitive consumption ranking. English retains the selected Nasi Lemak and the asian way headline, and Simplified Chinese shares both, because its readers are mostly Malaysian. Preview, downloads and uploads all resolve this catalog.",
   "locales": {
     "en": {
       "country": "Asia",
@@ -16,9 +16,9 @@
       "scanning": "Mengimbas makanan…"
     },
     "zh": {
-      "country": "China",
-      "foodId": "dumplings",
-      "search": "用中国方式\n计算热量",
+      "country": "Asia",
+      "foodId": "nasi-lemak",
+      "search": "用亚洲方式\n计算热量",
       "camera": "拍照识别",
       "scanning": "正在识别美食…"
     },
@@ -202,26 +202,6 @@
         "decision": "regenerated",
         "observations": "Rice resembles polished beads; anchovies have repeated enlarged forms, and the chicken is orange and varnished. Keep nasi lemak, reduce the artificial material finish.",
         "after": "Accepted: neutral warung lighting, slender uneven rice, hard-boiled egg and natural dark fried chicken. Peanut and small anchovy mix has believable variation.",
-        "cameraCropVerified": true
-      }
-    },
-    "dumplings": {
-      "name": "Jiaozi",
-      "image": "/assets/app-store/food-camera/dumplings-v1.png",
-      "prompt": "Use case: ads-marketing. Asset type: food photograph inside a simulated phone camera for a localized RiceCal App Store Search creative. Primary request: Chinese jiaozi dumplings, plump pleated boiled dumplings arranged on an ivory ceramic plate, a small dipping dish of dark soy sauce and a few scallions. Style: appetizing realistic professional food photography, accurate cuisine, fresh ingredients and natural textures. Composition: portrait 1024 by 1536, overhead with a slight natural angle, the entire main plate or bowl centered in the middle 65 percent of frame with ample warm ivory tabletop visible above and below for camera controls; plate fully visible and safely inside frame. Lighting: soft warm daylight, gentle shadows. Background: plain warm ivory tabletop matching the selected Nasi Lemak photo. Constraints: food only, one meal, no phone, no hands, no UI, no scanning marks, no corner brackets, no words, no logo, no watermark. Keep the food clear and attractive when cropped to a tall phone camera view.",
-      "tool": "Built-in image_gen",
-      "dimensions": [
-        1024,
-        1536
-      ],
-      "mode": "RGB",
-      "sha256": "66c3a42e754cd8a7f409fc9de0a0a31fa7882ca886cf922591926fdb0fdb5f5d",
-      "generatedAt": "2026-10-11",
-      "authenticityReview": {
-        "reviewedAt": "2026-10-11",
-        "decision": "retained",
-        "observations": "Hand-folded pleats vary, wrappers sag around filling, and the plate and sauce bowl have consistent perspective. The glossy cooked dough is plausible. No severe structural artifact.",
-        "after": "Hand-folded pleats vary, wrappers sag around filling, and the plate and sauce bowl have consistent perspective. The glossy cooked dough is plausible. No severe structural artifact.",
         "cameraCropVerified": true
       }
     },
@@ -742,10 +722,10 @@
   },
   "authenticityReview": {
     "reviewedAt": "2026-10-11",
-    "distinctImageCount": 25,
+    "distinctImageCount": 24,
     "localeCount": 26,
     "regeneratedCount": 16,
-    "retainedCount": 9,
+    "retainedCount": 8,
     "criteria": [
       "dish identity and ingredients",
       "food geometry and anatomy",
@@ -755,7 +735,7 @@
     ],
     "approach": "Natural everyday smartphone meal photography; culturally recognizable ingredients and ordinary portions. Dish variations are valid; these scenes are representative examples.",
     "validation": {
-      "imageIntegrity": "All 25 image dimensions, RGB encoding, opacity and SHA-256 checksums verified.",
+      "imageIntegrity": "All 24 image dimensions, RGB encoding, opacity and SHA-256 checksums verified.",
       "preview": "All 26 locale images decoded in the actual Studio camera viewport; crops visually reviewed.",
       "typeCheck": "npx tsc --noEmit passed."
     }

@@ -3,9 +3,12 @@ import { androidReady, stagingDir, uploadAndroidDescriptions } from '../../_lib'
 
 interface DescriptionPayload {
   name?: string;
-  /** Play's short description, which is the App Store subtitle. */
+  /** The App Store subtitle, which is the short description when there is none. */
   subtitle?: string;
+  shortDescription?: string;
   description?: string;
+  /** Play locales whose copy differs from the language's (`listingCopy.mjs`). */
+  storeLocales?: Record<string, Omit<DescriptionPayload, 'storeLocales'>>;
 }
 
 /**

@@ -14,8 +14,9 @@ export default function robots(): MetadataRoute.Robots {
        *
        * Disallow rather than `nofollow` on the links: `nofollow` does not stop
        * Google fetching the URL, and fetching it is the part that costs.
+       * `/xhs` is the same kind of redirect, for XiaoHongShu posts.
        */
-      disallow: "/download",
+      disallow: ["/download", "/xhs"],
       userAgent: "*",
     },
     sitemap: `${SITE_URL}/sitemap.xml`,

@@ -138,6 +138,22 @@ export function sortedPngs(dir) {
   return fs.readdirSync(dir).filter(f => f.toLowerCase().endsWith('.png')).sort();
 }
 
+/**
+ * The copy one store locale gets: its language's copy with that store
+ * locale's entry from `copy.storeLocales` laid over it. One language feeds
+ * several store locales, and a few of them need their own keywords, subtitle
+ * or title (`listingCopy.mjs` says which and why).
+ *
+ * @template {Record<string, unknown>} T
+ * @param {T & { storeLocales?: Record<string, Partial<T>> }} copy
+ * @param {string} storeLocale
+ * @returns {T}
+ */
+export function copyForStoreLocale(copy, storeLocale) {
+  const { storeLocales, ...shared } = copy;
+  return { ...shared, ...(storeLocales?.[storeLocale] ?? {}) };
+}
+
 // ── iOS ──────────────────────────────────────────────────────────────────────
 
 /**
@@ -263,7 +279,7 @@ export async function uploadIOSLocale({ device, locale, dir, dryRun = false, log
  * — it does not exist on a first release — and bundling it meant one rejected
  * attribute took the description and the keywords down with it.
  */
-export async function uploadIOSDescription({ locale, copy, dryRun = false, log = () => {} }) {
+export async function uploadIOSDescription({ locale, copy: languageCopy, dryRun = false, log = () => {} }) {
   const ascLocales = IOS_METADATA_LOCALE_MAP[locale];
   if (!ascLocales?.length) return { skipped: true };
 
@@ -273,6 +289,7 @@ export async function uploadIOSDescription({ locale, copy, dryRun = false, log =
   const notes = [];
 
   for (const ascLocale of ascLocales) {
+    const copy = copyForStoreLocale(languageCopy, ascLocale);
     try {
       const { wouldCreate } = await iosLocalizationId(version.id, ascLocale, { create: !dryRun });
       if (dryRun) {
@@ -575,7 +592,7 @@ export async function uploadAndroidReleaseNotes({ track, localizations, dryRun =
  * it, so this does not share the screenshot edit — a listing and its images
  * are independent writes on Play.
  *
- * @param {Record<string, {name?: string, subtitle?: string, description?: string}>} localizations
+ * @param {Record<string, {name?: string, subtitle?: string, shortDescription?: string, description?: string, storeLocales?: Record<string, object>}>} localizations
  */
 export async function uploadAndroidDescriptions({ root, localizations, dryRun = false, log = () => {} }) {
   const pkg = process.env.ANDROID_PACKAGE_NAME;
@@ -585,12 +602,14 @@ export async function uploadAndroidDescriptions({ root, localizations, dryRun = 
   /** @type {Record<string, string[]>} */
   const byLocale = {};
 
-  for (const [ourLocale, copy] of Object.entries(localizations)) {
+  for (const [ourLocale, languageCopy] of Object.entries(localizations)) {
     for (const playLocale of ANDROID_METADATA_LOCALE_MAP[ourLocale] ?? []) {
+      const copy = copyForStoreLocale(languageCopy, playLocale);
+      const shortDescription = copy.shortDescription ?? copy.subtitle;
       const dir = path.join(root, playLocale);
       fs.mkdirSync(dir, { recursive: true });
       if (copy.name)        fs.writeFileSync(path.join(dir, 'title.txt'), copy.name);
-      if (copy.subtitle)    fs.writeFileSync(path.join(dir, 'short_description.txt'), copy.subtitle);
+      if (shortDescription) fs.writeFileSync(path.join(dir, 'short_description.txt'), shortDescription);
       if (copy.description) fs.writeFileSync(path.join(dir, 'full_description.txt'), copy.description);
       written.push(playLocale);
       (byLocale[ourLocale] ??= []).push(playLocale);

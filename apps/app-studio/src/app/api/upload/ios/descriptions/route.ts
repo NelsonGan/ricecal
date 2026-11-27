@@ -13,6 +13,8 @@ interface DescriptionPayload {
   keywords?: string;
   supportUrl?: string;
   marketingUrl?: string;
+  /** Store locales whose copy differs from the language's (`listingCopy.mjs`). */
+  storeLocales?: Record<string, Omit<DescriptionPayload, 'storeLocales'>>;
 }
 
 /**
