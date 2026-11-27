@@ -1395,6 +1395,16 @@ export const ms = {
       title_other: 'Percubaan percuma anda tamat dalam {{count}} hari',
       body: 'RiceCal Pro diperbaharui pada {{date}}. Batalkan sebelum itu untuk tidak membayar apa-apa.',
     },
+    reminderOffer: {
+      title: 'Mahu peringatan sebelum anda membayar?',
+      body_one:
+        'Percubaan percuma anda tamat pada {{date}}. Hidupkan pemberitahuan dan kami ingatkan anda sehari sebelumnya.',
+      body_other:
+        'Percubaan percuma anda tamat pada {{date}}. Hidupkan pemberitahuan dan kami ingatkan anda {{count}} hari sebelumnya.',
+      accept: 'Hidupkan pemberitahuan',
+      openSettings: 'Buka Tetapan',
+      decline: 'Bukan sekarang',
+    },
     table: {
       sectionTitle: 'Semua dalam Pro',
       sectionSubtitle: 'Lihat apa yang dibuka apabila anda menaik taraf',

@@ -40,6 +40,7 @@ import {
 } from '@/features/logging'
 import { AnnouncementCard, useAnnouncementOffer } from '@/features/news'
 import { useProNudge } from '@/features/paywall'
+import { TrialReminderOffer } from '@/features/paywall/TrialReminderOffer'
 import { usePhotoRemovalNotice } from '@/features/photoRemovals/usePhotoRemovalNotice'
 import { LocationsOffer } from '@/features/places'
 import { EntryList, MacroBars, ScreenTitle } from '@/features/shared'
@@ -147,6 +148,9 @@ function LaunchOffers() {
           phone. Here because it appears over this screen, and it stands aside
           for whatever the two above put up. */}
       <LocationsOffer />
+      {/* Somebody on a trial with notifications off is asked, once per trial,
+          to turn them on for the reminder the paywall promised. */}
+      <TrialReminderOffer />
     </>
   )
 }

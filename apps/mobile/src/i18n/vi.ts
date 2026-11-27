@@ -1375,6 +1375,16 @@ export const vi = {
       title_other: 'Bản dùng thử miễn phí kết thúc sau {{count}} ngày',
       body: 'RiceCal Pro gia hạn vào {{date}}. Huỷ trước ngày này để không mất phí.',
     },
+    reminderOffer: {
+      title: 'Bạn muốn được nhắc trước khi trả phí?',
+      body_one:
+        'Bản dùng thử miễn phí kết thúc vào {{date}}. Bật thông báo để chúng tôi nhắc bạn một ngày trước đó.',
+      body_other:
+        'Bản dùng thử miễn phí kết thúc vào {{date}}. Bật thông báo để chúng tôi nhắc bạn {{count}} ngày trước đó.',
+      accept: 'Bật thông báo',
+      openSettings: 'Mở Cài đặt',
+      decline: 'Để sau',
+    },
     table: {
       sectionTitle: 'Mọi thứ trong Pro',
       sectionSubtitle: 'Xem chính xác những gì được mở khoá khi nâng cấp',

@@ -1394,6 +1394,16 @@ export const fil = {
       title_other: 'Matatapos sa loob ng {{count}} araw ang libreng trial mo',
       body: 'Magre-renew ang RiceCal Pro sa {{date}}. Kanselahin bago noon para walang bayad.',
     },
+    reminderOffer: {
+      title: 'Gusto mo ng paalala bago ka magbayad?',
+      body_one:
+        'Matatapos ang libreng trial mo sa {{date}}. I-on ang notifications at paaalalahanan ka namin isang araw bago noon.',
+      body_other:
+        'Matatapos ang libreng trial mo sa {{date}}. I-on ang notifications at paaalalahanan ka namin {{count}} araw bago noon.',
+      accept: 'I-on ang notifications',
+      openSettings: 'Buksan ang Settings',
+      decline: 'Hindi muna',
+    },
     table: {
       sectionTitle: 'Lahat sa Pro',
       sectionSubtitle: 'Tingnan kung ano ang maa-unlock kapag nag-upgrade ka',

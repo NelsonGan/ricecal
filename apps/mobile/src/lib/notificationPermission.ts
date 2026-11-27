@@ -63,3 +63,20 @@ export async function notificationsAllowed(): Promise<boolean> {
     return false
   }
 }
+
+/**
+ * Whether notifications are on, and if not, whether the system will still
+ * show its prompt. After one refusal it will not, and the only way back is
+ * the app's page in Settings.
+ */
+export async function notificationPermissionState(): Promise<{
+  granted: boolean
+  canAskAgain: boolean
+}> {
+  try {
+    const { granted, canAskAgain } = await Notifications.getPermissionsAsync()
+    return { granted, canAskAgain }
+  } catch {
+    return { granted: false, canAskAgain: false }
+  }
+}

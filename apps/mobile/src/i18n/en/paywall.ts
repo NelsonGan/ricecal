@@ -112,6 +112,22 @@ export const paywall = {
   },
 
   /**
+   * Put once per trial on Today to somebody whose notifications are off, so
+   * the reminder above can be sent. `openSettings` replaces `accept` once the
+   * system prompt has been refused, since iOS will not show it again.
+   */
+  reminderOffer: {
+    title: 'Want a reminder before you pay?',
+    body_one:
+      'Your free trial ends on {{date}}. Turn on notifications and we remind you a day before.',
+    body_other:
+      'Your free trial ends on {{date}}. Turn on notifications and we remind you {{count}} days before.',
+    accept: 'Turn on notifications',
+    openSettings: 'Open Settings',
+    decline: 'Not now',
+  },
+
+  /**
    * The comparison table, written as two answers per line rather than one
    * sentence with a "but" in it. A cell has room for about three words, and the
    * discipline keeps it honest: "3 a day" against "Unlimited" is a fact a reader

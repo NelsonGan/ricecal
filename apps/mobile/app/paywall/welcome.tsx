@@ -12,8 +12,10 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
+import { useSession, useStoreEntitlement } from '@/data'
 import { usePlanSummary } from '@/features/paywall'
 import { isTrialUnit, trialDurationText } from '@/features/paywall/trial'
+import { markTrialReminderOffered } from '@/features/paywall/trialReminderOffered'
 import { useEnterApp } from '@/lib/navigation'
 import { ensureNotificationPermission } from '@/lib/notificationPermission'
 import { SessionGate } from '@/lib/SessionGate'
@@ -80,12 +82,17 @@ function WelcomeToPro() {
    * so the system sheet does not cover the confirmation it follows.
    */
   const trial = state === 'trial'
+  const { userId } = useSession()
+  const { data: store } = useStoreEntitlement()
+  const trialEndsAt = store?.trial ? store.expiresAt : null
   const asked = useRef(false)
   const askForReminder = useCallback(() => {
     if (asked.current) return
     asked.current = true
+    // Asked here, so Today's offer does not ask again a moment later.
+    if (userId && trialEndsAt) markTrialReminderOffered(userId, new Date(trialEndsAt))
     ensureNotificationPermission().catch(() => {})
-  }, [])
+  }, [userId, trialEndsAt])
   useEffect(() => {
     if (!trial) return
     const timer = setTimeout(askForReminder, 900)

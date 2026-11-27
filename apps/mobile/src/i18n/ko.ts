@@ -1364,6 +1364,14 @@ export const ko = {
       title_other: '무료 체험이 {{count}}일 후에 끝나요',
       body: 'RiceCal Pro가 {{date}}에 갱신돼요. 그 전에 해지하면 요금이 없어요.',
     },
+    reminderOffer: {
+      title: '결제 전에 알려 드릴까요?',
+      body_one: '무료 체험이 {{date}}에 끝나요. 알림을 켜면 하루 전에 알려 드려요.',
+      body_other: '무료 체험이 {{date}}에 끝나요. 알림을 켜면 {{count}}일 전에 알려 드려요.',
+      accept: '알림 켜기',
+      openSettings: '설정 열기',
+      decline: '나중에',
+    },
     table: {
       sectionTitle: 'Pro의 모든 기능',
       sectionSubtitle: '업그레이드하면 무엇이 열리는지 확인하세요',

@@ -33,7 +33,7 @@ let shownFor: string | null = null
  */
 const tourBefore = new Map<string, boolean>()
 
-function tourOfferedBeforeThisRun(userId: string): boolean {
+export function tourOfferedBeforeThisRun(userId: string): boolean {
   let offered = tourBefore.get(userId)
   if (offered === undefined) {
     offered = tutorialOffered(userId)

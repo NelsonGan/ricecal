@@ -7166,6 +7166,23 @@ asks on the Continue tap too if somebody leaves before the ask has come up.
 Tapping the reminder opens **Me, RiceCal Pro**. Its copy is written when it is
 booked, so it fires in the language the app was in that day.
 
+**Somebody on a trial with notifications off is asked once per trial.**
+`TrialReminderOffer`, a sheet on Today beside the Locations offer, catches
+everybody the welcome screen did not: a trial started on an older version, on
+another phone, before a reinstall, or somebody who tapped past the ask. It goes
+up when the store says the trial will renew, the reminder's moment is still
+ahead, notifications are off, and this account has not been asked about this
+trial on this phone (`trialReminderOffered`, keyed by the trial's end day; the
+welcome screen marks it too when it asks). It asks in the app first, because
+iOS shows its own prompt once and a prompt with no reason in front of it is the
+one people refuse; after a refusal the system never asks again, so the button
+becomes **Open Settings**. It takes turns like the Locations offer: not while a
+news card has the floor, not while the rating ask is booked or another sheet
+holds the floor (`lib/floor.ts`), and only while Today is on top. The answer is
+stored before the sheet is on screen, so a kill while it is up never brings it
+back. Returning from Settings or the prompt books the reminder through
+`useTrialReminderSync`.
+
 **A screen that can charge somebody says what it charges, and links the two
 documents.** Guideline 3.1.2: title, length, price, and functional links to the
 terms of use and the privacy policy. `PurchaseTerms` renders Terms and Privacy in

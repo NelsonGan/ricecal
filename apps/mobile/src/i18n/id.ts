@@ -1380,6 +1380,16 @@ export const id = {
       title_other: 'Uji coba gratismu berakhir dalam {{count}} hari',
       body: 'RiceCal Pro diperpanjang pada {{date}}. Batalkan sebelumnya agar tidak dikenai biaya.',
     },
+    reminderOffer: {
+      title: 'Mau diingatkan sebelum membayar?',
+      body_one:
+        'Uji coba gratismu berakhir pada {{date}}. Nyalakan notifikasi dan kami ingatkan sehari sebelumnya.',
+      body_other:
+        'Uji coba gratismu berakhir pada {{date}}. Nyalakan notifikasi dan kami ingatkan {{count}} hari sebelumnya.',
+      accept: 'Nyalakan notifikasi',
+      openSettings: 'Buka Pengaturan',
+      decline: 'Nanti saja',
+    },
     table: {
       sectionTitle: 'Semua fitur Pro',
       sectionSubtitle: 'Lihat apa saja yang terbuka saat kamu upgrade',

@@ -1363,6 +1363,14 @@ export const zhHans = {
       title_other: '你的免费试用将在 {{count}} 天后结束',
       body: 'RiceCal Pro 将于 {{date}} 续订。在此之前取消就不收费。',
     },
+    reminderOffer: {
+      title: '扣款前要提醒你吗？',
+      body_one: '你的免费试用将于 {{date}} 结束。打开通知，我们会提前一天提醒你。',
+      body_other: '你的免费试用将于 {{date}} 结束。打开通知，我们会提前 {{count}} 天提醒你。',
+      accept: '打开通知',
+      openSettings: '打开设置',
+      decline: '暂不',
+    },
     table: {
       sectionTitle: 'Pro 的全部功能',
       sectionSubtitle: '看看升级后会解锁哪些功能',

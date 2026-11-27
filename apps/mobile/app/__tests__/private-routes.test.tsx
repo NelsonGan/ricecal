@@ -14,7 +14,10 @@ import WelcomeToProRoute from '../paywall/welcome'
 
 const mockSession: { session: unknown; loading: boolean } = { session: null, loading: true }
 
-jest.mock('@/data', () => ({ useSession: () => mockSession }))
+jest.mock('@/data', () => ({
+  useSession: () => mockSession,
+  useStoreEntitlement: () => ({ data: null }),
+}))
 jest.mock('expo-router', () => ({
   Redirect: ({ href }: { href: string }) => {
     const { Text } = require('react-native')
