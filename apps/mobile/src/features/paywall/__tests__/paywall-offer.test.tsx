@@ -1,4 +1,5 @@
 import '@/i18n'
+import { format } from 'date-fns/format'
 import type { ComponentProps } from 'react'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { render, screen, userEvent } from '@/test-utils'
@@ -162,10 +163,15 @@ it('shows when the trial ends, when it reminds, and what it then charges', async
 
   expect(screen.getByText('How your free trial works')).toBeTruthy()
   expect(screen.getByText('Today')).toBeTruthy()
-  // A three-day trial reminds two days before its end, on day 1.
-  expect(screen.getByText(/^Day 1, /)).toBeTruthy()
+  // A three-day trial reminds two days before its end, which is tomorrow.
+  const day = (offset: number) => {
+    const date = new Date()
+    date.setDate(date.getDate() + offset)
+    return format(date, 'EEE d MMM')
+  }
+  expect(screen.getByText(day(1))).toBeTruthy()
   expect(screen.getByText('We remind you 2 days before it ends')).toBeTruthy()
-  expect(screen.getByText(/^Day 3, /)).toBeTruthy()
+  expect(screen.getByText(day(3))).toBeTruthy()
   expect(screen.getByText('You pay RM99.90. Cancel before then to pay nothing.')).toBeTruthy()
 
   // Monthly has no trial for this account, so there is no timeline to show.

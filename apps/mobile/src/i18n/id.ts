@@ -1371,7 +1371,6 @@ export const id = {
       title: 'Cara kerja uji coba gratis',
       today: 'Hari ini',
       todayBody: 'Semua fitur Pro terbuka',
-      day: 'Hari ke-{{day}}, {{date}}',
       remindBody_one: 'Kami ingatkan sehari sebelum berakhir',
       remindBody_other: 'Kami ingatkan {{count}} hari sebelum berakhir',
       chargeBody: 'Kamu membayar {{price}}. Batalkan sebelumnya agar tidak dikenai biaya.',

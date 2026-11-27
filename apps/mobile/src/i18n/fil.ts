@@ -1385,7 +1385,6 @@ export const fil = {
       title: 'Paano gumagana ang libreng trial',
       today: 'Ngayon',
       todayBody: 'Bukas na ang lahat ng Pro',
-      day: 'Araw {{day}}, {{date}}',
       remindBody_one: 'Paaalalahanan ka namin isang araw bago ito matapos',
       remindBody_other: 'Paaalalahanan ka namin {{count}} araw bago ito matapos',
       chargeBody: 'Magbabayad ka ng {{price}}. Kanselahin bago noon para walang bayad.',

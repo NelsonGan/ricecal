@@ -51,23 +51,12 @@ export type TrialTimeline = {
   remindAt: Date | null
   /** Days before the charge the reminder fires; zero when there is none. */
   leadDays: number
-  /** The trial day each lands on, counting today as day 1's start: "Day 4". */
-  remindDay: number | null
-  endDay: number
 }
 
 /** The three moments the paywall shows for a trial starting now. */
 export function trialTimeline(duration: TrialDuration, now = new Date()): TrialTimeline {
   const endsAt = trialEnd(now, duration)
-  const remindAt = trialReminderAt(now, endsAt)
-  const dayOf = (date: Date) => Math.round((date.getTime() - now.getTime()) / DAY_MS)
-  return {
-    endsAt,
-    remindAt,
-    leadDays: reminderLeadDays(now, endsAt),
-    remindDay: remindAt ? dayOf(remindAt) : null,
-    endDay: dayOf(endsAt),
-  }
+  return { endsAt, remindAt: trialReminderAt(now, endsAt), leadDays: reminderLeadDays(now, endsAt) }
 }
 
 type Mirror = { status: string; trial_ends_at: string | null } | null | undefined

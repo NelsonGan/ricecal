@@ -1386,7 +1386,6 @@ export const ms = {
       title: 'Cara percubaan percuma anda berjalan',
       today: 'Hari ini',
       todayBody: 'Semua ciri Pro dibuka',
-      day: 'Hari {{day}}, {{date}}',
       remindBody_one: 'Kami ingatkan anda sehari sebelum ia tamat',
       remindBody_other: 'Kami ingatkan anda {{count}} hari sebelum ia tamat',
       chargeBody: 'Anda bayar {{price}}. Batalkan sebelum itu untuk tidak membayar apa-apa.',

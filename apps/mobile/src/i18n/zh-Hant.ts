@@ -1354,7 +1354,6 @@ export const zhHant = {
       title: '免費試用怎麼算',
       today: '今天',
       todayBody: '解鎖全部 Pro 功能',
-      day: '第 {{day}} 天，{{date}}',
       remindBody_one: '結束前一天提醒你',
       remindBody_other: '結束前 {{count}} 天提醒你',
       chargeBody: '扣款 {{price}}。在此之前取消就不收費。',

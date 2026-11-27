@@ -1363,7 +1363,6 @@ export const ja = {
       title: '無料トライアルの流れ',
       today: '今日',
       todayBody: 'Pro のすべてが使えるようになります',
-      day: '{{day}}日目、{{date}}',
       remindBody_one: '終了の前日にお知らせします',
       remindBody_other: '終了の{{count}}日前にお知らせします',
       chargeBody: '{{price}} のお支払い。それまでに解約すれば料金はかかりません。',

@@ -95,8 +95,6 @@ export const paywall = {
     title: 'How your free trial works',
     today: 'Today',
     todayBody: 'Everything in Pro unlocks',
-    /** "Day 4, 1 Dec": the trial day, then the date it falls on. */
-    day: 'Day {{day}}, {{date}}',
     remindBody_one: 'We remind you a day before it ends',
     remindBody_other: 'We remind you {{count}} days before it ends',
     chargeBody: 'You pay {{price}}. Cancel before then to pay nothing.',

@@ -55,18 +55,16 @@ describe('the trial timeline', () => {
     const timeline = trialTimeline({ unit: 'week', count: 1 }, now)
     expect(timeline.endsAt).toEqual(new Date(2026, 11, 4, 15, 0))
     expect(timeline.remindAt).toEqual(new Date(2026, 11, 1, 15, 0))
-    expect(timeline).toMatchObject({ leadDays: 3, remindDay: 4, endDay: 7 })
+    expect(timeline.leadDays).toBe(3)
   })
 
   it('reminds sooner on a trial too short for three days, and not at all on one day', () => {
     expect(trialTimeline({ unit: 'day', count: 3 }, now)).toMatchObject({
+      remindAt: new Date(2026, 10, 28, 15, 0),
       leadDays: 2,
-      remindDay: 1,
-      endDay: 3,
     })
     expect(trialTimeline({ unit: 'day', count: 1 }, now)).toMatchObject({
       remindAt: null,
-      remindDay: null,
       leadDays: 0,
     })
   })

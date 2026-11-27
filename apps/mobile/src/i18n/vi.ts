@@ -1366,7 +1366,6 @@ export const vi = {
       title: 'Cách dùng thử miễn phí hoạt động',
       today: 'Hôm nay',
       todayBody: 'Mở khoá mọi tính năng Pro',
-      day: 'Ngày {{day}}, {{date}}',
       remindBody_one: 'Chúng tôi nhắc bạn một ngày trước khi kết thúc',
       remindBody_other: 'Chúng tôi nhắc bạn {{count}} ngày trước khi kết thúc',
       chargeBody: 'Bạn trả {{price}}. Huỷ trước ngày này để không mất phí.',

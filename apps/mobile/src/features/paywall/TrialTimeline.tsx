@@ -40,8 +40,9 @@ export function TrialTimeline({ plan }: { plan: Plan }) {
   const timeline = useMemo(() => (duration ? trialTimeline(duration) : null), [duration])
   if (!timeline || !price) return null
 
-  const day = (n: number, date: Date) =>
-    t('timeline.day', { day: n, date: format(date, datePattern('dayMonth')) })
+  // The date alone, as the Today title writes a day ("Tue 1 Dec"). A trial-day
+  // count in front of it ("Day 4, 1 Dec") read as two answers to one question.
+  const day = (date: Date) => format(date, datePattern('weekdayDayMonth'))
 
   const steps: Step[] = [
     {
@@ -52,12 +53,12 @@ export function TrialTimeline({ plan }: { plan: Plan }) {
       body: t('timeline.todayBody'),
     },
   ]
-  if (timeline.remindAt && timeline.remindDay != null) {
+  if (timeline.remindAt) {
     steps.push({
       key: 'remind',
       icon: { set: 'system', name: 'bell' },
       disc: 'border-kaya-soft-line bg-kaya-soft',
-      title: day(timeline.remindDay, timeline.remindAt),
+      title: day(timeline.remindAt),
       body: t('timeline.remindBody', { count: timeline.leadDays }),
     })
   }
@@ -65,7 +66,7 @@ export function TrialTimeline({ plan }: { plan: Plan }) {
     key: 'charge',
     icon: { set: 'system', name: 'card' },
     disc: 'border-line bg-canvas',
-    title: day(timeline.endDay, timeline.endsAt),
+    title: day(timeline.endsAt),
     body: t('timeline.chargeBody', { price }),
   })
 

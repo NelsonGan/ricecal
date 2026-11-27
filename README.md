@@ -7135,8 +7135,9 @@ today's offer duration.
 plans, `TrialTimeline` draws three steps for the selected plan: today everything
 unlocks, a reminder lands three days before the trial ends (fewer on a trial
 too short for that, none on a one-day trial), and on the last day the plan's
-price is charged unless it was cancelled. Each step names the trial day and the
-date ("Day 4, 1 Dec"), computed from the store's period and the plan's store
+price is charged unless it was cancelled. Each step is headed by its date alone,
+written as the Today title writes a day ("Tue 1 Dec"; a trial-day count in front
+of it, "Day 4, 1 Dec", read as two answers to one question), computed from the store's period and the plan's store
 price, so a plan without a trial for this account, or a store that has not
 answered, shows no timeline at all. This is the pattern Blinkist made standard:
 the charge people dispute is the one they did not see coming, and saying when it
