@@ -506,6 +506,10 @@ export const vi = {
       more: 'Hoặc gõ, tìm kiếm, hay quét mã vạch.',
     },
 
+    preview: {
+      badge: 'Xem trước',
+    },
+
     workouts: {
       title: 'Ghi lại cả buổi tập',
       subtitle: 'Set, rep và hẹn giờ nghỉ. Mức tạ lần trước hiện bên mỗi set.',

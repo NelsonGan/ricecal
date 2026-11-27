@@ -503,6 +503,10 @@ export const ko = {
       more: '직접 입력, 검색, 바코드 스캔도 돼요.',
     },
 
+    preview: {
+      badge: '미리보기',
+    },
+
     workouts: {
       title: '운동도 기록해요',
       subtitle: '세트, 횟수, 휴식 타이머. 세트마다 지난번 기록이 옆에 보여요.',

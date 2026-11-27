@@ -2,8 +2,9 @@ import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import Animated, { FadeInDown } from 'react-native-reanimated'
 
-import { ONBOARDING_ART, OnboardingStep } from '@/features/onboarding'
+import { ONBOARDING_ART, OnboardingStep, ShowcaseFrame } from '@/features/onboarding'
 import { Icon, type IconProps, ProgressBar, Text } from '@/ui'
 
 /**
@@ -51,11 +52,8 @@ export default function HowStep() {
       primaryLabel={t('common:action.continue')}
       onPrimary={() => router.push('/(onboarding)/setup')}
     >
-      <View
-        accessible
-        accessibilityLabel={`${SAMPLE.name}, ${SAMPLE.kcal} ${t('common:unit.kcal')}`}
-      >
-        <View className="h-[190px] overflow-hidden rounded-card">
+      <ShowcaseFrame accessibilityLabel={`${SAMPLE.name}, ${SAMPLE.kcal} ${t('common:unit.kcal')}`}>
+        <View className="h-[170px] overflow-hidden rounded-tile">
           <Image
             source={ONBOARDING_ART.nasiLemak}
             style={{ flex: 1 }}
@@ -66,8 +64,12 @@ export default function HowStep() {
         </View>
 
         {/* Lifted onto the photo's lower edge, so the photo and the entry it
-            became read as one thing happening rather than two cards. */}
-        <View className="-mt-10 mx-3 gap-3 rounded-tile border-2 border-line bg-surface p-4">
+            became read as one thing happening rather than two cards. It rises
+            in a beat after the photo, the scan turning into an entry. */}
+        <Animated.View
+          entering={FadeInDown.delay(400).duration(500)}
+          className="-mt-14 mx-1 gap-3 rounded-tile border-2 border-line bg-surface p-3.5"
+        >
           <View className="flex-row items-end justify-between gap-3">
             <View className="min-w-0 flex-1">
               <Text variant="bodyStrong" numberOfLines={1}>
@@ -103,14 +105,16 @@ export default function HowStep() {
               tone="teh"
             />
           </View>
-        </View>
-      </View>
+        </Animated.View>
+      </ShowcaseFrame>
 
+      {/* Plain, with no border or fill: a bordered tile here is the shape of an
+          answer on the next screens and was tapped as one. */}
       <View className="flex-row gap-2">
         {MORE.map((dish) => (
           <View
             key={dish.name}
-            className="min-w-0 flex-1 flex-row items-center gap-1.5 rounded-sm border-2 border-line bg-surface px-2 py-2"
+            className="min-w-0 flex-1 flex-row items-center gap-1.5 px-1"
             accessible
             accessibilityLabel={`${dish.name}, ${dish.kcal} ${t('common:unit.kcal')}`}
           >
@@ -175,7 +179,7 @@ function Viewfinder() {
   return (
     <View
       className="absolute"
-      style={{ top: 16, left: 16, right: 16, bottom: 56 }}
+      style={{ top: 14, left: 14, right: 14, bottom: 70 }}
       pointerEvents="none"
     >
       <View className={`${corner} left-0 top-0 rounded-tl-[12px] border-l-4 border-t-4`} />

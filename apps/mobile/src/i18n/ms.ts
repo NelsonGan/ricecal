@@ -517,6 +517,10 @@ export const ms = {
       more: 'Atau taip, cari, atau imbas barkod.',
     },
 
+    preview: {
+      badge: 'Pratonton',
+    },
+
     workouts: {
       title: 'Rekod senaman juga',
       subtitle:

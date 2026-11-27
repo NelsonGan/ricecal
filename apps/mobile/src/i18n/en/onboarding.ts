@@ -45,6 +45,11 @@ export const onboarding = {
     more: 'Or type it, search it, or scan a barcode.',
   },
 
+  /** The pill on every sample of the app in onboarding (`ShowcaseFrame`). */
+  preview: {
+    badge: 'Preview',
+  },
+
   /** A showcase between the questions: the workout logger. */
   workouts: {
     title: 'Log your workouts too',

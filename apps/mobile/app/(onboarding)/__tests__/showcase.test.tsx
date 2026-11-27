@@ -1,4 +1,5 @@
-import { render as rntlRender, screen, userEvent } from '@testing-library/react-native'
+import { act, render as rntlRender, screen, userEvent } from '@testing-library/react-native'
+import * as Haptics from 'expo-haptics'
 import type { ReactElement, ReactNode } from 'react'
 import { createMMKV } from 'react-native-mmkv'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -74,4 +75,41 @@ it('shows the sample workout in the units chosen on setup', async () => {
   // 42.5 kg on the bar, to the nearest five pounds.
   expect(screen.getAllByText('95 lb')).toHaveLength(3)
   expect(screen.queryByText(/ kg$/)).toBeNull()
+})
+
+it.each([
+  ['how', <HowStep key="how" />],
+  ['workouts', <WorkoutsStep key="workouts" />],
+  ['social', <SocialStep key="social" />],
+])('labels the %s sample a preview, and a tap on it goes nowhere', async (_name, ui) => {
+  await render(ui)
+
+  // The samples look like the real screens, and were tapped as if they were.
+  expect(screen.getByText('Preview')).toBeTruthy()
+  await user.press(screen.getByLabelText(/^Preview\. /))
+
+  // Felt, like any tap in the app, but it goes nowhere.
+  expect(Haptics.impactAsync).toHaveBeenCalled()
+  expect(mockPush).not.toHaveBeenCalled()
+})
+
+it('reads the whole social sample to a screen reader', async () => {
+  await render(<SocialStep />)
+
+  // The frame is one image, so the group's size has to be in its label.
+  expect(screen.getByLabelText(/Lunch club, 8 members$/)).toBeTruthy()
+})
+
+it('lands a like on the sample post', async () => {
+  jest.useFakeTimers()
+  try {
+    await render(<SocialStep />)
+    expect(screen.getByText('11')).toBeTruthy()
+
+    await act(() => jest.advanceTimersByTime(1000))
+
+    expect(screen.getByText('12')).toBeTruthy()
+  } finally {
+    jest.useRealTimers()
+  }
 })

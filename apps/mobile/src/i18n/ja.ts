@@ -509,6 +509,10 @@ export const ja = {
       more: '入力、検索、バーコードでも記録できます。',
     },
 
+    preview: {
+      badge: 'プレビュー',
+    },
+
     workouts: {
       title: 'ワークアウトも記録',
       subtitle: 'セット、回数、休憩タイマー。前回の重量が各セットの横に表示されます。',

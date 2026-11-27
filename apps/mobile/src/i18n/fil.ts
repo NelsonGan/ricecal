@@ -518,6 +518,10 @@ export const fil = {
       more: 'O i-type, hanapin, o i-scan ang barcode.',
     },
 
+    preview: {
+      badge: 'Preview',
+    },
+
     workouts: {
       title: 'I-log din ang mga workout mo',
       subtitle: 'Sets, reps at rest timer. Katabi ng bawat set ang huli mong buhat.',

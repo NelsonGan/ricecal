@@ -2,8 +2,9 @@ import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
 import { useTranslation } from 'react-i18next'
 import { View } from 'react-native'
+import Animated, { ZoomIn } from 'react-native-reanimated'
 
-import { OnboardingStep, useOnboardingDraft } from '@/features/onboarding'
+import { OnboardingStep, ShowcaseFrame, useOnboardingDraft } from '@/features/onboarding'
 import { fromKg, UNIT_KEY, unitFor, type WeightUnit } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
 import { Icon, Text } from '@/ui'
@@ -20,6 +21,10 @@ const SETS = [
   { id: 'set-2', previousKg: 40, previousReps: 8, kg: 42.5, reps: 8 },
   { id: 'set-3', previousKg: 40, previousReps: 7, kg: 42.5, reps: 7 },
 ]
+
+/** The ticks land one by one after the screen has settled. */
+const TICK_START_MS = 500
+const TICK_STEP_MS = 450
 
 /** The session's total, in kilograms like every weight the app stores. */
 const VOLUME_KG = 1318
@@ -70,11 +75,7 @@ export default function WorkoutsStep() {
       primaryLabel={t('common:action.continue')}
       onPrimary={() => router.push('/(onboarding)/social-showcase')}
     >
-      <View
-        className="gap-3.5 rounded-tile border-2 border-line bg-surface p-4"
-        accessible
-        accessibilityLabel={`${t('workouts.routine')}, ${EXERCISE}`}
-      >
+      <ShowcaseFrame accessibilityLabel={`${t('workouts.routine')}, ${EXERCISE}`}>
         <Text variant="subtitle">{t('workouts.routine')}</Text>
 
         <View className="flex-row">
@@ -128,13 +129,20 @@ export default function WorkoutsStep() {
               <Text variant="label" className="w-6 text-right">
                 {set.reps}
               </Text>
-              <View className="h-6 w-6 items-center justify-center rounded-[8px] bg-pandan">
-                <Icon set="ui" name="check" size={13} tintColor={colors.onPandan} />
-              </View>
+              {/* A bare tick rather than the logger's filled box, which is a
+                  button there and would read as one here. Each lands in turn,
+                  so the sample plays out a session instead of waiting for a
+                  tap. Reanimated skips the entrance under Reduce Motion. */}
+              <Animated.View
+                className="w-5 items-end"
+                entering={ZoomIn.delay(TICK_START_MS + index * TICK_STEP_MS)}
+              >
+                <Icon set="ui" name="check" size={16} tintColor={colors.pandanInk} />
+              </Animated.View>
             </View>
           ))}
         </View>
-      </View>
+      </ShowcaseFrame>
     </OnboardingStep>
   )
 }

@@ -11,6 +11,7 @@ export {
 export { FactRow, type FactRowProps } from './FactRow'
 export { OnboardingStep, type OnboardingStepProps } from './OnboardingStep'
 export { planBody, planBudget } from './plan'
+export { ShowcaseFrame, type ShowcaseFrameProps } from './ShowcaseFrame'
 export { type BrandLogo, SourceOption, type SourceOptionProps } from './SourceOption'
 export { type StepArt, StepHeader, type StepHeaderProps } from './StepHeader'
 export {
