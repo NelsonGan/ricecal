@@ -405,7 +405,8 @@ select is(
                 ('recipe_saves'), ('social_counters'),
                 ('social_rate_limits'), ('groups'), ('group_members'), ('group_invites'),
                 ('group_reactions'), ('group_nudges'), ('group_messages'),
-                ('group_message_reports'), ('group_reports'), ('push_tokens')) expected(table_name)
+                ('group_message_reports'), ('group_reports'), ('push_tokens'),
+                ('scan_experiment_window')) expected(table_name)
    join pg_catalog.pg_class c on c.relname = expected.table_name
    join pg_catalog.pg_namespace n on n.oid = c.relnamespace and n.nspname = 'public'
    where c.relrowsecurity
@@ -423,8 +424,8 @@ select is(
                           ('MAINTAIN')) privileges(privilege_name)
        where pg_catalog.has_table_privilege(roles.role_name, c.oid, privileges.privilege_name)
      )),
-  18,
-  'all eighteen service-only tables deny every client privilege and every client row'
+  19,
+  'all nineteen service-only tables deny every client privilege and every client row'
 );
 
 select is(

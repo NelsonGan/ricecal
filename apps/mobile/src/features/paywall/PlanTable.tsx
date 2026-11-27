@@ -66,8 +66,8 @@ export function PlanTable() {
   const { t } = useTranslation('paywall')
   const colors = useThemeColors()
   // The server's figure: two for an account in the free-scan experiment's
-  // `two` arm, three for everyone else.
-  const freeDailyScans = useFreeDailyScans()
+  // `two` arm, three for everyone else. A dash until it answers, as a price is.
+  const freeDailyScans = useFreeDailyScans() ?? '—'
 
   /**
    * Handed to every row, whether or not its copy has a slot for them.

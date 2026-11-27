@@ -508,8 +508,9 @@ The `auth` schema is **not** one of these. The diff tracks triggers on
 made the next diff emit `DROP TRIGGER` for it. It stays declarative, in
 `16_new_user.sql`.
 
-Sixteen service-only tables (scan items and misses, groups and their chat,
-push tokens, recipe saves, social counters and rate limits, job runs) have no
+Nineteen service-only tables (scan items and misses, groups and their chat,
+push tokens, recipe saves and imports, social counters and rate limits, job
+runs, the free-scan experiment's window) have no
 client grant, no permissive policy and a restrictive `"Server only"` policy that
 denies every client row.
 `98_client_table_privileges.sql` also removes `TRUNCATE`, `REFERENCES`, `TRIGGER`
@@ -7187,25 +7188,33 @@ counts: what it records is what a scan cost us.
 scans is the paywall that sells best (8.8% of those who see it start a
 checkout, against 2.5% to 4.3% for the others, October and November 2026), so
 the question is whether a smaller allowance sells more Pro than it costs in
-people who stop logging. Accounts created from 1 December 2026 to 31 January
-2027 (Malaysia time) are split in half by the parity of their id's last hex
-digit: `two` gets two free scans a day, `control` keeps three. Everybody else
-keeps three.
+people who stop logging. Accounts created inside the window are split in half
+by the parity of their id's last hex digit: `two` gets two free scans a day,
+`control` keeps three. Everybody else keeps three.
 
-- **Postgres decides, not a feature flag.** `scan_experiment_arm(user)` is the
-  arm, `free_daily_scans_for(user)` the ceiling, and `claim_scan` and
-  `scan_usage_today` both read it, so the meter, the refusal and the limit
-  agree. A flag on the phone could not set a ceiling the server enforces, is
-  not read by the builds already in the stores, and has not loaded on the first
-  launch, when a new account first scans.
-- **Nothing is stored.** The arm follows from the account's creation time and
-  id, so it never changes and needs no write. Anyone holding the id can repeat
-  it: PostHog's distinct id and RevenueCat's app user id are the same uuid.
+- **The window is a row, opened by the deploy.** `scan_experiment_window` holds
+  one row (`starts_at`, `ends_at`, `stopped`), server only. The migration that
+  made it inserted the row with the database's own clock, so enrolment began
+  when it was applied, and runs for two months. No row means no experiment.
+- **Postgres decides, not a feature flag or an edge function.**
+  `scan_experiment_arm(user)` is the arm, `free_daily_scans_for(user)` the
+  ceiling, and `claim_scan` and `scan_usage_today` both read it, so the meter,
+  the refusal and the limit agree. Every path that spends a scan already goes
+  through `claim_scan`, and the app reads `scan_usage_today` straight from
+  PostgREST, so an edge function would be a second place to keep in step. A
+  flag on the phone could not set a ceiling the server enforces, is not read by
+  the builds already in the stores, and has not loaded on the first launch,
+  when a new account first scans.
+- **Nothing is stored per account.** The arm follows from the account's
+  creation time, its id and the window, so it never changes while the window
+  does not. Anyone holding the id can repeat it: PostHog's distinct id and
+  RevenueCat's app user id are the same uuid.
 - **The app is told** by `scan_experiment()`, which answers the caller's arm and
   free ceiling. `useFreeDailyScans` puts the figure in the plan table and the
-  subscription screen; the refusal toast and the camera's meter already used
-  the server's. Builds before this one print three in the plan table whatever
-  the arm, but are refused at two.
+  subscription screen, as a dash until the server answers; the refusal toast
+  and the camera's meter already used the server's. Builds before this one
+  print three in the plan table whatever the arm, but are refused at two. The
+  website says "up to 3" while it runs.
 - **It is read** by the `scan_experiment` person property in PostHog (set only
   for enrolled accounts) and, for money, by joining `subscriptions` to
   `scan_experiment_arm` in SQL. Compare the arms on trial starts and paid
@@ -7215,9 +7224,11 @@ keeps three.
   roughly 1,000 to 1,700 an arm (the split put 49 to 52% of each of those
   months in `two`). Trials run around 2 to 3% of new accounts, which is enough
   to see a large effect on trials and not a small one.
-- **To end it**, edit `scan_experiment_arm`: return null for everybody to put
-  `two` back on three, or keep the arms and move the window. Either is a
-  migration, and accounts already in `two` keep two until it changes.
+- **To end it**, update the row through the Management API, with no release:
+  `stopped = true` puts `two` back on three at once while every account keeps
+  its arm for the readout, and an earlier `ends_at` stops new accounts joining
+  while the enrolled keep two. When it is over for
+  good, drop the "up to" on the website.
 
 ### The webhook
 
@@ -11266,7 +11277,10 @@ Requests may steer it via `body.mock`, honoured in mock mode only.
 **The free tier applies to a local stack too, so the fourth scan of the day fails
 there.** Both gates run before the mock-AI branch on purpose, and `handle_new_user`
 creates a profile, settings and meal times but no `subscriptions` row. So a fresh
-local account is a **free** account: three photographed plates a day work, and
+local account is a **free** account: three photographed plates a day work (two
+for an account made inside the free-scan experiment's window with an even last
+id digit; close the window locally with `delete from
+public.scan_experiment_window`), and
 describe, fix-by-typing and the recipe reader all answer 402 `not_entitled`,
 which reads as a broken pipeline if you are not expecting it. One row fixes all
 of it:

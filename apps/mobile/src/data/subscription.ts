@@ -321,12 +321,17 @@ export function useScanExperiment() {
 }
 
 /**
- * How many free scans a day this account gets, for copy. The shared constant
- * until the server has answered, which is the right figure for everybody
- * outside the experiment and for its control.
+ * How many free scans a day this account gets, for copy, or null until the
+ * server has answered. Not the shared constant in the meantime: three is wrong
+ * for half of the experiment's accounts, and a table promising three to
+ * somebody the server refuses at two is the one thing this exists to prevent.
+ * Signed out, nobody is in the experiment, so it is the constant.
  */
-export function useFreeDailyScans(): number {
-  return useScanExperiment().data?.freeDailyScans ?? FREE_DAILY_SCANS
+export function useFreeDailyScans(): number | null {
+  const { userId } = useSession()
+  const { data } = useScanExperiment()
+  if (!userId) return FREE_DAILY_SCANS
+  return data?.freeDailyScans ?? null
 }
 
 /**

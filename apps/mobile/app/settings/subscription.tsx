@@ -17,7 +17,8 @@ export default function SubscriptionScreen() {
   const router = useRouter()
   const goBack = useBack('/me')
   const { data: prices } = usePlanPrices()
-  const freeDailyScans = useFreeDailyScans()
+  // A dash until the server answers: see `useFreeDailyScans`.
+  const freeDailyScans = useFreeDailyScans() ?? '—'
   const [confirmCancel, setConfirmCancel] = useState(false)
 
   // `usePlanSummary`, not the column. It reads the store's answer as well as

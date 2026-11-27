@@ -546,10 +546,16 @@ export function useDayPlates(from: string, to: string) {
  * A run ending yesterday still counts as current, or a 30-day streak would read
  * as zero every morning until breakfast is logged.
  */
-export function useStreak(): { current: number; best: number; isPending: boolean } {
+export function useStreak(): {
+  current: number
+  best: number
+  isPending: boolean
+  /** The read failed, so `current` is a zero that means nothing. */
+  isError: boolean
+} {
   const userId = useUserId()
 
-  const { data, isPending } = useQuery({
+  const { data, isPending, isError } = useQuery({
     queryKey: keys.streak(userId),
     queryFn: async () => {
       const rows = unwrap(await supabase.rpc('logging_streak'))
@@ -564,5 +570,10 @@ export function useStreak(): { current: number; best: number; isPending: boolean
   // Zero is a real answer here — a fresh account has no streak — so the callers
   // are told which zero this is rather than being left to draw "0 day streak"
   // for as long as the request is out.
-  return { current: data?.current ?? 0, best: data?.best ?? 0, isPending }
+  return {
+    current: data?.current ?? 0,
+    best: data?.best ?? 0,
+    isPending,
+    isError: isError && !data,
+  }
 }

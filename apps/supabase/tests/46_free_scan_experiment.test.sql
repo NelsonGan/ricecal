@@ -11,7 +11,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(14);
+select plan(18);
 
 -- Ids chosen by their last hex digit, which is what decides the arm.
 \set two_user     'e1000000-0000-4000-8000-00000000000a'
@@ -30,6 +30,12 @@ values
 
 insert into public.subscriptions (user_id, status, plan, current_period_end)
 values (:'pro_user', 'active', 'yearly', now() + interval '30 days');
+
+-- A fixed window, whatever the migration wrote on deploy, so the edges are
+-- the test's own.
+delete from public.scan_experiment_window;
+insert into public.scan_experiment_window (starts_at, ends_at)
+values ('2026-12-01 00:00+08', '2027-02-01 00:00+08');
 
 -- -- WHO IS IN IT ------------------------------------------------------------
 
@@ -83,6 +89,26 @@ select results_eq(
 );
 select is((select daily_limit from public.scan_usage_today()), 2,
   'and the meter on the camera agrees with it');
+
+-- -- ENDING IT ---------------------------------------------------------------
+
+reset role;
+
+update public.scan_experiment_window set stopped = true;
+select is(public.free_daily_scans_for(:'two_user'), 3,
+  'stopping the experiment puts two back on three at once');
+select is(public.scan_experiment_arm(:'two_user'), 'two',
+  'while the account keeps its arm, so the readout still splits by it');
+
+delete from public.scan_experiment_window;
+select is(public.scan_experiment_arm(:'two_user'), null,
+  'and with no window row nobody is in it');
+
+select ok(
+  not has_table_privilege('authenticated', 'public.scan_experiment_window', 'SELECT')
+  and not has_table_privilege('anon', 'public.scan_experiment_window', 'SELECT'),
+  'the window is the server''s alone'
+);
 
 select * from finish();
 rollback;

@@ -59,12 +59,16 @@ export function useProNudge(): void {
   const targetKg = Number(profile?.target_weight_kg ?? 0)
   const announcing = userId ? announcementHasTheFloor(userId, profile) : false
   const streak = useStreak()
-  const { data: weighIns } = useWeighIns()
+  const { data: weighIns, isPending: weighInsPending, isError: weighInsError } = useWeighIns()
+  // Nothing until both milestones can be judged. The standing offer booked
+  // first would spend the two-day clock a milestone was owed, and a failed read
+  // is a zero streak or no weigh-ins that mean nothing.
+  const milestonesKnown =
+    !streak.isPending && !streak.isError && !weighInsPending && !(weighInsError && !weighIns)
   // Settled to the offer itself, so a refetch that changes nothing does not
-  // restart the delay either. Nothing until the streak has loaded: the standing
-  // offer booked first would spend the clock a streak milestone was owed.
+  // restart the delay either.
   const offer: Milestone | 'nudge' | null =
-    userId && !streak.isPending
+    userId && milestonesKnown
       ? (milestoneDue(userId, {
           streakDays: streak.current,
           streakGoal: STREAK_MILESTONE_DAYS,

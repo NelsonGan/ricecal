@@ -14,13 +14,23 @@ const mockState = {
   announcing: false,
   milestone: 'nudge_streak' as string | null,
   streakPending: false,
+  streakError: false,
+  weighInsPending: false,
 }
 jest.mock('@/data', () => ({
   useSession: () => ({ userId: mockState.userId }),
   useEntitlement: () => mockState,
   useProfile: () => ({ data: { seen_announcements: [], target_weight_kg: 60 } }),
-  useStreak: () => ({ current: 7, best: 7, isPending: mockState.streakPending }),
-  useWeighIns: () => ({ data: [] }),
+  useStreak: () => ({
+    current: 7,
+    best: 7,
+    isPending: mockState.streakPending,
+    isError: mockState.streakError,
+  }),
+  useWeighIns: () =>
+    mockState.weighInsPending
+      ? { data: undefined, isPending: true, isError: false }
+      : { data: [], isPending: false, isError: false },
 }))
 jest.mock('@/data/refusals', () => ({
   openPaywall: jest.fn(),
@@ -58,6 +68,8 @@ beforeEach(() => {
     announcing: false,
     milestone: 'nudge_streak',
     streakPending: false,
+    streakError: false,
+    weighInsPending: false,
   })
 })
 afterEach(() => jest.useRealTimers())
@@ -115,6 +127,23 @@ it('waits out the two days since the last paywall, leaving the milestone owed', 
   await act(() => jest.advanceTimersByTimeAsync(1500))
   expect(openPaywall).not.toHaveBeenCalled()
   expect(markMilestone).not.toHaveBeenCalled()
+})
+
+it('books nothing while the weigh-ins are loading, which a goal milestone needs', async () => {
+  mockState.milestone = null
+  mockState.weighInsPending = true
+  await render(<Probe />)
+  await act(() => jest.advanceTimersByTimeAsync(1500))
+  expect(router.push).not.toHaveBeenCalled()
+  expect(markPaywallSeen).not.toHaveBeenCalled()
+})
+
+it('books nothing when the streak could not be read, rather than reading it as zero', async () => {
+  mockState.milestone = null
+  mockState.streakError = true
+  await render(<Probe />)
+  await act(() => jest.advanceTimersByTimeAsync(1500))
+  expect(router.push).not.toHaveBeenCalled()
 })
 
 it('waits out the two days for the standing offer too', async () => {
