@@ -1,4 +1,3 @@
-import { useKeepAwake } from 'expo-keep-awake'
 import { useIsFocused, useRouter } from 'expo-router'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -38,6 +37,7 @@ import {
   WorkoutUnavailable,
   clock as workoutClock,
 } from '@/features/workouts'
+import { useScreenAwake } from '@/lib/keep-awake'
 import { ReplayMask } from '@/lib/replay-mask'
 import { unitFor } from '@/lib/units'
 import { useThemeColors } from '@/theme/useTheme'
@@ -404,6 +404,6 @@ function RestCountdown(props: Omit<Parameters<typeof RestBar>[0], 'now'>) {
 
 /** A component only so the hook can be switched on and off with the setting. */
 function KeepAwake() {
-  useKeepAwake('workout')
+  useScreenAwake('workout')
   return null
 }
