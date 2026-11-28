@@ -73,6 +73,12 @@ export function useDay(date: string) {
  * drew as a day nobody had logged anything on.
  */
 export type DayView = DayLog & {
+  /**
+   * Whether the day's own rows have arrived. Unlike `isPending`, a queued snap
+   * does not make this true: the snap is drawn, but the server's rows are not
+   * in yet.
+   */
+  loaded: boolean
   isPending: boolean
   isPaused: boolean
   failed: boolean
@@ -152,6 +158,7 @@ export function useDayLog(date: string): DayView {
   const view = useMemo((): DayView & { settled: string[] } => {
     const base = {
       ...(data ?? { date, entries: [], waterMl: 0 }),
+      loaded: data !== undefined,
       isPending,
       isPaused,
       failed: isError && data === undefined,

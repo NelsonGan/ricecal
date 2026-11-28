@@ -121,13 +121,25 @@ export function parseOutfit(stored: unknown, fallbackBase: AvatarBase): Outfit {
   }
 }
 
-/** Whether the stored object has anything in it. Empty means "never saved". */
-export function hasSavedOutfit(stored: unknown): boolean {
-  return Boolean(stored && typeof stored === 'object' && !Array.isArray(stored) && 'base' in stored)
-}
-
-export function serialiseOutfit(outfit: Outfit): Json {
-  return { ...outfit }
+/**
+ * What to store: the stored object with only the slots this person changed
+ * written into it.
+ *
+ * Writing the parsed outfit whole would put this build's defaults over
+ * anything it could not read: a hat added in a later release, saved from a
+ * newer phone, would be wiped the moment an older phone saved a new base.
+ * Keys this build has never heard of are kept for the same reason.
+ */
+export function mergeOutfit(stored: unknown, saved: Outfit, next: Outfit): Json {
+  const base =
+    stored && typeof stored === 'object' && !Array.isArray(stored)
+      ? (stored as Record<string, Json>)
+      : {}
+  const out: Record<string, Json> = { ...base }
+  for (const key of ['base', ...SLOTS] as const) {
+    if (next[key] !== saved[key] || !(key in base)) out[key] = next[key]
+  }
+  return out
 }
 
 /**
@@ -151,12 +163,6 @@ export function withItem(outfit: Outfit, slot: Slot, item: string | null): Outfi
  */
 export function freeOutfit(outfit: Outfit): Outfit {
   return defaultOutfit(outfit.base)
-}
-
-/** Whether the outfit differs from the default in anything Pro unlocks. */
-export function isCustomised(outfit: Outfit): boolean {
-  const plain = defaultOutfit(outfit.base)
-  return SLOTS.some((slot) => outfit[slot] !== plain[slot])
 }
 
 /** Used by the tests: every item and its layers exist on the canvas. */

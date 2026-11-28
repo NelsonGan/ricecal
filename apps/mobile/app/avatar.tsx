@@ -38,13 +38,13 @@ import {
  * head for hair, the feet for shoes. Square, because the tiles are.
  */
 const CROPS: Record<Slot, AvatarCrop> = {
-  hair: { x: 46, y: 0, w: 380, h: 380 },
-  headwear: { x: 46, y: 0, w: 380, h: 380 },
-  accessory: { x: 96, y: 110, w: 280, h: 280 },
-  top: { x: 96, y: 330, w: 280, h: 280 },
-  bottom: { x: 96, y: 470, w: 280, h: 280 },
-  shoes: { x: 126, y: 548, w: 220, h: 220 },
-  held: { x: 220, y: 330, w: 250, h: 250 },
+  hair: { x: 58, y: 0, w: 380, h: 380 },
+  headwear: { x: 58, y: 0, w: 380, h: 380 },
+  accessory: { x: 96, y: 70, w: 380, h: 380 },
+  top: { x: 108, y: 330, w: 280, h: 280 },
+  bottom: { x: 108, y: 470, w: 280, h: 280 },
+  shoes: { x: 138, y: 548, w: 220, h: 220 },
+  held: { x: 190, y: 372, w: 300, h: 300 },
 }
 
 const COLUMNS = 4
@@ -57,12 +57,12 @@ const SLOT_ICON: Record<Slot, AvatarLayerName> = {
   bottom: 'bottom-shorts',
   shoes: 'shoes-sneakers',
   headwear: 'hat-bucket',
-  accessory: 'acc-glasses',
+  accessory: 'acc-shades',
   held: 'held-teh-tarik',
 }
 
 /** Head and shoulders, for the guy and girl cards. */
-const PORTRAIT: AvatarCrop = { x: 46, y: 0, w: 380, h: 400 }
+const PORTRAIT: AvatarCrop = { x: 58, y: 0, w: 380, h: 400 }
 
 /** The outfit as it would be on the other base, bare-headed so the face shows. */
 function portraitOf(outfit: Outfit, base: AvatarBase): Outfit {
@@ -187,7 +187,7 @@ export default function AvatarScreen() {
   const back = useBack('/today')
   const toast = useToast()
   const width = usePaneWidth()
-  const { saved, outfit: shown, free } = useAvatar()
+  const { saved, outfit: shown, free, loading } = useAvatar()
   const { save, saving } = useSaveAvatar()
   const requirePro = useRequirePro()
 
@@ -202,12 +202,14 @@ export default function AvatarScreen() {
   const current = draft ?? baseline
   const dirty = !same(current, baseline)
 
+  // Nothing is editable until the saved outfit has loaded: an edit of the
+  // placeholder would be saved over the real one.
   const chooseBase = (base: AvatarBase) => {
-    if (base !== current.base) setDraft(withBase(current, base))
+    if (!loading && base !== current.base) setDraft(withBase(current, base))
   }
 
   const choose = (item: string | null) => {
-    if (!requirePro('avatar')) return
+    if (loading || !requirePro('avatar')) return
     setDraft(withItem(current, slot, item))
   }
 
@@ -238,7 +240,7 @@ export default function AvatarScreen() {
     <Screen
       header={<AppBar title={t('title')} onBack={() => back()} backLabel={t('common:a11y.back')} />}
       footer={
-        <Button fullWidth disabled={!dirty} loading={saving} onPress={onSave}>
+        <Button fullWidth disabled={!dirty || loading} loading={saving} onPress={onSave}>
           {t('save')}
         </Button>
       }
@@ -331,9 +333,12 @@ export default function AvatarScreen() {
                   style={{ width: tile, height: tile }}
                 >
                   <AvatarFigure
-                    // A hat would hide most of a hairstyle, so hair is tried on bare-headed.
+                    // A hat hides most of a hairstyle and a flower behind the ear, so those
+                    // are tried on bare-headed.
                     outfit={withItem(
-                      slot === 'hair' ? withItem(current, 'headwear', null) : current,
+                      slot === 'hair' || slot === 'accessory'
+                        ? withItem(current, 'headwear', null)
+                        : current,
                       slot,
                       item,
                     )}

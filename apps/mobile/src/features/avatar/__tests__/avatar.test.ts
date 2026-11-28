@@ -6,8 +6,8 @@ import {
   defaultOutfit,
   freeOutfit,
   HIDES_HAIR,
-  isCustomised,
   layersOfItem,
+  mergeOutfit,
   parseOutfit,
   SLOTS,
   WARDROBE,
@@ -125,7 +125,6 @@ describe('parseOutfit', () => {
 
   it('shows a free account the default outfit on its base, keeping the saved one', () => {
     const saved = { ...defaultOutfit('girl'), top: 'puff' as const }
-    expect(isCustomised(saved)).toBe(true)
     expect(freeOutfit(saved)).toEqual(defaultOutfit('girl'))
   })
 })
@@ -175,5 +174,20 @@ describe('withBase', () => {
   it('swaps the hair only while it is the old base’s own', () => {
     expect(withBase(defaultOutfit('girl'), 'guy').hair).toBe('bedhead')
     expect(withBase({ ...defaultOutfit('girl'), hair: 'bob' }, 'guy').hair).toBe('bob')
+  })
+})
+
+describe('mergeOutfit', () => {
+  it('keeps what a newer build saved when an older one changes something else', () => {
+    const stored = { ...defaultOutfit('guy'), headwear: 'crown', pet: 'cat' }
+    const saved = parseOutfit(stored, 'guy')
+    expect(saved.headwear).toBeNull()
+    const merged = mergeOutfit(stored, saved, withBase(saved, 'girl'))
+    expect(merged).toMatchObject({ base: 'girl', headwear: 'crown', pet: 'cat' })
+  })
+
+  it('writes every slot on a first save', () => {
+    const outfit = defaultOutfit('girl')
+    expect(mergeOutfit({}, outfit, outfit)).toEqual(outfit)
   })
 })

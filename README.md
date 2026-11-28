@@ -4829,8 +4829,8 @@ new mood had already shown before the spoon went up.
 
 ### How the layers fit
 
-The figure is not one picture. `assets/avatar/` holds 93 transparent WebP
-layers (about 1.1 MB) on one shared canvas, 472 by 768, and
+The figure is not one picture. `assets/avatar/` holds 92 transparent WebP
+layers (about 1 MB) on one shared canvas, 504 by 768, and
 `layers.generated.ts` places each trimmed image on it. They were drawn with
 the image-generation skill on the Codex backend: one bald, blank-faced base
 body, then every face, hairstyle, garment and pose as an edit of that body,

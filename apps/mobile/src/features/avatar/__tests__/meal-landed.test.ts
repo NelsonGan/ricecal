@@ -35,6 +35,33 @@ describe('useMealLanded', () => {
     expect(hook.result.current.landed).toBeNull()
   })
 
+  it('counts a meal logged for an earlier time of day', async () => {
+    const hook = await setup([])
+    await hook.rerender({
+      entries: [{ id: 'f', loggedAt: at(4 * 3600_000) }],
+      day: '2026-11-28',
+      isReady: true,
+    })
+    expect(hook.result.current.landed).toBe('f')
+  })
+
+  it('drops a waiting bite for a meal deleted before it played', async () => {
+    const hook = await setup([])
+    await hook.rerender({
+      entries: [{ id: 'g', loggedAt: at(0) }],
+      day: '2026-11-28',
+      isReady: true,
+    })
+    await hook.rerender({
+      entries: [{ id: 'g', loggedAt: at(0) }],
+      day: '2026-11-28',
+      isReady: true,
+    })
+    expect(hook.result.current.landed).toBe('g')
+    await hook.rerender({ entries: [], day: '2026-11-28', isReady: true })
+    expect(hook.result.current.landed).toBeNull()
+  })
+
   it('does not count a scan still being read', async () => {
     const hook = await setup([])
     await hook.rerender({

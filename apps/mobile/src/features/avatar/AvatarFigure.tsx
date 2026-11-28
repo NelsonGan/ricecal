@@ -23,7 +23,7 @@ const CW = AVATAR_CANVAS.width
 const CH = AVATAR_CANVAS.height
 
 /** Where the right arm turns from, on the canvas: the shoulder. */
-const SHOULDER_R = { x: 305, y: 395 }
+const SHOULDER_R = { x: 317, y: 395 }
 
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1)
 
