@@ -22,9 +22,9 @@ export type CookedPhotoTileProps = {
  * takes the photo, so the meal reads as the real thing rather than a drawing
  * of one.
  *
- * The tile is a button as well as the picture, with a camera badge to say so,
- * and the labelled button under it is the obvious way in for anybody who does
- * not tap pictures.
+ * The tile opens the camera too, but the labelled button under it is the one
+ * camera on screen: a badge on the tile as well read as two ways to do one
+ * thing.
  */
 export function CookedPhotoTile({ icon, photoUri, attaching, onPress }: CookedPhotoTileProps) {
   const { t } = useTranslation('recipes')
@@ -40,8 +40,9 @@ export function CookedPhotoTile({ icon, photoUri, attaching, onPress }: CookedPh
         containerClassName="w-[236px]"
         slabClassName="bg-pandan-soft-line"
         className="h-[236px] w-full items-center justify-center overflow-hidden rounded-card border-[3px] border-pandan-soft-line bg-pandan-soft"
-        accessibilityRole="button"
-        accessibilityLabel={label}
+        // The button under it says the same thing, so a screen reader hears it once.
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
       >
         {attaching ? (
           // Resizing and sending a 3-6 MB frame is a second or two on a real
@@ -51,11 +52,6 @@ export function CookedPhotoTile({ icon, photoUri, attaching, onPress }: CookedPh
           <MealPhoto source={{ uri: photoUri }} />
         ) : (
           <Icon {...(icon ?? { set: 'food', name: 'cooking-pot' })} size={132} />
-        )}
-        {attaching ? null : (
-          <View className="absolute right-3 bottom-3 h-[44px] w-[44px] items-center justify-center rounded-full border-[3px] border-pandan-soft-line bg-surface">
-            <Icon set="system" name="camera" size={22} />
-          </View>
         )}
       </Squish>
 
