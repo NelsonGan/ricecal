@@ -1848,6 +1848,10 @@ export const bn = {
       finishedTitle: 'খাবার উপভোগ করুন',
       finishedBody: 'আপনার দিনে একটি পরিবেশন যোগ করবেন?',
       finishedSkip: 'এখন নয়',
+      finishedPhoto: 'আপনার প্লেটের ছবি তুলুন, যাতে এটি ছবিসহ লগ হয়।',
+      takePhoto: 'ছবি তুলুন',
+      retakePhoto: 'আবার তুলুন',
+      photoTitle: 'আপনার প্লেটের ছবি তুলুন',
     },
   },
 

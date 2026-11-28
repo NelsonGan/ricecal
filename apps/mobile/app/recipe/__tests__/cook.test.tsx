@@ -8,6 +8,9 @@ import { ToastProvider } from '@/ui'
 import CookModeScreen from '../cook'
 
 const mockBack = jest.fn()
+const mockLog = jest.fn((_input: unknown) => new Promise(() => {}))
+const mockUpload = jest.fn((_uri: string) => Promise.resolve('meals/u/plate.jpg'))
+const mockRemovePhoto = jest.fn((_path: string) => Promise.resolve())
 const mockReplace = jest.fn()
 const mockRecipe: { current: Record<string, unknown> } = { current: {} }
 
@@ -45,12 +48,27 @@ jest.mock('expo-router', () => ({
 }))
 jest.mock('@/lib/navigation', () => ({ useBack: () => mockBack, useCloseStack: () => mockBack }))
 jest.mock('@/data', () => ({
-  useLogFood: () => ({ mutateAsync: jest.fn(() => new Promise(() => {})), isPending: false }),
+  removeMealPhoto: (path: string) => mockRemovePhoto(path),
+  uploadMealPhoto: (uri: string) => mockUpload(uri),
+  useLogFood: () => ({ mutateAsync: mockLog, isPending: false }),
   useRecipe: () => ({ data: { ...mockKari, ...mockRecipe.current }, isPending: false }),
   useRecipeIngredients: () => ({ data: mockIngredients }),
   useRemoveEntry: () => ({ mutate: jest.fn() }),
   useSelectedDate: () => ({ selectedDate: '2026-11-21', todayKey: '2026-11-21' }),
 }))
+
+// The viewfinder needs a camera; a button that hands back a shot stands in.
+jest.mock('@/features/logging', () => {
+  const { Pressable, Text } = jest.requireActual('react-native')
+  return {
+    ...jest.requireActual('@/features/logging'),
+    InlineCamera: ({ onCapture }: { onCapture: (uri: string, from: string) => void }) => (
+      <Pressable onPress={() => onCapture('file:///plate.jpg', 'camera')}>
+        <Text>Shutter</Text>
+      </Pressable>
+    ),
+  }
+})
 
 const METRICS = {
   frame: { x: 0, y: 0, width: 390, height: 844 },
@@ -72,6 +90,7 @@ function renderScreen() {
 let nextId = 0
 beforeEach(() => {
   mockRecipe.current = { id: `pot-${nextId++}` }
+  jest.clearAllMocks()
 })
 
 it('moves on when the step itself is tapped, and shows what it needs at tonight’s amounts', async () => {
@@ -154,4 +173,57 @@ it('keeps the ticks from the recipe page when the recipe was opened from a share
   }
   await render(<ReadRecipePage />)
   expect(after.ticks?.size).toBe(0)
+})
+
+async function finishCooking(user: ReturnType<typeof userEvent.setup>) {
+  await user.press(screen.getByText('Next step'))
+  await user.press(screen.getByText('Next step'))
+  await user.press(screen.getByText('Done'))
+}
+
+it('puts a photo of the plate on the diary entry', async () => {
+  const user = userEvent.setup()
+  await renderScreen()
+  await finishCooking(user)
+
+  expect(screen.getByText('Snap your plate to log it with a photo.')).toBeOnTheScreen()
+  await user.press(screen.getByText('Take a photo'))
+  await user.press(await screen.findByText('Shutter'))
+  expect(await screen.findByText('Retake')).toBeOnTheScreen()
+  expect(mockUpload).toHaveBeenCalledWith('file:///plate.jpg')
+
+  await user.press(screen.getByText('Add to today'))
+  await screen.findByText('How much did you have?')
+  // The sheet's own button, which comes ahead of the footer's in the tree.
+  await user.press(screen.getAllByText('Add to today')[0])
+  expect(mockLog).toHaveBeenCalledWith(
+    expect.objectContaining({ photoPath: 'meals/u/plate.jpg', method: 'recipe' }),
+  )
+})
+
+it('deletes the photo when the cook leaves without logging it', async () => {
+  const user = userEvent.setup()
+  const view = await renderScreen()
+  await finishCooking(user)
+  await user.press(screen.getByText('Take a photo'))
+  await user.press(await screen.findByText('Shutter'))
+  await screen.findByText('Retake')
+
+  await view.unmount()
+  expect(mockRemovePhoto).toHaveBeenCalledWith('meals/u/plate.jpg')
+})
+
+it('keeps the photo once the entry is being written', async () => {
+  const user = userEvent.setup()
+  const view = await renderScreen()
+  await finishCooking(user)
+  await user.press(screen.getByText('Take a photo'))
+  await user.press(await screen.findByText('Shutter'))
+  await screen.findByText('Retake')
+  await user.press(screen.getByText('Add to today'))
+  await screen.findByText('How much did you have?')
+  await user.press(screen.getAllByText('Add to today')[0])
+
+  await view.unmount()
+  expect(mockRemovePhoto).not.toHaveBeenCalled()
 })

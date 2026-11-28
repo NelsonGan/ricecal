@@ -20,6 +20,7 @@ export {
   ingredientTotal,
   potTotals,
 } from './basis'
+export { CookedPhotoTile, type CookedPhotoTileProps } from './CookedPhotoTile'
 export {
   ingredientsInStep,
   normaliseSourceUrl,

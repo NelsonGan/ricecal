@@ -3134,6 +3134,19 @@ match hands over the wrong jar, so the rule leans to missing. The full list is
 one tap away in a sheet. The last step asks how much was eaten, in the same sheet as the
 recipe page, rather than logging one serving for somebody who had two.
 
+**The end of cook mode asks for a photo of the plate.** A recipe logs with its
+drawing, and the moment the pot is done is the one moment a photo of the real
+meal is in reach, so the finished screen leads with the recipe's drawing in a
+tile that opens the camera (`CookedPhotoTile`, the same `InlineCamera` and
+library button as everywhere else). The shot uploads as soon as it is taken,
+then goes on the row as `photo_path` when it is logged (`recipeLog`'s
+`photoPath`); the recipe's drawing still rides along as `item_icon_*` for the
+retention sweep. Until Add is tapped the object is cook mode's to delete: a
+retake, "Not now" or closing the screen removes it. From the tap on it is the
+row's, and a write that then fails leaves an object nobody reads rather than a
+row pointing at nothing. Undo on the confirmation deletes both. A recipe with
+no ingredients logs nothing, so it is not asked for a photo either.
+
 **What the data gained** (`20261121042151_recipe_manager.sql`), all nullable or
 defaulted, so 1.0.0 neither writes nor needs it and its updates leave it alone:
 

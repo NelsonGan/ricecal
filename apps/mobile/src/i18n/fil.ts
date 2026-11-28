@@ -1890,6 +1890,10 @@ export const fil = {
       finishedTitle: 'Kain na!',
       finishedBody: 'Magdagdag ng isang serving sa araw mo?',
       finishedSkip: 'Hindi muna',
+      finishedPhoto: 'Kunan ng litrato ang plato mo para sa log na ito.',
+      takePhoto: 'Kumuha ng litrato',
+      retakePhoto: 'Kunan ulit',
+      photoTitle: 'Kunan ang plato mo',
     },
   },
 

@@ -15,6 +15,13 @@ export type LogRecipeSheetProps = {
   isToday: boolean
   /** After the row is written. Cook mode leaves the screen here. */
   onLogged?: () => void
+  /** A photo of the plate, already uploaded, to put on the row. Cook mode's. */
+  photoPath?: string
+  /**
+   * Add was tapped. Cook mode stops treating its photo as its own to delete
+   * from here, since the row about to be written points at it.
+   */
+  onSubmit?: () => void
 }
 
 /** "½", "1½", "2": a serving count the way it is said, not "1.5". */
@@ -42,6 +49,8 @@ export function LogRecipeSheet({
   logDate,
   isToday,
   onLogged,
+  photoPath,
+  onSubmit,
 }: LogRecipeSheetProps) {
   const { t } = useTranslation(['recipes', 'common'])
   const { log, pending } = useLogRecipe()
@@ -96,12 +105,19 @@ export function LogRecipeSheet({
         <Button
           fullWidth
           loading={pending}
-          onPress={() =>
-            log(recipe, quantity, logDate, () => {
-              loggedRef.current = true
-              onClose()
-            })
-          }
+          onPress={() => {
+            onSubmit?.()
+            log(
+              recipe,
+              quantity,
+              logDate,
+              () => {
+                loggedRef.current = true
+                onClose()
+              },
+              photoPath,
+            )
+          }}
         >
           {action}
         </Button>

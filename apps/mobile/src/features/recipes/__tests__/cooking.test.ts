@@ -51,6 +51,14 @@ describe('recipeLog', () => {
         method: 'recipe',
       }),
     )
+    expect(recipeLog(recipe, 2, '2026-11-21')).not.toHaveProperty('photoPath')
+  })
+
+  it('carries a photo of the plate when one was taken', () => {
+    const recipe = { ...base, id: 'r1', name: 'Kari ayam' } as Recipe
+    expect(recipeLog(recipe, 1, '2026-11-21', 'meals/u/plate.jpg')).toEqual(
+      expect.objectContaining({ photoPath: 'meals/u/plate.jpg' }),
+    )
   })
 })
 

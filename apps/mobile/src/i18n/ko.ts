@@ -1850,6 +1850,10 @@ export const ko = {
       finishedTitle: '맛있게 드세요',
       finishedBody: '1인분을 오늘에 추가할까요?',
       finishedSkip: '나중에',
+      finishedPhoto: '접시를 찍어 사진으로 기록해 보세요.',
+      takePhoto: '사진 찍기',
+      retakePhoto: '다시 찍기',
+      photoTitle: '접시 찍기',
     },
   },
 
