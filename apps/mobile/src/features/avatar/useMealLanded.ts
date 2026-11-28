@@ -12,6 +12,9 @@ const LANDED_MS = 2 * 60_000
  */
 const SETTLE_MS = 6000
 
+/** How long after the screen mounts a first server answer counts as the launch catching up. */
+const LAUNCH_SYNC_MS = 8000
+
 type EntryLike = { id: string; status?: unknown }
 
 /**
@@ -26,31 +29,51 @@ type EntryLike = { id: string; status?: unknown }
  * logged for (breakfast entered at noon is still eaten now).
  *
  * `ready` means the day's own rows have arrived: a baseline taken before
- * them is empty, and every row would then look new.
+ * them is empty, and every row would then look new. `fresh` turns true when
+ * the server first answers since the screen mounted; if that happens in the
+ * first seconds after launch, whatever it adds to a day shown from the
+ * persisted cache was logged elsewhere while the app was closed, and is taken
+ * in silently.
  *
  * Worked out during the render that first shows the meal, not in an effect
  * after it: the day's totals change in that same render, and a render later
  * the avatar had already shown the new mood before taking the bite.
  */
-export function useMealLanded(entries: readonly EntryLike[], day: string, ready: boolean) {
+export function useMealLanded(
+  entries: readonly EntryLike[],
+  day: string,
+  ready: boolean,
+  fresh = true,
+) {
   const [queued, setQueued] = useState<{ id: string; at: number } | null>(null)
   const seen = useRef<{ day: string; ids: Set<string> } | null>(null)
   const lastAt = useRef(0)
   // Kept here rather than in the card, which remounts behind a skeleton when
   // another day loads: a ref there forgot the bite and replayed it.
   const played = useRef<string | null>(null)
+  const wasFresh = useRef(fresh)
+  const mountedAt = useRef(Date.now())
+  // Only an answer arriving soon after launch is the launch catching up. A day
+  // still fresh from the cache is not refetched on mount, and its first answer
+  // can then be the very meal just logged here, which must still be eaten.
+  const answered = fresh && !wasFresh.current && Date.now() - mountedAt.current < LAUNCH_SYNC_MS
 
   const done = ready ? entries.filter((entry) => !entry.status) : []
-  const baseline = !ready || seen.current === null || seen.current.day !== day
+  const baseline = !ready || seen.current === null || seen.current.day !== day || answered
   const known = seen.current?.ids
-  const fresh = baseline || !known ? [] : done.filter((entry) => !known.has(entry.id))
+  const arrived = baseline || !known ? [] : done.filter((entry) => !known.has(entry.id))
   const now = Date.now()
-  const last = fresh.at(-1)?.id
+  const last = arrived.at(-1)?.id
   const settling = now - lastAt.current < SETTLE_MS
   const candidate = last && last !== played.current && !settling ? last : undefined
 
   useEffect(() => {
+    wasFresh.current = fresh
     if (!ready) return
+    if (answered && seen.current?.day === day) {
+      for (const entry of done) seen.current.ids.add(entry.id)
+      return
+    }
     if (seen.current === null || seen.current.day !== day) {
       seen.current = { day, ids: new Set(done.map((entry) => entry.id)) }
       setQueued(null)

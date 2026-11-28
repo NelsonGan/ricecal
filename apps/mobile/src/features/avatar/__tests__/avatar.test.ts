@@ -1,15 +1,16 @@
 import { AVATAR_LAYERS, HAT_HAIR_CLIP } from '../layers.generated'
-import { calorieMood, EATING_MS, eatingFrames, MOODS, moodPose } from '../mood'
+import { calorieMood, MOODS, moodPose } from '../mood'
 import { buildStack } from '../stack'
+import { ACTIONS, DISSOLVE_MS, sample, windowOpacity } from '../timeline'
 import {
   BASES,
   defaultOutfit,
   freeOutfit,
   HIDES_HAIR,
   layersOfItem,
-  mergeOutfit,
   parseOutfit,
   SLOTS,
+  serialiseOutfit,
   WARDROBE,
   withBase,
 } from '../wardrobe'
@@ -50,11 +51,21 @@ describe('poses', () => {
     expect(moodPose('close', true)).toMatchObject({ armL: 'thumb', armR: 'hold' })
   })
 
-  it('ends the eating animation on the new mood', () => {
-    const frames = eatingFrames('over', false)
-    expect(frames[0]?.pose).toMatchObject({ face: 'bite', armR: 'eat', spoon: 'full' })
-    expect(frames.at(-1)?.pose).toEqual(moodPose('over', false))
-    expect(frames.every((frame) => frame.at < EATING_MS)).toBe(true)
+  it('ends the eating motion on the new mood, with the spoon first', () => {
+    const motion = ACTIONS.eating('over', false)
+    expect(motion.segments[0]?.pose).toMatchObject({ face: 'bite', armR: 'eat', spoon: 'full' })
+    expect(motion.segments.at(-1)?.pose).toEqual(moodPose('over', false))
+    for (const track of Object.values(motion.channels)) {
+      expect(track.every(([t]) => t >= 0 && t <= motion.duration)).toBe(true)
+      // keys in time order, or sampling would jump
+      expect(track.every(([t], i) => i === 0 || t >= (track[i - 1]?.[0] ?? 0))).toBe(true)
+    }
+  })
+
+  it('brings the arm down before the hand goes back to the tummy', () => {
+    const motion = ACTIONS.eating('onTrack', false)
+    const handBack = motion.segments.find((s) => s.pose.armR !== 'eat')?.from ?? 0
+    expect(sample(motion.channels.lift, handBack, 0)).toBeCloseTo(0, 2)
   })
 })
 
@@ -177,17 +188,33 @@ describe('withBase', () => {
   })
 })
 
-describe('mergeOutfit', () => {
-  it('keeps what a newer build saved when an older one changes something else', () => {
-    const stored = { ...defaultOutfit('guy'), headwear: 'crown', pet: 'cat' }
-    const saved = parseOutfit(stored, 'guy')
-    expect(saved.headwear).toBeNull()
-    const merged = mergeOutfit(stored, saved, withBase(saved, 'girl'))
-    expect(merged).toMatchObject({ base: 'girl', headwear: 'crown', pet: 'cat' })
+describe('serialiseOutfit', () => {
+  it('stores every slot, and reads back to the same outfit', () => {
+    const outfit = { ...defaultOutfit('girl'), headwear: 'tudung' as const }
+    expect(parseOutfit(serialiseOutfit(outfit), 'guy')).toEqual(outfit)
+  })
+})
+
+describe('timeline sampling', () => {
+  it('eases between keys and holds past the ends', () => {
+    const track = [
+      [0, 0],
+      [100, 10],
+    ] as const
+    expect(sample(track, -5, 0)).toBe(0)
+    expect(sample(track, 50, 0)).toBeCloseTo(5)
+    expect(sample(track, 25, 0)).toBeLessThan(2.5)
+    expect(sample(track, 500, 0)).toBe(10)
+    expect(sample(undefined, 50, 3)).toBe(3)
   })
 
-  it('writes every slot on a first save', () => {
-    const outfit = defaultOutfit('girl')
-    expect(mergeOutfit({}, outfit, outfit)).toEqual(outfit)
+  it('fades a drawing in and cuts it once the next has faded in over it', () => {
+    const w = [[100, 300]] as const
+    expect(windowOpacity(50, w)).toBe(0)
+    expect(windowOpacity(100 + DISSOLVE_MS / 2, w)).toBeCloseTo(0.5)
+    expect(windowOpacity(200, w)).toBe(1)
+    expect(windowOpacity(300 + DISSOLVE_MS / 2, w)).toBe(1)
+    expect(windowOpacity(300 + DISSOLVE_MS, w)).toBe(0)
+    expect(windowOpacity(0, [[0, 100]])).toBe(1)
   })
 })

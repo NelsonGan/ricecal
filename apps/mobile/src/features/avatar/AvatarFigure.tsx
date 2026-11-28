@@ -1,45 +1,52 @@
-import { Image } from 'expo-image'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Canvas,
+  Group,
+  Image,
+  rect,
+  type SkImage,
+  type Transforms3d,
+} from '@shopify/react-native-skia'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { View } from 'react-native'
-import Animated, {
-  cubicBezier,
+import {
   Easing,
-  FadeIn,
-  FadeOut,
-  useAnimatedStyle,
+  ReduceMotion,
+  type SharedValue,
+  useDerivedValue,
   useReducedMotion,
   useSharedValue,
   withRepeat,
-  withSequence,
   withTiming,
 } from 'react-native-reanimated'
+import { scheduleOnRN } from 'react-native-worklets'
 
-import { AVATAR_CANVAS, AVATAR_LAYERS } from './layers.generated'
-import { type AvatarState, EATING_MS, eatingFrames, MOOD_LEAN, moodPose, type Pose } from './mood'
+import { preloadAvatarLayers, useAvatarImages } from './images'
+import { AVATAR_LAYERS, type AvatarLayerName } from './layers.generated'
+import { type AvatarMood, type AvatarState, MOODS, moodPose } from './mood'
+import { BLEED, type Bone, CANVAS, PIVOT } from './rig'
 import { buildStack, type StackEntry } from './stack'
+import {
+  ACTIONS,
+  IDLE_MS,
+  idle,
+  MOOD_LEAN,
+  type Motion,
+  REST,
+  sample,
+  windowOpacity,
+} from './timeline'
 import type { Outfit } from './wardrobe'
 
-const CW = AVATAR_CANVAS.width
-const CH = AVATAR_CANVAS.height
-
-/** Where the right arm turns from, on the canvas: the shoulder. */
-const SHOULDER_R = { x: 317, y: 395 }
-
-const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1)
-
-/** How far past its drawn pose the eating arm rises, in canvas units. */
+/** How far past its drawn pose the eating arm rises, in canvas units: drawn, it stops at the chin. */
 const RAISE = 14
+/** The eating arm's resting drop and turn, from its drawn pose at the mouth. */
+const ARM_DROP = 46
+const ARM_TURN = 18
 
-/** A slow breath, so the figure reads as resting rather than frozen. */
-const BREATHE = { from: { transform: [{ scaleY: 1 }] }, to: { transform: [{ scaleY: 1.012 }] } }
-/** Hungry sways a little on its feet. */
-const SWAY = { from: { transform: [{ rotate: '-1deg' }] }, to: { transform: [{ rotate: '1deg' }] } }
-/** Sparkles, rumbles and puffs drift. */
-const DRIFT = {
-  from: { opacity: 1, transform: [{ translateY: 0 }] },
-  to: { opacity: 0.55, transform: [{ translateY: -5 }] },
+const rad = (deg: number) => {
+  'worklet'
+  return (deg * Math.PI) / 180
 }
-const IN_OUT = cubicBezier(0.77, 0, 0.175, 1)
 
 export type AvatarCrop = { x: number; y: number; w: number; h: number }
 
@@ -51,25 +58,75 @@ export type AvatarFigureProps = {
   /** Called once when an action such as eating has finished playing. */
   onActionEnd?: () => void
   /**
-   * Idle motion and cross-fades. Off for the customise screen's tiles, where a
-   * dozen figures breathing at once would be noise and cost.
+   * Idle motion. Off for still pictures such as the customise screen's tiles,
+   * where a dozen figures breathing at once would be noise.
    */
   animated?: boolean
+  /** 0 to 1: where in its idle loop this figure starts, so a crowd does not breathe in step. */
+  phase?: number
   /** A part of the canvas to show, for a tile that only needs the head or the feet. */
   crop?: AvatarCrop
   accessibilityLabel?: string
 }
 
+type Layer = StackEntry & { windows?: [number, number][] }
+
 /**
- * The avatar: a stack of transparent drawings on one shared canvas (README:
- * The avatar on Today).
+ * Every drawing a motion shows, in draw order, with when each is on. A drawing
+ * shown in two touching segments gets one window, so it never re-fades.
+ */
+function motionStack(outfit: Outfit, motion: Motion): Layer[] {
+  const byName = new Map<AvatarLayerName, Layer & { order: number }>()
+  let order = 0
+  motion.segments.forEach((segment, index) => {
+    const to = motion.segments[index + 1]?.from ?? Number.POSITIVE_INFINITY
+    for (const entry of buildStack(outfit, segment.pose)) {
+      const known = byName.get(entry.name)
+      if (!known) {
+        byName.set(entry.name, { ...entry, order: order++, windows: [[segment.from, to]] })
+        continue
+      }
+      const last = known.windows?.at(-1)
+      if (last && last[1] === segment.from) last[1] = to
+      else known.windows?.push([segment.from, to])
+    }
+  })
+  return [...byName.values()].sort((a, b) => a.z - b.z || a.order - b.order)
+}
+
+/** The motion ending on its mood with what the figure holds now, which can change mid-motion. */
+function withEnding(motion: Motion, holding: boolean): Motion {
+  const last = motion.segments.at(-1)
+  if (!last) return motion
+  return {
+    ...motion,
+    segments: [...motion.segments.slice(0, -1), { ...last, pose: moodPose(motion.mood, holding) }],
+  }
+}
+
+/**
+ * Decodes what this outfit needs to rest in `mood` and to eat, ahead of the
+ * figure being shown: Today's card mounts the avatar only for the bite when
+ * the stats are showing.
+ */
+export function preloadAvatar(outfit: Outfit, mood: AvatarMood): void {
+  const holding = outfit.held !== null
+  const rest = buildStack(outfit, moodPose(mood, holding))
+  // A meal can end on any mood, so every mood's face and arms come too.
+  const eat = MOODS.flatMap((next) => motionStack(outfit, ACTIONS.eating(next, holding)))
+  preloadAvatarLayers(new Set([...rest, ...eat].map((layer) => layer.name)))
+}
+
+/**
+ * The avatar: transparent drawings on one shared canvas, drawn by Skia and
+ * moved by a three-bone rig (README: The avatar on Today, *How it moves*).
  *
- * Driven by a small state, a mood plus an optional one-off action, so the
- * screen only ever says what is true ("the day is nearly at its target", "a
- * meal just landed") and this decides what the face, the arms and the effects
- * do about it. Each layer is its own view over the whole canvas, so any of
- * them can be moved from a shared pivot later (a wave, a bigger eating
- * animation) without touching the drawings.
+ * Driven by a small state, a mood plus an optional one-off action, so a screen
+ * only says what is true ("nearly at the target", "a meal just landed") and
+ * this decides what the figure does about it. Every frame of motion is
+ * computed on the UI thread from two clocks (the action's and an endless idle
+ * loop), so a busy JavaScript thread never stutters it and React does not
+ * re-render while it plays.
  */
 export function AvatarFigure({
   outfit,
@@ -77,221 +134,230 @@ export function AvatarFigure({
   width,
   onActionEnd,
   animated = true,
+  phase = 0,
   crop,
   accessibilityLabel,
 }: AvatarFigureProps) {
   const reduced = useReducedMotion()
-  const motion = animated && !reduced
-  const scale = width / (crop?.w ?? CW)
-  const height = (crop?.h ?? CH) * scale
+  const moving = animated && !reduced
   const holding = outfit.held !== null
 
-  const resting = useMemo(() => moodPose(state.mood, holding), [state.mood, holding])
-  const [actionPose, setActionPose] = useState<Pose | null>(null)
-  // The first frame of an action is drawn in the render that starts it, not a
-  // timer later: a figure mounted to eat must never show the new mood first.
-  const pose =
-    actionPose ??
-    (state.action === 'eating' ? (eatingFrames(state.mood, holding)[0]?.pose ?? resting) : resting)
+  // The action's motion is fixed when it starts: the mood it ends on is the
+  // day's mood at the moment the meal landed.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: started by the action alone
+  const motion = useMemo(
+    () => (state.action ? ACTIONS[state.action](state.mood, holding) : null),
+    [state.action],
+  )
+  const layers: Layer[] = useMemo(
+    () =>
+      motion ? motionStack(outfit, motion) : buildStack(outfit, moodPose(state.mood, holding)),
+    [motion, outfit, state.mood, holding],
+  )
+  const names = useMemo(() => layers.map((layer) => layer.name), [layers])
+  const images = useAvatarImages(names)
 
-  // The eating hand rises from below; chewing is a small squash of the figure.
-  const lift = useSharedValue(0)
-  const chew = useSharedValue(1)
+  // The eating drawings are decoded while the figure rests, so the first bite
+  // does not wait on a file.
+  useEffect(() => {
+    if (animated) preloadAvatar(outfit, state.mood)
+  }, [animated, outfit, state.mood])
 
-  // `onActionEnd` is the caller's, and a new function each render.
+  const clock = useSharedValue(-1)
+  const idleClock = useSharedValue(0)
+
+  useEffect(() => {
+    if (!moving) return
+    idleClock.set(0)
+    idleClock.set(withRepeat(withTiming(IDLE_MS, { duration: IDLE_MS, easing: Easing.linear }), -1))
+  }, [moving, idleClock])
+
   const ended = useRef(onActionEnd)
   ended.current = onActionEnd
+  const finish = useCallback(() => ended.current?.(), [])
 
-  // Started by the action alone: the mood is read once, when the meal lands,
-  // because it is already the day's new mood, and a mood that changes while
-  // the spoon is up must not restart the bite.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: see above
+  const ready = images !== null
   useEffect(() => {
-    if (state.action !== 'eating') return
-    const frames = eatingFrames(state.mood, holding)
-    const timers = frames.map((frame) =>
-      setTimeout(() => {
-        setActionPose(frame.pose)
-        lift.set(withTiming(frame.lift, { duration: 280, easing: EASE_OUT }))
-        if (frame.chew) {
-          chew.set(
-            withRepeat(
-              withSequence(
-                withTiming(0.982, { duration: 130, easing: EASE_OUT }),
-                withTiming(1, { duration: 130, easing: EASE_OUT }),
-              ),
-              2,
-            ),
-          )
-        }
-      }, frame.at),
+    if (!motion || !ready) return
+    clock.set(0)
+    clock.set(
+      withTiming(
+        motion.duration,
+        // The clock always runs: with reduce motion on the poses still
+        // change, and only the transforms stand still (`moving`).
+        { duration: motion.duration, easing: Easing.linear, reduceMotion: ReduceMotion.Never },
+        (done) => {
+          if (done) scheduleOnRN(finish)
+        },
+      ),
     )
-    timers.push(
-      setTimeout(() => {
-        setActionPose(null)
-        ended.current?.()
-      }, EATING_MS),
-    )
-    return () => {
-      for (const timer of timers) clearTimeout(timer)
-      setActionPose(null)
-      lift.set(0)
-      chew.set(1)
-    }
-  }, [state.action])
+    return () => clock.set(-1)
+  }, [motion, ready, clock, finish])
 
-  const armStyle = useAnimatedStyle(() => {
-    if (!motion) return {}
-    const up = lift.get()
+  const mood: AvatarMood = state.mood
+  const lift = useChannel(motion, clock, 'lift')
+  const headRotate = useChannel(motion, clock, 'headRotate')
+  const headY = useChannel(motion, clock, 'headY')
+  const headSquash = useChannel(motion, clock, 'headSquash')
+  const bodySquash = useChannel(motion, clock, 'bodySquash')
+  const bodyY = useChannel(motion, clock, 'bodyY')
+  const lean = useChannel(motion, clock, 'lean')
+
+  const idleNow = useDerivedValue(
+    () => idle(idleClock.get() + phase * IDLE_MS, mood),
+    [mood, phase],
+  )
+
+  const rootT = useDerivedValue((): Transforms3d => {
+    if (!moving) return []
+    const still = idleNow.get()
+    const squash = bodySquash.get() * still.bodySquash
+    return [
+      { translateY: bodyY.get() },
+      { rotate: rad(MOOD_LEAN[mood] * lean.get() + still.sway) },
+      { scaleX: 1 + (1 - squash) * 0.7 },
+      { scaleY: squash },
+    ]
+  }, [moving, mood])
+  const headT = useDerivedValue((): Transforms3d => {
+    if (!moving) return []
+    const still = idleNow.get()
+    const squash = headSquash.get()
+    return [
+      { translateY: headY.get() + still.headY },
+      { rotate: rad(headRotate.get() + still.headRotate) },
+      { scaleX: 1 + (1 - squash) * 0.8 },
+      { scaleY: squash },
+    ]
+  }, [moving])
+  const armT = useDerivedValue((): Transforms3d => {
+    const up = moving ? lift.get() : 1
     const down = 1 - up
-    // Fully up, the spoon is raised a little past the drawn pose: drawn, it
-    // stops at the chin, and the bite has to reach the mouth.
-    return {
-      transform: [{ translateY: (down * 46 - up * RAISE) * scale }, { rotate: `${down * 18}deg` }],
-    }
-  })
-  const chewStyle = useAnimatedStyle(() => (motion ? { transform: [{ scaleY: chew.get() }] } : {}))
+    return [
+      { translateY: down * ARM_DROP - Math.max(0, up) * RAISE },
+      { rotate: rad(down * ARM_TURN) },
+    ]
+  }, [moving])
+  const fxT = useDerivedValue(
+    (): Transforms3d => (moving ? [{ translateY: idleNow.get().fxY }] : []),
+    [moving],
+  )
+  const fxOpacity = useDerivedValue(() => (moving ? idleNow.get().fxOpacity : 1), [moving])
 
-  const stack = buildStack(outfit, pose)
-  const lean = `${actionPose || state.action ? 0 : MOOD_LEAN[state.mood]}deg`
+  const box = crop ?? { x: 0, y: 0, w: CANVAS.width, h: CANVAS.height }
+  const scale = width / box.w
+  const height = box.h * scale
+  // A whole figure draws into a slightly larger surface than its box, so a
+  // leaning hat or a drifting sparkle is never cut off. A crop is a picture
+  // of one part and is clipped to its tile.
+  const pad = crop ? 0 : Math.round(width * BLEED)
+
+  const bones: Record<
+    Bone,
+    { transform?: SharedValue<Transforms3d>; origin?: { x: number; y: number } }
+  > = {
+    root: {},
+    head: { transform: headT, origin: PIVOT.neck },
+    armR: { transform: armT, origin: PIVOT.shoulderR },
+    fx: { transform: fxT },
+  }
 
   return (
     <View
-      style={{ width, height, overflow: 'hidden' }}
+      style={{ width, height }}
+      pointerEvents="none"
       accessible={Boolean(accessibilityLabel)}
       accessibilityRole={accessibilityLabel ? 'image' : undefined}
       accessibilityLabel={accessibilityLabel}
     >
-      <View
-        style={{
-          position: 'absolute',
-          left: -(crop?.x ?? 0) * scale,
-          top: -(crop?.y ?? 0) * scale,
-          width: CW * scale,
-          height: CH * scale,
-          // A full tummy leans back a touch, from the feet.
-          transformOrigin: 'bottom',
-          transform: [{ rotate: motion ? lean : '0deg' }],
-        }}
-      >
-        <Animated.View
-          style={[
-            { flex: 1, transformOrigin: 'bottom' },
-            motion && state.mood === 'hungry' && !actionPose
-              ? {
-                  animationName: SWAY,
-                  animationDuration: '1800ms',
-                  animationDirection: 'alternate',
-                  animationIterationCount: 'infinite',
-                  animationTimingFunction: IN_OUT,
-                }
-              : null,
-          ]}
+      {images ? (
+        <Canvas
+          style={{
+            position: 'absolute',
+            left: -pad,
+            top: -pad,
+            width: width + 2 * pad,
+            height: height + 2 * pad,
+          }}
         >
-          <Animated.View
-            style={[
-              { flex: 1, transformOrigin: 'bottom' },
-              motion
-                ? {
-                    animationName: BREATHE,
-                    animationDuration: '2600ms',
-                    animationDirection: 'alternate',
-                    animationIterationCount: 'infinite',
-                    animationTimingFunction: IN_OUT,
-                  }
-                : null,
+          <Group
+            transform={[
+              { translateX: pad - box.x * scale },
+              { translateY: pad - box.y * scale },
+              { scale },
             ]}
           >
-            <Animated.View style={[{ flex: 1, transformOrigin: 'bottom' }, chewStyle]}>
-              {stack.map((entry) => (
-                <Layer
-                  key={entry.name}
-                  entry={entry}
-                  scale={scale}
-                  motion={motion}
-                  armStyle={entry.group === 'armR' ? armStyle : undefined}
+            <Group transform={rootT} origin={PIVOT.feet}>
+              {layers.map((layer) => (
+                <LayerImage
+                  key={layer.name}
+                  layer={layer}
+                  image={images.get(layer.name)}
+                  bone={bones[layer.bone]}
+                  clock={motion ? clock : undefined}
+                  fade={layer.bone === 'fx' ? fxOpacity : undefined}
                 />
               ))}
-            </Animated.View>
-          </Animated.View>
-        </Animated.View>
-      </View>
+            </Group>
+          </Group>
+        </Canvas>
+      ) : null}
     </View>
   )
 }
 
-function Layer({
-  entry,
-  scale,
-  motion,
-  armStyle,
+/** One channel of the playing motion, sampled on the UI thread; its rest value when idle. */
+function useChannel(motion: Motion | null, clock: SharedValue<number>, name: keyof typeof REST) {
+  return useDerivedValue(() => {
+    if (!motion) return REST[name]
+    return sample(motion.channels[name], Math.max(0, clock.get()), REST[name])
+  }, [motion])
+}
+
+function LayerImage({
+  layer,
+  image,
+  bone,
+  clock,
+  fade,
 }: {
-  entry: StackEntry
-  scale: number
-  motion: boolean
-  armStyle?: ReturnType<typeof useAnimatedStyle>
+  layer: Layer
+  image: SkImage | undefined
+  bone: { transform?: SharedValue<Transforms3d>; origin?: { x: number; y: number } }
+  clock?: SharedValue<number>
+  fade?: SharedValue<number>
 }) {
-  const layer = AVATAR_LAYERS[entry.name]
-  const clip = entry.clipTop ?? 0
-  const image = (
+  const windows = layer.windows
+  const opacity = useDerivedValue(() => {
+    const shown = clock && windows ? windowOpacity(Math.max(0, clock.get()), windows) : 1
+    return shown * (fade ? fade.get() : 1)
+  }, [windows])
+  if (!image) return null
+  const place = AVATAR_LAYERS[layer.name]
+  const drawing = (
     <Image
-      source={layer.source}
-      style={{
-        position: 'absolute',
-        left: layer.x * scale,
-        top: (layer.y - clip) * scale,
-        width: layer.w * scale,
-        height: layer.h * scale,
-      }}
-      contentFit="fill"
-      cachePolicy="memory"
-      accessible={false}
+      image={image}
+      x={place.x}
+      y={place.y}
+      width={place.w}
+      height={place.h}
+      opacity={opacity}
     />
   )
-  return (
-    <Animated.View
-      pointerEvents="none"
-      // Swapping a face or an arm cross-fades rather than blinking.
-      entering={motion ? FadeIn.duration(160) : undefined}
-      exiting={motion ? FadeOut.duration(160) : undefined}
-      style={[
-        {
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          width: CW * scale,
-          height: CH * scale,
-          transformOrigin: [SHOULDER_R.x * scale, SHOULDER_R.y * scale, 0],
-        },
-        armStyle,
-        entry.group === 'effect' && motion
-          ? {
-              animationName: DRIFT,
-              animationDuration: '1400ms',
-              animationDirection: 'alternate',
-              animationIterationCount: 'infinite',
-              animationTimingFunction: IN_OUT,
-            }
-          : null,
-      ]}
-    >
-      {clip > 0 ? (
-        // Hair under a hat: everything above the brim line is cut away.
-        <View
-          style={{
-            position: 'absolute',
-            left: 0,
-            top: clip * scale,
-            width: CW * scale,
-            height: (CH - clip) * scale,
-            overflow: 'hidden',
-          }}
-        >
-          {image}
-        </View>
-      ) : (
-        image
-      )}
-    </Animated.View>
+  const clipped =
+    layer.clipTop !== undefined ? (
+      // Hair under a hat: everything above the brim line is cut away.
+      <Group clip={rect(0, layer.clipTop, CANVAS.width, CANVAS.height - layer.clipTop)}>
+        {drawing}
+      </Group>
+    ) : (
+      drawing
+    )
+  return bone.transform ? (
+    <Group transform={bone.transform} origin={bone.origin}>
+      {clipped}
+    </Group>
+  ) : (
+    clipped
   )
 }

@@ -142,7 +142,10 @@ function SlotTab({
       <View
         className={cn(
           'h-[46px] w-[46px] items-center justify-center rounded-[14px] border-2',
-          selected ? 'border-pandan bg-pandan-soft' : 'border-line bg-surface',
+          // A pale tile in both themes, as exercise drawings sit on: dark
+          // sunglasses or a black songkok vanish on a dark one.
+          'bg-exercise-tile',
+          selected ? 'border-pandan' : 'border-line',
         )}
       >
         {slot === 'hair' ? (
@@ -226,7 +229,7 @@ export default function AvatarScreen() {
     }
   }
 
-  const stage = Math.min(140, Math.round(width * 0.34))
+  const stage = Math.min(160, Math.round(width * 0.38))
   // Measured rather than worked out from the screen, so the card's padding
   // and an iPad's reading column never push the fourth tile onto a new row.
   const [grid, setGrid] = useState(0)

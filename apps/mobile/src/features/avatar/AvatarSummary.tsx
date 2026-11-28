@@ -32,6 +32,7 @@ export function AvatarSummary({
   /** What the figure is: "kcal left". */
   caption: string
   onActionEnd?: () => void
+  /** Absent while the avatar only flashes over the stats for a bite. */
   onPress?: () => void
 }) {
   const { t } = useTranslation('avatar')
@@ -40,9 +41,11 @@ export function AvatarSummary({
   return (
     <Tappable
       onPress={onPress}
-      accessibilityRole="button"
+      disabled={!onPress}
+      haptics={Boolean(onPress)}
+      accessibilityRole={onPress ? 'button' : 'image'}
       accessibilityLabel={`${t(`mood.${state.mood}`)}. ${figure} ${caption}`}
-      accessibilityHint={t('openHint')}
+      accessibilityHint={onPress ? t('openHint') : undefined}
       className="items-center"
       style={{ height }}
     >

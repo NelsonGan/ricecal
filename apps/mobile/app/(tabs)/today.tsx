@@ -465,7 +465,7 @@ function TodayContent() {
    * day's own rows are here, not merely once the screen stops waiting: an
    * offline day stops waiting with no rows at all.
    */
-  const meal = useMealLanded(day.entries, selectedDate, day.loaded)
+  const meal = useMealLanded(day.entries, selectedDate, day.loaded, day.fresh)
 
   /**
    * Somebody tracking protein rather than the budget sees grams on the ring:

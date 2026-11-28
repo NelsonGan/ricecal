@@ -121,25 +121,9 @@ export function parseOutfit(stored: unknown, fallbackBase: AvatarBase): Outfit {
   }
 }
 
-/**
- * What to store: the stored object with only the slots this person changed
- * written into it.
- *
- * Writing the parsed outfit whole would put this build's defaults over
- * anything it could not read: a hat added in a later release, saved from a
- * newer phone, would be wiped the moment an older phone saved a new base.
- * Keys this build has never heard of are kept for the same reason.
- */
-export function mergeOutfit(stored: unknown, saved: Outfit, next: Outfit): Json {
-  const base =
-    stored && typeof stored === 'object' && !Array.isArray(stored)
-      ? (stored as Record<string, Json>)
-      : {}
-  const out: Record<string, Json> = { ...base }
-  for (const key of ['base', ...SLOTS] as const) {
-    if (next[key] !== saved[key] || !(key in base)) out[key] = next[key]
-  }
-  return out
+/** What is stored: the outfit as it is shown, slot by slot. */
+export function serialiseOutfit(outfit: Outfit): Json {
+  return { ...outfit }
 }
 
 /**

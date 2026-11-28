@@ -3,6 +3,7 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
 import Animated, { cubicBezier, FadeIn, FadeOut } from 'react-native-reanimated'
 
+import { preloadAvatar } from './AvatarFigure'
 import { AvatarSummary } from './AvatarSummary'
 import type { AvatarMood } from './mood'
 import { setSummaryView, useSummaryView } from './preference'
@@ -64,6 +65,9 @@ export function SummarySwitcher({
 
   useEffect(() => () => clearTimeout(hold.current), [])
 
+  // Ready before the first meal, which may be the first time the avatar shows.
+  useEffect(() => preloadAvatar(outfit, mood), [outfit, mood])
+
   // A meal that landed in this very render bites straight away, rather than a
   // render later once the effect above has run, so the new mood never shows
   // before the spoon does.
@@ -74,9 +78,11 @@ export function SummarySwitcher({
     <View>
       <View
         onLayout={(event) => setHeight(event.nativeEvent.layout.height)}
-        pointerEvents={showAvatar ? 'none' : 'auto'}
-        accessibilityElementsHidden={showAvatar}
-        importantForAccessibility={showAvatar ? 'no-hide-descendants' : 'auto'}
+        // Only the chosen avatar view takes the stats away; a bite flashing
+        // over them leaves them tappable and readable.
+        pointerEvents={view === 'avatar' ? 'none' : 'auto'}
+        accessibilityElementsHidden={view === 'avatar'}
+        importantForAccessibility={view === 'avatar' ? 'no-hide-descendants' : 'auto'}
       >
         <Animated.View
           style={{
@@ -94,6 +100,7 @@ export function SummarySwitcher({
           entering={FadeIn.duration(220)}
           exiting={FadeOut.duration(220)}
           className="absolute inset-x-0 top-0"
+          pointerEvents={view === 'avatar' ? 'auto' : 'none'}
         >
           <AvatarSummary
             outfit={outfit}
@@ -101,7 +108,9 @@ export function SummarySwitcher({
             height={height}
             figure={figure}
             caption={caption}
-            onPress={() => router.push('/avatar')}
+            // Over the stats it is only passing through for a bite; a tap then
+            // belongs to the stats underneath, so the flash takes none.
+            onPress={view === 'avatar' ? () => router.push('/avatar') : undefined}
             onActionEnd={() => {
               setEating(false)
               if (flash) hold.current = setTimeout(() => setFlash(false), FLASH_HOLD_MS)

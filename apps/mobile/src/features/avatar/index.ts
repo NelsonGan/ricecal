@@ -1,4 +1,9 @@
-export { type AvatarCrop, AvatarFigure, type AvatarFigureProps } from './AvatarFigure'
+export {
+  type AvatarCrop,
+  AvatarFigure,
+  type AvatarFigureProps,
+  preloadAvatar,
+} from './AvatarFigure'
 export { AvatarSummary } from './AvatarSummary'
 export {
   type AvatarAction,

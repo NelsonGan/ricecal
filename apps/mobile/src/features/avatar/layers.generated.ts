@@ -133,7 +133,7 @@ export const AVATAR_LAYERS = {
     w: 66,
     h: 94,
   },
-  body: { source: require('../../../assets/avatar/body.webp'), x: 87, y: 112, w: 322, h: 646 },
+  body: { source: require('../../../assets/avatar/body.webp'), x: 143, y: 348, w: 200, h: 410 },
   'bottom-chinos': {
     source: require('../../../assets/avatar/bottom-chinos.webp'),
     x: 161,
@@ -485,13 +485,21 @@ export const AVATAR_LAYERS = {
     w: 491,
     h: 281,
   },
+  'hat-tudung-drape': {
+    source: require('../../../assets/avatar/hat-tudung-drape.webp'),
+    x: 119,
+    y: 369,
+    w: 250,
+    h: 108,
+  },
   'hat-tudung': {
     source: require('../../../assets/avatar/hat-tudung.webp'),
     x: 62,
     y: 21,
     w: 366,
-    h: 456,
+    h: 355,
   },
+  head: { source: require('../../../assets/avatar/head.webp'), x: 87, y: 112, w: 322, h: 261 },
   'held-ais-krim': {
     source: require('../../../assets/avatar/held-ais-krim.webp'),
     x: 295,

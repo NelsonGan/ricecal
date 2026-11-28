@@ -117,16 +117,6 @@ const MOOD_EFFECT: Record<AvatarMood, Effect | null> = {
   stuffed: 'stuffed',
 }
 
-/** How far the figure leans back from its feet, for a tummy that is full. */
-export const MOOD_LEAN: Record<AvatarMood, number> = {
-  hungry: 0,
-  onTrack: 0,
-  close: 0,
-  satisfied: 0,
-  over: -2,
-  stuffed: -4,
-}
-
 /** The resting pose for a mood. Something held takes the right hand. */
 export function moodPose(mood: AvatarMood, holding: boolean): Pose {
   let [armL, armR] = MOOD_ARMS[mood]
@@ -136,40 +126,4 @@ export function moodPose(mood: AvatarMood, holding: boolean): Pose {
     armR = 'hold'
   }
   return { face: MOOD_FACE[mood], armL, armR, effect: MOOD_EFFECT[mood], spoon: null }
-}
-
-/**
- * The eating animation, as frames on a clock. Each frame swaps which drawings
- * are on (the face and the arm); the movement between them (the spoon rising,
- * the chewing) is a transform the renderer runs on the UI thread.
- */
-export type EatingFrame = { at: number; pose: Pose; lift: number; chew: boolean }
-
-export const EATING_MS = 2100
-
-export function eatingFrames(mood: AvatarMood, holding: boolean): EatingFrame[] {
-  const eat = (face: FaceKey, spoon: Pose['spoon']): Pose => ({
-    face,
-    armL: 'belly',
-    armR: 'eat',
-    effect: null,
-    spoon,
-  })
-  return [
-    // the spoon comes up, mouth open
-    { at: 0, pose: eat('bite', 'full'), lift: 1, chew: false },
-    // the bite: the rice is gone
-    { at: 520, pose: eat('chew', 'empty'), lift: 0.92, chew: true },
-    // the empty spoon comes down while the chewing goes on
-    { at: 900, pose: eat('chew', 'empty'), lift: 0, chew: true },
-    // and once it is down, the hand goes back to the tummy
-    {
-      at: 1200,
-      pose: { ...eat('chew', 'empty'), armR: 'belly', spoon: null },
-      lift: 0,
-      chew: false,
-    },
-    // then the day's new mood, which this meal may just have changed
-    { at: 1650, pose: moodPose(mood, holding), lift: 0, chew: false },
-  ]
 }

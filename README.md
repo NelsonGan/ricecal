@@ -4820,37 +4820,71 @@ a style; a calorie app that shames going over teaches people to stop logging.
 When a meal lands on the day on screen (a scan resolving, a search pick, a
 quick add), the avatar takes a spoonful of rice, chews, and settles on the
 day's new mood. With the stats showing, the avatar fades in over them for the
-bite and fades back out about a second after it. `useMealLanded` decides what
-counts: an entry id that was not on the day when the day was first shown,
-logged in the last two minutes, at most once every six seconds, so opening the
-app, paging days or a scan's placeholder resolving plays nothing extra. It is
-worked out in the render that first shows the meal, because a render later the
-new mood had already shown before the spoon went up.
+bite and fades back out about a second after it; taps meanwhile still go to
+the stats. `useMealLanded` decides what counts: an entry that appears while its
+day is on screen, at most once every six seconds. It goes by when the entry
+appeared, not by the meal's own time, which is the server's clock against the
+phone's and can be any time of day. Rows already on the day when it was first
+shown never count, and neither do rows the first server answer after launch
+adds to a day shown from the persisted cache (those were logged elsewhere while
+the app was closed), so opening the app, paging days or a scan's placeholder
+resolving plays nothing extra. A bite that landed while Today was out of sight
+plays when Today comes back, if it is under two minutes old and the meal still
+exists. It is worked out in the render that first shows the meal, because a
+render later the new mood had already shown before the spoon went up.
 
 ### How the layers fit
 
-The figure is not one picture. `assets/avatar/` holds 92 transparent WebP
+The figure is not one picture. `assets/avatar/` holds 93 transparent WebP
 layers (about 1 MB) on one shared canvas, 504 by 768, and
 `layers.generated.ts` places each trimmed image on it. They were drawn with
 the image-generation skill on the Codex backend: one bald, blank-faced base
 body, then every face, hairstyle, garment and pose as an edit of that body,
 registered back onto it and cut out by difference. `buildStack` orders them:
 
-    hair behind, body, ears, arm under, shoes, bottom, top, held item,
-    arm over, face, hair in front, glasses, headwear, effects
+    hair behind, body, head, ears, arm under, shoes, bottom, top, held item,
+    arm over, face, hair in front, glasses, headwear, the spoon and the
+    eating arm, effects
 
-Each arm is cut in two: the part a sleeve covers sits under the top and the
-hand in front of the body over it, which is how any top works with any pose.
+Each resting arm is cut in two: the part a sleeve covers sits under the top
+and the hand in front of the body over it, which is how any top works with
+any pose. The eating arm is one piece raised in front of everything, so long
+hair, glasses or a tudung never hide the spoon. The body is split at the neck
+so the head can move on its own, and a tudung likewise into a hood that moves
+with the head and a drape that stays on the shoulders.
 The crown of the head belongs to the hair layer rather than the body, because
 a bun or a flat top reshapes it and a layer cannot erase. A hat hides the hair
 above its brim (`HAT_HAIR_CLIP`); a tudung hides the hair and the ears.
 
-The renderer (`AvatarFigure`) is a state machine of drawings driven by
-`{ mood, action }`. The eating animation is frames that swap the face, the arm
-and the spoon, with the arm's rise and the chewing as Reanimated transforms
-around fixed pivots; idle breathing and effects are Reanimated CSS animations,
-and reduced motion keeps the faces and drops the movement. A new action is a
-new value of `action` plus its frames.
+### How it moves
+
+`AvatarFigure` draws the layers into one Skia canvas. Drawings are decoded
+once per app run into a shared cache (`images.ts`), so a screen of many
+avatars in the same tee holds one copy of the tee, and a figure never shows
+half-loaded. The canvas is drawn a little larger than the figure's box
+(`BLEED`), so a leaning hat or a drifting sparkle is never cut off.
+
+The figure hangs on a three-bone rig (`rig.ts`): the whole body about its
+feet, the head about the neck (the body art is split at the neck for this),
+and the eating arm about the shoulder. A motion (`timeline.ts`) is data: a
+duration, the poses in order (which face, arms and spoon are drawn when), and
+keyframe tracks for each bone channel, such as the arm's lift, the head's tilt
+and the body's squash. Two clocks run on the UI thread: the action's, and an
+endless idle loop for breathing, a small nod and each mood's fidget. Every
+frame is sampled from those clocks in worklets, so nothing on the JavaScript
+side runs while a motion plays and React does not re-render. A new drawing
+fades in over the old one for 70 ms and the old one is then cut, so two
+half-transparent poses never show together.
+
+Eating is about 2.2 s: a small wind-up, the spoon rising as the head leans to
+meet it, the bite, chewing while the empty spoon comes down, the hand back on
+the tummy, a contented bounce, then the day's mood. With reduce motion on,
+the poses still change but nothing moves.
+
+Adding motion means adding data, not drawings. A new action, such as a wave or
+a walk across a group's board, is an entry in `ACTIONS`: its poses and its
+tracks. Many figures on one screen pass `phase` so they do not breathe in
+step.
 
 ### The wardrobe, and who gets it
 
@@ -4870,8 +4904,8 @@ The outfit is `user_settings.avatar`, a jsonb object of item ids, so it
 follows the account to every phone. It is an object rather than a column per
 slot because the wardrobe will grow: a new item or slot is a new value, never a
 migration, and an app that meets an id it does not know draws that slot's
-default (`parseOutfit`). Empty until somebody saves, and then the base follows
-the profile's sex. An account that loses Pro draws the default outfit on its
+default (`parseOutfit`). A save writes the outfit as it is shown, every slot.
+Empty until somebody saves, and then the base follows the profile's sex. An account that loses Pro draws the default outfit on its
 base while the saved one waits for the subscription to come back.
 
 The art pipeline itself is not in the repo, only its output: regenerating a

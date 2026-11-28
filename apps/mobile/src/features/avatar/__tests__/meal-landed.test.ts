@@ -62,6 +62,46 @@ describe('useMealLanded', () => {
     expect(hook.result.current.landed).toBeNull()
   })
 
+  it('takes in what the first server answer adds to a cached day, silently', async () => {
+    const hook = await renderHook(
+      ({ entries, fresh }: { entries: Entry[]; fresh: boolean }) =>
+        useMealLanded(entries, '2026-11-28', true, fresh),
+      { initialProps: { entries: [{ id: 'a', loggedAt: at(0) }], fresh: false } },
+    )
+    await hook.rerender({
+      entries: [
+        { id: 'a', loggedAt: at(0) },
+        { id: 'elsewhere', loggedAt: at(0) },
+      ],
+      fresh: true,
+    })
+    expect(hook.result.current.landed).toBeNull()
+    await hook.rerender({
+      entries: [
+        { id: 'a', loggedAt: at(0) },
+        { id: 'elsewhere', loggedAt: at(0) },
+        { id: 'mine', loggedAt: at(0) },
+      ],
+      fresh: true,
+    })
+    expect(hook.result.current.landed).toBe('mine')
+  })
+
+  it('still eats a meal whose first server answer comes long after launch', async () => {
+    const now = Date.now()
+    const spy = jest.spyOn(Date, 'now').mockReturnValue(now)
+    const hook = await renderHook(
+      ({ entries, fresh }: { entries: Entry[]; fresh: boolean }) =>
+        useMealLanded(entries, '2026-11-28', true, fresh),
+      { initialProps: { entries: [], fresh: false } },
+    )
+    await hook.rerender({ entries: [], fresh: false })
+    spy.mockReturnValue(now + 60_000)
+    await hook.rerender({ entries: [{ id: 'mine', loggedAt: at(0) }], fresh: true })
+    expect(hook.result.current.landed).toBe('mine')
+    spy.mockRestore()
+  })
+
   it('does not count a scan still being read', async () => {
     const hook = await setup([])
     await hook.rerender({

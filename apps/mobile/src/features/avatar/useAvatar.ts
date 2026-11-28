@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
+
 import { useEntitlement, useProfile, useSettings, useUpdateSettings } from '@/data'
-import { type AvatarBase, freeOutfit, mergeOutfit, type Outfit, parseOutfit } from './wardrobe'
+import { type AvatarBase, freeOutfit, type Outfit, parseOutfit, serialiseOutfit } from './wardrobe'
 
 /**
  * The outfit to draw, and the one saved.
@@ -19,9 +21,14 @@ export function useAvatar() {
   const free = !entitled && !loading && !unknown
   const fallbackBase: AvatarBase = profile?.sex === 'female' ? 'girl' : 'guy'
   const stored = settings?.avatar
-  const saved = parseOutfit(stored, fallbackBase)
+  // The same objects until something in them changes: the figure keys its
+  // drawing and its animation on the outfit.
+  const storedKey = JSON.stringify(stored ?? null)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `storedKey` stands for `stored`
+  const saved = useMemo(() => parseOutfit(stored, fallbackBase), [storedKey, fallbackBase])
+  const outfit = useMemo(() => (free ? freeOutfit(saved) : saved), [free, saved])
   return {
-    outfit: free ? freeOutfit(saved) : saved,
+    outfit,
     saved,
     free,
     // Until both have answered, `saved` is a guess (the defaults, on a base
@@ -34,11 +41,8 @@ export function useAvatar() {
 /** Saves the outfit to the account, so every phone signed in draws the same one. */
 export function useSaveAvatar() {
   const update = useUpdateSettings()
-  const { data: settings } = useSettings()
-  const { saved } = useAvatar()
   return {
-    save: (outfit: Outfit) =>
-      update.mutateAsync({ avatar: mergeOutfit(settings?.avatar, saved, outfit) }),
+    save: (outfit: Outfit) => update.mutateAsync({ avatar: serialiseOutfit(outfit) }),
     saving: update.isPending,
   }
 }
