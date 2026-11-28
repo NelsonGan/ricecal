@@ -31,6 +31,7 @@ import {
 } from '@/data'
 import { socialEntryPost } from '@/data/social'
 import { SessionItem, useSessionLabel } from '@/features/activity'
+import { calorieMood, SummarySwitcher, useMealLanded } from '@/features/avatar'
 import {
   createDeleteGate,
   MonthCalendar,
@@ -163,7 +164,15 @@ function LaunchOffers() {
  * placeholder is worse than no ring.
  */
 function TodayContent() {
-  const { t } = useTranslation(['logging', 'common', 'social', 'workouts', 'activity', 'places'])
+  const { t } = useTranslation([
+    'logging',
+    'common',
+    'social',
+    'workouts',
+    'activity',
+    'places',
+    'avatar',
+  ])
   const router = useRouter()
   const focused = useIsFocused()
   const toast = useToast()
@@ -443,6 +452,22 @@ function TodayContent() {
   const over = left < 0
 
   /**
+   * How the avatar wears the day, from the same two numbers as the ring. A
+   * drink of water with no calories still counts as having started the day.
+   */
+  const avatarMood = calorieMood({
+    eatenKcal: eaten.kcal,
+    budgetKcal: budget,
+    logged: day.entries.some((entry) => !entry.status),
+  })
+  /**
+   * A meal that has just landed, which the avatar then eats. Ready once the
+   * day's own rows are here, not merely once the screen stops waiting: an
+   * offline day stops waiting with no rows at all.
+   */
+  const meal = useMealLanded(day.entries, selectedDate, day.loaded, day.fresh)
+
+  /**
    * Somebody tracking protein rather than the budget sees grams on the ring:
    * eaten against the day's protein target, never extended by movement, and
    * always hibiscus, protein's colour in the macro line beside it. It does not
@@ -706,71 +731,85 @@ function TodayContent() {
                 {loading || !targets ? (
                   <Skeleton className="w-full" height={ringSize + 132} />
                 ) : (
-                  /* Tapping the summary swaps the ring from "what is left" to
+                  /* The stats, or the avatar wearing the day (README: The avatar
+                     on Today). The stats are exactly as they were; the avatar
+                     is drawn over them at their height. */
+                  <SummarySwitcher
+                    userId={userId}
+                    mood={avatarMood}
+                    figure={Math.abs(left).toLocaleString()}
+                    caption={over ? t('avatar:kcalOver') : t('avatar:kcalLeft')}
+                    mealLanded={meal.landed}
+                    onMealPlayed={meal.played}
+                    active={focused}
+                    stats={
+                      /* Tapping the summary swaps the ring from "what is left" to
                      "what of the allowance is used". Both readings answer a real
                      question and neither fits beside the other, so they share
                      the space. The macros carry both halves already, so they
                      do not change. */
-                  <Tappable
-                    className="items-center gap-3"
-                    onPress={() => setShowGoals((open) => !open)}
-                    accessibilityRole="button"
-                    accessibilityLabel={
-                      showGoals ? t('logging:today.showLeft') : t('logging:today.showGoals')
-                    }
-                  >
-                    {protein ? (
-                      <CalorieRing
-                        value={eaten.protein}
-                        goal={proteinGoal}
-                        tone="hibiscus"
-                        accessibilityLabel={t('logging:today.proteinA11y', {
-                          value: Math.round(eaten.protein),
-                          goal: Math.round(proteinGoal),
-                        })}
-                        size={ringSize}
-                        thickness={11}
-                        centerLabel={t('logging:today.grams', {
-                          value: Math.round(
-                            showGoals ? eaten.protein : Math.abs(proteinLeft),
-                          ).toLocaleString(),
-                        })}
-                        centerCaption={
-                          showGoals
-                            ? t('logging:today.proteinOfGoal', {
-                                goal: Math.round(proteinGoal).toLocaleString(),
-                              })
-                            : proteinLeft < 0
-                              ? t('logging:today.proteinOver')
-                              : t('logging:today.proteinLeft')
+                      <Tappable
+                        className="items-center gap-3"
+                        onPress={() => setShowGoals((open) => !open)}
+                        accessibilityRole="button"
+                        accessibilityLabel={
+                          showGoals ? t('logging:today.showLeft') : t('logging:today.showGoals')
                         }
-                      />
-                    ) : (
-                      <CalorieRing
-                        value={eaten.kcal}
-                        goal={budget}
-                        size={ringSize}
-                        thickness={11}
-                        centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
-                        centerCaption={
-                          showGoals
-                            ? t('logging:today.kcalOfGoal', { goal: budget.toLocaleString() })
-                            : over
-                              ? t('logging:today.kcalOver')
-                              : t('logging:today.kcalLeft')
-                        }
-                      />
-                    )}
-                    {/* Stacked under the ring: label and figure on one line, the
+                      >
+                        {protein ? (
+                          <CalorieRing
+                            value={eaten.protein}
+                            goal={proteinGoal}
+                            tone="hibiscus"
+                            accessibilityLabel={t('logging:today.proteinA11y', {
+                              value: Math.round(eaten.protein),
+                              goal: Math.round(proteinGoal),
+                            })}
+                            size={ringSize}
+                            thickness={11}
+                            centerLabel={t('logging:today.grams', {
+                              value: Math.round(
+                                showGoals ? eaten.protein : Math.abs(proteinLeft),
+                              ).toLocaleString(),
+                            })}
+                            centerCaption={
+                              showGoals
+                                ? t('logging:today.proteinOfGoal', {
+                                    goal: Math.round(proteinGoal).toLocaleString(),
+                                  })
+                                : proteinLeft < 0
+                                  ? t('logging:today.proteinOver')
+                                  : t('logging:today.proteinLeft')
+                            }
+                          />
+                        ) : (
+                          <CalorieRing
+                            value={eaten.kcal}
+                            goal={budget}
+                            size={ringSize}
+                            thickness={11}
+                            centerLabel={(showGoals ? eaten.kcal : Math.abs(left)).toLocaleString()}
+                            centerCaption={
+                              showGoals
+                                ? t('logging:today.kcalOfGoal', { goal: budget.toLocaleString() })
+                                : over
+                                  ? t('logging:today.kcalOver')
+                                  : t('logging:today.kcalLeft')
+                            }
+                          />
+                        )}
+                        {/* Stacked under the ring: label and figure on one line, the
                         bar under them, so each bar has the column's full width. */}
-                    <MacroBars
-                      className="w-full"
-                      eaten={eaten}
-                      targets={targets}
-                      showGoal
-                      compact
-                    />
-                  </Tappable>
+                        <MacroBars
+                          className="w-full"
+                          eaten={eaten}
+                          targets={targets}
+                          showGoal
+                          compact
+                        />
+                      </Tappable>
+                    }
+                  />
                 )}
               </Card>
 

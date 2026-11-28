@@ -25,6 +25,7 @@ project works is here.
 - [The social food feed](#the-social-food-feed)
 - [Groups](#groups)
 - [The diary screen](#the-diary-screen)
+- [The avatar on Today](#the-avatar-on-today)
 - [Meal locations](#meal-locations)
 - [Water](#water)
 - [Home screen widgets](#home-screen-widgets)
@@ -4785,6 +4786,143 @@ having changed its mind about what it is.
 
 ---
 
+## The avatar on Today
+
+Today's summary card has two faces: the stats (the ring and the macro bars,
+exactly as they always were) and a chibi avatar wearing how the day is going.
+The round button in the card's corner switches between them. Stats is the
+default, and the choice is per phone and per account
+(`features/avatar/preference.ts`, MMKV), like the other glance preferences.
+
+### The mood is the ring's numbers
+
+`calorieMood` reads what was eaten against the day's budget, the same two
+numbers the calorie ring draws, so the two never disagree. It stays calories
+for somebody whose ring is set to protein: the avatar is about how full the
+day is, and a protein target says nothing about that.
+
+| Mood | When | Face and pose |
+|---|---|---|
+| hungry | nothing logged (a zero-calorie drink counts as logged) | big wishful eyes, a hand on a rumbling tummy |
+| onTrack | under 75% | the chill default: sleepy eyes, hands in pockets |
+| close | 75% to 95% | a wink and a thumbs up |
+| satisfied | 95% to 105% | happy closed eyes, sparkles |
+| over | 105% to 130% | puffed cheeks, hands on the tummy, a small lean back |
+| stuffed | past 130% | a cartoon food coma: swirly eyes, a burp, dizzy stars |
+
+Satisfied is a band either side of the target because nobody lands on the
+calorie. Over and stuffed are jokes about a feast and nothing else: **the
+body never changes shape, and no face is sad or guilty.** That is a rule, not
+a style; a calorie app that shames going over teaches people to stop logging.
+
+### Every meal is eaten
+
+When a meal lands on the day on screen (a scan resolving, a search pick, a
+quick add), the avatar takes a spoonful of rice, chews, and settles on the
+day's new mood. With the stats showing, the avatar fades in over them for the
+bite and fades back out about a second after it; taps meanwhile still go to the
+stats. `useMealLanded` decides what counts: an entry that appears while its day
+is on screen, at most once every six seconds. It goes by when the entry
+appeared, not by the meal's own time, which is the server's clock against the
+phone's and can be any time of day. Rows already on the day when it was first
+shown never count, and neither do rows the first server answer after launch
+adds to a day shown from the persisted cache, unless a meal was logged on this
+phone first (`lib/mealsLogged`); otherwise those rows were logged elsewhere
+while the app was closed, so opening the app, paging days or a scan's
+placeholder resolving plays nothing extra. A bite that landed while Today was
+out of sight plays when Today comes back, if it is under two minutes old and
+the meal still exists. It is worked out in the render that first shows the
+meal, because a render later the new mood had already shown before the spoon
+went up.
+
+### How the layers fit
+
+The figure is not one picture. `assets/avatar/` holds 93 transparent WebP
+layers (about 850 KB, quality 80, drawn at the size they are shown) on one
+shared canvas, 504 by 768, and `layers.generated.ts` places each trimmed image
+on it. They were drawn with the image-generation skill on the Codex backend:
+one bald, blank-faced base body, then every face, hairstyle, garment and pose
+as an edit of that body, registered back onto it and cut out by difference.
+`buildStack` orders them:
+
+    hair behind, body, head, ears, arm under, shoes, bottom, top, held item,
+    arm over, face, hair in front, glasses, headwear, the spoon and the
+    eating arm, effects
+
+Each resting arm is cut in two: the part a sleeve covers sits under the top
+and the hand in front of the body over it, which is how any top works with
+any pose. The eating arm is one piece raised in front of everything, so long
+hair, glasses or a tudung never hide the spoon. The body is split at the neck
+so the head can move on its own, and a tudung likewise into a hood that moves
+with the head and a drape that stays on the shoulders.
+The crown of the head belongs to the hair layer rather than the body, because
+a bun or a flat top reshapes it and a layer cannot erase. A hat hides the hair
+above its brim (`HAT_HAIR_CLIP`); a tudung hides the hair and the ears.
+
+### How it moves
+
+`AvatarFigure` draws the layers into one Skia canvas. Drawings are decoded into
+a shared cache (`images.ts`), so a screen of many avatars in the same tee holds
+one copy of the tee, and a figure never shows half-loaded. Decoded, the whole
+wardrobe is about 20 MB, so the cache lets go of drawings no figure is showing
+once it holds 64, oldest first. The canvas is drawn a little larger than the
+figure's box (`BLEED`), so a leaning hat or a drifting sparkle is never cut
+off.
+
+The figure hangs on a three-bone rig (`rig.ts`): the whole body about its
+feet, the head about the neck (the body art is split at the neck for this),
+and the eating arm about the shoulder. A motion (`timeline.ts`) is data: a
+duration, the poses in order (which face, arms and spoon are drawn when), and
+keyframe tracks for each bone channel, such as the arm's lift, the head's tilt
+and the body's squash. Two clocks run on the UI thread: the action's, and an
+endless idle loop for breathing, a small nod and each mood's fidget. Every
+frame is sampled from those clocks in worklets, so nothing on the JavaScript
+side runs while a motion plays and React does not re-render. A new drawing
+fades in over the old one for 70 ms and the old one is then cut, so two
+half-transparent poses never show together.
+
+Eating is about 2.2 s: a small wind-up, the spoon rising as the head leans to
+meet it, the bite, chewing while the empty spoon comes down, the hand back on
+the tummy, a contented bounce, then the day's mood. With reduce motion on,
+the poses still change but nothing moves.
+
+Adding motion means adding data, not drawings. A new action, such as a wave or
+a walk across a group's board, is an entry in `ACTIONS`: its poses and its
+tracks. Many figures on one screen pass `phase` so they do not breathe in
+step.
+
+### The wardrobe, and who gets it
+
+Seven slots (hair, top, bottom, shoes, headwear, accessory, held), with
+Malaysian pieces among them: a batik shirt, kain pelikat, kain batik, selipar,
+a songkok, a tudung, teh tarik, satay and ais krim potong. The girl's chopstick
+bun is one of her hairstyles. Every piece fits both bodies, but each base has
+its own wardrobe (`itemsFor`): its own hairstyles, no skirt, kain batik, puff
+blouse, tudung or flower on the guy, no kain pelikat or songkok on the girl.
+Switching base keeps what the new base also wears and swaps the rest for its
+defaults, and a stored piece the base does not wear reads as the default.
+Everyone picks guy or girl;
+the wardrobe is Pro, refused through `useRequirePro('avatar')` like any other
+gate. A free account sees every piece and gets the paywall when it taps one.
+The gate is the client's alone, like the trend ranges: the outfit is only ever
+drawn for its owner, and a free account draws the plain outfit whatever is
+stored. If the avatar is ever shown to other people, enforce it in Postgres
+first. Only a definite "not Pro" draws the plain outfit; while the entitlement
+is still loading or unknown (a cold start, offline) the saved one stays on.
+
+The outfit is `user_settings.avatar`, a jsonb object of item ids, so it follows
+the account to every phone. It is an object rather than a column per slot
+because the wardrobe will grow: a new item or slot is a new value, never a
+migration, and an app that meets an id it does not know draws that slot's
+default (`parseOutfit`). A save writes the outfit as it is shown, every slot.
+Empty until somebody saves, and then the base follows the profile's sex. An
+account that loses Pro draws the default outfit on its base while the saved one
+waits for the subscription to come back.
+
+The art pipeline itself is not in the repo, only its output: regenerating a
+piece means drawing it against the same base, cutting it out, and exporting
+the set again with the same canvas.
+
 ## Meal locations
 
 A meal can carry where it was eaten, and the food map shows every tagged meal
@@ -7261,6 +7399,7 @@ is on **Me, Edit** for everybody who never reaches a paywall.
 | groups led at once (joining is never limited) | 2 | unlimited |
 | group icons | 7 drawings | 34 drawings, or an uploaded picture |
 | gold ring round your face | no | yes |
+| avatar on Today | the default outfit, guy or girl | the whole wardrobe |
 | trends | 7 days | 7d / 30d / a year |
 | workout progress chart | 3 months | a year, all time |
 | reviews | the newest week | every week and month |
@@ -8390,7 +8529,7 @@ user text. Extend the source type and these tables together when its domain chan
 | `method` / `LogMethod` | `camera`, `describe`, `search`, `barcode`, `recipe`, `quick_add`, `history` | `events.ts`; compare logging actions, not individual food components |
 | `method` / `SignInMethod` | `apple`, `google`, `email`, `password` | `email` means code/link. Failure coverage currently covers Apple/Google only |
 | `screen` / `PaywallScreen` | `hard`, `intro` | Paywall surfaces below; no generic screen-view event. `reminder` and `ended` appear only in data from app versions released before those two screens were deleted; no build ever navigated to them |
-| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `video_import`, `new_routine`, `new_group`, `group_icon`, `photo_retention`, `trend_range`, `workout_range`, `review`, `nudge_streak`, `nudge_goal` | Refused capability or milestone offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only from versions released before "what to eat next" was removed |
+| `trigger` / `ProFeature` | `camera`, `describe`, `refine`, `read_recipe`, `new_recipe`, `video_import`, `new_routine`, `new_group`, `group_icon`, `photo_retention`, `trend_range`, `workout_range`, `review`, `avatar`, `nudge_streak`, `nudge_goal` | Refused capability or milestone offer; trial expiration is a paywall screen value, not a feature. `suggest` appears only from versions released before "what to eat next" was removed |
 | `trigger` / `ProOffer` | `nudge` | The standing two-day offer, which refused nothing and so has no toast sentence. Sent by builds before the milestone offers and again from the build that restored it; the versions between send none |
 | `plan` / `Plan` | `monthly`, `yearly`, `lifetime` | Offered choice, not a price or proof of purchase |
 | `outcome` / `ScanOutcome` | `logged`, `no_food`, `failed`, `detached`, `limit_reached`, `not_entitled` | `detached` stops client observation while the backend can still complete; do not classify it as definite failure |

@@ -4,6 +4,7 @@ import { AppState } from 'react-native'
 
 import i18n from '@/i18n'
 import { dateOffset, type ScanOutcome, track } from '@/lib/analytics'
+import { noteMealLoggedHere } from '@/lib/mealsLogged'
 import {
   announceScan,
   cancelScanNotice,
@@ -371,6 +372,7 @@ function useSendScan() {
           // the placeholder row still spinning. A plate with nothing edible in it
           // does not count, for the reason it is not a meal.
           recordMealLogged(userId)
+          noteMealLoggedHere()
           recordMealForLocationsOffer(userId)
           pending.remove(id)
           queryClient.invalidateQueries({ queryKey: keys.day(userId, logDate) })

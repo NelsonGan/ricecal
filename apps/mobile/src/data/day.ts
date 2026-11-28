@@ -73,6 +73,17 @@ export function useDay(date: string) {
  * drew as a day nobody had logged anything on.
  */
 export type DayView = DayLog & {
+  /**
+   * Whether the day's own rows have arrived. Unlike `isPending`, a queued snap
+   * does not make this true: the snap is drawn, but the server's rows are not
+   * in yet.
+   */
+  loaded: boolean
+  /**
+   * Whether the server has answered for this day since the screen mounted.
+   * False while a launch is still showing the day persisted from last time.
+   */
+  fresh: boolean
   isPending: boolean
   isPaused: boolean
   failed: boolean
@@ -145,13 +156,15 @@ export function unclaimedSnaps<
  * time puts each where it belongs rather than at the end.
  */
 export function useDayLog(date: string): DayView {
-  const { data, isPending, isPaused, isError, refetch } = useDay(date)
+  const { data, isPending, isPaused, isError, isFetchedAfterMount, refetch } = useDay(date)
   const { snaps, remove } = usePendingSnaps()
   const userId = useUserId()
 
   const view = useMemo((): DayView & { settled: string[] } => {
     const base = {
       ...(data ?? { date, entries: [], waterMl: 0 }),
+      loaded: data !== undefined,
+      fresh: isFetchedAfterMount,
       isPending,
       isPaused,
       failed: isError && data === undefined,
@@ -196,7 +209,7 @@ export function useDayLog(date: string): DayView {
         a.loggedAt.localeCompare(b.loggedAt),
       ),
     }
-  }, [data, snaps, userId, date, isPending, isPaused, isError, refetch])
+  }, [data, snaps, userId, date, isPending, isPaused, isError, isFetchedAfterMount, refetch])
 
   // Swept after render rather than during it: `remove` sets state on another
   // provider, and the list this hook returns is already correct without it.

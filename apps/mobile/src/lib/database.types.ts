@@ -2603,6 +2603,7 @@ export type Database = {
         Row: {
           activity_extends_budget: boolean
           anonymous_food_data: boolean
+          avatar: Json
           created_at: string
           energy: Database['public']['Enums']['energy_unit']
           language: string
@@ -2627,6 +2628,7 @@ export type Database = {
         Insert: {
           activity_extends_budget?: boolean
           anonymous_food_data?: boolean
+          avatar?: Json
           created_at?: string
           energy?: Database['public']['Enums']['energy_unit']
           language?: string
@@ -2651,6 +2653,7 @@ export type Database = {
         Update: {
           activity_extends_budget?: boolean
           anonymous_food_data?: boolean
+          avatar?: Json
           created_at?: string
           energy?: Database['public']['Enums']['energy_unit']
           language?: string

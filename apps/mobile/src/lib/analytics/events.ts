@@ -74,6 +74,8 @@ export type ProFeature =
   | 'new_recipe'
   /** A range on Trends that a free account cannot see: 30 days, or a year. */
   | 'trend_range'
+  /** A piece of the avatar's wardrobe, on a free account (README: The avatar on Today). */
+  | 'avatar'
   /** A sixth recipe imported from a video this month, on a free account. */
   | 'video_import'
   /** A fourth workout routine on a free account. */

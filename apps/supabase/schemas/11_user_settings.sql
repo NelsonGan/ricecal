@@ -86,6 +86,16 @@ create table public.user_settings (
                            check (workout_reminder_days <@ '{0,1,2,3,4,5,6}'::smallint[]),
   workout_reminder_at    time not null default '18:00',
 
+  -- Avatar ------------------------------------------------------------------
+  -- What the avatar on Today wears (README: The avatar on Today), for example
+  -- {"base": "girl", "hair": "bob", "headwear": "tudung"}. An object rather
+  -- than a column per slot because the wardrobe grows every release: a new
+  -- item or slot is a new value, never a migration, and an app that meets an
+  -- id it does not know draws that slot's default. Empty until somebody saves
+  -- one, and the app then picks the base from the profile.
+  avatar                 jsonb not null default '{}'::jsonb
+                           check (jsonb_typeof(avatar) = 'object' and pg_column_size(avatar) <= 2048),
+
   -- Privacy -----------------------------------------------------------------
   share_with_family      boolean not null default false,
   -- Consent to contribute logged dishes to the catalogue in aggregate. Off by

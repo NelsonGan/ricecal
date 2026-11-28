@@ -1,5 +1,6 @@
 import { activity } from './activity'
 import { auth } from './auth'
+import { avatar } from './avatar'
 import { common } from './common'
 import { groups } from './groups'
 import { logging } from './logging'
@@ -26,6 +27,7 @@ import { workouts } from './workouts'
 export const en = {
   common,
   activity,
+  avatar,
   groups,
   auth,
   onboarding,

@@ -333,6 +333,7 @@ export const paywall = {
       review: 'Reading an older review needs RiceCal Pro.',
       group_icon: 'More group icons need RiceCal Pro.',
       photo_retention: 'Keeping meal photos for good needs RiceCal Pro.',
+      avatar: 'Dressing up your avatar needs RiceCal Pro.',
       /**
        * The milestone offers, which no button refused, so each sentence marks
        * the milestone rather than a refusal. See `useProNudge`.
