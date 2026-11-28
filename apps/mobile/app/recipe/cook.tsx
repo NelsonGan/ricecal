@@ -115,7 +115,8 @@ export default function CookModeScreen() {
       orphan.current = path
       setShot({ uri, path })
     } catch {
-      toast.show({ title: t('logging:detail.photoFailed'), tone: 'error' })
+      // Not once the screen is gone: the toast would land on whatever is next.
+      if (mounted.current) toast.show({ title: t('logging:detail.photoFailed'), tone: 'error' })
     } finally {
       if (mounted.current) setAttaching(false)
     }
@@ -230,7 +231,9 @@ export default function CookModeScreen() {
               <Button className="flex-1" variant="secondary" onPress={() => goBack()}>
                 {t('recipes:cook.finishedSkip')}
               </Button>
-              <Button className="flex-1" onPress={() => setLogging(true)}>
+              {/* Held while the plate uploads: logged now, the row would go
+                  without the photo and the upload would then be deleted. */}
+              <Button className="flex-1" loading={attaching} onPress={() => setLogging(true)}>
                 {isToday ? t('recipes:detail.addToDay') : t('common:action.add')}
               </Button>
             </View>
