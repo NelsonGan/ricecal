@@ -2804,6 +2804,7 @@ export const ms = {
         track: 'Seluar pendek sukan',
         chinos: 'Seluar chino',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: 'Skirt berlipat',
       },
       shoes: {

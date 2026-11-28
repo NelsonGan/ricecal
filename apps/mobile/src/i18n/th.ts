@@ -2758,6 +2758,7 @@ export const th = {
         track: 'กางเกงกีฬาขาสั้น',
         chinos: 'กางเกงชิโน่',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: 'กระโปรงจีบ',
       },
       shoes: {

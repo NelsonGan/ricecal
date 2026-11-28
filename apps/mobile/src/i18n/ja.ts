@@ -2779,6 +2779,7 @@ export const ja = {
         track: 'トラックショーツ',
         chinos: 'チノパン',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: 'プリーツスカート',
       },
       shoes: {

@@ -2758,6 +2758,7 @@ export const zhHans = {
         track: '运动短裤',
         chinos: '卡其裤',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: '百褶裙',
       },
       shoes: {

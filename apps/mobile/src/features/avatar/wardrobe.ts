@@ -17,10 +17,7 @@ export const BASES: readonly AvatarBase[] = ['guy', 'girl']
 export const SLOTS = ['hair', 'top', 'bottom', 'shoes', 'headwear', 'accessory', 'held'] as const
 export type Slot = (typeof SLOTS)[number]
 
-/**
- * Item ids per slot, in display order. Every item is open to both bases: the
- * two share one body, so a bob or a songkok fits either.
- */
+/** Every item id per slot, both bases together, in display order. */
 export const WARDROBE = {
   hair: [
     'bedhead',
@@ -37,7 +34,7 @@ export const WARDROBE = {
     'wavy',
   ],
   top: ['tee', 'batik', 'hibiscus', 'stripe', 'overshirt', 'raglan', 'jersey', 'gingham', 'puff'],
-  bottom: ['shorts', 'denim', 'track', 'chinos', 'sarong', 'skirt'],
+  bottom: ['shorts', 'denim', 'track', 'chinos', 'sarong', 'skirt', 'kain-batik'],
   shoes: ['sneakers', 'green', 'yellow', 'selipar', 'sandals'],
   headwear: ['cap', 'back-cap', 'bucket', 'flower-bucket', 'songkok', 'straw', 'tudung'],
   accessory: ['glasses', 'shades', 'flower'],
@@ -45,6 +42,40 @@ export const WARDROBE = {
 } as const satisfies Record<Slot, readonly string[]>
 
 export type ItemId<S extends Slot> = (typeof WARDROBE)[S][number]
+
+type Wardrobe = { readonly [S in Slot]: readonly ItemId<S>[] }
+
+/**
+ * What each base can wear. The two share one body, so any piece would fit
+ * either, but a wardrobe is a choice of what the character would wear: no
+ * skirt or tudung on the guy, no kain pelikat or songkok on the girl, and
+ * each keeps the hairstyles drawn for them.
+ */
+const FOR_BASE: Record<AvatarBase, Wardrobe> = {
+  guy: {
+    hair: ['bedhead', 'side-part', 'buzz', 'curtain', 'curly', 'spiky'],
+    top: ['tee', 'batik', 'hibiscus', 'stripe', 'overshirt', 'raglan', 'jersey', 'gingham'],
+    bottom: ['shorts', 'denim', 'track', 'chinos', 'sarong'],
+    shoes: WARDROBE.shoes,
+    headwear: ['cap', 'back-cap', 'bucket', 'flower-bucket', 'songkok', 'straw'],
+    accessory: ['glasses', 'shades'],
+    held: WARDROBE.held,
+  },
+  girl: {
+    hair: ['chopstick-bun', 'long', 'bob', 'braids', 'ponytail', 'wavy'],
+    top: ['tee', 'puff', 'batik', 'hibiscus', 'stripe', 'overshirt', 'raglan', 'jersey', 'gingham'],
+    bottom: ['shorts', 'skirt', 'kain-batik', 'denim', 'track', 'chinos'],
+    shoes: WARDROBE.shoes,
+    headwear: ['tudung', 'straw', 'flower-bucket', 'bucket', 'cap', 'back-cap'],
+    accessory: ['glasses', 'shades', 'flower'],
+    held: WARDROBE.held,
+  },
+}
+
+/** The items a base can wear in a slot, in display order. */
+export function itemsFor<S extends Slot>(base: AvatarBase, slot: S): readonly ItemId<S>[] {
+  return FOR_BASE[base][slot] as readonly ItemId<S>[]
+}
 
 /** Slots that can be empty. The rest always draw something. */
 export const OPTIONAL: Record<Slot, boolean> = {
@@ -91,16 +122,16 @@ export function defaultOutfit(base: AvatarBase): Outfit {
   }
 }
 
-function pick<S extends Slot>(slot: S, value: unknown): ItemId<S> | undefined {
-  return typeof value === 'string' && (WARDROBE[slot] as readonly string[]).includes(value)
+function pick<S extends Slot>(base: AvatarBase, slot: S, value: unknown): ItemId<S> | undefined {
+  return typeof value === 'string' && (itemsFor(base, slot) as readonly string[]).includes(value)
     ? (value as ItemId<S>)
     : undefined
 }
 
 /**
- * The stored object, read defensively. It came from any version of the app, so
- * an id this build does not know (an item added later) falls back to the
- * slot's default rather than drawing nothing, and so does anything malformed.
+ * The stored object, read defensively. An id this build does not know, one the
+ * base does not wear, or anything malformed falls back to the slot's default
+ * rather than drawing nothing.
  */
 export function parseOutfit(stored: unknown, fallbackBase: AvatarBase): Outfit {
   const value = stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {}
@@ -110,13 +141,13 @@ export function parseOutfit(stored: unknown, fallbackBase: AvatarBase): Outfit {
   const fallback = defaultOutfit(base)
   return {
     base,
-    hair: pick('hair', record.hair) ?? fallback.hair,
-    top: pick('top', record.top) ?? fallback.top,
-    bottom: pick('bottom', record.bottom) ?? fallback.bottom,
-    shoes: pick('shoes', record.shoes) ?? fallback.shoes,
-    headwear: pick('headwear', record.headwear) ?? null,
-    accessory: pick('accessory', record.accessory) ?? null,
-    held: pick('held', record.held) ?? null,
+    hair: pick(base, 'hair', record.hair) ?? fallback.hair,
+    top: pick(base, 'top', record.top) ?? fallback.top,
+    bottom: pick(base, 'bottom', record.bottom) ?? fallback.bottom,
+    shoes: pick(base, 'shoes', record.shoes) ?? fallback.shoes,
+    headwear: pick(base, 'headwear', record.headwear) ?? null,
+    accessory: pick(base, 'accessory', record.accessory) ?? null,
+    held: pick(base, 'held', record.held) ?? null,
   }
 }
 
@@ -126,13 +157,13 @@ export function serialiseOutfit(outfit: Outfit): Json {
 }
 
 /**
- * The outfit on another base. The hair follows while it is still the old
- * base's own, so the guy does not inherit the girl's chopstick bun nobody chose.
+ * The outfit on another base. What the new base also wears stays on; the rest
+ * becomes its default (the guy's bedhead for the girl's bun, shorts for a
+ * skirt, no tudung).
  */
 export function withBase(outfit: Outfit, base: AvatarBase): Outfit {
   if (base === outfit.base) return outfit
-  const hair = outfit.hair === DEFAULT_HAIR[outfit.base] ? DEFAULT_HAIR[base] : outfit.hair
-  return { ...outfit, base, hair }
+  return parseOutfit({ ...outfit, base }, base)
 }
 
 /** The outfit with one slot changed. */

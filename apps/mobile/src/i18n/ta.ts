@@ -2787,6 +2787,7 @@ export const ta = {
         track: 'டிராக் ஷார்ட்ஸ்',
         chinos: 'சினோஸ்',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: 'மடிப்பு பாவாடை',
       },
       shoes: {

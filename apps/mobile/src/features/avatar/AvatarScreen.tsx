@@ -24,11 +24,11 @@ import { useAvatar, useSaveAvatar } from './useAvatar'
 import {
   type AvatarBase,
   BASES,
+  itemsFor,
   OPTIONAL,
   type Outfit,
   SLOTS,
   type Slot,
-  WARDROBE,
   withBase,
   withItem,
 } from './wardrobe'
@@ -241,7 +241,7 @@ export function AvatarScreen() {
   const tile = Math.floor((grid - GAP * (COLUMNS - 1)) / COLUMNS)
   const items: (string | null)[] = [
     ...(OPTIONAL[slot] ? [null] : []),
-    ...(WARDROBE[slot] as readonly string[]),
+    ...(itemsFor(current.base, slot) as readonly string[]),
   ]
 
   return (

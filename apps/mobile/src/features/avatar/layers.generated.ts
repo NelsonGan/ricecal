@@ -148,6 +148,13 @@ export const AVATAR_LAYERS = {
     w: 172,
     h: 70,
   },
+  'bottom-kain-batik': {
+    source: require('../../../assets/avatar/bottom-kain-batik.webp'),
+    x: 162,
+    y: 542,
+    w: 166,
+    h: 189,
+  },
   'bottom-sarong': {
     source: require('../../../assets/avatar/bottom-sarong.webp'),
     x: 162,

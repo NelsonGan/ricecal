@@ -2758,6 +2758,7 @@ export const zhHant = {
         track: '運動短褲',
         chinos: '卡其褲',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: '百褶裙',
       },
       shoes: {

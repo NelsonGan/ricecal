@@ -2769,6 +2769,7 @@ export const bn = {
         track: 'ট্র্যাক হাফপ্যান্ট',
         chinos: 'চিনোস',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: 'কুঁচি স্কার্ট',
       },
       shoes: {

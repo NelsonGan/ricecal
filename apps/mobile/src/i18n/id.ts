@@ -2784,6 +2784,7 @@ export const id = {
         track: 'Celana pendek olahraga',
         chinos: 'Celana chino',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: 'Rok lipit',
       },
       shoes: {

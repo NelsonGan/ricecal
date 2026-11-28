@@ -2760,6 +2760,7 @@ export const ko = {
         track: '트랙 반바지',
         chinos: '치노 팬츠',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: '플리츠 스커트',
       },
       shoes: {

@@ -4,7 +4,7 @@
  * `item` names every piece the customise screen offers. They are read out by a
  * screen reader rather than printed under each drawing, so they say what the
  * thing is, briefly. The Malaysian names (teh tarik, songkok, kain pelikat,
- * selipar) stay as they are in every language, as dish names do.
+ * kain batik, selipar) stay as they are in every language, as dish names do.
  *
  * `mood` is how the avatar is described to a screen reader. Very full is said
  * kindly: going over the budget is never framed as something to feel bad about.
@@ -78,6 +78,7 @@ export const avatar = {
       track: 'Track shorts',
       chinos: 'Chinos',
       sarong: 'Kain pelikat',
+      'kain-batik': 'Kain batik',
       skirt: 'Pleated skirt',
     },
     shoes: {

@@ -2763,6 +2763,7 @@ export const hi = {
         track: 'ट्रैक शॉर्ट्स',
         chinos: 'चिनोज़',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: 'प्लीटेड स्कर्ट',
       },
       shoes: {

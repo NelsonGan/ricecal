@@ -4894,9 +4894,14 @@ step.
 ### The wardrobe, and who gets it
 
 Seven slots (hair, top, bottom, shoes, headwear, accessory, held), with
-Malaysian pieces among them: a batik shirt, kain pelikat, selipar, a songkok,
-a tudung, teh tarik, satay and ais krim potong. The girl's chopstick bun is one
-of the hairstyles, and every item fits both bases. Everyone picks guy or girl;
+Malaysian pieces among them: a batik shirt, kain pelikat, kain batik, selipar,
+a songkok, a tudung, teh tarik, satay and ais krim potong. The girl's chopstick
+bun is one of her hairstyles. Every piece fits both bodies, but each base has
+its own wardrobe (`itemsFor`): its own hairstyles, no skirt, kain batik, puff
+blouse, tudung or flower on the guy, no kain pelikat or songkok on the girl.
+Switching base keeps what the new base also wears and swaps the rest for its
+defaults, and a stored piece the base does not wear reads as the default.
+Everyone picks guy or girl;
 the wardrobe is Pro, refused through `useRequirePro('avatar')` like any other
 gate. A free account sees every piece and gets the paywall when it taps one.
 The gate is the client's alone, like the trend ranges: the outfit is only ever

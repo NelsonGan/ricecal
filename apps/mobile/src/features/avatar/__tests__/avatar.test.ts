@@ -7,6 +7,7 @@ import {
   defaultOutfit,
   freeOutfit,
   HIDES_HAIR,
+  itemsFor,
   type Outfit,
   parseOutfit,
   SLOTS,
@@ -195,9 +196,19 @@ describe('buildStack', () => {
 })
 
 describe('withBase', () => {
-  it('swaps the hair only while it is the old base’s own', () => {
+  it('keeps what the new base also wears and swaps the rest for its defaults', () => {
+    const girl = { ...defaultOutfit('girl'), bottom: 'skirt' as const, headwear: 'tudung' as const }
+    expect(withBase({ ...girl, top: 'batik' }, 'guy')).toMatchObject({
+      base: 'guy',
+      top: 'batik',
+      bottom: 'shorts',
+      headwear: null,
+    })
+  })
+
+  it('swaps the hair for the new base’s own', () => {
     expect(withBase(defaultOutfit('girl'), 'guy').hair).toBe('bedhead')
-    expect(withBase({ ...defaultOutfit('girl'), hair: 'bob' }, 'guy').hair).toBe('bob')
+    expect(withBase({ ...defaultOutfit('girl'), hair: 'bob' }, 'guy').hair).toBe('bedhead')
   })
 })
 
@@ -242,12 +253,40 @@ describe('the shipped drawings', () => {
     }
     for (const base of BASES)
       for (const slot of SLOTS)
-        for (const item of WARDROBE[slot])
+        for (const item of itemsFor(base, slot))
           for (const mood of MOODS) {
             const outfit = { ...defaultOutfit(base), [slot]: item } as Outfit
             draw(outfit, outfit.held !== null, mood)
             draw({ ...outfit, held: 'satay' }, true, mood)
           }
     expect(Object.keys(AVATAR_LAYERS).filter((name) => !used.has(name))).toEqual([])
+  })
+})
+
+describe('each base’s wardrobe', () => {
+  it('keeps the guy out of skirts and the girl out of kain pelikat', () => {
+    expect(itemsFor('guy', 'bottom')).not.toContain('skirt')
+    expect(itemsFor('guy', 'bottom')).not.toContain('kain-batik')
+    expect(itemsFor('guy', 'headwear')).not.toContain('tudung')
+    expect(itemsFor('guy', 'top')).not.toContain('puff')
+    expect(itemsFor('girl', 'bottom')).not.toContain('sarong')
+    expect(itemsFor('girl', 'headwear')).not.toContain('songkok')
+  })
+
+  it('offers every item to at least one base', () => {
+    for (const slot of SLOTS)
+      for (const item of WARDROBE[slot])
+        expect([slot, item, BASES.some((b) => itemsFor(b, slot).includes(item as never))]).toEqual([
+          slot,
+          item,
+          true,
+        ])
+  })
+
+  it('reads a stored piece the base does not wear as the default', () => {
+    expect(parseOutfit({ base: 'guy', bottom: 'skirt', headwear: 'tudung' }, 'guy')).toMatchObject({
+      bottom: 'shorts',
+      headwear: null,
+    })
   })
 })

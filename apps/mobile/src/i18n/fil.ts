@@ -2810,6 +2810,7 @@ export const fil = {
         track: 'Track shorts',
         chinos: 'Chinos',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: 'Pleated na palda',
       },
       shoes: {

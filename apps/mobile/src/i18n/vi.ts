@@ -2782,6 +2782,7 @@ export const vi = {
         track: 'Quần đùi thể thao',
         chinos: 'Quần kaki',
         sarong: 'Kain pelikat',
+        'kain-batik': 'Kain batik',
         skirt: 'Chân váy xếp ly',
       },
       shoes: {
