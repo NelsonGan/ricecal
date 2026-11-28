@@ -1861,6 +1861,10 @@ export const ja = {
       finishedTitle: 'めしあがれ',
       finishedBody: '1 人前を今日に追加しますか',
       finishedSkip: 'あとで',
+      finishedPhoto: 'お皿を撮って、写真で記録しましょう。',
+      takePhoto: '写真を撮る',
+      retakePhoto: '撮り直す',
+      photoTitle: 'お皿を撮る',
     },
   },
 

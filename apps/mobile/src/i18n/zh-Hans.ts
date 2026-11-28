@@ -1848,6 +1848,10 @@ export const zhHans = {
       finishedTitle: '请慢用',
       finishedBody: '把一份加到今天？',
       finishedSkip: '先不用',
+      finishedPhoto: '拍下这盘菜，用照片记录它。',
+      takePhoto: '拍照',
+      retakePhoto: '重拍',
+      photoTitle: '拍下你的菜',
     },
   },
 

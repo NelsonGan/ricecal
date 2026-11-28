@@ -1886,6 +1886,10 @@ export const ms = {
       finishedTitle: 'Selamat menjamu selera',
       finishedBody: 'Tambah satu hidangan ke hari anda?',
       finishedSkip: 'Bukan sekarang',
+      finishedPhoto: 'Ambil foto hidangan anda untuk catatan ini.',
+      takePhoto: 'Ambil foto',
+      retakePhoto: 'Ambil semula',
+      photoTitle: 'Foto hidangan anda',
     },
   },
 

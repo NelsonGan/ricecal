@@ -386,5 +386,12 @@ export const recipes = {
     finishedTitle: 'Enjoy your meal',
     finishedBody: 'Add a serving to your day?',
     finishedSkip: 'Not now',
+    /** Under the title until the plate is photographed; `finishedBody` after. */
+    finishedPhoto: 'Snap your plate to log it with a photo.',
+    /** The button under the plate, and the plate itself read out. */
+    takePhoto: 'Take a photo',
+    retakePhoto: 'Retake',
+    /** The camera sheet's title. */
+    photoTitle: 'Snap your plate',
   },
 } as const

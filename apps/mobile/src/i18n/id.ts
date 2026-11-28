@@ -1869,6 +1869,10 @@ export const id = {
       finishedTitle: 'Selamat makan',
       finishedBody: 'Tambahkan satu porsi ke harimu?',
       finishedSkip: 'Nanti saja',
+      finishedPhoto: 'Foto hidanganmu untuk catatan ini.',
+      takePhoto: 'Ambil foto',
+      retakePhoto: 'Foto ulang',
+      photoTitle: 'Foto hidanganmu',
     },
   },
 

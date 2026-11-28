@@ -1847,6 +1847,10 @@ export const th = {
       finishedTitle: 'ขอให้อร่อย',
       finishedBody: 'เพิ่มหนึ่งที่ลงวันของคุณไหม',
       finishedSkip: 'ไว้ทีหลัง',
+      finishedPhoto: 'ถ่ายรูปจานของคุณเพื่อบันทึกพร้อมรูป',
+      takePhoto: 'ถ่ายรูป',
+      retakePhoto: 'ถ่ายใหม่',
+      photoTitle: 'ถ่ายรูปจานของคุณ',
     },
   },
 

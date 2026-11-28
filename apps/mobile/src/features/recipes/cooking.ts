@@ -39,13 +39,21 @@ export function scaleIngredient<T extends Pick<RecipeIngredientInput, 'amount'>>
  * recipe's own sheet and the end of cook mode, so the three cannot drift on
  * where the entry says it came from.
  */
-export function recipeLog(recipe: Recipe, quantity: number, logDate: string): LogInput {
+export function recipeLog(
+  recipe: Recipe,
+  quantity: number,
+  logDate: string,
+  photoPath?: string,
+): LogInput {
   return {
     snapshot: snapshotFromRecipe(recipe),
     quantity,
     logDate,
     source: 'quickAdd',
     method: 'recipe',
+    // A photo of the plate, from the end of cook mode. The recipe's drawing
+    // still rides along as the item's icon, for when the photo is swept.
+    ...(photoPath ? { photoPath } : {}),
   }
 }
 

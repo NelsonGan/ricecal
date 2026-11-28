@@ -1865,6 +1865,10 @@ export const vi = {
       finishedTitle: 'Chúc ngon miệng',
       finishedBody: 'Thêm một khẩu phần vào ngày của bạn?',
       finishedSkip: 'Để sau',
+      finishedPhoto: 'Chụp đĩa ăn để ghi lại bằng ảnh.',
+      takePhoto: 'Chụp ảnh',
+      retakePhoto: 'Chụp lại',
+      photoTitle: 'Chụp đĩa ăn của bạn',
     },
   },
 

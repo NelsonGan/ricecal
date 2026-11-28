@@ -1851,6 +1851,10 @@ export const hi = {
       finishedTitle: 'खाने का मज़ा लीजिए',
       finishedBody: 'अपने दिन में एक हिस्सा जोड़ें?',
       finishedSkip: 'अभी नहीं',
+      finishedPhoto: 'अपनी प्लेट की फ़ोटो लें, ताकि यह फ़ोटो के साथ दर्ज हो।',
+      takePhoto: 'फ़ोटो लें',
+      retakePhoto: 'फिर से लें',
+      photoTitle: 'अपनी प्लेट की फ़ोटो लें',
     },
   },
 

@@ -1848,6 +1848,10 @@ export const zhHant = {
       finishedTitle: '慢慢享用',
       finishedBody: '把一份加到你這一天？',
       finishedSkip: '先不要',
+      finishedPhoto: '拍下這盤菜，用照片記錄它。',
+      takePhoto: '拍照',
+      retakePhoto: '重拍',
+      photoTitle: '拍下你的菜',
     },
   },
 

@@ -41,18 +41,26 @@ export function useLogRecipe() {
     }
   }, [])
 
-  const log = (recipe: Recipe, quantity: number, logDate: string, onLogged?: () => void) => {
+  const log = (
+    recipe: Recipe,
+    quantity: number,
+    logDate: string,
+    onLogged?: () => void,
+    photoPath?: string,
+  ) => {
     // `mutateAsync`, not `mutate` with callbacks: those fire for the latest
     // call only, so two cards' plus tapped in a row logged both and confirmed
     // (and offered Undo for) just the second.
-    logFood.mutateAsync(recipeLog(recipe, quantity, logDate)).then(
+    logFood.mutateAsync(recipeLog(recipe, quantity, logDate, photoPath)).then(
       (row) => {
         toast.show({
           title: t('recipes:card.logged', { name: recipe.name }),
           tone: 'success',
           action: {
             label: t('common:action.undo'),
-            onPress: () => removeEntry.mutate({ id: row.id, logDate, source: 'quickAdd' }),
+            // The photo goes with the row: nothing else points at it.
+            onPress: () =>
+              removeEntry.mutate({ id: row.id, logDate, source: 'quickAdd', photoPath }),
           },
         })
         if (mounted.current) onLogged?.()

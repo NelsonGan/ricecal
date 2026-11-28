@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { AccessibilityInfo, View } from 'react-native'
 
-import { useRecipe, useRecipeIngredients } from '@/data'
+import { removeMealPhoto, uploadMealPhoto, useRecipe, useRecipeIngredients } from '@/data'
+import { InlineCamera } from '@/features/logging'
 import {
+  CookedPhotoTile,
   cookingSteps,
   forgetCookSession,
   IngredientChecklist,
@@ -32,6 +34,7 @@ import {
   StepProgress,
   Tappable,
   Text,
+  useToast,
 } from '@/ui'
 
 /**
@@ -43,11 +46,12 @@ import {
  * screen passes how many it is being cooked for), and the whole list one tap
  * away. Tapping the step moves on as the Next button does. Where the cook is
  * survives leaving and coming back (`useCookStep`). The last step asks how
- * much was eaten, which is the moment the meal actually happens.
+ * much was eaten, which is the moment the meal actually happens, and offers to
+ * photograph the plate so the diary shows what was cooked, not a drawing.
  */
 export default function CookModeScreen() {
   useScreenAwake('recipe-cook')
-  const { t } = useTranslation(['recipes', 'common'])
+  const { t } = useTranslation(['recipes', 'common', 'logging'])
   const router = useRouter()
   const params = useLocalSearchParams<{ id: string; servings?: string; date?: string }>()
   const goBack = useBack(params.id ? `/recipe/${params.id}` : '/recipes')
@@ -71,6 +75,52 @@ export default function CookModeScreen() {
   const [logging, setLogging] = useState(false)
   const [showIngredients, setShowIngredients] = useState(false)
   const [ticked, toggleTick] = useTickedIngredients(session)
+  const toast = useToast()
+  const [snapping, setSnapping] = useState(false)
+  const [attaching, setAttaching] = useState(false)
+  /** The plate, once photographed and uploaded: the local file and its key. */
+  const [shot, setShot] = useState<{ uri: string; path: string } | undefined>()
+  /**
+   * The key this screen is responsible for deleting, if the cook leaves
+   * without logging. Cleared once Add is tapped: from then a row points at
+   * it, and a write that then fails leaves an object nothing reads, which
+   * costs storage. Deleting it could leave a row pointing at nothing.
+   */
+  const orphan = useRef<string | undefined>(undefined)
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      if (orphan.current) void removeMealPhoto(orphan.current).catch(() => {})
+    }
+  }, [])
+
+  /**
+   * The shot, uploaded the moment it is taken, since that is the slow part and
+   * the cook is reading the screen meanwhile. A retake replaces the earlier
+   * object, which nothing else points at.
+   */
+  const attachPhoto = async (uri: string) => {
+    setSnapping(false)
+    setAttaching(true)
+    try {
+      const path = await uploadMealPhoto(uri)
+      // Closed while it was sending: nothing will log or sweep it.
+      if (!mounted.current) {
+        void removeMealPhoto(path).catch(() => {})
+        return
+      }
+      if (orphan.current) void removeMealPhoto(orphan.current).catch(() => {})
+      orphan.current = path
+      setShot({ uri, path })
+    } catch {
+      // Not once the screen is gone: the toast would land on whatever is next.
+      if (mounted.current) toast.show({ title: t('logging:detail.photoFailed'), tone: 'error' })
+    } finally {
+      if (mounted.current) setAttaching(false)
+    }
+  }
 
   const pages = cookingSteps(stored?.steps, language.translation?.steps, !language.english)
   const steps = pages.map((page) => page.text)
@@ -181,7 +231,9 @@ export default function CookModeScreen() {
               <Button className="flex-1" variant="secondary" onPress={() => goBack()}>
                 {t('recipes:cook.finishedSkip')}
               </Button>
-              <Button className="flex-1" onPress={() => setLogging(true)}>
+              {/* Held while the plate uploads: logged now, the row would go
+                  without the photo and the upload would then be deleted. */}
+              <Button className="flex-1" loading={attaching} onPress={() => setLogging(true)}>
                 {isToday ? t('recipes:detail.addToDay') : t('common:action.add')}
               </Button>
             </View>
@@ -202,11 +254,50 @@ export default function CookModeScreen() {
           )
         }
       >
-        <EmptyState
-          title={t('recipes:cook.finishedTitle')}
-          description={priced ? t('recipes:cook.finishedBody') : undefined}
-          icon={recipe.icon ?? { set: 'food', name: 'cooking-pot' }}
-        />
+        {priced ? (
+          // Something to log, so something to photograph: the plate goes on
+          // the diary row instead of the recipe's drawing.
+          <View className="items-center gap-6 pt-8">
+            <CookedPhotoTile
+              icon={recipe.icon}
+              photoUri={shot?.uri}
+              attaching={attaching}
+              onPress={() => setSnapping(true)}
+            />
+            <View className="items-center gap-2 px-gutter">
+              <Text variant="title" className="text-center">
+                {t('recipes:cook.finishedTitle')}
+              </Text>
+              <Text variant="body" className="text-center">
+                {shot ? t('recipes:cook.finishedBody') : t('recipes:cook.finishedPhoto')}
+              </Text>
+            </View>
+          </View>
+        ) : (
+          <EmptyState
+            title={t('recipes:cook.finishedTitle')}
+            icon={recipe.icon ?? { set: 'food', name: 'cooking-pot' }}
+          />
+        )}
+        <Sheet
+          visible={snapping}
+          onClose={() => setSnapping(false)}
+          title={t('recipes:cook.photoTitle')}
+          closeLabel={t('common:action.close')}
+          // Full height with the viewfinder filling it, as every camera in the
+          // app is. The library button inside it covers a photo taken already.
+          fullHeight
+          fillBody
+          scrollable={false}
+        >
+          {/* No uri is a device with no camera, every simulator: nothing to attach. */}
+          <InlineCamera
+            fill
+            onCapture={(photoUri) => {
+              if (photoUri) void attachPhoto(photoUri)
+            }}
+          />
+        </Sheet>
         {/* How much of it was eaten, asked rather than assumed to be one. */}
         <LogRecipeSheet
           visible={logging}
@@ -219,6 +310,10 @@ export default function CookModeScreen() {
           // Past the recipe page too, to the search with its query and meal
           // intact. `dismissTo('/log/search')` replaced its params with none.
           onLogged={() => (params.date ? closeRecipe() : goBack())}
+          photoPath={shot?.path}
+          onSubmit={() => {
+            orphan.current = undefined
+          }}
         />
       </Screen>
     )
