@@ -2718,6 +2718,7 @@ export const vi = {
     kcalLeft: 'kcal còn lại',
     kcalOver: 'kcal vượt',
     openHint: 'Mở nhân vật của bạn',
+    biteHint: 'Ăn một miếng',
     toggle: {
       stats: 'Hiện số liệu',
       avatar: 'Hiện nhân vật',

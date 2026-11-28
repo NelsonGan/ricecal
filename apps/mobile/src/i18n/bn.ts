@@ -2705,6 +2705,7 @@ export const bn = {
     kcalLeft: 'kcal বাকি',
     kcalOver: 'kcal বেশি',
     openHint: 'আপনার অবতার খোলে',
+    biteHint: 'এক কামড় খায়',
     toggle: {
       stats: 'পরিসংখ্যান দেখান',
       avatar: 'অবতার দেখান',

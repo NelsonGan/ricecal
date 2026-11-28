@@ -2694,6 +2694,7 @@ export const th = {
     kcalLeft: 'kcal ที่เหลือ',
     kcalOver: 'kcal ที่เกิน',
     openHint: 'เปิดอวาตาร์ของคุณ',
+    biteHint: 'กินหนึ่งคำ',
     toggle: {
       stats: 'แสดงสถิติ',
       avatar: 'แสดงอวาตาร์',

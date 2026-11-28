@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { View } from 'react-native'
-import Animated, { cubicBezier, FadeIn, FadeOut } from 'react-native-reanimated'
+import Animated, { cubicBezier } from 'react-native-reanimated'
 
 import { preloadAvatar } from './AvatarFigure'
 import { AvatarSummary } from './AvatarSummary'
@@ -72,7 +72,11 @@ export function SummarySwitcher({
   // render later once the effect above has run, so the new mood never shows
   // before the spoon does.
   const biting = eating || (mealLanded !== null && active)
-  const showAvatar = view === 'avatar' || flash || biting
+  // Over the stats the avatar is revealed by `flash`, set in the effect after
+  // that render is on screen: revealed in the render itself, the fade began
+  // before the new totals and the spoon had been drawn, and the old mood
+  // showed for a few frames.
+  const showAvatar = view === 'avatar' || flash
 
   return (
     <View>
@@ -95,16 +99,26 @@ export function SummarySwitcher({
           {stats}
         </Animated.View>
       </View>
-      {showAvatar && height > 0 ? (
+      {height > 0 ? (
+        // Mounted even while hidden, still and invisible: creating the canvas
+        // and uploading its drawings when the first meal lands left the card
+        // blank for a few frames. Showing it is then only a fade.
         <Animated.View
-          entering={FadeIn.duration(220)}
-          exiting={FadeOut.duration(220)}
           className="absolute inset-x-0 top-0"
           pointerEvents={view === 'avatar' ? 'auto' : 'none'}
+          accessibilityElementsHidden={!showAvatar}
+          importantForAccessibility={showAvatar ? 'auto' : 'no-hide-descendants'}
+          style={{
+            opacity: showAvatar ? 1 : 0,
+            transitionProperty: 'opacity',
+            transitionDuration: 220,
+            transitionTimingFunction: EASE_OUT,
+          }}
         >
           <AvatarSummary
             outfit={outfit}
             state={{ mood, action: biting ? 'eating' : undefined }}
+            animated={active && showAvatar}
             height={height}
             figure={figure}
             caption={caption}

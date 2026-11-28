@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { mealLoggedHereSince } from '@/lib/mealsLogged'
+
 /**
  * How long a meal that landed while Today was out of sight (behind the log
  * sheet, on another tab) still gets eaten when Today comes back.
@@ -11,9 +13,6 @@ const LANDED_MS = 2 * 60_000
  * and a scan's placeholder resolving. One bite per arrival, not per id.
  */
 const SETTLE_MS = 6000
-
-/** How long after the screen mounts a first server answer counts as the launch catching up. */
-const LAUNCH_SYNC_MS = 8000
 
 type EntryLike = { id: string; status?: unknown }
 
@@ -30,10 +29,10 @@ type EntryLike = { id: string; status?: unknown }
  *
  * `ready` means the day's own rows have arrived: a baseline taken before
  * them is empty, and every row would then look new. `fresh` turns true when
- * the server first answers since the screen mounted; if that happens in the
- * first seconds after launch, whatever it adds to a day shown from the
- * persisted cache was logged elsewhere while the app was closed, and is taken
- * in silently.
+ * the server first answers since the screen mounted; unless a meal was
+ * logged on this phone first, whatever that answer adds to a day shown from
+ * the persisted cache was logged elsewhere while the app was closed, and is
+ * taken in silently.
  *
  * Worked out during the render that first shows the meal, not in an effect
  * after it: the day's totals change in that same render, and a render later
@@ -53,10 +52,10 @@ export function useMealLanded(
   const played = useRef<string | null>(null)
   const wasFresh = useRef(fresh)
   const mountedAt = useRef(Date.now())
-  // Only an answer arriving soon after launch is the launch catching up. A day
-  // still fresh from the cache is not refetched on mount, and its first answer
-  // can then be the very meal just logged here, which must still be eaten.
-  const answered = fresh && !wasFresh.current && Date.now() - mountedAt.current < LAUNCH_SYNC_MS
+  // The first answer is the launch catching up unless a meal was logged here
+  // first: a day still fresh from the cache is not refetched on mount, and its
+  // first answer is then the refetch that very meal caused.
+  const answered = fresh && !wasFresh.current && !mealLoggedHereSince(mountedAt.current)
 
   const done = ready ? entries.filter((entry) => !entry.status) : []
   const baseline = !ready || seen.current === null || seen.current.day !== day || answered

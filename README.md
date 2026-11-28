@@ -4820,27 +4820,30 @@ a style; a calorie app that shames going over teaches people to stop logging.
 When a meal lands on the day on screen (a scan resolving, a search pick, a
 quick add), the avatar takes a spoonful of rice, chews, and settles on the
 day's new mood. With the stats showing, the avatar fades in over them for the
-bite and fades back out about a second after it; taps meanwhile still go to
-the stats. `useMealLanded` decides what counts: an entry that appears while its
-day is on screen, at most once every six seconds. It goes by when the entry
+bite and fades back out about a second after it; taps meanwhile still go to the
+stats. `useMealLanded` decides what counts: an entry that appears while its day
+is on screen, at most once every six seconds. It goes by when the entry
 appeared, not by the meal's own time, which is the server's clock against the
 phone's and can be any time of day. Rows already on the day when it was first
 shown never count, and neither do rows the first server answer after launch
-adds to a day shown from the persisted cache (those were logged elsewhere while
-the app was closed), so opening the app, paging days or a scan's placeholder
-resolving plays nothing extra. A bite that landed while Today was out of sight
-plays when Today comes back, if it is under two minutes old and the meal still
-exists. It is worked out in the render that first shows the meal, because a
-render later the new mood had already shown before the spoon went up.
+adds to a day shown from the persisted cache, unless a meal was logged on this
+phone first (`lib/mealsLogged`); otherwise those rows were logged elsewhere
+while the app was closed, so opening the app, paging days or a scan's
+placeholder resolving plays nothing extra. A bite that landed while Today was
+out of sight plays when Today comes back, if it is under two minutes old and
+the meal still exists. It is worked out in the render that first shows the
+meal, because a render later the new mood had already shown before the spoon
+went up.
 
 ### How the layers fit
 
 The figure is not one picture. `assets/avatar/` holds 93 transparent WebP
-layers (about 1 MB) on one shared canvas, 504 by 768, and
-`layers.generated.ts` places each trimmed image on it. They were drawn with
-the image-generation skill on the Codex backend: one bald, blank-faced base
-body, then every face, hairstyle, garment and pose as an edit of that body,
-registered back onto it and cut out by difference. `buildStack` orders them:
+layers (about 850 KB, quality 80, drawn at the size they are shown) on one
+shared canvas, 504 by 768, and `layers.generated.ts` places each trimmed image
+on it. They were drawn with the image-generation skill on the Codex backend:
+one bald, blank-faced base body, then every face, hairstyle, garment and pose
+as an edit of that body, registered back onto it and cut out by difference.
+`buildStack` orders them:
 
     hair behind, body, head, ears, arm under, shoes, bottom, top, held item,
     arm over, face, hair in front, glasses, headwear, the spoon and the
@@ -4858,11 +4861,13 @@ above its brim (`HAT_HAIR_CLIP`); a tudung hides the hair and the ears.
 
 ### How it moves
 
-`AvatarFigure` draws the layers into one Skia canvas. Drawings are decoded
-once per app run into a shared cache (`images.ts`), so a screen of many
-avatars in the same tee holds one copy of the tee, and a figure never shows
-half-loaded. The canvas is drawn a little larger than the figure's box
-(`BLEED`), so a leaning hat or a drifting sparkle is never cut off.
+`AvatarFigure` draws the layers into one Skia canvas. Drawings are decoded into
+a shared cache (`images.ts`), so a screen of many avatars in the same tee holds
+one copy of the tee, and a figure never shows half-loaded. Decoded, the whole
+wardrobe is about 20 MB, so the cache lets go of drawings no figure is showing
+once it holds 64, oldest first. The canvas is drawn a little larger than the
+figure's box (`BLEED`), so a leaning hat or a drifting sparkle is never cut
+off.
 
 The figure hangs on a three-bone rig (`rig.ts`): the whole body about its
 feet, the head about the neck (the body art is split at the neck for this),
@@ -4900,13 +4905,14 @@ stored. If the avatar is ever shown to other people, enforce it in Postgres
 first. Only a definite "not Pro" draws the plain outfit; while the entitlement
 is still loading or unknown (a cold start, offline) the saved one stays on.
 
-The outfit is `user_settings.avatar`, a jsonb object of item ids, so it
-follows the account to every phone. It is an object rather than a column per
-slot because the wardrobe will grow: a new item or slot is a new value, never a
+The outfit is `user_settings.avatar`, a jsonb object of item ids, so it follows
+the account to every phone. It is an object rather than a column per slot
+because the wardrobe will grow: a new item or slot is a new value, never a
 migration, and an app that meets an id it does not know draws that slot's
 default (`parseOutfit`). A save writes the outfit as it is shown, every slot.
-Empty until somebody saves, and then the base follows the profile's sex. An account that loses Pro draws the default outfit on its
-base while the saved one waits for the subscription to come back.
+Empty until somebody saves, and then the base follows the profile's sex. An
+account that loses Pro draws the default outfit on its base while the saved one
+waits for the subscription to come back.
 
 The art pipeline itself is not in the repo, only its output: regenerating a
 piece means drawing it against the same base, cutting it out, and exporting

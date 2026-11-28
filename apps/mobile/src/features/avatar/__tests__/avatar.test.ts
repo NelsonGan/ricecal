@@ -7,7 +7,7 @@ import {
   defaultOutfit,
   freeOutfit,
   HIDES_HAIR,
-  layersOfItem,
+  type Outfit,
   parseOutfit,
   SLOTS,
   serialiseOutfit,
@@ -16,6 +16,19 @@ import {
 } from '../wardrobe'
 
 const has = (name: string) => name in AVATAR_LAYERS
+
+/** Every item draws at least one layer on the canvas. */
+function layersOfItem(slot: string, item: string): string[] {
+  const names =
+    slot === 'hair'
+      ? [`hair-${item}-front`, `hair-${item}-back`]
+      : slot === 'headwear'
+        ? [`hat-${item}`]
+        : slot === 'accessory'
+          ? [`acc-${item}`]
+          : [`${slot}-${item}`]
+  return names.filter(has)
+}
 
 describe('calorieMood', () => {
   const mood = (eatenKcal: number, logged = eatenKcal > 0) =>
@@ -216,5 +229,25 @@ describe('timeline sampling', () => {
     expect(windowOpacity(300 + DISSOLVE_MS / 2, w)).toBe(1)
     expect(windowOpacity(300 + DISSOLVE_MS, w)).toBe(0)
     expect(windowOpacity(0, [[0, 100]])).toBe(1)
+  })
+})
+
+describe('the shipped drawings', () => {
+  it('ships no drawing that no outfit, mood or motion can show', () => {
+    const used = new Set<string>()
+    const draw = (outfit: Outfit, holding: boolean, mood: (typeof MOODS)[number]) => {
+      for (const entry of buildStack(outfit, moodPose(mood, holding))) used.add(entry.name)
+      for (const segment of ACTIONS.eating(mood, holding).segments)
+        for (const entry of buildStack(outfit, segment.pose)) used.add(entry.name)
+    }
+    for (const base of BASES)
+      for (const slot of SLOTS)
+        for (const item of WARDROBE[slot])
+          for (const mood of MOODS) {
+            const outfit = { ...defaultOutfit(base), [slot]: item } as Outfit
+            draw(outfit, outfit.held !== null, mood)
+            draw({ ...outfit, held: 'satay' }, true, mood)
+          }
+    expect(Object.keys(AVATAR_LAYERS).filter((name) => !used.has(name))).toEqual([])
   })
 })

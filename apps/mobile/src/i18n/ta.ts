@@ -2723,6 +2723,7 @@ export const ta = {
     kcalLeft: 'kcal மீதம்',
     kcalOver: 'kcal அதிகம்',
     openHint: 'உங்கள் அவதாரைத் திறக்கும்',
+    biteHint: 'ஒரு வாய் சாப்பிடும்',
     toggle: {
       stats: 'புள்ளிவிவரம் காட்டு',
       avatar: 'அவதாரைக் காட்டு',

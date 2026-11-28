@@ -1,5 +1,7 @@
 import { act, renderHook } from '@testing-library/react-native'
 
+import { noteMealLoggedHere } from '@/lib/mealsLogged'
+
 import { useMealLanded } from '../useMealLanded'
 
 type Entry = { id: string; loggedAt: string; status?: string }
@@ -87,19 +89,15 @@ describe('useMealLanded', () => {
     expect(hook.result.current.landed).toBe('mine')
   })
 
-  it('still eats a meal whose first server answer comes long after launch', async () => {
-    const now = Date.now()
-    const spy = jest.spyOn(Date, 'now').mockReturnValue(now)
+  it('eats a meal logged here even when its refetch is the first server answer', async () => {
     const hook = await renderHook(
       ({ entries, fresh }: { entries: Entry[]; fresh: boolean }) =>
         useMealLanded(entries, '2026-11-28', true, fresh),
       { initialProps: { entries: [], fresh: false } },
     )
-    await hook.rerender({ entries: [], fresh: false })
-    spy.mockReturnValue(now + 60_000)
+    noteMealLoggedHere()
     await hook.rerender({ entries: [{ id: 'mine', loggedAt: at(0) }], fresh: true })
     expect(hook.result.current.landed).toBe('mine')
-    spy.mockRestore()
   })
 
   it('does not count a scan still being read', async () => {

@@ -2699,6 +2699,7 @@ export const hi = {
     kcalLeft: 'kcal बाकी',
     kcalOver: 'kcal ज़्यादा',
     openHint: 'आपका अवतार खोलता है',
+    biteHint: 'एक कौर खाता है',
     toggle: {
       stats: 'आँकड़े दिखाएँ',
       avatar: 'अवतार दिखाएँ',

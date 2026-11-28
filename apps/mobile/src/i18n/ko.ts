@@ -2696,6 +2696,7 @@ export const ko = {
     kcalLeft: 'kcal 남음',
     kcalOver: 'kcal 초과',
     openHint: '아바타를 열어요',
+    biteHint: '한 입 먹어요',
     toggle: {
       stats: '통계 보기',
       avatar: '아바타 보기',

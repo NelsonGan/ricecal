@@ -2740,6 +2740,7 @@ export const ms = {
     kcalLeft: 'kcal berbaki',
     kcalOver: 'kcal terlebih',
     openHint: 'Buka avatar anda',
+    biteHint: 'Ambil sesuap',
     toggle: {
       stats: 'Tunjuk statistik',
       avatar: 'Tunjuk avatar',

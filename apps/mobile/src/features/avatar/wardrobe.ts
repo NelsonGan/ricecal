@@ -1,5 +1,4 @@
 import type { Json } from '@/lib/database.types'
-import { AVATAR_LAYERS, type AvatarLayerName } from './layers.generated'
 
 /**
  * What the avatar can wear (README: The avatar on Today).
@@ -73,7 +72,7 @@ export type Outfit = {
 }
 
 /** Each base's own hair: the chill guy's bedhead and the girl's chopstick bun. */
-export const DEFAULT_HAIR: Record<AvatarBase, ItemId<'hair'>> = {
+const DEFAULT_HAIR: Record<AvatarBase, ItemId<'hair'>> = {
   guy: 'bedhead',
   girl: 'chopstick-bun',
 }
@@ -147,17 +146,4 @@ export function withItem(outfit: Outfit, slot: Slot, item: string | null): Outfi
  */
 export function freeOutfit(outfit: Outfit): Outfit {
   return defaultOutfit(outfit.base)
-}
-
-/** Used by the tests: every item and its layers exist on the canvas. */
-export function layersOfItem(slot: Slot, item: string): AvatarLayerName[] {
-  const names =
-    slot === 'hair'
-      ? [`hair-${item}-front`, `hair-${item}-back`]
-      : slot === 'headwear'
-        ? [`hat-${item}`]
-        : slot === 'accessory'
-          ? [`acc-${item}`]
-          : [`${slot}-${item}`]
-  return names.filter((name): name is AvatarLayerName => name in AVATAR_LAYERS)
 }

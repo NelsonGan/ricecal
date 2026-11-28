@@ -23,6 +23,7 @@ export function AvatarSummary({
   caption,
   onActionEnd,
   onPress,
+  animated = true,
 }: {
   outfit: Outfit
   state: AvatarState
@@ -34,6 +35,8 @@ export function AvatarSummary({
   onActionEnd?: () => void
   /** Absent while the avatar only flashes over the stats for a bite. */
   onPress?: () => void
+  /** Off while the screen is out of sight, so the idle loop stops redrawing. */
+  animated?: boolean
 }) {
   const { t } = useTranslation('avatar')
   const figureHeight = Math.max(0, height - CAPTION_HEIGHT)
@@ -59,7 +62,13 @@ export function AvatarSummary({
             bottom: figureHeight * 0.005,
           }}
         />
-        <AvatarFigure outfit={outfit} state={state} width={width} onActionEnd={onActionEnd} />
+        <AvatarFigure
+          outfit={outfit}
+          state={state}
+          width={width}
+          onActionEnd={onActionEnd}
+          animated={animated}
+        />
       </View>
       <View className="h-[30px] flex-row items-baseline justify-center gap-1">
         <Text variant="numeric" className="text-[20px] leading-[26px]">

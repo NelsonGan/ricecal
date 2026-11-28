@@ -5,10 +5,24 @@ import { Image } from 'react-native'
 import { AVATAR_LAYERS, type AvatarLayerName } from './layers.generated'
 
 /**
- * Every avatar drawing, decoded once per app run and shared by every figure on
- * screen. A board of twenty avatars in the same tee holds one copy of the tee.
+ * Avatar drawings, decoded once and shared by every figure on screen: a board
+ * of twenty avatars in the same tee holds one copy of the tee.
+ *
+ * Decoded, the whole wardrobe is about 20 MB, so drawings no figure is showing
+ * are let go once more than `KEEP` are held, oldest first. Decoding one again
+ * takes a few milliseconds.
  */
 const decoded = new Map<AvatarLayerName, SkImage>()
+/** How many figures on screen are drawing each layer. */
+const inUse = new Map<AvatarLayerName, number>()
+const KEEP = 64
+
+function trim(): void {
+  for (const name of decoded.keys()) {
+    if (decoded.size <= KEEP) return
+    if (!inUse.get(name)) decoded.delete(name)
+  }
+}
 const pending = new Map<AvatarLayerName, Promise<SkImage | null>>()
 /** Drawings that would not decode: skipped rather than waited for forever. */
 const failed = new Set<AvatarLayerName>()
@@ -26,8 +40,10 @@ function load(name: AvatarLayerName): Promise<SkImage | null> {
   const promise = Skia.Data.fromURI(uri)
     .then((data) => {
       const image = Skia.Image.MakeImageFromEncoded(data)
-      if (image) decoded.set(name, image)
-      else failed.add(name)
+      if (image) {
+        decoded.set(name, image)
+        trim()
+      } else failed.add(name)
       return image
     })
     .catch(() => {
@@ -58,6 +74,14 @@ export function useAvatarImages(
   const ready = () => names.every((name) => decoded.has(name) || failed.has(name))
   const [, setVersion] = useState(0)
   const shown = useRef(false)
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `key` stands for `names`
+  useEffect(() => {
+    for (const name of names) inUse.set(name, (inUse.get(name) ?? 0) + 1)
+    return () => {
+      for (const name of names) inUse.set(name, (inUse.get(name) ?? 1) - 1)
+    }
+  }, [key])
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: `key` stands for `names`
   useEffect(() => {

@@ -2746,6 +2746,7 @@ export const fil = {
     kcalLeft: 'kcal pa',
     kcalOver: 'kcal sobra',
     openHint: 'Bubuksan ang avatar mo',
+    biteHint: 'Kakain ng isang subo',
     toggle: {
       stats: 'Ipakita ang stats',
       avatar: 'Ipakita ang avatar',

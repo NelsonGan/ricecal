@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
 import { dateOffset, type LogMethod, track } from '@/lib/analytics'
+import { noteMealLoggedHere } from '@/lib/mealsLogged'
 import { autoTagLocation, autoTagWanted, recordMealForLocationsOffer } from '@/lib/places'
 import { recordMealLogged } from '@/lib/rating'
 import { supabase } from '@/lib/supabase'
@@ -108,6 +109,7 @@ export function useLogFood() {
       // sheet on screen a beat later. Synchronous and cannot throw, so nothing
       // below it is at risk. See `lib/rating`.
       recordMealLogged(userId)
+      noteMealLoggedHere()
       recordMealForLocationsOffer(userId)
       queryClient.invalidateQueries({ queryKey: keys.day(userId, input.logDate) })
       // Auto post may have published this entry in the same transaction.

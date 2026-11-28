@@ -2694,6 +2694,7 @@ export const zhHans = {
     kcalLeft: '千卡剩余',
     kcalOver: '千卡超出',
     openHint: '打开你的形象',
+    biteHint: '吃一口',
     toggle: {
       stats: '显示数据',
       avatar: '显示形象',

@@ -14,6 +14,7 @@ export const avatar = {
   kcalLeft: 'kcal left',
   kcalOver: 'kcal over',
   openHint: 'Opens your avatar',
+  biteHint: 'Takes a bite',
   toggle: {
     stats: 'Show stats',
     avatar: 'Show avatar',

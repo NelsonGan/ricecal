@@ -12,8 +12,8 @@ import { type AvatarBase, freeOutfit, type Outfit, parseOutfit, serialiseOutfit 
  * gets the base that matches their profile.
  */
 export function useAvatar() {
-  const { data: settings, isPending } = useSettings()
-  const { data: profile, isPending: profilePending } = useProfile()
+  const { data: settings, isPending, isPaused } = useSettings()
+  const { data: profile, isPending: profilePending, isPaused: profilePaused } = useProfile()
   const { entitled, loading, unknown } = useEntitlement()
   // Only a definite no draws the plain outfit. A cold start or an offline
   // launch has not answered yet, and a Pro figure undressing until it does
@@ -35,14 +35,16 @@ export function useAvatar() {
     // read from a profile that is not there yet), and must not be saved over
     // the real one.
     loading: isPending || profilePending,
+    /** Offline with nothing cached: the saved outfit cannot be read, so it cannot be edited. */
+    unreachable: (isPending && isPaused) || (profilePending && profilePaused),
   }
 }
 
 /** Saves the outfit to the account, so every phone signed in draws the same one. */
 export function useSaveAvatar() {
   const update = useUpdateSettings()
-  return {
-    save: (outfit: Outfit) => update.mutateAsync({ avatar: serialiseOutfit(outfit) }),
-    saving: update.isPending,
-  }
+  // Not awaited: the settings cache moves at once, and offline the write waits
+  // for the connection, which an awaited save would sit spinning on.
+  return (outfit: Outfit, onError: () => void) =>
+    update.mutate({ avatar: serialiseOutfit(outfit) }, { onError })
 }

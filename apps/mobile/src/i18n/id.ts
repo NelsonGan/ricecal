@@ -2720,6 +2720,7 @@ export const id = {
     kcalLeft: 'kkal tersisa',
     kcalOver: 'kkal lebih',
     openHint: 'Membuka avatarmu',
+    biteHint: 'Makan sesuap',
     toggle: {
       stats: 'Tampilkan statistik',
       avatar: 'Tampilkan avatar',

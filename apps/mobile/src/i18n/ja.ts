@@ -2715,6 +2715,7 @@ export const ja = {
     kcalLeft: 'kcal 残り',
     kcalOver: 'kcal オーバー',
     openHint: 'アバターを開きます',
+    biteHint: 'ひと口食べます',
     toggle: {
       stats: '数値を表示',
       avatar: 'アバターを表示',
