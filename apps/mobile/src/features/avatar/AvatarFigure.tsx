@@ -27,6 +27,9 @@ const SHOULDER_R = { x: 317, y: 395 }
 
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1)
 
+/** How far past its drawn pose the eating arm rises, in canvas units. */
+const RAISE = 14
+
 /** A slow breath, so the figure reads as resting rather than frozen. */
 const BREATHE = { from: { transform: [{ scaleY: 1 }] }, to: { transform: [{ scaleY: 1.012 }] } }
 /** Hungry sways a little on its feet. */
@@ -139,9 +142,12 @@ export function AvatarFigure({
 
   const armStyle = useAnimatedStyle(() => {
     if (!motion) return {}
-    const down = 1 - lift.get()
+    const up = lift.get()
+    const down = 1 - up
+    // Fully up, the spoon is raised a little past the drawn pose: drawn, it
+    // stops at the chin, and the bite has to reach the mouth.
     return {
-      transform: [{ translateY: down * 46 * scale }, { rotate: `${down * 18}deg` }],
+      transform: [{ translateY: (down * 46 - up * RAISE) * scale }, { rotate: `${down * 18}deg` }],
     }
   })
   const chewStyle = useAnimatedStyle(() => (motion ? { transform: [{ scaleY: chew.get() }] } : {}))

@@ -87,16 +87,9 @@ export const AVATAR_LAYERS = {
   'arm-R-eat-over': {
     source: require('../../../assets/avatar/arm-R-eat-over.webp'),
     x: 284,
-    y: 393,
-    w: 84,
-    h: 105,
-  },
-  'arm-R-eat-under': {
-    source: require('../../../assets/avatar/arm-R-eat-under.webp'),
-    x: 286,
     y: 389,
-    w: 54,
-    h: 55,
+    w: 84,
+    h: 109,
   },
   'arm-R-hold-over': {
     source: require('../../../assets/avatar/arm-R-hold-over.webp'),

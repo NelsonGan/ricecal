@@ -160,14 +160,16 @@ export function eatingFrames(mood: AvatarMood, holding: boolean): EatingFrame[] 
     { at: 0, pose: eat('bite', 'full'), lift: 1, chew: false },
     // the bite: the rice is gone
     { at: 520, pose: eat('chew', 'empty'), lift: 0.92, chew: true },
-    // the arm comes down while the chewing finishes
+    // the empty spoon comes down while the chewing goes on
+    { at: 900, pose: eat('chew', 'empty'), lift: 0, chew: true },
+    // and once it is down, the hand goes back to the tummy
     {
-      at: 1150,
+      at: 1200,
       pose: { ...eat('chew', 'empty'), armR: 'belly', spoon: null },
       lift: 0,
-      chew: true,
+      chew: false,
     },
-    // and the day's new mood, which this meal may just have changed
+    // then the day's new mood, which this meal may just have changed
     { at: 1650, pose: moodPose(mood, holding), lift: 0, chew: false },
   ]
 }
